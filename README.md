@@ -1,4 +1,4 @@
-# Foofire.com
+# Foofire
 
 Foofire is a fast, fully static fan-made website to help users find the nearest upcoming Foo Fighters show.
 
