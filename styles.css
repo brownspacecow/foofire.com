@@ -1,0 +1,249 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --panel: #191919;
+  --panel-soft: #222;
+  --text: #f5f5f5;
+  --muted: #b8b8b8;
+  --accent: #cc0000;
+  --accent-soft: #fa5050;
+  --border: #2f2f2f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  min-height: 100vh;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 20%, #280000 0%, var(--bg) 55%),
+    linear-gradient(145deg, #101010 0%, #050505 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 4rem 1rem 3rem;
+}
+
+.tagline {
+  margin: 0;
+  color: var(--accent-soft);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+h1 {
+  margin: 0.6rem 0 0;
+  font-size: clamp(2rem, 8vw, 3.7rem);
+  line-height: 1.05;
+}
+
+.subheadline {
+  margin: 1rem 0 0;
+  max-width: 58ch;
+  color: var(--muted);
+}
+
+.search-row {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: 640px;
+}
+
+.search-row input,
+.search-row button {
+  width: 100%;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  padding: 0.85rem 0.95rem;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.search-row button {
+  background: var(--accent);
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.search-row button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.search-row .secondary {
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+#status {
+  min-height: 1.5rem;
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+}
+
+.results-wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3.5rem;
+}
+
+.results-wrap h2 {
+  margin-top: 0;
+  font-size: 1.35rem;
+}
+
+.results-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.show-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.show-card:hover {
+  transform: translateY(-2px);
+  border-color: #4f4f4f;
+}
+
+.badge {
+  display: inline-block;
+  margin-bottom: 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: white;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+}
+
+.show-card h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.show-card p {
+  margin: 0.45rem 0;
+  color: var(--muted);
+}
+
+.show-card .distance {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.card-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.card-actions a,
+.card-actions button {
+  text-decoration: none;
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+}
+
+.card-actions a {
+  background: var(--accent);
+  color: #fff;
+}
+
+.card-actions button {
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  color: var(--text);
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 1rem 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  color: var(--muted);
+}
+
+footer p {
+  margin-top: 0;
+}
+
+footer a {
+  color: var(--text);
+}
+
+.disclaimer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2.5rem 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (min-width: 680px) {
+  .search-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .search-row input {
+    min-width: 0;
+  }
+
+  .search-row button {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

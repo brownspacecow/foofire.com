@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Foofire | Find the Closest Foo Fighters Concert</title>
+    <meta
+      name="description"
+      content="Find the nearest upcoming Foo Fighters concert based on your ZIP code. Fast, free, and fan-made."
+    />
+    <meta property="og:title" content="Foofire | Find the Closest Foo Fighters Concert" />
+    <meta
+      property="og:description"
+      content="Find the nearest upcoming Foo Fighters concert based on your ZIP code. Fast, free, and fan-made."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com" />
+    <meta property="og:site_name" content="Foofire" />
+    <meta name="theme-color" content="#0f0f0f" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Foofire",
+        "url": "https://foofire.com",
+        "description": "Find the nearest upcoming Foo Fighters concert based on your ZIP code. Fast, free, and fan-made.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://foofire.com/?zip={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <p class="tagline">Find the closest Foo Fighters concert to you.</p>
+          <h1>Find Your Closest Foo Fighters Show</h1>
+          <p class="subheadline">
+            Search upcoming concerts by ZIP code and instantly see which show is nearest.
+          </p>
+          <form id="zip-form" class="search-row" novalidate>
+            <label class="sr-only" for="zip-input">Enter ZIP code</label>
+            <input
+              id="zip-input"
+              name="zip"
+              type="text"
+              inputmode="numeric"
+              autocomplete="postal-code"
+              pattern="[0-9]{5}"
+              maxlength="5"
+              placeholder="Enter ZIP code"
+              required
+            />
+            <button type="submit">Find Shows</button>
+            <button id="geo-button" class="secondary" type="button">Use My Location</button>
+          </form>
+          <p id="status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="results-wrap" aria-labelledby="results-heading">
+        <h2 id="results-heading">Upcoming Shows</h2>
+        <div id="results" class="results-grid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire is an unofficial fan site and is not affiliated with Foo Fighters, Roswell Records,
+        RCA Records, the band's management, or any official entity.
+      </p>
+      <a href="./disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
