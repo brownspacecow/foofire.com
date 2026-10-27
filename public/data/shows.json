@@ -1,0 +1,29 @@
+[
+  {
+    "date": "2027-06-05",
+    "city": "Kansas City",
+    "state": "MO",
+    "venue": "T-Mobile Center",
+    "latitude": 39.0997,
+    "longitude": -94.5786,
+    "ticketUrl": "https://example.com/kansas-city"
+  },
+  {
+    "date": "2027-06-12",
+    "city": "Chicago",
+    "state": "IL",
+    "venue": "United Center",
+    "latitude": 41.8807,
+    "longitude": -87.6742,
+    "ticketUrl": "https://example.com/chicago"
+  },
+  {
+    "date": "2027-06-20",
+    "city": "Denver",
+    "state": "CO",
+    "venue": "Ball Arena",
+    "latitude": 39.7487,
+    "longitude": -105.0077,
+    "ticketUrl": "https://example.com/denver"
+  }
+]
