@@ -1,29 +1,92 @@
 [
   {
-    "date": "2027-06-05",
-    "city": "Kansas City",
-    "state": "MO",
-    "venue": "T-Mobile Center",
-    "latitude": 39.0997,
-    "longitude": -94.5786,
-    "ticketUrl": "https://example.com/kansas-city"
+    "date": "2027-05-15",
+    "city": "New York",
+    "state": "NY",
+    "venue": "Madison Square Garden",
+    "latitude": 40.7505,
+    "longitude": -73.9934,
+    "ticketUrl": "https://ticketmaster.com/foofire-nyc-2027"
   },
   {
-    "date": "2027-06-12",
+    "date": "2027-05-18",
+    "city": "Philadelphia",
+    "state": "PA",
+    "venue": "Wells Fargo Center",
+    "latitude": 39.9014,
+    "longitude": -75.1715,
+    "ticketUrl": "https://ticketmaster.com/foofire-philly-2027"
+  },
+  {
+    "date": "2027-05-22",
     "city": "Chicago",
     "state": "IL",
     "venue": "United Center",
     "latitude": 41.8807,
     "longitude": -87.6742,
-    "ticketUrl": "https://example.com/chicago"
+    "ticketUrl": "https://ticketmaster.com/foofire-chicago-2027"
   },
   {
-    "date": "2027-06-20",
+    "date": "2027-05-25",
+    "city": "Detroit",
+    "state": "MI",
+    "venue": "Little Caesars Arena",
+    "latitude": 42.3399,
+    "longitude": -83.0485,
+    "ticketUrl": "https://ticketmaster.com/foofire-detroit-2027"
+  },
+  {
+    "date": "2027-05-29",
     "city": "Denver",
     "state": "CO",
     "venue": "Ball Arena",
     "latitude": 39.7487,
     "longitude": -105.0077,
-    "ticketUrl": "https://example.com/denver"
+    "ticketUrl": "https://ticketmaster.com/foofire-denver-2027"
+  },
+  {
+    "date": "2027-06-02",
+    "city": "Los Angeles",
+    "state": "CA",
+    "venue": "Crypto.com Arena",
+    "latitude": 34.043,
+    "longitude": -118.2673,
+    "ticketUrl": "https://ticketmaster.com/foofire-la-2027"
+  },
+  {
+    "date": "2027-06-05",
+    "city": "San Francisco",
+    "state": "CA",
+    "venue": "Chase Center",
+    "latitude": 37.7682,
+    "longitude": -122.3875,
+    "ticketUrl": "https://ticketmaster.com/foofire-sf-2027"
+  },
+  {
+    "date": "2027-06-09",
+    "city": "Seattle",
+    "state": "WA",
+    "venue": "Climate Pledge Arena",
+    "latitude": 47.6241,
+    "longitude": -122.351,
+    "ticketUrl": "https://ticketmaster.com/foofire-seattle-2027"
+  },
+  {
+    "date": "2027-06-13",
+    "city": "Austin",
+    "state": "TX",
+    "venue": "Moody Center",
+    "latitude": 30.2832,
+    "longitude": -97.719,
+    "ticketUrl": "https://ticketmaster.com/foofire-austin-2027"
+  },
+  {
+    "date": "2027-06-16",
+    "city": "Atlanta",
+    "state": "GA",
+    "venue": "State Farm Arena",
+    "latitude": 33.7563,
+    "longitude": -84.3953,
+    "ticketUrl": "https://ticketmaster.com/foofire-atlanta-2027"
   }
 ]
