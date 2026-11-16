@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claw Crew | Foofire Games</title>
+    <meta
+      name="description"
+      content="Play Claw Crew, a three.js claw machine packed with 100 original plushies. Catch them all in your Plushie Dex — progress saves in your browser."
+    />
+    <meta property="og:title" content="Claw Crew | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Guide the claw, grab a plushie, and fill your collection in this three.js claw machine."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/claw-machine/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      .claw-game {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 1rem 3.5rem;
+      }
+
+      .claw-hud {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1.35rem;
+        padding: 0.9rem 1rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        border-bottom: none;
+        box-shadow: 6px 0 0 var(--ink);
+      }
+
+      .hud-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 5.4rem;
+      }
+
+      .hud-stat .stat-label {
+        font-family: var(--font-pixel);
+        font-size: 0.46rem;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+
+      .hud-stat strong {
+        font-family: var(--font-pixel);
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--accent-soft);
+      }
+
+      .claw-message {
+        flex: 1 1 16rem;
+        min-height: 1.6rem;
+        margin: 0;
+        color: var(--text);
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .ghost-button {
+        padding: 0.65rem 0.85rem;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.48rem;
+        line-height: 1.5;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .ghost-button:hover {
+        background: #46318c;
+      }
+
+      .ghost-button:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--ink);
+      }
+
+      .ghost-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .hud-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+      }
+
+      .icon-button {
+        width: 2.7rem;
+        height: 2.7rem;
+        padding: 0;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: 1.15rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .icon-button:hover {
+        background: #46318c;
+      }
+
+      .icon-button[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      #game-container {
+        position: relative;
+        width: 100%;
+        height: clamp(420px, 68vh, 700px);
+        overflow: hidden;
+        background: #080312;
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+        touch-action: manipulation;
+        cursor: grab;
+      }
+
+      #game-container:focus-visible {
+        outline: 4px dashed var(--accent-soft);
+        outline-offset: 3px;
+      }
+
+      #game-container canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .win-banner {
+        position: absolute;
+        top: 1rem;
+        left: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        max-width: min(90%, 24rem);
+        padding: 0.7rem 1.2rem;
+        border: 3px solid var(--ink);
+        background: var(--accent-soft);
+        color: var(--ink);
+        text-align: center;
+        opacity: 0;
+        transform: translate(-50%, -1rem) scale(0.85);
+        transition: opacity 0.2s steps(2), transform 0.25s cubic-bezier(0.2, 1.5, 0.4, 1);
+        pointer-events: none;
+        box-shadow: 4px 4px 0 var(--ink);
+        z-index: 2;
+      }
+
+      .win-banner.show {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+
+      .win-banner span {
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        letter-spacing: 0.1em;
+      }
+
+      .win-banner strong {
+        font-family: var(--font-pixel);
+        font-size: 0.72rem;
+        line-height: 1.6;
+      }
+
+      .win-banner small {
+        font-weight: 800;
+        font-size: 0.75rem;
+      }
+
+      .win-banner .banner-kicker {
+        font-size: 0.44rem;
+        letter-spacing: 0.12em;
+      }
+
+      .win-banner.legendary {
+        background: linear-gradient(135deg, #ffd93d, #ff8fc7 60%, #ff2e63);
+      }
+
+      .claw-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem 1.6rem;
+        padding: 1rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        border-top: none;
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .dpad {
+        display: grid;
+        grid-template-columns: repeat(3, 2.75rem);
+        grid-template-rows: repeat(3, 2.75rem);
+        gap: 0.32rem;
+      }
+
+      .dpad button,
+      .drop-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        font-family: var(--font-pixel);
+        color: var(--ink);
+        background: var(--blue);
+        box-shadow: 3px 3px 0 var(--ink);
+        cursor: pointer;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .dpad button {
+        font-size: 1rem;
+      }
+
+      .dpad button:hover:not(:disabled),
+      .drop-button:hover:not(:disabled) {
+        filter: brightness(1.12);
+        transform: translate(-1px, -1px);
+      }
+
+      .dpad button:active:not(:disabled),
+      .drop-button:active:not(:disabled) {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--ink);
+      }
+
+      .dpad button:disabled,
+      .drop-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .dpad [data-move="up"] { grid-area: 1 / 2; }
+      .dpad [data-move="left"] { grid-area: 2 / 1; }
+      .dpad .dpad-center { grid-area: 2 / 2; }
+      .dpad [data-move="right"] { grid-area: 2 / 3; }
+      .dpad [data-move="down"] { grid-area: 3 / 2; }
+
+      .dpad-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--accent-soft);
+        font-size: 1rem;
+      }
+
+      .drop-button {
+        min-width: min(100%, 17rem);
+        min-height: 5.5rem;
+        padding: 1rem 1.4rem;
+        font-size: clamp(0.62rem, 2.1vw, 0.8rem);
+        line-height: 1.6;
+        background: linear-gradient(180deg, var(--accent-soft), #ffb703);
+        box-shadow: 5px 5px 0 var(--ink);
+      }
+
+      .drop-button.busy {
+        background: var(--violet);
+        color: var(--text);
+      }
+
+      .drop-button.rescue {
+        background: linear-gradient(180deg, var(--green), #1f8f52);
+      }
+
+      .claw-tip {
+        max-width: 46rem;
+        margin: 1rem auto 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      .math-dialog {
+        width: min(92vw, 36rem);
+        max-height: 90vh;
+        margin: auto;
+        padding: 1.25rem;
+        overflow-y: auto;
+        border: 4px solid var(--ink);
+        border-radius: 0;
+        background:
+          radial-gradient(circle at 12% 0%, rgba(255, 217, 61, 0.18), transparent 40%),
+          linear-gradient(180deg, #2d195f, #180d36);
+        color: var(--text);
+        box-shadow: 10px 10px 0 var(--ink);
+      }
+
+      .math-dialog[open] {
+        animation: math-pop 0.18s steps(3);
+      }
+
+      .math-dialog::backdrop {
+        background: rgba(5, 2, 12, 0.82);
+        backdrop-filter: blur(3px);
+      }
+
+      .math-topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+      }
+
+      .math-kicker {
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        letter-spacing: 0.08em;
+        color: var(--accent-soft);
+      }
+
+      .math-reward {
+        padding: 0.28rem 0.45rem;
+        border: 3px solid var(--ink);
+        background: var(--green);
+        box-shadow: 3px 3px 0 var(--ink);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.52rem;
+        white-space: nowrap;
+      }
+
+      .math-title {
+        margin: 0.2rem 0 0.5rem;
+        font-family: var(--font-pixel);
+        font-size: clamp(0.7rem, 2.6vw, 0.92rem);
+        line-height: 1.6;
+        color: var(--text);
+      }
+
+      .math-intro {
+        margin: 0 0 0.9rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .math-question {
+        margin: 0.8rem 0 1rem;
+        padding: 0.9rem 1rem;
+        border-left: 6px solid var(--accent-soft);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: clamp(1rem, 2.7vw, 1.15rem);
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
+      .math-answers {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+      }
+
+      .math-answer {
+        min-height: 3.1rem;
+        padding: 0.6rem;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel-soft);
+        color: var(--text);
+        box-shadow: 3px 3px 0 var(--ink);
+        font-family: var(--font-body);
+        font-size: 1.05rem;
+        font-weight: 800;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      .math-answer:hover:not(:disabled) {
+        background: #46318c;
+      }
+
+      .math-answer:active:not(:disabled) {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--ink);
+      }
+
+      .math-answer.correct {
+        background: var(--green);
+        color: var(--ink);
+        animation: math-correct 0.3s steps(3);
+      }
+
+      .math-answer.wrong {
+        background: #5b2235;
+        color: #ffc9d4;
+        text-decoration: line-through;
+        opacity: 0.75;
+        animation: math-shake 0.22s steps(2);
+      }
+
+      .math-answer:disabled {
+        cursor: default;
+      }
+
+      .math-feedback {
+        min-height: 1.5rem;
+        margin: 0.8rem 0 0;
+        color: var(--accent-soft);
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1.4;
+      }
+
+      .math-feedback.success {
+        color: var(--green);
+      }
+
+      .math-hint {
+        margin: 0.25rem 0 0;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.45;
+      }
+
+      .math-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.55rem;
+        margin-top: 1rem;
+      }
+
+      .math-footer button {
+        padding: 0.55rem 0.7rem;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel-soft);
+        color: var(--text);
+        box-shadow: 3px 3px 0 var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.46rem;
+        line-height: 1.5;
+        cursor: pointer;
+      }
+
+      .math-footer button:hover:not(:disabled) {
+        background: #46318c;
+      }
+
+      .math-footer button:last-child {
+        margin-left: auto;
+      }
+
+      .math-footer button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .math-answer:focus-visible,
+      .math-footer button:focus-visible {
+        outline: 3px dashed var(--accent-soft);
+        outline-offset: 2px;
+      }
+
+      @keyframes math-pop {
+        from {
+          opacity: 0.3;
+          transform: translateY(10px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes math-correct {
+        50% {
+          transform: scale(1.04);
+        }
+      }
+
+      @keyframes math-shake {
+        25% { transform: translateX(-3px); }
+        75% { transform: translateX(3px); }
+      }
+
+      .dex-panel {
+        margin-top: 1.5rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .dex-panel summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem 1rem;
+        padding: 0.9rem 1rem;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .dex-panel summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .dex-panel summary::before {
+        content: "▶";
+        margin-right: 0.35rem;
+        color: var(--accent);
+        font-size: 0.7rem;
+      }
+
+      .dex-panel[open] summary::before {
+        content: "▼";
+      }
+
+      .dex-summary-title {
+        margin-right: auto;
+        font-family: var(--font-pixel);
+        font-size: 0.68rem;
+        line-height: 1.5;
+        color: var(--accent-soft);
+      }
+
+      .dex-summary-count {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.08rem;
+        font-size: 0.45rem;
+      }
+
+      .dex-summary-count strong {
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        font-weight: 400;
+        color: var(--text);
+      }
+
+      .dex-summary-count span {
+        color: var(--muted);
+      }
+
+      .dex-body {
+        padding: 0 1rem 1rem;
+      }
+
+      .dex-progress-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0.25rem 0 0.75rem;
+      }
+
+      .dex-progress {
+        flex: 1;
+        height: 1rem;
+        overflow: hidden;
+        border: 2px solid var(--ink);
+        background: #120a2a;
+      }
+
+      .dex-progress-fill {
+        display: block;
+        width: 0;
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-soft), var(--green));
+        transition: width 0.35s steps(8);
+      }
+
+      .dex-percent {
+        min-width: 2.7rem;
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        text-align: right;
+      }
+
+      .dex-record {
+        margin: 0 0 0.55rem;
+        color: var(--accent-soft);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .dex-hint {
+        margin: 0 0 0.8rem;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .dex-filters {
+        display: flex;
+        gap: 0.4rem;
+        overflow-x: auto;
+        padding: 0.1rem 0 0.85rem;
+        scrollbar-width: thin;
+      }
+
+      .dex-filter {
+        flex: 0 0 auto;
+        padding: 0.48rem 0.6rem;
+        border: 2px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.43rem;
+        line-height: 1.5;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .dex-filter:hover {
+        filter: brightness(1.15);
+      }
+
+      .dex-filter[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      .dex-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.55rem;
+      }
+
+      .dex-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.12rem;
+        min-height: 7rem;
+        padding: 0.55rem 0.45rem 0.5rem;
+        overflow: hidden;
+        border: 3px solid var(--border);
+        background: #1b1238;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .dex-card[hidden] {
+        display: none;
+      }
+
+      .dex-number {
+        position: absolute;
+        top: 0.3rem;
+        left: 0.4rem;
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        color: var(--muted);
+      }
+
+      .dex-rarity {
+        position: absolute;
+        top: 0.3rem;
+        right: 0.4rem;
+        color: var(--muted);
+        font-size: 0.42rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .dex-art {
+        margin-top: 1.05rem;
+        font-size: 2rem;
+        line-height: 1;
+        filter: grayscale(1) brightness(0.55);
+      }
+
+      .dex-name {
+        margin: 0;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 0.7rem;
+        font-weight: 800;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .dex-meta {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.6rem;
+        line-height: 1.3;
+      }
+
+      .dex-status {
+        margin-top: auto;
+        padding-top: 0.3rem;
+        color: var(--muted);
+        font-family: var(--font-pixel);
+        font-size: 0.38rem;
+        line-height: 1.5;
+      }
+
+      .dex-card.needed {
+        opacity: 0.82;
+      }
+
+      .dex-card.caught {
+        border-color: var(--accent-soft);
+        background: linear-gradient(180deg, #35236b, #241a4d);
+        color: var(--text);
+      }
+
+      .dex-card.caught .dex-art {
+        filter: none;
+        text-shadow: 0 0 12px rgba(255, 217, 61, 0.45);
+      }
+
+      .dex-card.caught .dex-status {
+        color: var(--green);
+      }
+
+      .dex-card.rarity-rare.caught {
+        border-color: var(--blue);
+      }
+
+      .dex-card.rarity-legendary.caught {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-soft), 0 0 20px rgba(255, 46, 99, 0.28);
+      }
+
+      .dex-card.rarity-legendary .dex-rarity {
+        color: var(--accent-soft);
+      }
+
+      .dex-card.just-caught {
+        animation: dex-pop 0.55s cubic-bezier(0.2, 1.6, 0.4, 1);
+      }
+
+      @keyframes dex-pop {
+        from {
+          transform: scale(0.82) rotate(-2deg);
+        }
+        to {
+          transform: none;
+        }
+      }
+
+      .dex-empty {
+        margin: 0.75rem 0;
+        padding: 0.9rem;
+        border: 2px dashed var(--border);
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-align: center;
+      }
+
+      .dex-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        margin-top: 0.9rem;
+      }
+
+      .dex-save-note {
+        color: var(--muted);
+        font-size: 0.72rem;
+      }
+
+      .dex-reset {
+        padding: 0.5rem 0.65rem;
+        border: 2px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        line-height: 1.5;
+        cursor: pointer;
+      }
+
+      .dex-reset.confirm {
+        border-color: var(--accent);
+        background: #7f1d1d;
+        color: #fff;
+      }
+
+      .back-link {
+        display: block;
+        width: fit-content;
+        margin: 1.5rem auto 0;
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      @media (max-width: 700px) {
+        .claw-message {
+          order: 3;
+          flex-basis: 100%;
+        }
+
+        .dex-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        #game-container {
+          height: clamp(380px, 62vh, 580px);
+        }
+      }
+
+      @media (max-width: 420px) {
+        .claw-hud,
+        .claw-controls {
+          padding: 0.8rem 0.7rem;
+        }
+
+        .dpad {
+          grid-template-columns: repeat(3, 2.5rem);
+          grid-template-rows: repeat(3, 2.5rem);
+        }
+
+        .drop-button {
+          min-height: 4.6rem;
+        }
+
+        .dex-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .math-dialog {
+          width: calc(100vw - 1.5rem);
+          padding: 1rem;
+        }
+
+        .math-answers {
+          grid-template-columns: 1fr;
+        }
+
+        .math-footer button {
+          flex: 1 1 auto;
+        }
+
+        .math-footer button:last-child {
+          margin-left: 0;
+        }
+
+        .dex-panel summary {
+          gap: 0.45rem;
+        }
+
+        .dex-summary-title {
+          font-size: 0.57rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .win-banner,
+        .dex-progress-fill {
+          transition-duration: 0.01ms;
+        }
+
+        .math-dialog[open],
+        .math-answer.correct,
+        .math-answer.wrong {
+          animation-duration: 0.01ms;
+        }
+
+        .dex-card.just-caught {
+          animation-duration: 0.01ms;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Claw Crew</h1>
+        <p>
+          Work the claw, fill your Plushie Dex, and catch all 100 original plushies — blocky
+          heroes, pet pals, spooky cuties, and a whole digital circus. Your collection saves in
+          this browser, so you can come back and keep hunting! Turn up the sound for a spooky 8-bit
+          soundtrack and arcade effects.
+        </p>
+      </section>
+
+      <section class="claw-game" aria-label="Claw Crew claw machine">
+        <div class="claw-hud">
+          <div class="hud-stat">
+            <span class="stat-label">Caught</span>
+            <strong id="prize-count">0 / 100</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Tries</span>
+            <strong id="plays-count">10</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Streak</span>
+            <strong id="streak-count">0</strong>
+          </div>
+          <p class="claw-message" id="message" role="status" aria-live="polite">
+            Move the claw over a plushie, then drop!
+          </p>
+          <div class="hud-actions">
+            <button
+              class="icon-button"
+              id="mute-button"
+              type="button"
+              aria-label="Mute music and sounds"
+              aria-pressed="false"
+            >
+              🔊
+            </button>
+            <button class="ghost-button" id="reset-button" type="button" aria-label="Refill machine">
+              Refill
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="game-container"
+          tabindex="0"
+          role="application"
+          aria-label="3D claw machine. Use the arrow keys or WASD to move the claw and Space to drop it."
+        >
+          <div class="win-banner" id="win-banner" aria-hidden="true">
+            <span class="banner-kicker" id="win-kicker">NEW PLUSHIE!</span>
+            <strong id="win-name">A plushie!</strong>
+            <small id="win-meta">+2 tries</small>
+          </div>
+        </div>
+
+        <div class="claw-controls">
+          <div class="dpad" role="group" aria-label="Move the claw">
+            <button type="button" data-move="up" aria-label="Move claw back">▲</button>
+            <button type="button" data-move="left" aria-label="Move claw left">◀</button>
+            <span class="dpad-center" aria-hidden="true">✥</span>
+            <button type="button" data-move="right" aria-label="Move claw right">▶</button>
+            <button type="button" data-move="down" aria-label="Move claw forward">▼</button>
+          </div>
+          <button class="drop-button" id="drop-button" type="button">DROP CLAW</button>
+        </div>
+
+        <p class="claw-tip">
+          Click the machine, then use arrow keys or WASD to steer and Space to drop. Center the
+          claw over a plushie for the best grip — a greener target ring means a stronger hold.
+          Every catch gives you 2 free tries. Out of tries? Answer a math mission to power up
+          with 3 more!
+        </p>
+
+        <details class="dex-panel" id="dex-panel">
+          <summary>
+            <span class="dex-summary-title">📖 Plushie Dex</span>
+            <span class="dex-summary-count">
+              <strong id="dex-count">0 caught</strong>
+              <span id="dex-needed">100 to find</span>
+            </span>
+          </summary>
+          <div class="dex-body">
+            <div class="dex-progress-row">
+              <div
+                class="dex-progress"
+                id="dex-progress"
+                role="progressbar"
+                aria-label="Plushies caught"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              >
+                <span class="dex-progress-fill" id="dex-progress-fill"></span>
+              </div>
+              <span class="dex-percent" id="dex-percent">0%</span>
+            </div>
+            <p class="dex-record" id="dex-record">🔥 Best streak: 0 · 🏆 0 catches</p>
+            <p class="dex-hint">
+              Catch a plushie to unlock its name and number. Can you find every legendary?
+            </p>
+            <div class="dex-filters" id="dex-filters" role="group" aria-label="Filter Plushie Dex">
+              <button class="dex-filter" type="button" data-filter="all" aria-pressed="true">
+                All
+              </button>
+              <button class="dex-filter" type="button" data-filter="caught" aria-pressed="false">
+                ✅ Caught
+              </button>
+              <button class="dex-filter" type="button" data-filter="needed" aria-pressed="false">
+                🔎 Needed
+              </button>
+              <button class="dex-filter" type="button" data-filter="avatar" aria-pressed="false">
+                🧱 Avatar
+              </button>
+              <button class="dex-filter" type="button" data-filter="pet" aria-pressed="false">
+                🐾 Pets
+              </button>
+              <button class="dex-filter" type="button" data-filter="obby" aria-pressed="false">
+                🧗 Obby
+              </button>
+              <button class="dex-filter" type="button" data-filter="horror" aria-pressed="false">
+                👻 Spooky
+              </button>
+              <button class="dex-filter" type="button" data-filter="circus" aria-pressed="false">
+                🎪 Circus
+              </button>
+              <button class="dex-filter" type="button" data-filter="goofy" aria-pressed="false">
+                🤪 Goofy
+              </button>
+            </div>
+            <div class="dex-grid" id="dex-grid" role="list"></div>
+            <p class="dex-empty" id="dex-empty" hidden>No plushies in this filter yet.</p>
+            <div class="dex-footer">
+              <button class="dex-reset" id="reset-progress-button" type="button">
+                Start Over
+              </button>
+              <span class="dex-save-note" id="dex-save-note">
+                Progress saves automatically in this browser.
+              </span>
+            </div>
+          </div>
+        </details>
+
+        <dialog
+          class="math-dialog"
+          id="math-dialog"
+          aria-labelledby="math-title"
+          aria-describedby="math-intro"
+        >
+          <div class="math-topline">
+            <span class="math-kicker">⚡ MATH RESCUE</span>
+            <span class="math-reward">+3 TRIES</span>
+          </div>
+          <h2 class="math-title" id="math-title">Power up the claw!</h2>
+          <p class="math-intro" id="math-intro">
+            Out of tries? Solve one 10-year-old math mission to earn 3 more tries. No timer — take
+            your time!
+          </p>
+          <p class="math-question" id="math-question" aria-live="polite"></p>
+          <div class="math-answers" id="math-answers" role="group" aria-label="Answer choices"></div>
+          <p class="math-feedback" id="math-feedback" role="status" aria-live="polite"></p>
+          <p class="math-hint" id="math-hint" aria-live="polite" hidden></p>
+          <div class="math-footer">
+            <button class="math-hint-button" id="math-hint-button" type="button">💡 Hint</button>
+            <button class="math-new-button" id="math-new-button" type="button">
+              Different question
+            </button>
+            <button class="math-later-button" id="math-later-button" type="button">Not now</button>
+          </div>
+        </dialog>
+
+        <a href="../../../games.html" class="back-link">&larr; Back to games</a>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
