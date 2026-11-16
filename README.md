@@ -20,6 +20,9 @@ src/
     bear/          # Bear the Puppy three.js game
       index.html
       game.js
+    pizza-homestead/  # Pizza Homestead: Fun Room Rush three.js game
+      index.html
+      game.js
   components/
   pages/
   data/
