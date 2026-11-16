@@ -3,76 +3,55 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Foofire | Find the Closest Foo Fighters Concert</title>
+    <title>Foofire Games | Kids' Three.js Games</title>
     <meta
       name="description"
-      content="Find the nearest upcoming Foo Fighters concert based on your ZIP code. Fast, free, and fan-made."
+      content="A collection of fun three.js games built for kids. Play free online games right in your browser."
     />
-    <meta property="og:title" content="Foofire | Find the Closest Foo Fighters Concert" />
+    <meta property="og:title" content="Foofire Games | Kids' Three.js Games" />
     <meta
       property="og:description"
-      content="Find the nearest upcoming Foo Fighters concert based on your ZIP code. Fast, free, and fan-made."
+      content="A collection of fun three.js games built for kids. Play free online games right in your browser."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com" />
-    <meta property="og:site_name" content="Foofire" />
-    <meta name="theme-color" content="#0f0f0f" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#0b0b0b" />
     <link rel="stylesheet" href="./styles.css" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Foofire",
-        "url": "https://foofire.com",
-        "description": "Find the nearest upcoming Foo Fighters concert based on your ZIP code. Fast, free, and fan-made.",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://foofire.com/?zip={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
   </head>
   <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="./index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="./index.html">Home</a>
+          <a href="./games.html">Games</a>
+          <a href="./disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
     <main>
       <section class="hero">
-        <div class="hero-overlay"></div>
         <div class="hero-content">
-          <p class="tagline">Find the closest Foo Fighters concert to you.</p>
-          <h1>Find Your Closest Foo Fighters Show</h1>
+          <p class="tagline">Games for kids</p>
+          <h1>Play Three.js Games</h1>
           <p class="subheadline">
-            Search upcoming concerts by ZIP code and instantly see which show is nearest.
+            A growing collection of browser games built with three.js. No downloads, no accounts — just click and play.
           </p>
-          <form id="zip-form" class="search-row" novalidate>
-            <label class="sr-only" for="zip-input">Enter ZIP code</label>
-            <input
-              id="zip-input"
-              name="zip"
-              type="text"
-              inputmode="numeric"
-              autocomplete="postal-code"
-              pattern="[0-9]{5}"
-              maxlength="5"
-              placeholder="Enter ZIP code"
-              required
-            />
-            <button type="submit">Find Shows</button>
-            <button id="geo-button" class="secondary" type="button">Use My Location</button>
-          </form>
-          <p id="status" role="status" aria-live="polite"></p>
+          <a href="./games.html" class="primary-button">Browse Games</a>
         </div>
       </section>
 
-      <section class="results-wrap" aria-labelledby="results-heading">
-        <h2 id="results-heading">Upcoming Shows</h2>
-        <div id="results" class="results-grid"></div>
+      <section class="games-preview" aria-labelledby="preview-heading">
+        <h2 id="preview-heading">Featured Games</h2>
+        <div class="games-grid" id="games-grid"></div>
       </section>
     </main>
 
     <footer>
       <p>
-        Foofire is an unofficial fan site and is not affiliated with Foo Fighters, Roswell Records,
-        RCA Records, the band's management, or any official entity.
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
       </p>
       <a href="./disclaimer.html">Legal disclaimer</a>
     </footer>

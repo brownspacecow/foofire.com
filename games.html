@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Games | Foofire Games</title>
+    <meta
+      name="description"
+      content="Browse and play all Foofire Games three.js games for kids."
+    />
+    <meta property="og:title" content="Games | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Browse and play all Foofire Games three.js games for kids."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/games.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#0b0b0b" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="./index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="./index.html">Home</a>
+          <a href="./games.html" aria-current="page">Games</a>
+          <a href="./disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>All Games</h1>
+        <p>Pick a game to start playing.</p>
+      </section>
+
+      <section class="game-library" aria-labelledby="library-heading">
+        <h2 id="library-heading">Game Library</h2>
+        <div class="game-cards" id="game-cards"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+      </p>
+      <a href="./disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

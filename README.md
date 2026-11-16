@@ -1,16 +1,13 @@
-# Foofire
+# Foofire Games
 
-Foofire is a fast, fully static fan-made website to help users find the nearest upcoming Foo Fighters show.
+Foofire Games is a collection of browser games built with three.js for kids. Play free online games with no downloads and no accounts.
 
-Tagline: **Find the closest Foo Fighters concert to you.**
+Tagline: **Games for kids.**
 
 ## Features
 
-- ZIP code search via `https://api.zippopotam.us/us/{zip}`
-- Haversine distance ranking in miles
-- "Closest To You" badge for the nearest show
-- Ticket links and copy-to-clipboard action
-- Optional "Use My Location" geolocation search
+- Three.js games that run entirely in the browser
+- Game portal with a library of playable games
 - Dark, mobile-first responsive UI
 - Dedicated legal disclaimer page
 
@@ -18,6 +15,11 @@ Tagline: **Find the closest Foo Fighters concert to you.**
 
 ```text
 src/
+  main.js          # Game portal navigation logic
+  games/
+    roller/        # Starter three.js game
+      index.html
+      game.js
   components/
   pages/
   data/
@@ -26,17 +28,22 @@ public/
   data/
 ```
 
-Concert data is stored in `/public/data/shows.json` and can be edited as new dates are announced.
-
 ## Local Preview
 
-Because this project fetches local JSON files, serve it over HTTP instead of opening files directly:
+Serve the site over HTTP instead of opening files directly:
 
 ```bash
 python -m http.server 8080
 ```
 
 Then open `http://localhost:8080`.
+
+## Adding a New Game
+
+1. Create a folder under `src/games/<game-name>/`.
+2. Add an `index.html` that loads three.js (via the esm.sh import map) and your game script.
+3. Add an entry to the `games` array in `src/main.js` with the game's `id`, `title`, `description`, and `path`.
+4. Link to the game from `games.html` (handled automatically by `src/main.js`).
 
 ## GitHub Pages Deployment
 
@@ -56,4 +63,4 @@ On pushes to `main`/`master` (and Copilot branches), the workflow deploys the st
 
 ## Legal
 
-Foofire is an unofficial fan site and is not affiliated with Foo Fighters, Roswell Records, RCA Records, the band's management, or any official entity.
+Foofire Games is a hobby project built for kids. It is not affiliated with any commercial entity, game studio, or organization.
