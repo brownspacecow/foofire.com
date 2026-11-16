@@ -1,5 +1,11 @@
 const games = [
   {
+    id: 'pizza-homestead',
+    title: 'Pizza Homestead: Fun Room Rush',
+    description: 'Raid a very sincere pizza buffet, eat slices at the booths for arcade money, and whack Hank the mascot in the Fun Room before Mom says it is time to go.',
+    path: './src/games/pizza-homestead/index.html',
+  },
+  {
     id: 'zombie-deer',
     title: 'Zombie Deer: Christmas Edition',
     description: 'Defend a snow-covered house from waves of zombie reindeer. Throw snowballs, light up the tree, and call Bear the puppy for backup.',
