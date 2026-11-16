@@ -1,11 +1,5 @@
 const games = [
   {
-    id: 'roller',
-    title: 'Roller',
-    description: 'Roll the red ball to the green goal using arrow keys or WASD.',
-    path: './src/games/roller/index.html',
-  },
-  {
     id: 'bear',
     title: 'Bear the Puppy',
     description: 'Take care of Bear, a cute black and white Shih Tzu puppy. Feed him, play fetch, and tuck him into bed!',

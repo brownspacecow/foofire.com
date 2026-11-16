@@ -17,7 +17,7 @@ Tagline: **Games for kids.**
 src/
   main.js          # Game portal navigation logic
   games/
-    roller/        # Starter three.js game
+    bear/          # Bear the Puppy three.js game
       index.html
       game.js
   components/
