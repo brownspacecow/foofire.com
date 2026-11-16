@@ -5,6 +5,12 @@ const games = [
     description: 'Roll the red ball to the green goal using arrow keys or WASD.',
     path: './src/games/roller/index.html',
   },
+  {
+    id: 'bear',
+    title: 'Bear the Puppy',
+    description: 'Take care of Bear, a cute black and white Shitzu puppy. Feed, play, and pet him!',
+    path: './src/games/bear/index.html',
+  },
 ];
 
 const gamesGrid = document.querySelector('#games-grid');

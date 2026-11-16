@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bear the Puppy | Foofire Games</title>
+    <meta
+      name="description"
+      content="Take care of Bear, a cute black and white Shitzu puppy, in this three.js game."
+    />
+    <meta property="og:title" content="Bear the Puppy | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Take care of Bear, a cute black and white Shitzu puppy, in this three.js game."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/bear/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#0b0b0b" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      #game-container {
+        position: relative;
+        width: 100%;
+        max-width: 700px;
+        height: 500px;
+        margin: 1rem auto;
+        border: 1px solid var(--border);
+        border-radius: 0.9rem;
+        overflow: hidden;
+        background: #000;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .game-controls {
+        max-width: 700px;
+        margin: 1rem auto;
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .game-controls button {
+        padding: 0.7rem 1.2rem;
+        font-size: 1rem;
+        font-weight: 700;
+        border: none;
+        border-radius: 0.6rem;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+      .game-controls button:hover {
+        filter: brightness(1.1);
+      }
+      #status {
+        max-width: 700px;
+        margin: 0.5rem auto;
+        text-align: center;
+        color: var(--muted);
+        min-height: 1.5rem;
+      }
+      .back-link {
+        display: inline-block;
+        margin-top: 1rem;
+        color: var(--text);
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../index.html">Home</a>
+          <a href="../../games.html">Games</a>
+          <a href="../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Bear the Puppy</h1>
+        <p>Take care of Bear, a cute black and white Shitzu puppy. Feed, play, and pet him!</p>
+      </section>
+
+      <div id="game-container"></div>
+      <div id="status">Click a care button to interact with Bear.</div>
+      <div class="game-controls">
+        <button id="feed-button">Feed</button>
+        <button id="play-button">Play</button>
+        <button id="pet-button">Pet</button>
+        <button id="reset-button">Reset</button>
+      </div>
+      <a href="../../games.html" class="back-link">&larr; Back to games</a>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+      </p>
+      <a href="../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
