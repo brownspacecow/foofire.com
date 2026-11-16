@@ -12,6 +12,12 @@ const games = [
     path: './src/games/pizza-homestead/index.html',
   },
   {
+    id: 'claw-machine',
+    title: 'Claw Crew',
+    description: 'Steer the claw and fill your saved Plushie Dex with 100 original characters — including a wild digital circus and some cute-spooky friends.',
+    path: './src/games/claw-machine/index.html',
+  },
+  {
     id: 'zombie-deer',
     title: 'Zombie Deer: Christmas Edition',
     description: 'Defend a snow-covered house from waves of zombie reindeer. Throw snowballs, light up the tree, and call Bear the puppy for backup.',
