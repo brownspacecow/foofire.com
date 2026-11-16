@@ -1,11 +1,5 @@
 const games = [
   {
-    id: 'roller',
-    title: 'Roller',
-    description: 'Roll the red ball to the green goal using arrow keys or WASD.',
-    path: './src/games/roller/index.html',
-  },
-  {
     id: 'zombie-deer',
     title: 'Zombie Deer: Christmas Edition',
     description: 'Defend a snow-covered house from waves of zombie reindeer. Throw snowballs, light up the tree, and call Bear the puppy for backup.',
