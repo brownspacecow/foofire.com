@@ -225,6 +225,11 @@ h3,
   padding: 1.5rem 0 3.5rem;
 }
 
+/* The dedication card closes out the home page, so the grid before it needs less breathing room. */
+.games-preview .games-grid {
+  padding-bottom: 1.5rem;
+}
+
 .game-card {
   position: relative;
   display: flex;
@@ -292,6 +297,53 @@ h3,
 
 .game-card .primary-button {
   align-self: flex-start;
+}
+
+.dedication {
+  position: relative;
+  width: calc(100% - 2rem);
+  max-width: 1000px;
+  margin: 0 auto 2.5rem;
+  padding: 2rem 1.35rem 1.75rem;
+  overflow: hidden;
+  text-align: center;
+  background: linear-gradient(155deg, rgba(255, 46, 99, 0.28), rgba(168, 85, 247, 0.28)),
+    var(--panel);
+  border: 4px solid var(--ink);
+  box-shadow: var(--shadow-hard);
+}
+
+.dedication::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--accent-soft) 0 20px,
+    var(--accent) 20px 40px,
+    var(--violet) 40px 60px,
+    var(--blue) 60px 80px
+  );
+}
+
+.dedication h2 {
+  margin: 0 0 0.9rem;
+  font-size: clamp(0.8rem, 2.6vw, 1.05rem);
+  line-height: 1.7;
+  color: var(--accent-soft);
+  text-shadow: 3px 3px 0 var(--ink);
+}
+
+.dedication h2::before {
+  content: "\2665  ";
+  color: var(--accent);
+}
+
+.dedication p {
+  max-width: 52ch;
+  margin: 0 auto;
+  color: #f3ecff;
 }
 
 .hero {
@@ -633,6 +685,10 @@ footer a:hover {
 
   .game-card {
     padding: 1.35rem 1rem 1.2rem;
+  }
+
+  .dedication {
+    padding: 1.6rem 1rem 1.45rem;
   }
 }
 
