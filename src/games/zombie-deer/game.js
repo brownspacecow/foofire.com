@@ -221,12 +221,29 @@ camera.position.copy(CAM_BASE);
 camera.lookAt(CAM_TARGET);
 scene.add(camera);
 
+const BASE_FOV = 58;
+const MAX_FOV = 80;
+/* Half the yard that must stay on screen: the yard tree and its star sit at
+   x≈9.8, the snowman at x≈-10.5. */
+const MIN_HALF_WIDTH = 14;
+const YARD_DEPTH = 29.5; // camera z 26 → tree and snowman plane
+let cameraBack = 0;
+
+/* Narrow screens (phones, tall windows, full screen) crop the sides of the
+   yard first, so widen the lens until the tree and snowman fit, then step the
+   camera back if even the widest lens is not enough. */
 const sizeScene = () => {
   const width = container.clientWidth || 640;
   const height = container.clientHeight || 400;
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
+
+  const neededTan = MIN_HALF_WIDTH / (YARD_DEPTH * camera.aspect);
+  camera.fov = clamp((2 * Math.atan(neededTan) * 180) / Math.PI, BASE_FOV, MAX_FOV);
   camera.updateProjectionMatrix();
+
+  const fitDistance = MIN_HALF_WIDTH / (Math.tan((camera.fov * Math.PI) / 360) * camera.aspect);
+  cameraBack = Math.max(0, fitDistance - YARD_DEPTH);
 };
 
 /* ------------------------------------------------------------------ *
@@ -800,6 +817,15 @@ addWindow(-4.5, 1.95, 3.2, 1.9);
 addWindow(4.4, 1.95, 3.0, 1.9);
 addWindow(5.2, 4.9, 1.05, 1.75);
 
+/* Generous invisible hitbox over the upstairs window: shooting it wakes the witch. */
+const witchWindowHitbox = new THREE.Mesh(
+  new THREE.BoxGeometry(2.4, 2.8, 0.6),
+  new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+);
+witchWindowHitbox.position.set(5.2, 4.9, FRONT + 0.15);
+witchWindowHitbox.userData.isWitchWindow = true;
+house.add(witchWindowHitbox);
+
 /* Second-floor balcony on the left gable. */
 const balconyZ = FRONT + 1.35;
 addBox(house, 5.6, 2.55, 0.16, -4.4, 4.9, FRONT + 0.04, darkOpeningMaterial);
@@ -934,6 +960,15 @@ yardTree.add(treeDrift);
 yardTree.position.set(9.8, 0, -3.5);
 scene.add(yardTree);
 
+/* Generous invisible hitbox over the tree star: three hits wakes Dad. */
+const treeStarHitbox = new THREE.Mesh(
+  new THREE.SphereGeometry(0.8, 10, 8),
+  new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+);
+treeStarHitbox.position.set(0, 6.15, 0);
+treeStarHitbox.userData.isTreeStar = true;
+yardTree.add(treeStarHitbox);
+
 /* A snowman keeping watch on the left lawn. */
 const snowman = new THREE.Group();
 const coalMaterial = new THREE.MeshStandardMaterial({ color: 0x17181a, roughness: 0.8 });
@@ -1067,7 +1102,9 @@ function explodeSnowman() {
   showBanner('SNOW-BOOM!');
   statusEl.textContent = 'The snowman exploded and took the whole herd with it!';
 
-  snowmanEgg.queue = deerList.filter((deer) => deer.alive && deer.state !== 'dead');
+  snowmanEgg.queue = deerList.filter(
+    (deer) => deer.alive && deer.state !== 'dead' && deer.state !== 'tame'
+  );
 }
 
 function updateSnowmanEgg(dt, time) {
@@ -1112,84 +1149,12 @@ function updateSnowmanEgg(dt, time) {
 }
 
 /* ------------------------------------------------------------------ *
- * Blaster view model
+ * Where snowballs come from (the player throws by hand, no view model)
  * ------------------------------------------------------------------ */
 
-const gunRig = new THREE.Group();
-gunRig.position.set(0.62, -0.46, -1.3);
-gunRig.rotation.set(0.03, -0.16, 0.02);
-gunRig.scale.setScalar(0.82);
-camera.add(gunRig);
-
-const gunBodyMaterial = new THREE.MeshStandardMaterial({ color: 0xc3262c, roughness: 0.45, metalness: 0.25 });
-const gunDarkMaterial = new THREE.MeshStandardMaterial({ color: 0x1d3a2a, roughness: 0.6, metalness: 0.3 });
-const gunWhiteMaterial = new THREE.MeshStandardMaterial({ color: 0xf7f4ec, roughness: 0.5, metalness: 0.2 });
-const gunGlowMaterial = new THREE.MeshStandardMaterial({
-  color: 0xffe7a8,
-  emissive: 0xffc247,
-  emissiveIntensity: 1.4,
-  roughness: 0.4,
-});
-
-const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.5), gunBodyMaterial);
-receiver.position.set(0, 0, 0.06);
-gunRig.add(receiver);
-
-const stock = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.14, 0.36), gunBodyMaterial);
-stock.position.set(0, -0.01, 0.45);
-stock.rotation.x = -0.06;
-gunRig.add(stock);
-
-const rail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.36), gunDarkMaterial);
-rail.position.set(0, 0.1, -0.08);
-gunRig.add(rail);
-
-const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.046, 0.44, 8), gunWhiteMaterial);
-barrel.rotation.x = Math.PI / 2;
-barrel.position.set(0, 0.03, -0.46);
-gunRig.add(barrel);
-
-/* Candy cane stripes on the barrel. */
-for (const z of [-0.34, -0.5]) {
-  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.049, 0.049, 0.055, 8), gunBodyMaterial);
-  stripe.rotation.x = Math.PI / 2;
-  stripe.position.set(0, 0.03, z);
-  gunRig.add(stripe);
-}
-
-const barrelTip = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.062, 0.07, 8), gunBodyMaterial);
-barrelTip.rotation.x = Math.PI / 2;
-barrelTip.position.set(0, 0.03, -0.68);
-gunRig.add(barrelTip);
-
-const gunCell = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.056, 0.16, 8), gunGlowMaterial);
-gunCell.rotation.x = Math.PI / 2;
-gunCell.position.set(0, 0.03, -0.27);
-gunRig.add(gunCell);
-
-const gunGrip = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.13), gunDarkMaterial);
-gunGrip.position.set(0, -0.18, 0.18);
-gunGrip.rotation.x = 0.3;
-gunRig.add(gunGrip);
-
-const gunSight = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.09, 0.045), gunDarkMaterial);
-gunSight.position.set(0, 0.15, -0.2);
-gunRig.add(gunSight);
-
 const muzzle = new THREE.Object3D();
-muzzle.position.set(0, 0.03, -0.74);
-gunRig.add(muzzle);
-
-const muzzleLight = new THREE.PointLight(0xd8f2ff, 0, 6, 2);
-muzzleLight.position.copy(muzzle.position);
-gunRig.add(muzzleLight);
-
-const muzzleFlash = new THREE.Mesh(
-  new THREE.SphereGeometry(0.1, 8, 8),
-  new THREE.MeshBasicMaterial({ color: 0xf2fbff, transparent: true, opacity: 0 })
-);
-muzzleFlash.position.copy(muzzle.position);
-gunRig.add(muzzleFlash);
+muzzle.position.set(0.62, -0.43, -1.9);
+camera.add(muzzle);
 
 /* ------------------------------------------------------------------ *
  * Zombie deer
@@ -1733,10 +1698,12 @@ function updatePuppyChip() {
       : state.doorCooldown > 0
         ? `${Math.ceil(state.doorCooldown)}s`
         : 'Ready';
+  const wasReady = puppyChipText === 'Ready';
   if (text === puppyChipText) return;
   puppyChipText = text;
   puppyLabel.textContent = text;
   puppyLabel.parentElement.classList.toggle('is-ready', text === 'Ready');
+  if (text === 'Ready' && !wasReady && state.wave > 0) audio.ready();
 }
 
 function spawnShockwave(position) {
@@ -1759,7 +1726,7 @@ function spawnShockwave(position) {
 function scareDeer(origin, radius) {
   let scared = 0;
   for (const deer of deerList) {
-    if (!deer.alive || deer.state === 'dead' || deer.state === 'flee') continue;
+    if (!deer.alive || deer.state === 'dead' || deer.state === 'flee' || deer.state === 'tame') continue;
     if (deer.group.position.distanceTo(origin) > radius) continue;
     const side = deer.group.position.x >= 0 ? 1 : -1;
     deer.state = 'flee';
@@ -1871,6 +1838,7 @@ function updatePuppy(dt, time) {
     if (puppy.timer > 2.4) {
       puppy.state = 'run-home';
       puppy.timer = 0;
+      audio.bearLeave();
     }
   }
 
@@ -2022,10 +1990,12 @@ function updateSantaChip() {
       : state.santaCooldown > 0
         ? `${Math.ceil(state.santaCooldown)}s`
         : 'Ready';
+  const wasReady = santaChipText === 'Ready';
   if (text === santaChipText) return;
   santaChipText = text;
   santaLabel.textContent = text;
   santaLabel.parentElement.classList.toggle('is-ready', text === 'Ready');
+  if (text === 'Ready' && !wasReady && state.wave > 0) audio.ready();
 }
 
 /* Confetti for exploding presents. */
@@ -2075,7 +2045,7 @@ function nearestDeer() {
   let best = null;
   let bestDistance = 30;
   for (const deer of deerList) {
-    if (!deer.alive || deer.state === 'dead' || deer.state === 'flee') continue;
+    if (!deer.alive || deer.state === 'dead' || deer.state === 'flee' || deer.state === 'tame') continue;
     const distance = deer.group.position.distanceTo(santa.group.position);
     if (distance < bestDistance) {
       bestDistance = distance;
@@ -2126,6 +2096,7 @@ function updatePresents(dt) {
     present.mesh.rotation.y += dt * 7;
 
     if (progress >= 1) {
+      audio.presentPop();
       spawnConfetti(present.mesh.position);
       spawnImpact(present.mesh.position, true);
       if (present.deer && present.deer.alive) {
@@ -2231,14 +2202,14 @@ function updateSanta(dt, time) {
 }
 
 /* ------------------------------------------------------------------ *
- * The snowmobile kids from the moon
+ * The motorcycle kids from the moon
  * ------------------------------------------------------------------ */
 
-const sledRedMaterial = new THREE.MeshStandardMaterial({ color: 0xd8322e, roughness: 0.5 });
-const sledBlueMaterial = new THREE.MeshStandardMaterial({ color: 0x2f6fd0, roughness: 0.5 });
-const sledDarkMaterial = new THREE.MeshStandardMaterial({ color: 0x23272f, roughness: 0.9 });
-const sledChromeMaterial = new THREE.MeshStandardMaterial({ color: 0xc2ccd8, roughness: 0.3, metalness: 0.75 });
-const sledGlassMaterial = new THREE.MeshStandardMaterial({
+const bikeRedMaterial = new THREE.MeshStandardMaterial({ color: 0xd8322e, roughness: 0.5 });
+const bikeDarkMaterial = new THREE.MeshStandardMaterial({ color: 0x23272f, roughness: 0.9 });
+const bikeTyreMaterial = new THREE.MeshStandardMaterial({ color: 0x17181c, roughness: 0.95 });
+const bikeChromeMaterial = new THREE.MeshStandardMaterial({ color: 0xc2ccd8, roughness: 0.3, metalness: 0.75 });
+const bikeGlassMaterial = new THREE.MeshStandardMaterial({
   color: 0x9fd0ff,
   transparent: true,
   opacity: 0.5,
@@ -2254,52 +2225,69 @@ const kidBoyScarfMaterial = new THREE.MeshStandardMaterial({ color: 0xf2c14e, ro
 const kidGirlScarfMaterial = new THREE.MeshStandardMaterial({ color: 0xff8fb8, roughness: 0.8 });
 const mitMaterial = new THREE.MeshStandardMaterial({ color: 0x30343d, roughness: 0.9 });
 
-/* A cartoon snowmobile with a kid leaning over the handlebars. */
-function buildSnowmobile({ sled, suit, hat, scarf }) {
+/* A little red motorcycle with a kid leaning over the handlebars. */
+function buildMotorcycle({ bike, suit, hat, scarf }) {
   const group = new THREE.Group();
 
-  const track = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.44, 1.9), sledDarkMaterial);
-  track.position.set(0, 0.26, -0.5);
-  group.add(track);
+  /* Two fat wheels. */
+  for (const z of [-0.78, 0.78]) {
+    const tyre = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.14, 10, 16), bikeTyreMaterial);
+    tyre.rotation.y = Math.PI / 2;
+    tyre.position.set(0, 0.48, z);
+    group.add(tyre);
 
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.34, 1.6), sled);
-  hull.position.set(0, 0.56, -0.25);
-  group.add(hull);
-
-  const hood = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.44, 1.0), sled);
-  hood.position.set(0, 0.66, 0.55);
-  group.add(hood);
-
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.3, 0.6), sled);
-  nose.position.set(0, 0.5, 1.16);
-  group.add(nose);
-
-  for (const side of [-1, 1]) {
-    const ski = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.11, 1.8), sledChromeMaterial);
-    ski.position.set(side * 0.56, 0.1, 0.8);
-    group.add(ski);
-
-    const strut = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.46, 0.1), sledChromeMaterial);
-    strut.position.set(side * 0.52, 0.36, 1.0);
-    group.add(strut);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.14, 10), bikeChromeMaterial);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(0, 0.48, z);
+    group.add(hub);
   }
 
-  const shield = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.07), sledGlassMaterial);
-  shield.position.set(0, 1.02, 0.5);
-  shield.rotation.x = -0.18;
-  group.add(shield);
+  /* Frame, tank and saddle. */
+  const spine = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.34), bikeChromeMaterial);
+  spine.position.set(0, 0.72, -0.02);
+  group.add(spine);
 
-  const bars = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.09, 0.09), sledChromeMaterial);
-  bars.position.set(0, 0.95, 0.28);
-  group.add(bars);
+  const tank = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.32, 0.62), bike);
+  tank.position.set(0, 0.88, 0.12);
+  group.add(tank);
 
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.72), sledDarkMaterial);
-  seat.position.set(0, 0.82, -0.45);
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.14, 0.6), bikeDarkMaterial);
+  seat.position.set(0, 0.9, -0.5);
   group.add(seat);
 
+  /* Forks, bars and a tiny fly screen. */
+  const fork = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.66, 0.09), bikeChromeMaterial);
+  fork.position.set(0, 0.78, 0.7);
+  fork.rotation.x = 0.22;
+  group.add(fork);
+
+  const bars = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.07, 0.07), bikeChromeMaterial);
+  bars.position.set(0, 1.06, 0.54);
+  group.add(bars);
+
+  const shield = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.22, 0.05), bikeGlassMaterial);
+  shield.position.set(0, 1.14, 0.62);
+  shield.rotation.x = -0.3;
+  group.add(shield);
+
+  /* Red mudguards and a chrome exhaust. */
+  const frontGuard = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.07, 0.56), bike);
+  frontGuard.position.set(0, 0.9, 0.8);
+  frontGuard.rotation.x = -0.14;
+  group.add(frontGuard);
+
+  const rearGuard = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.07, 0.5), bike);
+  rearGuard.position.set(0, 0.92, -0.72);
+  group.add(rearGuard);
+
+  const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, 0.8, 8), bikeChromeMaterial);
+  exhaust.rotation.x = Math.PI / 2;
+  exhaust.position.set(0.24, 0.44, -0.5);
+  group.add(exhaust);
+
   const rider = new THREE.Group();
-  rider.position.set(0, 0.92, -0.4);
-  rider.rotation.x = 0.28;
+  rider.position.set(0, 0.96, -0.42);
+  rider.rotation.x = 0.34;
   group.add(rider);
 
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.34), suit);
@@ -2333,13 +2321,13 @@ function buildSnowmobile({ sled, suit, hat, scarf }) {
 
   for (const side of [-1, 1]) {
     const arm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.44, 0.14), suit);
-    arm.position.set(side * 0.27, 0.34, 0.18);
-    arm.rotation.x = -0.85;
+    arm.position.set(side * 0.27, 0.34, 0.22);
+    arm.rotation.x = -1.05;
     arm.rotation.z = side * 0.25;
     rider.add(arm);
 
     const mitten = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), mitMaterial);
-    mitten.position.set(side * 0.3, 0.12, 0.42);
+    mitten.position.set(side * 0.3, 0.18, 0.52);
     rider.add(mitten);
 
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.4, 0.16), suit);
@@ -2356,7 +2344,7 @@ function buildSnowmobile({ sled, suit, hat, scarf }) {
     new THREE.SphereGeometry(0.11, 8, 8),
     new THREE.MeshBasicMaterial({ color: 0xfff3c8, toneMapped: false })
   );
-  lamp.position.set(0, 0.62, 1.34);
+  lamp.position.set(0, 0.98, 0.9);
   group.add(lamp);
 
   const beam = new THREE.Mesh(
@@ -2372,7 +2360,7 @@ function buildSnowmobile({ sled, suit, hat, scarf }) {
     })
   );
   beam.rotation.x = -Math.PI / 2;
-  beam.position.set(0, 0.62, 3.3);
+  beam.position.set(0, 0.95, 3.1);
   group.add(beam);
 
   group.traverse((node) => {
@@ -2382,10 +2370,10 @@ function buildSnowmobile({ sled, suit, hat, scarf }) {
   return group;
 }
 
-const sledRiders = [
+const bikeRiders = [
   {
-    group: buildSnowmobile({
-      sled: sledRedMaterial,
+    group: buildMotorcycle({
+      bike: bikeRedMaterial,
       suit: kidBoySuitMaterial,
       hat: kidBoyHatMaterial,
       scarf: kidBoyScarfMaterial,
@@ -2396,8 +2384,8 @@ const sledRiders = [
     facing: 1,
   },
   {
-    group: buildSnowmobile({
-      sled: sledBlueMaterial,
+    group: buildMotorcycle({
+      bike: bikeRedMaterial,
       suit: kidGirlSuitMaterial,
       hat: kidGirlHatMaterial,
       scarf: kidGirlScarfMaterial,
@@ -2409,13 +2397,13 @@ const sledRiders = [
   },
 ];
 
-for (const rider of sledRiders) {
+for (const rider of bikeRiders) {
   rider.group.scale.setScalar(1.5);
   rider.group.visible = false;
   scene.add(rider.group);
 }
 
-const sledRun = {
+const bikeRun = {
   state: 'hidden',
   timer: 0,
   scareTimer: 0,
@@ -2423,21 +2411,23 @@ const sledRun = {
   duration: 6.5,
 };
 
-const sledLabel = document.querySelector('#sled-label');
-let sledChipText = '';
+const bikeLabel = document.querySelector('#bike-label');
+let bikeChipText = '';
 
-function updateSledChip() {
-  if (!sledLabel) return;
+function updateBikeChip() {
+  if (!bikeLabel) return;
   const text =
-    sledRun.state === 'riding'
+    bikeRun.state === 'riding'
       ? 'Riding!'
-      : state.sledCooldown > 0
-        ? `${Math.ceil(state.sledCooldown)}s`
+      : state.bikeCooldown > 0
+        ? `${Math.ceil(state.bikeCooldown)}s`
         : 'Ready';
-  if (text === sledChipText) return;
-  sledChipText = text;
-  sledLabel.textContent = text;
-  sledLabel.parentElement.classList.toggle('is-ready', text === 'Ready');
+  const wasReady = bikeChipText === 'Ready';
+  if (text === bikeChipText) return;
+  bikeChipText = text;
+  bikeLabel.textContent = text;
+  bikeLabel.parentElement.classList.toggle('is-ready', text === 'Ready');
+  if (text === 'Ready' && !wasReady && state.wave > 0) audio.ready();
 }
 
 /* Snow kicked up behind the tracks. */
@@ -2471,47 +2461,47 @@ function updateSpray(dt) {
   }
 }
 
-function callSnowmobiles() {
-  if (sledRun.state === 'riding') {
-    showBanner('The snowmobiles are already out!');
+function callMotorcycles() {
+  if (bikeRun.state === 'riding') {
+    showBanner('The bikes are already out!');
     return;
   }
-  if (state.sledCooldown > 0) {
-    showBanner(`The snowmobiles are warming up (${Math.ceil(state.sledCooldown)}s)`);
+  if (state.bikeCooldown > 0) {
+    showBanner(`The bikes are warming up (${Math.ceil(state.bikeCooldown)}s)`);
     return;
   }
 
-  state.sledCooldown = 24;
-  sledRun.state = 'riding';
-  sledRun.timer = 0;
-  sledRun.scareTimer = 0;
-  sledRun.midShout = false;
+  state.bikeCooldown = 24;
+  bikeRun.state = 'riding';
+  bikeRun.timer = 0;
+  bikeRun.scareTimer = 0;
+  bikeRun.midShout = false;
   moonPulse = 1;
 
-  for (const rider of sledRiders) {
+  for (const rider of bikeRiders) {
     rider.group.visible = true;
     rider.group.position.set(rider.startX, 0, rider.lane);
   }
 
   showBanner('YEE-HAW!');
-  statusEl.textContent = 'A boy and a girl on snowmobiles roar in to chase the reindeer away.';
+  statusEl.textContent = 'A boy and a girl on little red motorcycles roar in to chase the reindeer away.';
   audio.moonShot();
-  audio.snowmobile();
+  audio.motorcycle();
   audio.yeehaw();
-  updateSledChip();
+  updateBikeChip();
 }
 
-function updateSnowmobiles(dt, time) {
-  if (state.sledCooldown > 0) state.sledCooldown = Math.max(0, state.sledCooldown - dt);
-  updateSledChip();
+function updateMotorcycles(dt, time) {
+  if (state.bikeCooldown > 0) state.bikeCooldown = Math.max(0, state.bikeCooldown - dt);
+  updateBikeChip();
   updateSpray(dt);
 
-  if (sledRun.state !== 'riding') return;
+  if (bikeRun.state !== 'riding') return;
 
-  sledRun.timer += dt;
-  const progress = Math.min(1, sledRun.timer / sledRun.duration);
+  bikeRun.timer += dt;
+  const progress = Math.min(1, bikeRun.timer / bikeRun.duration);
 
-  for (const rider of sledRiders) {
+  for (const rider of bikeRiders) {
     const x = rider.startX + (rider.endX - rider.startX) * progress;
     rider.group.position.set(x, 0, rider.lane + Math.sin(time * 2.4 + rider.lane) * 0.08);
     rider.group.rotation.y =
@@ -2523,24 +2513,847 @@ function updateSnowmobiles(dt, time) {
     }
   }
 
-  /* Anything near a passing sled bolts for the trees. */
-  sledRun.scareTimer -= dt;
-  if (sledRun.scareTimer <= 0) {
-    sledRun.scareTimer = 0.18;
-    for (const rider of sledRiders) scareDeer(rider.group.position, 15);
+  /* Anything near a passing bike bolts for the trees. */
+  bikeRun.scareTimer -= dt;
+  if (bikeRun.scareTimer <= 0) {
+    bikeRun.scareTimer = 0.18;
+    for (const rider of bikeRiders) scareDeer(rider.group.position, 15);
   }
 
-  if (!sledRun.midShout && progress > 0.45) {
-    sledRun.midShout = true;
+  if (!bikeRun.midShout && progress > 0.45) {
+    bikeRun.midShout = true;
     showBanner('Bye-bye, reindeer!');
     audio.yeehaw();
   }
 
   if (progress >= 1) {
-    for (const rider of sledRiders) rider.group.visible = false;
-    sledRun.state = 'hidden';
-    statusEl.textContent = 'The snowmobiles cleared the yard and roared off into the night.';
-    updateSledChip();
+    for (const rider of bikeRiders) rider.group.visible = false;
+    bikeRun.state = 'hidden';
+    statusEl.textContent = 'The little red motorcycles cleared the yard and roared off into the night.';
+    updateBikeChip();
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * The witch in the upstairs window
+ * ------------------------------------------------------------------ */
+
+const WITCH_WINDOW = new THREE.Vector3(5.2, 4.9, house.position.z + FRONT + 0.35);
+const TAME_SECONDS = 10;
+
+const witchPurpleMaterial = new THREE.MeshStandardMaterial({ color: 0x6b3fb5, roughness: 0.75 });
+const witchHatMaterial = new THREE.MeshStandardMaterial({ color: 0x452782, roughness: 0.8 });
+const witchSkinMaterial = new THREE.MeshStandardMaterial({ color: 0x8ed08a, roughness: 0.85 });
+const witchHairMaterial = new THREE.MeshStandardMaterial({ color: 0x2f2350, roughness: 0.9 });
+const witchEyeMaterial = new THREE.MeshBasicMaterial({ color: 0xfff7d0 });
+const spellMaterial = new THREE.MeshBasicMaterial({ color: 0xff8ff0, toneMapped: false });
+
+/* Just her head and shoulders, leaning out of the window. */
+function buildWitch() {
+  const group = new THREE.Group();
+
+  const dress = new THREE.Mesh(new THREE.ConeGeometry(0.46, 1.0, 12), witchPurpleMaterial);
+  dress.position.y = 0.5;
+  group.add(dress);
+
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.06, 8, 14), witchHatMaterial);
+  collar.rotation.x = Math.PI / 2;
+  collar.position.y = 0.98;
+  group.add(collar);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 14, 12), witchSkinMaterial);
+  head.position.y = 1.24;
+  group.add(head);
+
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.3, 8), witchSkinMaterial);
+  nose.rotation.x = Math.PI / 2;
+  nose.position.set(0, 1.2, 0.3);
+  group.add(nose);
+
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), witchEyeMaterial);
+    eye.position.set(side * 0.1, 1.3, 0.22);
+    group.add(eye);
+
+    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.42, 0.09), witchHairMaterial);
+    hair.position.set(side * 0.22, 1.12, -0.06);
+    hair.rotation.z = side * 0.18;
+    group.add(hair);
+
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.44, 0.13), witchPurpleMaterial);
+    arm.position.set(side * 0.32, 0.86, 0.16);
+    arm.rotation.x = -0.9;
+    arm.rotation.z = side * 0.35;
+    group.add(arm);
+
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), witchSkinMaterial);
+    hand.position.set(side * 0.34, 0.7, 0.4);
+    group.add(hand);
+  }
+
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 14), witchHatMaterial);
+  brim.position.y = 1.4;
+  group.add(brim);
+
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.9, 12), witchHatMaterial);
+  cone.position.set(0.03, 1.83, -0.03);
+  cone.rotation.z = -0.14;
+  group.add(cone);
+
+  const wand = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.7, 6), witchHairMaterial);
+  wand.position.set(0.4, 0.78, 0.62);
+  wand.rotation.x = 1.2;
+  wand.rotation.z = 0.2;
+  group.add(wand);
+
+  const tip = new THREE.Object3D();
+  tip.position.set(0.46, 0.9, 0.95);
+  group.add(tip);
+  group.userData.wandTip = tip;
+
+  const spark = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), spellMaterial);
+  spark.position.copy(tip.position);
+  group.add(spark);
+  group.userData.wandSpark = spark;
+
+  group.traverse((node) => {
+    if (node.isMesh) node.castShadow = true;
+  });
+
+  return group;
+}
+
+const witch = {
+  group: buildWitch(),
+  state: 'hidden',
+  timer: 0,
+  castTimer: 0,
+  bolts: [],
+};
+witch.group.position.set(WITCH_WINDOW.x, WITCH_WINDOW.y - 0.92, WITCH_WINDOW.z);
+witch.group.visible = false;
+scene.add(witch.group);
+
+const witchLabel = document.querySelector('#witch-label');
+let witchChipText = '';
+
+function updateWitchChip() {
+  if (!witchLabel) return;
+  const text =
+    witch.state !== 'hidden'
+      ? 'Hexing!'
+      : state.witchCooldown > 0
+        ? `${Math.ceil(state.witchCooldown)}s`
+        : 'Ready';
+  const wasReady = witchChipText === 'Ready';
+  if (text === witchChipText) return;
+  witchChipText = text;
+  witchLabel.textContent = text;
+  witchLabel.parentElement.classList.toggle('is-ready', text === 'Ready');
+  if (text === 'Ready' && !wasReady && state.wave > 0) audio.ready();
+}
+
+/* A tame fox, ready to stand in for a hexed reindeer. */
+const foxOrangeMaterial = new THREE.MeshStandardMaterial({ color: 0xe2762a, roughness: 0.85, flatShading: true });
+const foxCreamMaterial = new THREE.MeshStandardMaterial({ color: 0xfdf6ec, roughness: 0.9 });
+const foxDarkMaterial = new THREE.MeshStandardMaterial({ color: 0x2b2320, roughness: 0.9 });
+
+function buildFox() {
+  const group = new THREE.Group();
+
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10), foxOrangeMaterial);
+  body.scale.set(0.55, 0.5, 0.9);
+  body.position.y = 0.62;
+  group.add(body);
+
+  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 10), foxCreamMaterial);
+  chest.scale.set(0.5, 0.45, 0.5);
+  chest.position.set(0, 0.6, 0.5);
+  group.add(chest);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), foxOrangeMaterial);
+  head.position.set(0, 0.92, 0.72);
+  group.add(head);
+
+  const snout = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 8), foxCreamMaterial);
+  snout.rotation.x = Math.PI / 2;
+  snout.position.set(0, 0.86, 1.02);
+  group.add(snout);
+
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), foxDarkMaterial);
+  nose.position.set(0, 0.86, 1.18);
+  group.add(nose);
+
+  for (const side of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.34, 4), foxOrangeMaterial);
+    ear.position.set(side * 0.16, 1.18, 0.7);
+    ear.rotation.z = side * 0.16;
+    group.add(ear);
+
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), foxDarkMaterial);
+    eye.position.set(side * 0.11, 0.98, 0.97);
+    group.add(eye);
+
+    const frontLeg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.34, 0.1), foxDarkMaterial);
+    frontLeg.position.set(side * 0.22, 0.2, 0.5);
+    group.add(frontLeg);
+
+    const backLeg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.34, 0.1), foxDarkMaterial);
+    backLeg.position.set(side * 0.22, 0.2, -0.42);
+    group.add(backLeg);
+  }
+
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.9, 8), foxOrangeMaterial);
+  tail.rotation.x = -1.9;
+  tail.position.set(0, 0.85, -0.9);
+  group.add(tail);
+
+  const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), foxCreamMaterial);
+  tailTip.position.set(0, 1.22, -1.18);
+  group.add(tailTip);
+
+  group.traverse((node) => {
+    if (node.isMesh) node.castShadow = true;
+  });
+
+  return group;
+}
+
+/* Shooting a fox sends the reindeer it was hiding in straight to the graveyard. */
+function popFox(deer) {
+  if (!deer.alive || deer.state !== 'tame') return;
+  const at = deer.group.position.clone().setY(0.8);
+  spawnConfetti(at);
+  revertDeer(deer);
+  killDeer(deer, false);
+}
+
+function tameDeer(deer) {
+  if (!deer.alive || deer.state === 'dead' || deer.state === 'tame') return;
+
+  deer.state = 'tame';
+  deer.tameTimer = TAME_SECONDS;
+  deer.tamePhase = 0;
+  deer.tameTarget = null;
+  deer.savedHitMeshes = deer.hitMeshes.slice();
+  removeDeerHitMeshes(deer);
+
+  deer.group.traverse((node) => {
+    if (node.isMesh) node.visible = false;
+  });
+
+  const fox = buildFox();
+  fox.rotation.y = Math.random() * Math.PI * 2;
+  deer.group.add(fox);
+  deer.fox = fox;
+
+  /* A generous hitbox so the fox can be shot out of the yard too. */
+  const foxHitbox = new THREE.Mesh(
+    new THREE.SphereGeometry(0.85, 10, 8),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+  );
+  foxHitbox.position.set(0, 0.8, 0.2);
+  foxHitbox.userData.foxDeer = deer;
+  deer.group.add(foxHitbox);
+  deer.foxHitbox = foxHitbox;
+  deer.hitMeshes.push(foxHitbox);
+  hitMeshes.push(foxHitbox);
+
+  const at = deer.group.position.clone().setY(1.1);
+  spawnImpact(at, true);
+  spawnConfetti(at);
+  audio.foxPop();
+}
+
+function revertDeer(deer) {
+  if (deer.fox) {
+    deer.group.remove(deer.fox);
+    deer.fox = null;
+  }
+
+  if (deer.foxHitbox) {
+    deer.group.remove(deer.foxHitbox);
+    const foxIndex = hitMeshes.indexOf(deer.foxHitbox);
+    if (foxIndex >= 0) hitMeshes.splice(foxIndex, 1);
+    deer.foxHitbox.geometry.dispose();
+    deer.foxHitbox.material.dispose();
+    deer.foxHitbox = null;
+  }
+
+  deer.group.traverse((node) => {
+    if (node.isMesh) node.visible = true;
+  });
+
+  deer.state = 'walk';
+  deer.tameTimer = 0;
+  deer.biteTimer = 1;
+
+  for (const mesh of deer.savedHitMeshes || []) {
+    if (mesh.userData.deer !== deer) continue;
+    deer.hitMeshes.push(mesh);
+    if (!hitMeshes.includes(mesh)) hitMeshes.push(mesh);
+  }
+  deer.savedHitMeshes = null;
+
+  const at = deer.group.position.clone().setY(1.1);
+  spawnImpact(at, false);
+  audio.foxRevert();
+}
+
+function nearestWitchDeer() {
+  let best = null;
+  let bestDistance = 28;
+  for (const deer of deerList) {
+    if (!deer.alive || deer.state === 'dead' || deer.state === 'flee' || deer.state === 'tame') continue;
+    const distance = deer.group.position.distanceTo(WITCH_WINDOW);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = deer;
+    }
+  }
+  return best;
+}
+
+function fireWitchBolt(deer) {
+  const start = new THREE.Vector3();
+  witch.group.userData.wandTip.getWorldPosition(start);
+
+  const orb = new THREE.Group();
+  const coreMaterial = new THREE.MeshBasicMaterial({ color: 0xffb6f4, toneMapped: false });
+  orb.add(new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), coreMaterial));
+  orb.add(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 10, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0xff8ff0,
+        transparent: true,
+        opacity: 0.35,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      })
+    )
+  );
+  orb.position.copy(start);
+  scene.add(orb);
+
+  witch.bolts.push({
+    mesh: orb,
+    deer,
+    t: 0,
+    duration: 0.55,
+    start: start.clone(),
+    last: deer.group.position.clone().setY(1.1),
+  });
+
+  audio.witchCast();
+}
+
+function updateWitchBolts(dt) {
+  for (let i = witch.bolts.length - 1; i >= 0; i -= 1) {
+    const bolt = witch.bolts[i];
+    bolt.t += dt;
+
+    if (bolt.deer && bolt.deer.alive && bolt.deer.state !== 'dead') {
+      bolt.last.copy(bolt.deer.group.position).setY(1.05 * bolt.deer.group.scale.x);
+    }
+
+    const progress = Math.min(1, bolt.t / bolt.duration);
+    bolt.mesh.position.lerpVectors(bolt.start, bolt.last, progress);
+    bolt.mesh.position.y += Math.sin(progress * Math.PI) * 1.2;
+    bolt.mesh.scale.setScalar(0.85 + Math.sin(bolt.t * 22) * 0.2);
+
+    if (progress >= 1) {
+      scene.remove(bolt.mesh);
+      bolt.mesh.traverse((node) => {
+        if (node.isMesh) node.material.dispose();
+      });
+      witch.bolts.splice(i, 1);
+
+      if (bolt.deer && bolt.deer.alive && bolt.deer.state !== 'dead') {
+        spawnImpact(bolt.last, true);
+        tameDeer(bolt.deer);
+      }
+    }
+  }
+}
+
+function callWitch() {
+  if (witch.state !== 'hidden') {
+    showBanner('The witch is already hexing!');
+    return;
+  }
+  if (state.witchCooldown > 0) {
+    showBanner(`The witch is brewing (${Math.ceil(state.witchCooldown)}s)`);
+    return;
+  }
+
+  state.witchCooldown = 28;
+  witch.state = 'cast';
+  witch.timer = 0;
+  witch.castTimer = 0.5;
+  witch.group.visible = true;
+  witch.group.scale.setScalar(0.35);
+  witch.group.rotation.z = 0;
+  showBanner('The witch is in!');
+  statusEl.textContent = 'A witch leans out of the upstairs window and turns reindeer into foxes.';
+  audio.witchCackle();
+  spawnConfetti(WITCH_WINDOW.clone());
+  updateWitchChip();
+}
+
+function updateWitch(dt, time) {
+  if (state.witchCooldown > 0) state.witchCooldown = Math.max(0, state.witchCooldown - dt);
+  updateWitchChip();
+  updateWitchBolts(dt);
+
+  if (witch.state === 'hidden') return;
+
+  witch.timer += dt;
+  const spark = witch.group.userData.wandSpark;
+  spark.rotation.y += dt * 5;
+  spark.scale.setScalar(0.85 + Math.sin(time * 10) * 0.25);
+
+  if (witch.state === 'cast') {
+    witch.group.scale.setScalar(Math.min(1, witch.group.scale.x + dt * 3.4));
+    witch.group.rotation.z = Math.sin(time * 2.4) * 0.05;
+
+    witch.castTimer -= dt;
+    if (witch.castTimer <= 0) {
+      const target = nearestWitchDeer();
+      if (target) {
+        witch.castTimer = 0.8;
+        fireWitchBolt(target);
+      } else {
+        witch.castTimer = 0.35;
+      }
+    }
+
+    if (witch.timer > 9.5) {
+      witch.state = 'leave';
+      witch.timer = 0;
+      showBanner('Hehehehe!');
+      audio.witchCackle();
+    }
+  } else if (witch.state === 'leave') {
+    witch.group.scale.setScalar(Math.max(0.05, witch.group.scale.x - dt * 2.6));
+    if (witch.group.scale.x <= 0.06) {
+      witch.state = 'hidden';
+      witch.group.visible = false;
+      witch.group.scale.setScalar(1);
+      witch.group.rotation.z = 0;
+      updateWitchChip();
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Dad, and his very inaccurate disc golf
+ * ------------------------------------------------------------------ */
+
+const STAR_HITS = 3;
+const HOUSE_FRONT_Z = house.position.z + FRONT;
+const DAD_SPOT = new THREE.Vector3(7.3, 0, -1.9);
+const DAD_HIDE = new THREE.Vector3(10.6, 0, -4.9);
+const WINDOW_SPOTS = [
+  { x: -4.5, y: 1.95, w: 3.2, h: 1.9 },
+  { x: 4.4, y: 1.95, w: 3.0, h: 1.9 },
+  { x: 5.2, y: 4.9, w: 1.05, h: 1.75 },
+];
+
+const starEgg = { hits: 0, wobble: 0 };
+
+/* A round, cheerful dad in a Christmas sweater. */
+const dadShirtMaterial = new THREE.MeshStandardMaterial({ color: 0xb8352f, roughness: 0.9 });
+const dadShirtLightMaterial = new THREE.MeshStandardMaterial({ color: 0xe8dcc4, roughness: 0.9 });
+const dadShortsMaterial = new THREE.MeshStandardMaterial({ color: 0x3f5060, roughness: 0.95 });
+const dadSkinMaterial = new THREE.MeshStandardMaterial({ color: 0xe8b48d, roughness: 0.85 });
+const dadSockMaterial = new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.9 });
+const dadShoeMaterial = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, roughness: 0.9 });
+const dadHairMaterial = new THREE.MeshStandardMaterial({ color: 0x4a3526, roughness: 0.9 });
+const dadSunGlassMaterial = new THREE.MeshStandardMaterial({ color: 0x15171c, roughness: 0.3, metalness: 0.4 });
+const dadCapMaterial = new THREE.MeshStandardMaterial({ color: 0x2d5a8a, roughness: 0.85 });
+
+function buildDad() {
+  const group = new THREE.Group();
+
+  /* Short legs, socks and sandals. */
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.16, 0.5, 10), dadSkinMaterial);
+    leg.position.set(side * 0.26, 0.42, 0);
+    group.add(leg);
+
+    const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2, 10), dadSockMaterial);
+    sock.position.set(side * 0.26, 0.18, 0);
+    group.add(sock);
+
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.44), dadShoeMaterial);
+    shoe.position.set(side * 0.26, 0.06, 0.06);
+    group.add(shoe);
+  }
+
+  const shorts = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.42, 0.5), dadShortsMaterial);
+  shorts.position.y = 0.72;
+  group.add(shorts);
+
+  /* The belly is the main character. */
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.62, 16, 14), dadShirtMaterial);
+  belly.scale.set(1.02, 1.0, 0.9);
+  belly.position.set(0, 1.16, 0.04);
+  group.add(belly);
+
+  const sweaterStripe = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.06, 8, 18), dadShirtLightMaterial);
+  sweaterStripe.rotation.x = Math.PI / 2;
+  sweaterStripe.position.set(0, 1.02, 0.04);
+  group.add(sweaterStripe);
+
+  const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 12), dadShirtMaterial);
+  shoulders.scale.set(1.05, 0.72, 0.85);
+  shoulders.position.set(0, 1.62, 0);
+  group.add(shoulders);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 14), dadSkinMaterial);
+  head.position.set(0, 2.06, 0.02);
+  group.add(head);
+
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), dadSkinMaterial);
+  nose.position.set(0, 2.02, 0.32);
+  group.add(nose);
+
+  const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.07, 0.08), dadHairMaterial);
+  mustache.position.set(0, 1.92, 0.3);
+  group.add(mustache);
+
+  const glasses = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.11, 0.05), dadSunGlassMaterial);
+  glasses.position.set(0, 2.1, 0.3);
+  group.add(glasses);
+
+  /* Backwards cap. */
+  const cap = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5),
+    dadCapMaterial
+  );
+  cap.position.set(0, 2.16, 0);
+  group.add(cap);
+
+  const brim = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.06, 0.3), dadCapMaterial);
+  brim.position.set(0, 2.14, -0.32);
+  group.add(brim);
+
+  for (const side of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), dadSkinMaterial);
+    ear.position.set(side * 0.31, 2.04, 0);
+    group.add(ear);
+  }
+
+  /* Arms on pivots so he can wind up and throw. */
+  const arms = [];
+  for (const side of [-1, 1]) {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * 0.44, 1.66, 0);
+    group.add(pivot);
+
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.55, 8), dadShirtMaterial);
+    arm.position.y = -0.26;
+    pivot.add(arm);
+
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), dadSkinMaterial);
+    hand.position.y = -0.58;
+    pivot.add(hand);
+
+    arms.push(pivot);
+  }
+  group.userData.arms = arms;
+
+  const hand = new THREE.Object3D();
+  hand.position.set(0.44, 1.06, 0.3);
+  group.add(hand);
+  group.userData.hand = hand;
+
+  group.traverse((node) => {
+    if (node.isMesh) node.castShadow = true;
+  });
+
+  return group;
+}
+
+const dad = {
+  group: buildDad(),
+  state: 'hidden',
+  timer: 0,
+  throwTimer: 0,
+  armTimer: 0,
+  throws: 0,
+};
+dad.group.position.copy(DAD_HIDE);
+dad.group.visible = false;
+scene.add(dad.group);
+
+const dadDiscs = [];
+const discGeometry = new THREE.CylinderGeometry(0.24, 0.22, 0.045, 16);
+const discColors = [0xff5fa2, 0x59c3ff, 0xffd45e, 0x8ce88a];
+
+function randomDadTarget() {
+  const options = deerList.filter((deer) => deer.alive && deer.state !== 'dead' && deer.state !== 'tame');
+  if (!options.length) return null;
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function throwDisc() {
+  const target = randomDadTarget();
+  let aim;
+
+  if (target && Math.random() < 0.62) {
+    /* Aimed at a reindeer, with a big helping of dad error. */
+    aim = target.group.position.clone();
+    aim.x += rand(-3.6, 3.6);
+    aim.z += rand(-2.6, 2.6);
+    aim.y = 0.1;
+  } else {
+    /* Wild throw that sails straight at the house. */
+    aim = new THREE.Vector3(rand(-6.4, 6.4), rand(1.2, 5.2), HOUSE_FRONT_Z - 1.2);
+  }
+
+  const hand = new THREE.Vector3();
+  dad.group.userData.hand.getWorldPosition(hand);
+
+  const disc = new THREE.Mesh(
+    discGeometry,
+    new THREE.MeshStandardMaterial({ color: discColors[dad.throws % discColors.length], roughness: 0.5 })
+  );
+  disc.castShadow = true;
+  disc.position.copy(hand);
+  disc.rotation.x = Math.PI / 2;
+  scene.add(disc);
+
+  dadDiscs.push({
+    mesh: disc,
+    start: hand.clone(),
+    aim,
+    t: 0,
+    duration: 0.8,
+    spin: rand(-16, 16),
+  });
+
+  dad.throws += 1;
+  dad.armTimer = 0.34;
+  audio.dadThrow();
+}
+
+const crackTexture = (() => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 128);
+  ctx.fillStyle = 'rgba(205, 232, 255, 0.4)';
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.lineWidth = 5;
+  for (let i = 0; i < 11; i += 1) {
+    const angle = (i / 11) * Math.PI * 2 + rand(-0.2, 0.2);
+    ctx.beginPath();
+    ctx.moveTo(64, 64);
+    let x = 64;
+    let y = 64;
+    const steps = 3;
+    for (let s = 0; s < steps; s += 1) {
+      x += Math.cos(angle + rand(-0.35, 0.35)) * rand(14, 24);
+      y += Math.sin(angle + rand(-0.35, 0.35)) * rand(14, 24);
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+})();
+
+const brokenWindows = new Set();
+const brokenWindowMeshes = [];
+
+function breakWindow(index) {
+  const window = WINDOW_SPOTS[index];
+  const at = new THREE.Vector3(window.x, window.y, HOUSE_FRONT_Z + 0.28);
+  spawnSnowPuff(at, 9, 3);
+  spawnConfetti(at);
+
+  if (brokenWindows.has(index)) return;
+  brokenWindows.add(index);
+
+  const crack = new THREE.Mesh(
+    new THREE.PlaneGeometry(window.w * 0.95, window.h * 0.95),
+    new THREE.MeshBasicMaterial({ map: crackTexture, transparent: true, opacity: 0.9, depthWrite: false })
+  );
+  crack.position.copy(at);
+  crack.rotation.z = rand(-0.25, 0.25);
+  scene.add(crack);
+  brokenWindowMeshes.push(crack);
+}
+
+function discHouseHit(position) {
+  let windowIndex = -1;
+  WINDOW_SPOTS.forEach((window, index) => {
+    if (
+      Math.abs(position.x - window.x) < window.w / 2 + 0.7 &&
+      Math.abs(position.y - window.y) < window.h / 2 + 0.7
+    ) {
+      windowIndex = index;
+    }
+  });
+
+  if (windowIndex >= 0) {
+    breakWindow(windowIndex);
+    audio.windowSmash();
+    showBanner('SMASH!');
+    damageHouse(4);
+  } else {
+    audio.discHouse();
+    spawnSnowPuff(position.clone(), 5, 2);
+    showBanner(Math.random() < 0.4 ? 'DAD!' : 'Ouch');
+    damageHouse(5);
+  }
+}
+
+function updateDiscs(dt) {
+  for (let i = dadDiscs.length - 1; i >= 0; i -= 1) {
+    const disc = dadDiscs[i];
+    disc.t += dt;
+    const progress = Math.min(1, disc.t / disc.duration);
+
+    disc.mesh.position.lerpVectors(disc.start, disc.aim, progress);
+    disc.mesh.position.y += Math.sin(progress * Math.PI) * 1.5;
+    disc.mesh.rotation.z += disc.spin * dt;
+    disc.mesh.rotation.y += disc.spin * 0.3 * dt;
+
+    let finished = false;
+
+    if (
+      disc.mesh.position.z <= HOUSE_FRONT_Z + 0.15 &&
+      Math.abs(disc.mesh.position.x) <= 7.8 &&
+      disc.mesh.position.y > 0.2 &&
+      disc.mesh.position.y < 9.8
+    ) {
+      discHouseHit(disc.mesh.position.clone());
+      finished = true;
+    }
+
+    if (!finished) {
+      for (const deer of deerList) {
+        if (!deer.alive || deer.state === 'dead' || deer.state === 'tame') continue;
+        const chest = deer.group.position.clone().setY(1.05 * deer.group.scale.x);
+        if (disc.mesh.position.distanceTo(chest) < 1.3) {
+          damageDeer(deer, 2);
+          spawnImpact(disc.mesh.position, false);
+          audio.discHitDeer();
+          finished = true;
+          break;
+        }
+      }
+    }
+
+    if (!finished && disc.mesh.position.y <= 0.14) {
+      spawnSnowPuff(disc.mesh.position.clone().setY(0.2), 4, 1.6);
+      audio.discMiss();
+      finished = true;
+    }
+
+    if (finished || progress >= 1) {
+      scene.remove(disc.mesh);
+      disc.mesh.material.dispose();
+      dadDiscs.splice(i, 1);
+    }
+  }
+}
+
+function hitTreeStar(point) {
+  if (dad.state !== 'hidden') return;
+
+  starEgg.hits += 1;
+  starEgg.wobble = 1;
+  spawnImpact(point, false);
+  spawnSnowPuff(point, 4, 1.6);
+
+  if (starEgg.hits >= STAR_HITS) {
+    callDad();
+  } else {
+    audio.starDing(starEgg.hits);
+    showBanner(`Star ${starEgg.hits}/${STAR_HITS}`);
+  }
+}
+
+function callDad() {
+  starEgg.hits = 0;
+  dad.state = 'in';
+  dad.timer = 0;
+  dad.throwTimer = 1.4;
+  dad.armTimer = 0;
+  dad.throws = 0;
+  dad.group.visible = true;
+  dad.group.position.copy(DAD_HIDE);
+  dad.group.rotation.set(0, 0, 0);
+  showBanner('HI DAD!');
+  statusEl.textContent = 'Dad came out from behind the tree with a bag of discs. Accuracy: questionable.';
+  audio.dadHi();
+  spawnConfetti(new THREE.Vector3(9.8, 6.2, -3.5));
+}
+
+function updateDad(dt, time) {
+  updateDiscs(dt);
+
+  if (starEgg.wobble > 0) {
+    starEgg.wobble = Math.max(0, starEgg.wobble - dt * 2.4);
+    treeStar.scale.setScalar(1 + starEgg.wobble * 0.6);
+  }
+
+  if (dad.state === 'hidden') return;
+
+  dad.timer += dt;
+  const group = dad.group;
+  const arms = group.userData.arms;
+
+  if (dad.state === 'in') {
+    const progress = Math.min(1, dad.timer / 0.9);
+    group.position.lerpVectors(DAD_HIDE, DAD_SPOT, progress);
+    group.position.y = Math.abs(Math.sin(progress * Math.PI * 3)) * 0.08;
+    group.rotation.y = Math.PI * (1 - progress) * 0.6;
+    if (progress >= 1) {
+      dad.state = 'throw';
+      dad.timer = 0;
+      group.position.copy(DAD_SPOT);
+      group.rotation.y = 0;
+    }
+  } else if (dad.state === 'throw') {
+    group.position.y = Math.abs(Math.sin(time * 4)) * 0.05;
+    group.rotation.z = Math.sin(time * 2.2) * 0.03;
+
+    dad.armTimer = Math.max(0, dad.armTimer - dt);
+    const windUp = dad.armTimer > 0 ? 1 - dad.armTimer / 0.34 : 0;
+    arms[1].rotation.x = -0.3 - Math.sin(windUp * Math.PI) * 2.0;
+    arms[0].rotation.x = -0.3 + Math.sin(time * 2) * 0.15;
+
+    dad.throwTimer -= dt;
+    if (dad.throwTimer <= 0) {
+      dad.throwTimer = rand(0.85, 1.3);
+      throwDisc();
+    }
+
+    if (dad.timer > 11) {
+      dad.state = 'out';
+      dad.timer = 0;
+      showBanner('Bye, Dad!');
+      audio.dadBye();
+      statusEl.textContent = 'Dad wandered back behind the tree, looking for his discs.';
+    }
+  } else if (dad.state === 'out') {
+    const progress = Math.min(1, dad.timer / 1.2);
+    group.position.lerpVectors(DAD_SPOT, DAD_HIDE, progress);
+    group.position.y = Math.abs(Math.sin(progress * Math.PI * 3)) * 0.06;
+    group.rotation.y = -Math.PI * progress * 0.6;
+    if (progress >= 1) {
+      dad.state = 'hidden';
+      group.visible = false;
+      group.rotation.set(0, 0, 0);
+    }
   }
 }
 
@@ -2563,11 +3376,11 @@ const state = {
   deerHp: 2,
   deerSpeed: 1.9,
   shake: 0,
-  recoil: 0,
-  flashTimer: 0,
+
   doorCooldown: 0,
   santaCooldown: 0,
-  sledCooldown: 0,
+  bikeCooldown: 0,
+  witchCooldown: 0,
 };
 
 function updateHud() {
@@ -2614,11 +3427,11 @@ function startGame() {
   state.cooldown = 0;
   state.doorCooldown = 0;
   state.santaCooldown = 0;
-  state.sledCooldown = 0;
-  sledRun.state = 'hidden';
-  sledRun.timer = 0;
-  sledRun.midShout = false;
-  for (const rider of sledRiders) rider.group.visible = false;
+  state.bikeCooldown = 0;
+  bikeRun.state = 'hidden';
+  bikeRun.timer = 0;
+  bikeRun.midShout = false;
+  for (const rider of bikeRiders) rider.group.visible = false;
   for (const piece of sprayPieces) scene.remove(piece.mesh);
   sprayPieces.length = 0;
   snowmanEgg.hits = 0;
@@ -2629,6 +3442,33 @@ function startGame() {
   snowman.visible = true;
   snowman.scale.setScalar(1);
   snowman.rotation.set(0, 0.35, 0);
+  state.witchCooldown = 0;
+  witch.state = 'hidden';
+  witch.group.visible = false;
+  witch.group.scale.setScalar(1);
+  witch.group.rotation.z = 0;
+  for (const bolt of witch.bolts) scene.remove(bolt.mesh);
+  witch.bolts.length = 0;
+  updateWitchChip();
+  starEgg.hits = 0;
+  starEgg.wobble = 0;
+  treeStar.scale.setScalar(1);
+  dad.state = 'hidden';
+  dad.timer = 0;
+  dad.throwTimer = 0;
+  dad.armTimer = 0;
+  dad.throws = 0;
+  dad.group.visible = false;
+  dad.group.position.copy(DAD_HIDE);
+  dad.group.rotation.set(0, 0, 0);
+  for (const disc of dadDiscs) {
+    scene.remove(disc.mesh);
+    disc.mesh.material.dispose();
+  }
+  dadDiscs.length = 0;
+  for (const crack of brokenWindowMeshes) scene.remove(crack);
+  brokenWindowMeshes.length = 0;
+  brokenWindows.clear();
   puppy.state = 'hidden';
   puppy.group.visible = false;
   santa.state = 'hidden';
@@ -2639,7 +3479,7 @@ function startGame() {
   santa.presents.length = 0;
   updatePuppyChip();
   updateSantaChip();
-  updateSledChip();
+  updateBikeChip();
   overlay.classList.add('hidden');
   container.classList.add('playing');
   startButton.blur();
@@ -2647,6 +3487,7 @@ function startGame() {
   showBanner('Here come the reindeer');
   statusEl.textContent = 'The zombie reindeer are stamping through the snow. Defend the house.';
   audio.start();
+  audio.startMusic();
 }
 
 function startWave() {
@@ -2699,6 +3540,7 @@ function gameOver() {
   window.setTimeout(() => {
     startButton.disabled = false;
   }, 1000);
+  audio.stopMusic();
   audio.gameOver();
   showBanner('The house fell');
   statusEl.textContent = 'The house fell. Press Try again to play again.';
@@ -2826,13 +3668,14 @@ function assistTarget() {
   let bestDistance = 95;
   for (const deer of deerList) {
     if (!deer.alive || deer.state === 'dead' || deer.state === 'flee') continue;
+    const isFox = deer.state === 'tame';
     const chest = deer.group.position.clone();
-    chest.y += 1.35 * deer.group.scale.x;
+    chest.y += (isFox ? 0.85 : 1.35) * deer.group.scale.x;
     const screen = project(chest);
     const distance = Math.hypot(screen.x - pointerPx.x, screen.y - pointerPx.y);
     if (distance < bestDistance) {
       bestDistance = distance;
-      best = { deer, world: chest };
+      best = isFox ? { fox: deer, world: chest } : { deer, world: chest };
     }
   }
   if (best) return best;
@@ -2843,6 +3686,8 @@ function assistTarget() {
     { chimney: true, world: new THREE.Vector3(-6.3, 8.6, -14.6), radius: 92 },
     { moon: true, world: moon.position, radius: 120 },
     { snowman: true, world: new THREE.Vector3(-10.5, 2, -3), radius: 88 },
+    { witch: true, world: WITCH_WINDOW.clone(), radius: 84 },
+    { star: true, world: new THREE.Vector3(9.8, 6.15, -3.5), radius: 92 },
   ];
 
   let closest = null;
@@ -2888,20 +3733,28 @@ function fire() {
   if (state.phase !== 'wave' && state.phase !== 'break') return;
   if (state.cooldown > 0) return;
   state.cooldown = 0.16;
-  state.recoil = 1;
-  state.flashTimer = 0.07;
   audio.shoot();
 
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(
-    [...hitMeshes, doorHitbox, chimneyHitbox, moonHitbox, ...snowmanHitMeshes],
+    [
+      ...hitMeshes,
+      doorHitbox,
+      chimneyHitbox,
+      moonHitbox,
+      witchWindowHitbox,
+      treeStarHitbox,
+      ...snowmanHitMeshes,
+    ],
     false
   );
 
   muzzle.getWorldPosition(muzzleWorld);
 
   let endPoint;
+  let struck = false;
   if (hits.length > 0) {
+    struck = true;
     const hit = hits[0];
     const deer = hit.object.userData.deer;
     const headshot = hit.object.userData.part === 'head';
@@ -2913,10 +3766,19 @@ function fire() {
       callPuppy();
       flashHitMarker();
     } else if (hit.object.userData.isMoon) {
-      callSnowmobiles();
+      callMotorcycles();
+      flashHitMarker();
+    } else if (hit.object.userData.isWitchWindow) {
+      callWitch();
+      flashHitMarker();
+    } else if (hit.object.userData.isTreeStar) {
+      hitTreeStar(hit.point);
       flashHitMarker();
     } else if (hit.object.userData.isSnowman) {
       hitSnowman(hit.point);
+      flashHitMarker();
+    } else if (hit.object.userData.foxDeer) {
+      popFox(hit.object.userData.foxDeer);
       flashHitMarker();
     } else if (deer && deer.alive) {
       damageDeer(deer, headshot ? 3 : 1);
@@ -2926,8 +3788,13 @@ function fire() {
   } else if (lastPointerType !== 'mouse') {
     const assist = assistTarget();
     if (assist) {
+      struck = true;
       endPoint = assist.world.clone();
-      if (assist.deer) {
+      if (assist.fox) {
+        popFox(assist.fox);
+        flashHitMarker();
+        spawnImpact(endPoint, false);
+      } else if (assist.deer) {
         damageDeer(assist.deer, 2);
         flashHitMarker();
         spawnImpact(endPoint, false);
@@ -2940,12 +3807,20 @@ function fire() {
         flashHitMarker();
         spawnImpact(endPoint, true);
       } else if (assist.moon) {
-        callSnowmobiles();
+        callMotorcycles();
         flashHitMarker();
         spawnImpact(endPoint, true);
       } else if (assist.snowman) {
         hitSnowman(endPoint);
         flashHitMarker();
+      } else if (assist.witch) {
+        callWitch();
+        flashHitMarker();
+        spawnImpact(endPoint, true);
+      } else if (assist.star) {
+        hitTreeStar(endPoint);
+        flashHitMarker();
+        spawnImpact(endPoint, true);
       }
     } else {
       endPoint = raycaster.ray.origin
@@ -2958,6 +3833,8 @@ function fire() {
       .add(raycaster.ray.direction.clone().multiplyScalar(70));
   }
 
+  if (!struck) audio.miss();
+
   spawnTracer(muzzleWorld, endPoint);
 }
 
@@ -2969,20 +3846,8 @@ function updateCamera(time) {
   const shake = state.shake * 0.12;
   camera.position.x = CAM_BASE.x + aim.x * 1.6 + Math.sin(time * 42) * shake;
   camera.position.y = CAM_BASE.y + aim.y * 0.7 + Math.cos(time * 37) * shake;
-  camera.position.z = CAM_BASE.z;
+  camera.position.z = CAM_BASE.z + cameraBack;
   camera.lookAt(CAM_TARGET.x + aim.x * 0.8, CAM_TARGET.y + aim.y * 0.4, CAM_TARGET.z);
-}
-
-function updateGun(dt) {
-  state.recoil = Math.max(0, state.recoil - dt * 6);
-  gunRig.position.z = -1.3 + state.recoil * 0.1;
-  gunRig.rotation.x = 0.03 + state.recoil * 0.16;
-
-  state.flashTimer = Math.max(0, state.flashTimer - dt);
-  const flash = state.flashTimer > 0 ? 1 : 0;
-  muzzleFlash.material.opacity = flash * 0.9;
-  muzzleLight.intensity = flash * 9;
-  gunCell.material.emissiveIntensity = 1.1 + Math.sin(performance.now() * 0.004) * 0.35;
 }
 
 function updateDeer(dt, time) {
@@ -2993,6 +3858,36 @@ function updateDeer(dt, time) {
     if (deer.flash > 0) {
       deer.flash = Math.max(0, deer.flash - dt * 6);
       deer.furMaterial.emissive.setRGB(deer.flash * 0.6, deer.flash * 0.05, deer.flash * 0.05);
+    }
+
+    if (deer.state === 'tame') {
+      deer.tameTimer -= dt;
+      deer.tamePhase += dt;
+
+      if (!deer.tameTarget || deer.tamePhase > 2.4) {
+        deer.tamePhase = 0;
+        deer.tameTarget = new THREE.Vector3(
+          clamp(group.position.x + rand(-5, 5), -20, 20),
+          0,
+          clamp(group.position.z + rand(-4, 4), -6, 14)
+        );
+      }
+
+      const toWander = new THREE.Vector3().subVectors(deer.tameTarget, group.position);
+      toWander.y = 0;
+      if (toWander.length() > 0.5) {
+        toWander.normalize();
+        group.position.addScaledVector(toWander, 1.3 * dt);
+        const desired = Math.atan2(toWander.x, toWander.z);
+        let delta = desired - group.rotation.y;
+        while (delta > Math.PI) delta -= Math.PI * 2;
+        while (delta < -Math.PI) delta += Math.PI * 2;
+        group.rotation.y += delta * Math.min(1, dt * 6);
+      }
+
+      if (deer.fox) deer.fox.position.y = Math.abs(Math.sin(time * 5.5)) * 0.1;
+      if (deer.tameTimer <= 0) revertDeer(deer);
+      continue;
     }
 
     if (deer.state === 'dead') {
@@ -3129,11 +4024,12 @@ function animate(now) {
   if (state.phase === 'wave' || state.phase === 'break') updateGame(dt);
   updatePuppy(dt, time);
   updateSanta(dt, time);
-  updateSnowmobiles(dt, time);
+  updateMotorcycles(dt, time);
+  updateWitch(dt, time);
+  updateDad(dt, time);
   updateSnowmanEgg(dt, time);
   updateNightSky(dt, time);
   updateDeer(dt, time);
-  updateGun(dt);
   updateSnowfall(dt);
   updateEffects(dt);
   renderer.render(scene, camera);
@@ -3147,7 +4043,7 @@ function animate(now) {
 const gameTip = document.querySelector('#game-tip');
 if (gameTip && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
   gameTip.textContent =
-    'Tap a reindeer to throw a snowball. Tap the front door for Bear, the chimney for Santa, or the moon for the snowmobiles.';
+    'Tap a reindeer to throw a snowball. Tap the front door for Bear, the chimney for Santa, or the moon for the little red motorcycles. Hit the tree star three times and Dad comes out with his disc golf bag.';
 }
 
 window.addEventListener('resize', sizeScene);
