@@ -253,6 +253,120 @@ export function createAudio() {
   }
 
   /* ------------------------------------------------------------------ *
+   * Creepy 8-bit Christmas loop
+   * A minor-key carol over a marching square-wave bass, with sleigh-bell
+   * ticks, the kind of thing that plays while you sneak through World 8.
+   * ------------------------------------------------------------------ */
+
+  const MUSIC_BPM = 92;
+  const MUSIC_STEP = 60 / MUSIC_BPM / 4;
+  const MUSIC_LOOP = 64;
+
+  const midiToFreq = (note) => 440 * Math.pow(2, (note - 69) / 12);
+
+  /* [step, midi note] */
+  const MUSIC_BASS = [
+    [0, 38], [3, 38], [6, 41], [10, 45],
+    [16, 46], [19, 46], [22, 43], [26, 45],
+    [32, 41], [35, 41], [38, 40], [42, 45],
+    [48, 46], [51, 46], [54, 48], [58, 45],
+  ];
+  /* [step, midi note, length in 16ths] */
+  const MUSIC_MELODY = [
+    [0, 74, 2], [2, 77, 1], [4, 76, 2], [7, 74, 1], [10, 69, 2], [13, 70, 1], [14, 69, 2],
+    [16, 67, 2], [19, 65, 1], [21, 64, 2], [24, 62, 2], [28, 61, 2],
+    [32, 65, 2], [34, 67, 1], [36, 69, 2], [39, 70, 1], [40, 69, 2], [43, 67, 1], [45, 65, 2], [47, 64, 1],
+    [48, 75, 2], [50, 74, 1], [52, 72, 2], [55, 70, 1], [56, 69, 2], [60, 74, 3],
+  ];
+  const MUSIC_BELLS = [[0, 86], [16, 82], [32, 84], [48, 81]];
+  const MUSIC_HARMONY = [[8, 62], [24, 58], [40, 60], [56, 57]];
+
+  let musicTimer = null;
+  let musicPlaying = false;
+  let musicNext = 0;
+  let musicIndex = 0;
+
+  function playMusicStep(index, delay) {
+    const step = index % MUSIC_LOOP;
+
+    for (const [at, note] of MUSIC_BASS) {
+      if (at !== step) continue;
+      const freq = midiToFreq(note);
+      tone({
+        type: 'square',
+        from: freq,
+        to: freq * 0.995,
+        dur: MUSIC_STEP * 2.6,
+        vol: 0.032,
+        delay,
+        filter: { type: 'lowpass', freq: 820, q: 1.1 },
+      });
+      tone({ type: 'triangle', from: freq * 2, to: freq * 2, dur: MUSIC_STEP * 1.1, vol: 0.014, delay });
+    }
+
+    for (const [at, note, steps = 1] of MUSIC_MELODY) {
+      if (at !== step) continue;
+      const freq = midiToFreq(note);
+      const dur = MUSIC_STEP * steps * 0.94;
+      tone({
+        type: 'square',
+        from: freq,
+        to: freq * 0.99,
+        dur,
+        vol: 0.036,
+        delay,
+        vibrato: steps > 1 ? 5 : 0,
+        vibratoRate: 5.5,
+        filter: { type: 'lowpass', freq: 2400, q: 0.7 },
+      });
+      tone({ type: 'triangle', from: freq * 0.5, to: freq * 0.5, dur: dur * 0.8, vol: 0.016, delay });
+    }
+
+    for (const [at, note] of MUSIC_HARMONY) {
+      if (at !== step) continue;
+      const freq = midiToFreq(note);
+      tone({
+        type: 'triangle',
+        from: freq,
+        to: freq,
+        dur: MUSIC_STEP * 3.2,
+        vol: 0.015,
+        delay,
+        filter: { type: 'bandpass', freq: 760, q: 1.3 },
+      });
+    }
+
+    for (const [at, note] of MUSIC_BELLS) {
+      if (at !== step) continue;
+      const freq = midiToFreq(note);
+      tone({ type: 'sine', from: freq, to: freq * 0.97, dur: 0.6, vol: 0.026, delay });
+      noise({ dur: 0.09, vol: 0.009, delay, filter: { type: 'highpass', freq: 5400 } });
+    }
+
+    /* Sleigh-bell shuffle: an eighth-note tick with a softer ghost note. */
+    if (step % 4 === 0) {
+      noise({ dur: 0.045, vol: 0.011, delay, filter: { type: 'highpass', freq: 6400 } });
+    }
+    if (step % 8 === 6) {
+      noise({ dur: 0.03, vol: 0.007, delay, filter: { type: 'bandpass', freq: 3600, q: 2 } });
+    }
+  }
+
+  function pumpMusic() {
+    const c = ensure();
+    if (!c || !musicPlaying) return;
+
+    /* After a tab pause, skip ahead instead of dumping a pile of notes. */
+    if (musicNext < c.currentTime - 0.2) musicNext = c.currentTime + 0.05;
+
+    while (musicNext < c.currentTime + 0.3) {
+      playMusicStep(musicIndex, musicNext - c.currentTime);
+      musicNext += MUSIC_STEP;
+      musicIndex += 1;
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
    * Public kit
    * ------------------------------------------------------------------ */
 
@@ -268,6 +382,24 @@ export function createAudio() {
 
     isMuted() {
       return muted;
+    },
+
+    /* Start the creepy carol loop. Keeps ticking while muted so unmuting
+       brings the carol back instead of silence for the rest of the round. */
+    startMusic() {
+      if (musicPlaying) return;
+      const c = ensure();
+      musicPlaying = true;
+      musicIndex = 0;
+      musicNext = c ? c.currentTime + 0.12 : 0;
+      if (c) pumpMusic();
+      musicTimer = window.setInterval(pumpMusic, 100);
+    },
+
+    stopMusic() {
+      musicPlaying = false;
+      if (musicTimer) window.clearInterval(musicTimer);
+      musicTimer = null;
     },
 
     /* Round-start jingle bells, played on a kazoo with sleigh bells. */
@@ -538,6 +670,160 @@ export function createAudio() {
       rubberSqueak(0.12, 540);
     },
 
+    /* A snowball that sails off into the snow. */
+    miss() {
+      if (!ensure()) return;
+      noise({ dur: 0.12, vol: 0.05, filter: { type: 'lowpass', freq: 1400, to: 420 } });
+      tone({ type: 'sine', from: 340, to: 180, dur: 0.1, vol: 0.045 });
+    },
+
+    /* A helper's cooldown just finished. */
+    ready() {
+      if (!ensure()) return;
+      tone({ type: 'square', from: 1046, to: 1046, dur: 0.07, vol: 0.05 });
+      tone({ type: 'square', from: 1568, to: 1568, dur: 0.1, vol: 0.045, delay: 0.07 });
+      noise({ dur: 0.04, vol: 0.015, delay: 0.07, filter: { type: 'highpass', freq: 6000 } });
+    },
+
+    /* Santa's present going off: a party-popper pop with a glittery tail. */
+    presentPop() {
+      if (!ensure()) return;
+      noise({ dur: 0.16, vol: 0.13, filter: { type: 'highpass', freq: 1800 } });
+      tone({ type: 'square', from: 320, to: 900, dur: 0.12, vol: 0.09 });
+      tone({ type: 'sine', from: 1200, to: 620, dur: 0.18, vol: 0.06, delay: 0.06 });
+      for (let i = 0; i < 5; i += 1) {
+        tone({
+          type: 'triangle',
+          from: 1500 + i * 260,
+          to: 1100 + i * 200,
+          dur: 0.09,
+          vol: 0.028,
+          delay: 0.08 + i * 0.05,
+        });
+      }
+      boing(300, 0.13);
+    },
+
+    /* Dad shuffling back behind the tree. */
+    dadBye() {
+      if (!ensure()) return;
+      slideWhistle(720, 240, 0.55, 0, 0.07);
+      tone({ type: 'triangle', from: 300, to: 200, dur: 0.3, vol: 0.06, delay: 0.5, vibrato: 18, vibratoRate: 8 });
+      for (let i = 0; i < 3; i += 1) {
+        noise({ dur: 0.07, vol: 0.03, delay: 0.6 + i * 0.16, filter: { type: 'bandpass', freq: 900, q: 1.4 } });
+      }
+    },
+
+    /* Bear trotting home, paws in the snow. */
+    bearLeave() {
+      if (!ensure()) return;
+      for (let i = 0; i < 4; i += 1) {
+        noise({ dur: 0.06, vol: 0.03, delay: i * 0.11, filter: { type: 'bandpass', freq: 1200, q: 1.6 } });
+      }
+      tone({ type: 'sine', from: 700, to: 380, dur: 0.3, vol: 0.05, delay: 0.05, vibrato: 30, vibratoRate: 12 });
+    },
+
+    /* A bright ding each time the tree star is shot. */
+    starDing(step = 1) {
+      if (!ensure()) return;
+      const base = 880 * (1 + step * 0.22);
+      tone({ type: 'sine', from: base, to: base * 1.5, dur: 0.24, vol: 0.11 });
+      tone({ type: 'triangle', from: base * 2, dur: 0.18, vol: 0.05, delay: 0.06 });
+      coin(0.1);
+    },
+
+    /* Dad's goofy "hi there!". */
+    dadHi() {
+      if (!ensure()) return;
+      tone({ type: 'sawtooth', from: 170, to: 240, dur: 0.18, vol: 0.09, filter: { type: 'bandpass', freq: 700, q: 2.2 } });
+      tone({ type: 'sawtooth', from: 230, to: 300, dur: 0.18, vol: 0.08, delay: 0.17, filter: { type: 'bandpass', freq: 820, q: 2.2 } });
+      noise({ dur: 0.35, vol: 0.04, filter: { type: 'lowpass', freq: 900 } });
+    },
+
+    /* A grunt and a whoosh as a disc leaves Dad's hand. */
+    dadThrow() {
+      if (!ensure()) return;
+      tone({ type: 'sawtooth', from: 155, to: 105, dur: 0.15, vol: 0.08, filter: { type: 'lowpass', freq: 600 } });
+      noise({ dur: 0.3, vol: 0.05, delay: 0.07, filter: { type: 'bandpass', freq: 1800, to: 700, q: 1.1 } });
+    },
+
+    /* A disc thunking into the siding. */
+    discHouse() {
+      if (!ensure()) return;
+      tone({ type: 'square', from: 260, to: 90, dur: 0.16, vol: 0.1, filter: { type: 'lowpass', freq: 900 } });
+      noise({ dur: 0.14, vol: 0.07, filter: { type: 'lowpass', freq: 700 } });
+      tone({ type: 'sine', from: 150, to: 70, dur: 0.22, vol: 0.07, delay: 0.02 });
+    },
+
+    /* A disc bonking a reindeer. */
+    discHitDeer() {
+      if (!ensure()) return;
+      tone({ type: 'triangle', from: 420, to: 180, dur: 0.18, vol: 0.12 });
+      noise({ dur: 0.12, vol: 0.05, filter: { type: 'bandpass', freq: 1200, q: 1.4 } });
+      tone({ type: 'sine', from: 900, to: 520, dur: 0.12, vol: 0.05, delay: 0.04 });
+    },
+
+    /* The tiny womp of a disc landing nowhere near a deer. */
+    discMiss() {
+      if (!ensure()) return;
+      tone({ type: 'sine', from: 220, to: 150, dur: 0.18, vol: 0.05 });
+      noise({ dur: 0.16, vol: 0.04, filter: { type: 'lowpass', freq: 900 } });
+    },
+
+    /* Tinkle of broken window glass. */
+    windowSmash() {
+      if (!ensure()) return;
+      noise({ dur: 0.3, vol: 0.12, filter: { type: 'highpass', freq: 2600 } });
+      for (let i = 0; i < 5; i += 1) {
+        tone({ type: 'sine', from: 2600 + i * 420, to: 1800 + i * 300, dur: 0.16, vol: 0.045, delay: 0.03 + i * 0.045 });
+      }
+      tone({ type: 'square', from: 180, to: 80, dur: 0.2, vol: 0.06 });
+    },
+
+    /* A magic zap from the witch's wand. */
+    witchCast() {
+      if (!ensure()) return;
+      tone({ type: 'sine', from: 520, to: 1800, dur: 0.28, vol: 0.1, vibrato: 60, vibratoRate: 30 });
+      tone({ type: 'triangle', from: 1600, to: 900, dur: 0.2, vol: 0.06, delay: 0.02 });
+      noise({ dur: 0.18, vol: 0.05, filter: { type: 'highpass', freq: 3800 } });
+      coin(0.12);
+    },
+
+    /* "Heh heh heh" in cartoon witch. */
+    witchCackle() {
+      if (!ensure()) return;
+      [330, 300, 268, 240].forEach((freq, index) => {
+        tone({
+          type: 'sawtooth',
+          from: freq,
+          to: freq * 0.82,
+          dur: 0.16,
+          vol: 0.09,
+          delay: index * 0.17,
+          vibrato: 40,
+          vibratoRate: 24,
+          filter: { type: 'bandpass', freq: 950, q: 2.6 },
+        });
+      });
+      noise({ dur: 0.5, vol: 0.035, filter: { type: 'bandpass', freq: 1400, q: 1.6 } });
+    },
+
+    /* Pop! A reindeer becomes a fox. */
+    foxPop() {
+      if (!ensure()) return;
+      tone({ type: 'sine', from: 320, to: 880, dur: 0.16, vol: 0.13 });
+      tone({ type: 'square', from: 880, to: 1320, dur: 0.1, vol: 0.07, delay: 0.1 });
+      noise({ dur: 0.2, vol: 0.05, filter: { type: 'highpass', freq: 3200 } });
+    },
+
+    /* Poof, back to zombie reindeer. */
+    foxRevert() {
+      if (!ensure()) return;
+      tone({ type: 'sine', from: 640, to: 200, dur: 0.22, vol: 0.12 });
+      noise({ dur: 0.24, vol: 0.06, filter: { type: 'lowpass', freq: 1200, to: 300 } });
+      boing(190, 0.06);
+    },
+
     /* A shooting-star twinkle when the moon gets hit. */
     moonShot() {
       if (!ensure()) return;
@@ -548,29 +834,29 @@ export function createAudio() {
       boing(360, 0.3);
     },
 
-    /* Two-stroke snowmobile engine: braap braap. */
-    snowmobile() {
+    /* Little red motorbike revving: brap-brap-brap. */
+    motorcycle() {
       if (!ensure()) return;
-      [0, 0.34].forEach((delay) => {
+      [0, 0.26, 0.52].forEach((delay) => {
         tone({
           type: 'sawtooth',
-          from: 64,
-          to: 132,
-          dur: 0.3,
-          vol: 0.13,
+          from: 96,
+          to: 210,
+          dur: 0.24,
+          vol: 0.12,
           delay,
-          filter: { type: 'lowpass', freq: 700, to: 1600, q: 3 },
+          filter: { type: 'lowpass', freq: 900, to: 2200, q: 4 },
         });
         tone({
           type: 'square',
-          from: 42,
-          to: 84,
-          dur: 0.3,
+          from: 58,
+          to: 124,
+          dur: 0.24,
           vol: 0.08,
           delay,
-          filter: { type: 'lowpass', freq: 420 },
+          filter: { type: 'lowpass', freq: 520 },
         });
-        noise({ dur: 0.3, vol: 0.07, delay, filter: { type: 'bandpass', freq: 460, q: 1.1 }, am: 24, amRate: 42 });
+        noise({ dur: 0.24, vol: 0.07, delay, filter: { type: 'bandpass', freq: 620, q: 1.2 }, am: 28, amRate: 52 });
       });
     },
 

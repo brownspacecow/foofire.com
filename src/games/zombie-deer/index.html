@@ -164,7 +164,8 @@
 
       .puppy-stat strong,
       .santa-stat strong,
-      .sled-stat strong {
+      .bike-stat strong,
+      .witch-stat strong {
         display: inline-block;
         min-width: 3.4rem;
         font-size: 1.05rem;
@@ -488,6 +489,15 @@
             >
               ⛶
             </button>
+            <button
+              id="mute-button"
+              class="hud-mute"
+              type="button"
+              aria-label="Mute sound effects"
+              aria-pressed="false"
+            >
+              🔊
+            </button>
           </div>
           <div class="hud-stats">
             <div class="stat">
@@ -510,19 +520,14 @@
               <span class="stat-label">Santa</span>
               <strong id="santa-label">Ready</strong>
             </div>
-            <div class="stat sled-stat">
-              <span class="stat-label">Sleds</span>
-              <strong id="sled-label">Ready</strong>
+            <div class="stat bike-stat">
+              <span class="stat-label">Bikes</span>
+              <strong id="bike-label">Ready</strong>
             </div>
-            <button
-              id="mute-button"
-              class="hud-mute"
-              type="button"
-              aria-label="Mute sound effects"
-              aria-pressed="false"
-            >
-              🔊
-            </button>
+            <div class="stat witch-stat">
+              <span class="stat-label">Witch</span>
+              <strong id="witch-label">Ready</strong>
+            </div>
           </div>
         </div>
 
@@ -535,10 +540,8 @@
               <h2 id="overlay-title">Merry Zombie Christmas</h2>
               <p id="overlay-text">
                 The zombie reindeer come out of the snowy pines in waves. Throw snowballs at them
-                before they reach the porch. Psst — hit the front door and Bear the puppy will come
-                bounding out in his Santa hat to scare the herd away. Shoot the chimney and Santa
-                himself pops out to bomb the herd with presents. Shoot the moon and a boy and a girl
-                on snowmobiles come roaring in to chase the reindeer off.
+                before they reach the porch. Keep the house in one piece and see how long you last.
+                Strange things happen in this yard, though. Keep your eyes open.
               </p>
               <button id="start-button" type="button">Start the snowball fight</button>
             </div>
@@ -550,9 +553,8 @@
         </p>
 
         <p class="game-tip" id="game-tip">
-          Move the mouse to aim and click to throw snowballs. Headshots hurt the most — shooting
-          the front door sends Bear out, the chimney summons Santa, and the moon brings the
-          snowmobiles.
+          Move the mouse to aim and click to throw snowballs. Headshots hurt the most. On a phone,
+          tap where you want to throw and it will lock onto the nearest target.
         </p>
 
         <a href="../../../games.html" class="back-link">&larr; Back to games</a>
