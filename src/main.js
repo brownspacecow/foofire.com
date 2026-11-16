@@ -6,6 +6,12 @@ const games = [
     path: './src/games/roller/index.html',
   },
   {
+    id: 'zombie-deer',
+    title: 'Zombie Deer: Christmas Edition',
+    description: 'Defend a snow-covered house from waves of zombie reindeer. Throw snowballs, light up the tree, and call Bear the puppy for backup.',
+    path: './src/games/zombie-deer/index.html',
+  },
+  {
     id: 'bear',
     title: 'Bear the Puppy',
     description: 'Take care of Bear, a cute black and white Shih Tzu puppy. Feed him, play fetch, and tuck him into bed!',
