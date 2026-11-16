@@ -1,5 +1,11 @@
 const games = [
   {
+    id: 'spooky-santa',
+    title: 'Spooky Santa',
+    description: 'Sneak down the chimney, dodge flashlight beams, the dog and the sweeping tree lights, and leave every present without being detected before sunrise.',
+    path: './src/games/spooky-santa/index.html',
+  },
+  {
     id: 'pizza-homestead',
     title: 'Pizza Homestead: Fun Room Rush',
     description: 'Raid a very sincere pizza buffet, eat slices at the booths for arcade money, and whack Hank the mascot in the Fun Room before Mom says it is time to go.',
