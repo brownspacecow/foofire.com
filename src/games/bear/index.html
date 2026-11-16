@@ -6,12 +6,12 @@
     <title>Bear the Puppy | Foofire Games</title>
     <meta
       name="description"
-      content="Take care of Bear, a cute black and white Shitzu puppy, in this three.js game."
+      content="Take care of Bear, a cute black and white Shih Tzu puppy, in this three.js game. Feed him, play fetch, and tuck him into bed."
     />
     <meta property="og:title" content="Bear the Puppy | Foofire Games" />
     <meta
       property="og:description"
-      content="Take care of Bear, a cute black and white Shitzu puppy, in this three.js game."
+      content="Take care of Bear, a cute black and white Shih Tzu puppy, in this three.js game."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com/src/games/bear/index.html" />
@@ -19,54 +19,278 @@
     <meta name="theme-color" content="#0b0b0b" />
     <link rel="stylesheet" href="../../../styles.css" />
     <style>
+      .bear-game {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 0 1rem 3.5rem;
+      }
+
+      .hud {
+        display: grid;
+        gap: 0.55rem 1.25rem;
+        align-items: center;
+        padding: 0.9rem 1rem;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-bottom: none;
+        border-radius: 1rem 1rem 0 0;
+      }
+
+      @media (min-width: 760px) {
+        .hud {
+          grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+        }
+      }
+
+      .need {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+      }
+
+      .need-icon {
+        font-size: 1.05rem;
+        line-height: 1;
+      }
+
+      .need-label {
+        flex: 0 0 auto;
+        width: 4.6rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: var(--muted);
+      }
+
+      .need-bar {
+        position: relative;
+        flex: 1;
+        height: 0.55rem;
+        border-radius: 999px;
+        background: #2b2b2b;
+        overflow: hidden;
+      }
+
+      .need-fill {
+        display: block;
+        width: 70%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--fill-dark), var(--fill));
+        transition: width 0.25s linear, background 0.3s ease;
+      }
+
+      .need[data-need="fullness"] {
+        --fill: #f3ac4b;
+        --fill-dark: #d57f1d;
+      }
+
+      .need[data-need="hydration"] {
+        --fill: #62b8ec;
+        --fill-dark: #2b7fb8;
+      }
+
+      .need[data-need="happiness"] {
+        --fill: #f3799a;
+        --fill-dark: #c8476b;
+      }
+
+      .need[data-need="energy"] {
+        --fill: #8bd277;
+        --fill-dark: #4f9a3e;
+      }
+
+      .need.low .need-fill {
+        background: linear-gradient(90deg, #b62f2f, #e45858);
+      }
+
+      .need.low .need-label {
+        color: #ff9a9a;
+      }
+
+      .hud-mood {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding-top: 0.2rem;
+        justify-self: end;
+        text-align: right;
+      }
+
+      .hud-mood-emoji {
+        font-size: 1.6rem;
+        line-height: 1;
+      }
+
+      .hud-mood strong {
+        display: block;
+        font-size: 0.92rem;
+      }
+
+      .hud-score {
+        display: block;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
       #game-container {
         position: relative;
         width: 100%;
-        max-width: 700px;
-        height: 500px;
-        margin: 1rem auto;
-        border: 1px solid var(--border);
-        border-radius: 0.9rem;
+        height: clamp(340px, 58vh, 560px);
         overflow: hidden;
-        background: #000;
+        border-radius: 0 0 1rem 1rem;
+        border: 1px solid var(--border);
+        background: #f4e4cd;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+        touch-action: manipulation;
       }
-      canvas {
+
+      #game-container canvas {
         display: block;
         width: 100%;
         height: 100%;
       }
-      .game-controls {
-        max-width: 700px;
-        margin: 1rem auto;
+
+      .speech {
+        position: absolute;
+        top: 0.85rem;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: min(88%, 26rem);
+        padding: 0.5rem 0.9rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.95);
+        color: #35251a;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-align: center;
+        line-height: 1.3;
+        box-shadow: 0 8px 20px rgba(43, 27, 15, 0.28);
+        pointer-events: none;
+      }
+
+      .speech::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -6px;
+        margin-left: -7px;
+        border: 7px solid transparent;
+        border-top-color: rgba(255, 255, 255, 0.95);
+        border-bottom: 0;
+      }
+
+      .banner {
+        position: absolute;
+        inset: 0;
         display: flex;
-        gap: 0.75rem;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+
+      .banner.show {
+        opacity: 1;
+      }
+
+      .banner span {
+        padding: 0.9rem 1.4rem;
+        border-radius: 999px;
+        background: rgba(36, 25, 18, 0.9);
+        color: #ffe9b8;
+        font-size: 1.05rem;
+        font-weight: 800;
+        text-align: center;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        animation: banner-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+      }
+
+      @keyframes banner-pop {
+        from {
+          transform: scale(0.7);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .game-controls {
+        display: flex;
         flex-wrap: wrap;
         justify-content: center;
+        gap: 0.6rem;
+        margin-top: 1.1rem;
       }
+
       .game-controls button {
-        padding: 0.7rem 1.2rem;
-        font-size: 1rem;
-        font-weight: 700;
-        border: none;
-        border-radius: 0.6rem;
-        background: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-height: 3rem;
+        padding: 0.6rem 1.15rem;
+        border: 1px solid transparent;
+        border-radius: 0.85rem;
+        background: linear-gradient(180deg, #e23c3c, #b40000);
         color: #fff;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 800;
         cursor: pointer;
+        box-shadow: 0 4px 0 #780000;
+        transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
       }
+
       .game-controls button:hover {
-        filter: brightness(1.1);
+        filter: brightness(1.08);
+        transform: translateY(-1px);
       }
-      #status {
-        max-width: 700px;
-        margin: 0.5rem auto;
+
+      .game-controls button:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 #780000;
+      }
+
+      .game-controls button:focus-visible {
+        outline: 3px solid #ffd98a;
+        outline-offset: 2px;
+      }
+
+      .game-controls button .control-icon {
+        font-size: 1.15rem;
+        line-height: 1;
+      }
+
+      .game-controls button.ghost {
+        background: var(--panel-soft);
+        border-color: var(--border);
+        box-shadow: 0 4px 0 #101010;
+        color: var(--text);
+      }
+
+      .game-controls button.ghost:active {
+        box-shadow: 0 1px 0 #101010;
+      }
+
+      .game-tip {
+        margin: 0.9rem auto 0;
+        max-width: 40rem;
         text-align: center;
         color: var(--muted);
-        min-height: 1.5rem;
+        font-size: 0.9rem;
       }
+
       .back-link {
-        display: inline-block;
-        margin-top: 1rem;
+        display: block;
+        width: fit-content;
+        margin: 1.4rem auto 0;
         color: var(--text);
+        font-weight: 600;
         text-decoration: underline;
       }
     </style>
@@ -74,11 +298,11 @@
   <body>
     <header class="site-header">
       <div class="header-inner">
-        <a href="../../index.html" class="logo">Foofire Games</a>
+        <a href="../../../index.html" class="logo">Foofire Games</a>
         <nav class="nav-links">
-          <a href="../../index.html">Home</a>
-          <a href="../../games.html">Games</a>
-          <a href="../../disclaimer.html">Legal</a>
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../disclaimer.html">Legal</a>
         </nav>
       </div>
     </header>
@@ -86,25 +310,122 @@
     <main>
       <section class="page-header">
         <h1>Bear the Puppy</h1>
-        <p>Take care of Bear, a cute black and white Shitzu puppy. Feed, play, and pet him!</p>
+        <p>
+          Meet Bear, a fluffy black and white Shih Tzu puppy. Fill his bowls, throw his ball, and
+          keep him cosy.
+        </p>
       </section>
 
-      <div id="game-container"></div>
-      <div id="status">Click a care button to interact with Bear.</div>
-      <div class="game-controls">
-        <button id="feed-button">Feed</button>
-        <button id="play-button">Play</button>
-        <button id="pet-button">Pet</button>
-        <button id="reset-button">Reset</button>
-      </div>
-      <a href="../../games.html" class="back-link">&larr; Back to games</a>
+      <section class="bear-game" aria-label="Bear the Puppy game">
+        <div class="hud" aria-label="Bear's needs">
+          <div
+            class="need"
+            data-need="fullness"
+            role="progressbar"
+            aria-label="Fullness"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="70"
+          >
+            <span class="need-icon" aria-hidden="true">🍖</span>
+            <span class="need-label">Fullness</span>
+            <span class="need-bar"><span class="need-fill"></span></span>
+          </div>
+
+          <div
+            class="need"
+            data-need="hydration"
+            role="progressbar"
+            aria-label="Hydration"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="70"
+          >
+            <span class="need-icon" aria-hidden="true">💧</span>
+            <span class="need-label">Hydration</span>
+            <span class="need-bar"><span class="need-fill"></span></span>
+          </div>
+
+          <div
+            class="need"
+            data-need="happiness"
+            role="progressbar"
+            aria-label="Happiness"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="70"
+          >
+            <span class="need-icon" aria-hidden="true">❤️</span>
+            <span class="need-label">Happiness</span>
+            <span class="need-bar"><span class="need-fill"></span></span>
+          </div>
+
+          <div
+            class="need"
+            data-need="energy"
+            role="progressbar"
+            aria-label="Energy"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="70"
+          >
+            <span class="need-icon" aria-hidden="true">⚡</span>
+            <span class="need-label">Energy</span>
+            <span class="need-bar"><span class="need-fill"></span></span>
+          </div>
+
+          <div class="hud-mood" aria-label="Bear's mood">
+            <span class="hud-mood-emoji" id="mood-emoji" aria-hidden="true">😊</span>
+            <div>
+              <strong id="mood-label">Happy</strong>
+              <span class="hud-score">❤️ <span id="care-score">0</span> care points</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="game-container">
+          <div class="speech" id="speech" aria-hidden="true">Woof! I am Bear.</div>
+          <div class="banner" id="banner" aria-hidden="true"><span></span></div>
+        </div>
+
+        <p id="status" class="sr-only" role="status" aria-live="polite">
+          Bear is waiting for you.
+        </p>
+
+        <div class="game-controls">
+          <button id="feed-button" type="button">
+            <span class="control-icon" aria-hidden="true">🍖</span> Feed
+          </button>
+          <button id="water-button" type="button">
+            <span class="control-icon" aria-hidden="true">💧</span> Water
+          </button>
+          <button id="fetch-button" type="button">
+            <span class="control-icon" aria-hidden="true">🎾</span> Fetch
+          </button>
+          <button id="pet-button" type="button">
+            <span class="control-icon" aria-hidden="true">🤍</span> Pet
+          </button>
+          <button id="sleep-button" type="button">
+            <span class="control-icon" aria-hidden="true">😴</span> Nap
+          </button>
+          <button id="reset-button" type="button" class="ghost">
+            <span class="control-icon" aria-hidden="true">↺</span> Reset
+          </button>
+        </div>
+
+        <p class="game-tip">
+          Tap Bear to pet him, or tap the food bowl, water bowl, ball, and bed in his room.
+        </p>
+
+        <a href="../../../games.html" class="back-link">&larr; Back to games</a>
+      </section>
     </main>
 
     <footer>
       <p>
         Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
       </p>
-      <a href="../../disclaimer.html">Legal disclaimer</a>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
     </footer>
 
     <script type="importmap">

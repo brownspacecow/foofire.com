@@ -8,7 +8,7 @@ const games = [
   {
     id: 'bear',
     title: 'Bear the Puppy',
-    description: 'Take care of Bear, a cute black and white Shitzu puppy. Feed, play, and pet him!',
+    description: 'Take care of Bear, a cute black and white Shih Tzu puppy. Feed him, play fetch, and tuck him into bed!',
     path: './src/games/bear/index.html',
   },
 ];
