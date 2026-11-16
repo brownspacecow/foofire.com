@@ -14,6 +14,24 @@ const bannerLabel = bannerEl.querySelector('span');
 const moodEmojiEl = document.querySelector('#mood-emoji');
 const moodLabelEl = document.querySelector('#mood-label');
 const scoreEl = document.querySelector('#care-score');
+const petNameBadge = document.querySelector('#pet-name-badge');
+const rewardsButton = document.querySelector('#rewards-button');
+const tricksRow = document.querySelector('#tricks-row');
+const tricksButtons = document.querySelector('#tricks-buttons');
+const adoptModal = document.querySelector('#adopt-modal');
+const adoptForm = document.querySelector('#adopt-form');
+const adoptNameInput = document.querySelector('#adopt-name');
+const adoptSubmit = document.querySelector('#adopt-submit');
+const rewardsModal = document.querySelector('#rewards-modal');
+const rewardsClose = document.querySelector('#rewards-close');
+const shopPoints = document.querySelector('#shop-points');
+const shopTricks = document.querySelector('#shop-tricks');
+const shopAccessories = document.querySelector('#shop-accessories');
+const shopRugs = document.querySelector('#shop-rugs');
+const stickerGrid = document.querySelector('#sticker-grid');
+const renameForm = document.querySelector('#rename-form');
+const renameInput = document.querySelector('#rename-input');
+const startOverButton = document.querySelector('#start-over');
 
 const needEls = {};
 document.querySelectorAll('.need').forEach((el) => {
@@ -45,6 +63,56 @@ const CAM_OFFSET = new THREE.Vector3(2.5, 3.1, 6.7);
 const CAM_TARGET = new THREE.Vector3(0.2, 1.05, 0);
 const ROOM = { back: -4.6, left: -5.4 };
 
+const SAVE_KEY = 'foofire.bear.save.v1';
+const SAVE_VERSION = 1;
+
+const TRICKS = [
+  { id: 'sit', name: 'Sit', icon: '🐕', cost: 12, desc: 'Bear sits and waits politely.' },
+  { id: 'paw', name: 'Paw', icon: '🐾', cost: 20, desc: 'A gentle little paw shake.' },
+  { id: 'spin', name: 'Spin', icon: '🌀', cost: 30, desc: 'A full, happy twirl.' },
+];
+
+const ACCESSORIES = [
+  { id: 'bow-tie', name: 'Red Bow Tie', icon: '🎀', cost: 15, desc: 'Smart enough for a party.' },
+  { id: 'party-hat', name: 'Party Hat', icon: '🥳', cost: 25, desc: 'A cone hat with a pom-pom.' },
+  { id: 'flower-crown', name: 'Flower Crown', icon: '🌸', cost: 35, desc: 'Spring flowers for a good puppy.' },
+  { id: 'scarf', name: 'Cozy Scarf', icon: '🧣', cost: 28, desc: 'A warm scarf for chilly days.' },
+];
+
+const RUGS = [
+  { id: 'mint', name: 'Mint Rug', icon: '🟢', cost: 0, colors: [0xc3d7ca, 0xd8e6dc, 0xb6cdbf] },
+  { id: 'sunset', name: 'Sunset Rug', icon: '🟠', cost: 25, colors: [0xe8c3ad, 0xf3d9c4, 0xd9a88d] },
+  { id: 'snow', name: 'Snowy Rug', icon: '🔵', cost: 35, colors: [0xd7e3ef, 0xeaf3fb, 0xbecfe0] },
+];
+
+const profile = {
+  hasAdopted: false,
+  name: 'Bear',
+  stats: defaultStats(),
+  tricks: new Set(),
+  accessories: new Set(),
+  rugs: new Set(['mint']),
+  equippedAccessory: null,
+  rug: 'mint',
+  stickers: new Set(),
+};
+
+const STICKERS = [
+  { id: 'first-meal', icon: '🍖', title: 'First Nibble', desc: 'Feed Bear once', check: () => profile.stats.feeds >= 1 },
+  { id: 'water-buddy', icon: '💧', title: 'Water Buddy', desc: 'Fill the water bowl', check: () => profile.stats.drinks >= 1 },
+  { id: 'fetch-star', icon: '🎾', title: 'Fetch Star', desc: 'Play a game of fetch', check: () => profile.stats.fetches >= 1 },
+  { id: 'sleepyhead', icon: '😴', title: 'Sleepyhead', desc: 'Tuck Bear into bed', check: () => profile.stats.naps >= 1 },
+  { id: 'trickster', icon: '🐾', title: 'Trickster', desc: 'Perform 5 tricks', check: () => profile.stats.tricks >= 5 },
+  { id: 'best-friends', icon: '💖', title: 'Best Friends', desc: 'Pet Bear 10 times', check: () => profile.stats.pets >= 10 },
+  { id: 'caretaker', icon: '🌈', title: 'Super Caretaker', desc: 'Earn 80 care points', check: () => profile.stats.pointsEarned >= 80 },
+];
+
+let saveReady = false;
+let bannerTimer = null;
+let startOverTimer = null;
+let startOverArmed = false;
+let rugMaterials = null;
+
 // --------------------------------------------------------------- state
 const needs = { fullness: 70, hydration: 70, happiness: 70, energy: 70 };
 
@@ -72,6 +140,8 @@ const state = {
   celebrationAt: -100,
   pointerDown: null,
   camScale: 1,
+  trick: null,
+  saveAt: 0,
 };
 
 let scene;
@@ -140,6 +210,488 @@ function meshBox(width, height, depth, material, x, y, z, ry = 0) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   return mesh;
+}
+
+// ------------------------------------------------------- saved puppy
+function defaultStats() {
+  return { feeds: 0, drinks: 0, fetches: 0, naps: 0, pets: 0, tricks: 0, pointsEarned: 0 };
+}
+
+function sanitizeName(value) {
+  const cleaned = String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 16);
+  return cleaned || 'Bear';
+}
+
+function saveGame() {
+  if (!saveReady || !profile.hasAdopted) return;
+  const payload = {
+    version: SAVE_VERSION,
+    hasAdopted: true,
+    name: profile.name,
+    needs: { ...needs },
+    score: state.score,
+    stats: { ...profile.stats },
+    tricks: [...profile.tricks],
+    accessories: [...profile.accessories],
+    rugs: [...profile.rugs],
+    equippedAccessory: profile.equippedAccessory,
+    rug: profile.rug,
+    stickers: [...profile.stickers],
+    lastSavedAt: Date.now(),
+  };
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+  } catch (error) {
+    // Storage can be unavailable in private browsing; the game still works in memory.
+  }
+}
+
+function applyOfflineDecay(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 45) return 0;
+  const capped = Math.min(seconds, 8 * 60 * 60);
+  const rates = { fullness: 0.22, hydration: 0.26, happiness: 0.12, energy: 0.1 };
+  for (const [key, rate] of Object.entries(rates)) {
+    const loss = Math.min(22, capped * rate * 0.15);
+    const floor = Math.min(needs[key], 30);
+    needs[key] = clamp(Math.max(needs[key] - loss, floor));
+  }
+  return seconds;
+}
+
+function applyRug(id) {
+  const rug = RUGS.find((item) => item.id === id) || RUGS[0];
+  profile.rug = rug.id;
+  if (!rugMaterials) return;
+  rugMaterials.outer.color.setHex(rug.colors[0]);
+  rugMaterials.middle.color.setHex(rug.colors[1]);
+  rugMaterials.inner.color.setHex(rug.colors[2]);
+}
+
+function applyAccessory(id) {
+  const parts = bear?.userData?.parts;
+  if (!parts?.accessories) return;
+  Object.entries(parts.accessories).forEach(([key, object]) => {
+    object.visible = key === id;
+  });
+}
+
+function applyProfileToScene() {
+  applyRug(profile.rug);
+  applyAccessory(profile.equippedAccessory);
+  updateNameUI();
+}
+
+function updateNameUI() {
+  if (petNameBadge) petNameBadge.textContent = profile.name;
+  const hud = document.querySelector('.hud');
+  if (hud) hud.setAttribute('aria-label', `${profile.name}'s needs`);
+  const mood = document.querySelector('.hud-mood');
+  if (mood) mood.setAttribute('aria-label', `${profile.name}'s mood`);
+  if (renameInput) renameInput.value = profile.name;
+}
+
+function showBanner(text, duration = 3200) {
+  bannerLabel.textContent = text;
+  bannerEl.classList.add('show');
+  window.clearTimeout(bannerTimer);
+  bannerTimer = window.setTimeout(() => bannerEl.classList.remove('show'), duration);
+}
+
+function addPoints(amount) {
+  if (!Number.isFinite(amount) || amount <= 0) return;
+  state.score = Math.max(0, Math.round(state.score + amount));
+  profile.stats.pointsEarned += amount;
+  checkStickers();
+  saveGame();
+}
+
+function checkStickers(announce = true) {
+  if (!profile.hasAdopted) return [];
+  const unlocked = [];
+  for (const sticker of STICKERS) {
+    if (profile.stickers.has(sticker.id)) continue;
+    if (!sticker.check()) continue;
+    profile.stickers.add(sticker.id);
+    unlocked.push(sticker);
+  }
+  if (!unlocked.length) return unlocked;
+  renderStickers();
+  saveGame();
+  if (announce) {
+    const text = unlocked.map((sticker) => `${sticker.icon} ${sticker.title}`).join(' · ');
+    showBanner(`New sticker: ${text}`, 3600);
+    spawnBurst('sparkle', headWorldPosition(), 7);
+    say('A new sticker for the sticker book! ⭐', 3);
+  }
+  return unlocked;
+}
+
+function openAdoption() {
+  closeRewards();
+  adoptNameInput.value = profile.name || 'Bear';
+  adoptSubmit.textContent = `Adopt ${sanitizeName(adoptNameInput.value)}`;
+  adoptModal.hidden = false;
+  document.body.classList.add('modal-open');
+  window.setTimeout(() => {
+    adoptNameInput.focus();
+    adoptNameInput.select();
+  }, 60);
+}
+
+function openRewards() {
+  if (!profile.hasAdopted) {
+    openAdoption();
+    return;
+  }
+  startOverArmed = false;
+  startOverButton.textContent = 'Start over with a new puppy';
+  renderShop();
+  rewardsModal.hidden = false;
+  document.body.classList.add('modal-open');
+  window.setTimeout(() => rewardsClose.focus(), 40);
+}
+
+function closeRewards() {
+  if (rewardsModal.hidden) return;
+  rewardsModal.hidden = true;
+  document.body.classList.remove('modal-open');
+  rewardsButton.focus();
+}
+
+function createShopItem({ icon, name, description, meta, actionLabel, onAction, disabled = false, active = false }) {
+  const card = document.createElement('article');
+  card.className = `shop-item${active ? ' equipped' : ''}`;
+
+  const iconEl = document.createElement('span');
+  iconEl.className = 'shop-icon';
+  iconEl.setAttribute('aria-hidden', 'true');
+  iconEl.textContent = icon;
+
+  const title = document.createElement('h4');
+  title.textContent = name;
+
+  const desc = document.createElement('p');
+  desc.textContent = description;
+
+  const metaEl = document.createElement('span');
+  metaEl.className = 'shop-cost';
+  metaEl.textContent = meta;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'shop-buy';
+  button.textContent = actionLabel;
+  button.disabled = disabled;
+  if (!disabled && /^(Buy|Learn)/.test(actionLabel)) button.classList.add('accent');
+  if (onAction) button.addEventListener('click', onAction);
+
+  card.append(iconEl, title, desc, metaEl, button);
+  return card;
+}
+
+function renderShop() {
+  if (!shopPoints) return;
+  shopPoints.textContent = String(state.score);
+
+  shopTricks.replaceChildren(
+    ...TRICKS.map((trick) => {
+      const owned = profile.tricks.has(trick.id);
+      return createShopItem({
+        icon: trick.icon,
+        name: trick.name,
+        description: trick.desc,
+        meta: owned ? 'Learned' : `❤️ ${trick.cost} care points`,
+        actionLabel: owned ? 'Learned' : 'Learn trick',
+        disabled: owned || state.score < trick.cost,
+        active: owned,
+        onAction: owned ? null : () => buyTrick(trick.id),
+      });
+    })
+  );
+
+  shopAccessories.replaceChildren(
+    ...ACCESSORIES.map((item) => {
+      const owned = profile.accessories.has(item.id);
+      const worn = profile.equippedAccessory === item.id;
+      return createShopItem({
+        icon: item.icon,
+        name: item.name,
+        description: item.desc,
+        meta: owned ? (worn ? 'Wearing now' : 'In your wardrobe') : `❤️ ${item.cost} care points`,
+        actionLabel: owned ? (worn ? 'Take off' : 'Wear') : 'Buy outfit',
+        disabled: !owned && state.score < item.cost,
+        active: worn,
+        onAction: owned ? () => toggleAccessory(item.id) : () => buyAccessory(item.id),
+      });
+    })
+  );
+
+  shopRugs.replaceChildren(
+    ...RUGS.map((rug) => {
+      const owned = profile.rugs.has(rug.id);
+      const inUse = profile.rug === rug.id;
+      return createShopItem({
+        icon: rug.icon,
+        name: rug.name,
+        description: inUse ? 'Currently in his room.' : 'A soft new look for his corner.',
+        meta: owned ? (inUse ? 'In use' : 'Owned') : `❤️ ${rug.cost} care points`,
+        actionLabel: inUse ? 'In use' : owned ? 'Use rug' : 'Buy rug',
+        disabled: inUse || (!owned && state.score < rug.cost),
+        active: inUse,
+        onAction: inUse ? null : () => buyRug(rug.id),
+      });
+    })
+  );
+
+  renderStickers();
+}
+
+function renderStickers() {
+  if (!stickerGrid) return;
+  stickerGrid.replaceChildren(
+    ...STICKERS.map((sticker) => {
+      const earned = profile.stickers.has(sticker.id);
+      const card = document.createElement('div');
+      card.className = `sticker${earned ? ' earned' : ''}`;
+
+      const icon = document.createElement('span');
+      icon.className = 'sticker-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = earned ? sticker.icon : '🔒';
+
+      const title = document.createElement('strong');
+      title.textContent = earned ? sticker.title : '??? ';
+
+      const desc = document.createElement('small');
+      desc.textContent = sticker.desc;
+
+      card.append(icon, title, desc);
+      return card;
+    })
+  );
+}
+
+function buyTrick(id) {
+  const trick = TRICKS.find((item) => item.id === id);
+  if (!trick || profile.tricks.has(id) || state.score < trick.cost) return;
+  state.score -= trick.cost;
+  profile.tricks.add(id);
+  saveGame();
+  updateTricksUI();
+  renderShop();
+  say(`New trick learned: ${trick.name}! 🐾`, 3);
+  spawnBurst('heart', headWorldPosition(), 5);
+}
+
+function buyAccessory(id) {
+  const item = ACCESSORIES.find((entry) => entry.id === id);
+  if (!item || profile.accessories.has(id) || state.score < item.cost) return;
+  state.score -= item.cost;
+  profile.accessories.add(id);
+  profile.equippedAccessory = id;
+  applyAccessory(id);
+  saveGame();
+  renderShop();
+  say(`${profile.name} loves the ${item.name.toLowerCase()}! 💕`, 3);
+  spawnBurst('heart', headWorldPosition(), 5);
+}
+
+function toggleAccessory(id) {
+  if (!profile.accessories.has(id)) return;
+  profile.equippedAccessory = profile.equippedAccessory === id ? null : id;
+  applyAccessory(profile.equippedAccessory);
+  saveGame();
+  renderShop();
+}
+
+function buyRug(id) {
+  const rug = RUGS.find((item) => item.id === id);
+  if (!rug) return;
+  if (!profile.rugs.has(id)) {
+    if (state.score < rug.cost) return;
+    state.score -= rug.cost;
+    profile.rugs.add(id);
+    say(`${profile.name} has a cosy new rug! 🏡`, 3);
+  }
+  profile.rug = id;
+  applyRug(id);
+  saveGame();
+  renderShop();
+}
+
+function handleAdopt(event) {
+  event.preventDefault();
+  profile.name = sanitizeName(adoptNameInput.value);
+  profile.hasAdopted = true;
+  saveReady = true;
+  adoptModal.hidden = true;
+  document.body.classList.remove('modal-open');
+  updateNameUI();
+  saveGame();
+  say(`Welcome home, ${profile.name}! 🐾`, 4);
+  spawnBurst('heart', headWorldPosition(), 10);
+  rewardsButton.focus();
+}
+
+function handleRename(event) {
+  event.preventDefault();
+  profile.name = sanitizeName(renameInput.value);
+  updateNameUI();
+  saveGame();
+  say(`${profile.name} likes that name! 🐾`, 3);
+}
+
+function handleStartOver() {
+  if (!startOverArmed) {
+    startOverArmed = true;
+    startOverButton.textContent = 'Tap again to confirm';
+    window.clearTimeout(startOverTimer);
+    startOverTimer = window.setTimeout(() => {
+      startOverArmed = false;
+      startOverButton.textContent = 'Start over with a new puppy';
+    }, 5000);
+    return;
+  }
+  startOverArmed = false;
+  newGame();
+}
+
+function updateTricksUI() {
+  if (!tricksButtons || !tricksRow) return;
+  const unlocked = TRICKS.filter((trick) => profile.tricks.has(trick.id));
+  tricksRow.hidden = unlocked.length === 0;
+  tricksButtons.replaceChildren(
+    ...unlocked.map((trick) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const icon = document.createElement('span');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = trick.icon;
+      button.append(icon, document.createTextNode(` ${trick.name}`));
+      button.addEventListener('click', () => performTrick(trick.id));
+      return button;
+    })
+  );
+}
+
+function performTrick(id) {
+  const trick = TRICKS.find((item) => item.id === id);
+  if (!trick || !profile.tricks.has(id) || !bear) return;
+  if (state.fetchStage) {
+    say(`${profile.name} is busy fetching! 🎾`, 2.2);
+    return;
+  }
+  wakeUp(true);
+  state.walk = null;
+  state.walkAfter = null;
+  state.modeTimer = 0;
+  state.petting = 0;
+  state.mode = 'trick';
+  state.trick = {
+    id,
+    timer: id === 'spin' ? 2 : 1.6,
+    duration: id === 'spin' ? 2 : 1.6,
+    startYaw: bear.rotation.y,
+  };
+  faceThePlayer();
+  say(id === 'spin' ? `${profile.name} is spinning! 🌀` : `${trick.name}! Good puppy! 🐾`, 1.8);
+}
+
+function applyLoadedProfile(saved) {
+  profile.hasAdopted = true;
+  profile.name = sanitizeName(saved.name);
+  for (const key of Object.keys(needs)) {
+    const value = Number(saved.needs?.[key]);
+    needs[key] = Number.isFinite(value) ? clamp(value) : 70;
+  }
+  state.score = Number.isFinite(Number(saved.score))
+    ? Math.max(0, Math.round(Number(saved.score)))
+    : 0;
+  profile.stats = defaultStats();
+  for (const key of Object.keys(profile.stats)) {
+    const value = Number(saved.stats?.[key]);
+    if (Number.isFinite(value) && value >= 0) profile.stats[key] = Math.floor(value);
+  }
+  profile.stats.pointsEarned = Math.max(profile.stats.pointsEarned, state.score);
+  profile.tricks = new Set(
+    Array.isArray(saved.tricks) ? saved.tricks.filter((id) => TRICKS.some((trick) => trick.id === id)) : []
+  );
+  profile.accessories = new Set(
+    Array.isArray(saved.accessories)
+      ? saved.accessories.filter((id) => ACCESSORIES.some((item) => item.id === id))
+      : []
+  );
+  profile.rugs = new Set([
+    'mint',
+    ...(Array.isArray(saved.rugs) ? saved.rugs.filter((id) => RUGS.some((rug) => rug.id === id)) : []),
+  ]);
+  profile.stickers = new Set(
+    Array.isArray(saved.stickers) ? saved.stickers.filter((id) => STICKERS.some((item) => item.id === id)) : []
+  );
+  profile.rug = RUGS.some((rug) => rug.id === saved.rug) ? saved.rug : 'mint';
+  profile.rugs.add(profile.rug);
+  profile.equippedAccessory = profile.accessories.has(saved.equippedAccessory)
+    ? saved.equippedAccessory
+    : null;
+
+  const lastSaved = Number(saved.lastSavedAt);
+  const elapsed = Number.isFinite(lastSaved) ? (Date.now() - lastSaved) / 1000 : 0;
+  const away = applyOfflineDecay(elapsed);
+
+  saveReady = true;
+  resetSceneState();
+  applyProfileToScene();
+  updateHud();
+  updateTricksUI();
+  renderShop();
+  checkStickers(false);
+  saveGame();
+
+  if (away > 120) {
+    say(`${profile.name} missed you! 💕`, 4.5);
+  } else {
+    say(`${profile.name} is happy to see you! 🐾`, 3);
+  }
+}
+
+function loadGame() {
+  let saved = null;
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) saved = JSON.parse(raw);
+  } catch (error) {
+    saved = null;
+  }
+
+  if (!saved || saved.version !== SAVE_VERSION || !saved.hasAdopted) {
+    profile.hasAdopted = false;
+    profile.name = 'Bear';
+    profile.stats = defaultStats();
+    profile.tricks = new Set();
+    profile.accessories = new Set();
+    profile.rugs = new Set(['mint']);
+    profile.equippedAccessory = null;
+    profile.rug = 'mint';
+    profile.stickers = new Set();
+    needs.fullness = 70;
+    needs.hydration = 70;
+    needs.happiness = 70;
+    needs.energy = 70;
+    state.score = 0;
+    saveReady = false;
+    applyProfileToScene();
+    resetSceneState();
+    updateHud();
+    updateTricksUI();
+    renderShop();
+    openAdoption();
+    return;
+  }
+
+  applyLoadedProfile(saved);
 }
 
 // -------------------------------------------------------------- textures
@@ -311,7 +863,7 @@ function init() {
   scene.add(hoverRing);
 
   bindEvents();
-  resetGame();
+  loadGame();
   resize();
   animate();
 }
@@ -373,9 +925,15 @@ function buildRoom() {
   scene.add(meshBox(0.12, 0.34, 16, trimMaterial, ROOM.left + 0.06, 0.17, -0.5));
 
   // rug
+  rugMaterials = {
+    outer: new THREE.MeshStandardMaterial({ color: 0xc3d7ca, roughness: 1 }),
+    middle: new THREE.MeshStandardMaterial({ color: 0xd8e6dc, roughness: 1 }),
+    inner: new THREE.MeshStandardMaterial({ color: 0xb6cdbf, roughness: 1 }),
+  };
+
   const rugOuter = new THREE.Mesh(
     new THREE.CylinderGeometry(2.55, 2.55, 0.035, 64),
-    new THREE.MeshStandardMaterial({ color: 0xc3d7ca, roughness: 1 })
+    rugMaterials.outer
   );
   rugOuter.position.set(0, 0.018, 0.3);
   rugOuter.receiveShadow = true;
@@ -383,7 +941,7 @@ function buildRoom() {
 
   const rugMiddle = new THREE.Mesh(
     new THREE.CylinderGeometry(2.2, 2.2, 0.045, 64),
-    new THREE.MeshStandardMaterial({ color: 0xd8e6dc, roughness: 1 })
+    rugMaterials.middle
   );
   rugMiddle.position.set(0, 0.026, 0.3);
   rugMiddle.receiveShadow = true;
@@ -391,7 +949,7 @@ function buildRoom() {
 
   const rugInner = new THREE.Mesh(
     new THREE.CylinderGeometry(1.62, 1.62, 0.055, 64),
-    new THREE.MeshStandardMaterial({ color: 0xb6cdbf, roughness: 1 })
+    rugMaterials.inner
   );
   rugInner.position.set(0, 0.033, 0.3);
   rugInner.receiveShadow = true;
@@ -860,6 +1418,98 @@ function buildBear() {
     legs.push(pivot);
   });
 
+  // accessories
+  const accessories = {};
+  const registerAccessory = (id, object, parent = bodyPivot) => {
+    object.visible = false;
+    object.traverse((child) => {
+      if (child.isMesh) child.castShadow = true;
+    });
+    accessories[id] = object;
+    parent.add(object);
+  };
+
+  const bowTie = new THREE.Group();
+  bowTie.position.set(0, -0.08, 0.78);
+  bowTie.rotation.x = -0.2;
+  bowTie.scale.setScalar(1.25);
+  const bowMaterial = new THREE.MeshStandardMaterial({ color: 0xd6404e, roughness: 0.55 });
+  [-1, 1].forEach((side) => {
+    const wing = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.15, 12), bowMaterial);
+    wing.rotation.z = (-side * Math.PI) / 2;
+    wing.position.x = side * 0.07;
+    bowTie.add(wing);
+  });
+  const bowKnot = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), bowMaterial);
+  bowKnot.position.z = 0.025;
+  bowTie.add(bowKnot);
+  registerAccessory('bow-tie', bowTie);
+
+  const partyHat = new THREE.Group();
+  partyHat.position.set(0, 0.58, 0.02);
+  partyHat.rotation.z = -0.08;
+  const partyCone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.15, 0.34, 18),
+    new THREE.MeshStandardMaterial({ color: 0xf0b648, roughness: 0.5 })
+  );
+  partyCone.position.y = 0.16;
+  partyHat.add(partyCone);
+  const partyPom = new THREE.Mesh(
+    new THREE.SphereGeometry(0.055, 12, 10),
+    new THREE.MeshStandardMaterial({ color: 0xef6a8f, roughness: 0.6 })
+  );
+  partyPom.position.y = 0.35;
+  partyHat.add(partyPom);
+  const partyBrim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.145, 0.018, 8, 20),
+    new THREE.MeshStandardMaterial({ color: 0x4a8bd6, roughness: 0.5 })
+  );
+  partyBrim.rotation.x = Math.PI / 2;
+  partyHat.add(partyBrim);
+  registerAccessory('party-hat', partyHat, headPivot);
+
+  const flowerCrown = new THREE.Group();
+  flowerCrown.position.set(0, 0.36, 0.02);
+  const wreath = new THREE.Mesh(
+    new THREE.TorusGeometry(0.25, 0.028, 8, 24),
+    new THREE.MeshStandardMaterial({ color: 0x5f9a5b, roughness: 0.9 })
+  );
+  wreath.rotation.x = Math.PI / 2;
+  flowerCrown.add(wreath);
+  const petalColors = [0xf7a7b6, 0xffe08a, 0xb8a7f7, 0xf7a7b6, 0xffe08a, 0xa7d7f7];
+  petalColors.forEach((color, index) => {
+    const angle = (index / petalColors.length) * Math.PI * 2;
+    const flower = new THREE.Group();
+    flower.position.set(Math.cos(angle) * 0.25, 0.01, Math.sin(angle) * 0.25);
+    const bloom = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 10, 8),
+      new THREE.MeshStandardMaterial({ color, roughness: 0.7 })
+    );
+    bloom.scale.set(1, 0.55, 1);
+    flower.add(bloom);
+    const middle = new THREE.Mesh(
+      new THREE.SphereGeometry(0.022, 8, 6),
+      new THREE.MeshStandardMaterial({ color: 0xfff3b0, roughness: 0.6 })
+    );
+    middle.position.y = 0.035;
+    flower.add(middle);
+    flowerCrown.add(flower);
+  });
+  registerAccessory('flower-crown', flowerCrown, headPivot);
+
+  const scarf = new THREE.Group();
+  scarf.position.set(0, 0.02, 0.52);
+  scarf.rotation.x = 0.08;
+  const scarfMaterial = new THREE.MeshStandardMaterial({ color: 0x5b8fb9, roughness: 1 });
+  const scarfWrap = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.055, 10, 24), scarfMaterial);
+  scarfWrap.rotation.x = Math.PI / 2;
+  scarf.add(scarfWrap);
+  const scarfTail = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.28, 0.05), scarfMaterial);
+  scarfTail.position.set(0.08, -0.22, 0.2);
+  scarfTail.rotation.z = 0.16;
+  scarf.add(scarfTail);
+  registerAccessory('scarf', scarf);
+
   // invisible points used for effects / carrying the ball
   const headAnchor = new THREE.Object3D();
   headAnchor.position.set(0, 0.3, 0.1);
@@ -878,6 +1528,7 @@ function buildBear() {
     tailPivot,
     tonguePivot,
     headAnchor,
+    accessories,
   };
 
   bear.traverse((child) => {
@@ -953,6 +1604,14 @@ function cancelFetch() {
   }
 }
 
+function cancelTrick() {
+  if (state.mode !== 'trick') return;
+  state.mode = 'idle';
+  state.trick = null;
+  state.modeTimer = 0;
+  state.idleAt = state.time + 1;
+}
+
 function placeBallInFront() {
   if (!ball || !bear) return;
   const forward = new THREE.Vector3(Math.sin(bear.rotation.y), 0, Math.cos(bear.rotation.y));
@@ -973,6 +1632,7 @@ function beginFeed() {
     return;
   }
   wakeUp();
+  cancelTrick();
   cancelFetch();
   startWalk(SPOTS.foodStand.x, SPOTS.foodStand.z, startEating);
   say('Here comes breakfast! 🍖', 1.8);
@@ -989,7 +1649,8 @@ function startEating() {
 function finishEating() {
   needs.fullness = clamp(needs.fullness + 42);
   needs.happiness = clamp(needs.happiness + 5);
-  state.score += 5;
+  profile.stats.feeds += 1;
+  addPoints(5);
   spawnBurst('sparkle', new THREE.Vector3(SPOTS.foodBowl.x, 0.45, SPOTS.foodBowl.z), 7);
   say('That was delicious! 🍖', 3);
   state.mode = 'idle';
@@ -1004,6 +1665,7 @@ function beginDrink() {
     return;
   }
   wakeUp();
+  cancelTrick();
   cancelFetch();
   startWalk(SPOTS.waterStand.x, SPOTS.waterStand.z, startDrinking);
   say('Fresh water time! 💧', 1.8);
@@ -1020,7 +1682,8 @@ function startDrinking() {
 function finishDrinking() {
   needs.hydration = clamp(needs.hydration + 46);
   needs.happiness = clamp(needs.happiness + 3);
-  state.score += 4;
+  profile.stats.drinks += 1;
+  addPoints(4);
   spawnBurst('sparkle', new THREE.Vector3(SPOTS.waterBowl.x, 0.45, SPOTS.waterBowl.z), 7);
   say('So refreshing! 💧', 3);
   state.mode = 'idle';
@@ -1033,7 +1696,8 @@ function beginPet() {
   wakeUp();
   needs.happiness = clamp(needs.happiness + (state.petting > 0 ? 4 : 11));
   needs.energy = clamp(needs.energy + 1);
-  state.score += state.petting > 0 ? 1 : 3;
+  profile.stats.pets += 1;
+  addPoints(state.petting > 0 ? 1 : 3);
   state.petting = 1.9;
   spawnBurst('heart', headWorldPosition(), 6);
   const lines = [
@@ -1054,16 +1718,20 @@ function beginSleep() {
     say('I am not sleepy yet! 🐾', 2.6);
     return;
   }
+  cancelTrick();
   cancelFetch();
   startWalk(SPOTS.bedStand.x, SPOTS.bedStand.z, startSleeping);
   state.targetYaw = Math.atan2(SPOTS.bed.x - SPOTS.bedStand.x, SPOTS.bed.z - SPOTS.bedStand.z);
-  say('Bedtime, Bear! 🛏️', 1.8);
+  say(`Bedtime, ${profile.name}! 🛏️`, 1.8);
 }
 
 function startSleeping() {
   state.mode = 'sleep';
   state.sleeping = true;
   state.modeTimer = 0;
+  profile.stats.naps += 1;
+  checkStickers();
+  saveGame();
   say('Zzz… 💤', 5);
 }
 
@@ -1075,6 +1743,7 @@ function beginFetch() {
     return;
   }
   wakeUp();
+  cancelTrick();
   needs.happiness = clamp(needs.happiness + 2);
   state.fetchStage = 'wait';
   state.fetchAt = state.time + 0.9;
@@ -1106,21 +1775,16 @@ function finishFetch() {
   placeBallInFront();
   needs.happiness = clamp(needs.happiness + 16);
   needs.energy = clamp(needs.energy - 8);
-  state.score += 8;
+  profile.stats.fetches += 1;
+  addPoints(8);
   spawnBurst('heart', headWorldPosition(), 8);
-  say('Good boy, Bear! 🎾', 3);
+  say(`Good boy, ${profile.name}! 🎾`, 3);
   state.mode = 'idle';
   state.idleAt = state.time + 3;
   faceThePlayer();
 }
 
-function resetGame() {
-  state.score = 0;
-  state.time = 0;
-  needs.fullness = 70;
-  needs.hydration = 70;
-  needs.happiness = 70;
-  needs.energy = 70;
+function resetSceneState() {
   state.mode = 'idle';
   state.modeTimer = 0;
   state.walk = null;
@@ -1130,9 +1794,11 @@ function resetGame() {
   state.fetchStage = null;
   state.ballCarried = false;
   state.ballFlight = null;
+  state.trick = null;
   state.celebrationAt = -100;
-  state.idleAt = 3;
+  state.idleAt = 2.5;
   state.targetYaw = 0.42;
+  state.hovered = null;
 
   if (bear) {
     bear.position.set(SPOTS.home.x, 0, SPOTS.home.z);
@@ -1141,9 +1807,50 @@ function resetGame() {
   if (ball) {
     ball.position.set(SPOTS.ballHome.x, 0.24, SPOTS.ballHome.z);
   }
+  if (hoverRing) hoverRing.visible = false;
   bannerEl.classList.remove('show');
+}
+
+function resetCare(announce = true) {
+  needs.fullness = 70;
+  needs.hydration = 70;
+  needs.happiness = 70;
+  needs.energy = 70;
+  resetSceneState();
   updateHud();
-  say('Bear is ready to play! 🐾', 3.5);
+  if (announce) say(`${profile.name} is ready to play! 🐾`, 3.5);
+  saveGame();
+}
+
+function newGame() {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch (error) {
+    // ignore storage failures
+  }
+  closeRewards();
+  profile.hasAdopted = false;
+  profile.name = 'Bear';
+  profile.stats = defaultStats();
+  profile.tricks = new Set();
+  profile.accessories = new Set();
+  profile.rugs = new Set(['mint']);
+  profile.equippedAccessory = null;
+  profile.rug = 'mint';
+  profile.stickers = new Set();
+  needs.fullness = 70;
+  needs.hydration = 70;
+  needs.happiness = 70;
+  needs.energy = 70;
+  state.score = 0;
+  saveReady = false;
+  applyProfileToScene();
+  resetSceneState();
+  updateHud();
+  updateTricksUI();
+  renderShop();
+  say('A new puppy is waiting for a name! 🐾', 3);
+  openAdoption();
 }
 
 // --------------------------------------------------------------- update
@@ -1157,7 +1864,7 @@ function updateNeeds(dt) {
       state.sleeping = false;
       state.mode = 'idle';
       state.idleAt = state.time + 2;
-      state.score += 6;
+      addPoints(6);
       needs.happiness = clamp(needs.happiness + 4);
       spawnBurst('sparkle', headWorldPosition(), 5);
       say('I feel so rested! 💤', 3);
@@ -1216,8 +1923,13 @@ function updateBearMovement(dt) {
     startWalk(Math.cos(angle) * radius, 0.3 + Math.sin(angle) * radius, null);
   }
 
-  const yawDelta = shortestAngle(bear.rotation.y, state.targetYaw);
-  bear.rotation.y += yawDelta * (1 - Math.exp(-9 * dt));
+  if (state.mode === 'trick' && state.trick?.id === 'spin') {
+    const progress = 1 - Math.max(0, state.trick.timer) / state.trick.duration;
+    bear.rotation.y = state.trick.startYaw + progress * Math.PI * 2;
+  } else {
+    const yawDelta = shortestAngle(bear.rotation.y, state.targetYaw);
+    bear.rotation.y += yawDelta * (1 - Math.exp(-9 * dt));
+  }
 }
 
 function updateActionModes(dt) {
@@ -1226,6 +1938,21 @@ function updateActionModes(dt) {
     if (state.modeTimer >= 2.4) {
       if (state.mode === 'eat') finishEating();
       else finishDrinking();
+    }
+  }
+
+  if (state.mode === 'trick' && state.trick) {
+    state.trick.timer -= dt;
+    if (state.trick.timer <= 0) {
+      state.trick = null;
+      state.mode = 'idle';
+      state.idleAt = state.time + 2.5;
+      profile.stats.tricks += 1;
+      checkStickers();
+      saveGame();
+      faceThePlayer();
+      spawnBurst('heart', headWorldPosition(), 3);
+      say('Good trick! 🐾', 2);
     }
   }
 }
@@ -1285,6 +2012,26 @@ function updateBearPose(dt) {
     tailAmp = 0.34;
   }
 
+  const trick = state.mode === 'trick' ? state.trick : null;
+  if (trick?.id === 'sit') {
+    bodyY = 0.63;
+    bodyPitch = -0.22;
+    headPitch = -0.12;
+    headRoll = 0.04;
+    tailSpeed = 5;
+    tailAmp = 0.3;
+  } else if (trick?.id === 'paw') {
+    bodyPitch = -0.03;
+    headPitch = 0;
+    headRoll = 0.12;
+    tailSpeed = 9;
+    tailAmp = 0.34;
+  } else if (trick?.id === 'spin') {
+    bodyY = 0.8;
+    tailSpeed = 12;
+    tailAmp = 0.4;
+  }
+
   const damp = 1 - Math.exp(-12 * dt);
   parts.bodyPivot.position.y += (bodyY - parts.bodyPivot.position.y) * damp;
   parts.bodyPivot.rotation.x += (bodyPitch - parts.bodyPivot.rotation.x) * damp;
@@ -1295,7 +2042,11 @@ function updateBearPose(dt) {
 
   parts.legs.forEach((leg, index) => {
     const phase = index === 0 || index === 3 ? 0 : Math.PI;
-    const target = (sleeping ? 1.05 : 0) + Math.sin(walkPhase + phase) * 0.55 * walkBlend;
+    let target = (sleeping ? 1.05 : 0) + Math.sin(walkPhase + phase) * 0.55 * walkBlend;
+    if (trick?.id === 'sit') target = index >= 2 ? 1.15 : 0.05;
+    if (trick?.id === 'paw' && index === 0) {
+      target = -1.25 + Math.sin(state.time * 16) * 0.16;
+    }
     leg.rotation.x += (target - leg.rotation.x) * damp;
   });
 
@@ -1448,10 +2199,8 @@ function maybeCelebrate() {
   if (state.time - state.celebrationAt < 30) return;
   if (!Object.values(needs).every((value) => value >= 88)) return;
   state.celebrationAt = state.time;
-  state.score += 15;
-  bannerLabel.textContent = '🌈 Bear is the happiest puppy!';
-  bannerEl.classList.add('show');
-  window.setTimeout(() => bannerEl.classList.remove('show'), 3200);
+  addPoints(15);
+  showBanner(`🌈 ${profile.name} is the happiest puppy!`);
   spawnBurst('heart', headWorldPosition(), 14);
   say('You are the best puppy parent! 💕', 4);
 }
@@ -1485,6 +2234,11 @@ function animate() {
   updateHud();
   maybeCelebrate();
   updateCamera(dt);
+
+  if (state.time > state.saveAt) {
+    state.saveAt = state.time + 5;
+    saveGame();
+  }
 
   renderer.render(scene, camera);
 }
@@ -1558,7 +2312,26 @@ function bindEvents() {
   buttons.fetch.addEventListener('click', beginFetch);
   buttons.pet.addEventListener('click', beginPet);
   buttons.sleep.addEventListener('click', beginSleep);
-  buttons.reset.addEventListener('click', resetGame);
+  buttons.reset.addEventListener('click', () => resetCare(true));
+  rewardsButton.addEventListener('click', openRewards);
+  rewardsClose.addEventListener('click', closeRewards);
+  rewardsModal.addEventListener('click', (event) => {
+    if (event.target === rewardsModal) closeRewards();
+  });
+  adoptForm.addEventListener('submit', handleAdopt);
+  adoptNameInput.addEventListener('input', () => {
+    adoptSubmit.textContent = `Adopt ${sanitizeName(adoptNameInput.value)}`;
+  });
+  renameForm.addEventListener('submit', handleRename);
+  startOverButton.addEventListener('click', handleStartOver);
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !rewardsModal.hidden) closeRewards();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) saveGame();
+  });
+  window.addEventListener('pagehide', saveGame);
 
   window.addEventListener('resize', resize);
   if (typeof ResizeObserver !== 'undefined') {

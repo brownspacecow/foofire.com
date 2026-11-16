@@ -6,7 +6,7 @@
     <title>Bear the Puppy | Foofire Games</title>
     <meta
       name="description"
-      content="Take care of Bear, a cute black and white Shih Tzu puppy, in this three.js game. Feed him, play fetch, and tuck him into bed."
+      content="Take care of Bear, a cute black and white Shih Tzu puppy, in this three.js game. Adopt him, feed him, teach tricks, and collect stickers."
     />
     <meta property="og:title" content="Bear the Puppy | Foofire Games" />
     <meta
@@ -220,6 +220,23 @@
         }
       }
 
+      .pet-badge {
+        position: absolute;
+        left: 0.8rem;
+        bottom: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(29, 22, 16, 0.72);
+        color: #ffe9c2;
+        font-size: 0.8rem;
+        font-weight: 700;
+        backdrop-filter: blur(4px);
+        pointer-events: none;
+      }
+
       .game-controls {
         display: flex;
         flex-wrap: wrap;
@@ -277,6 +294,68 @@
         box-shadow: 0 1px 0 #101010;
       }
 
+      .game-controls button.reward {
+        background: linear-gradient(180deg, #f0c654, #d49a1e);
+        color: #3a2600;
+        box-shadow: 0 4px 0 #96670f;
+      }
+
+      .game-controls button.reward:active {
+        box-shadow: 0 1px 0 #96670f;
+      }
+
+      .tricks-row[hidden] {
+        display: none;
+      }
+
+      .tricks-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-top: 0.9rem;
+      }
+
+      .tricks-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .tricks-buttons {
+        display: flex;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .tricks-buttons button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border: 1px solid #3c5d72;
+        background: #1a2a33;
+        color: #d8eef7;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+
+      .tricks-buttons button:hover {
+        background: #223a47;
+      }
+
+      .tricks-buttons button:focus-visible {
+        outline: 3px solid #ffd98a;
+        outline-offset: 2px;
+      }
+
       .game-tip {
         margin: 0.9rem auto 0;
         max-width: 40rem;
@@ -292,6 +371,322 @@
         color: var(--text);
         font-weight: 600;
         text-decoration: underline;
+      }
+
+      body.modal-open {
+        overflow: hidden;
+      }
+
+      .game-modal[hidden] {
+        display: none;
+      }
+
+      .game-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(4, 4, 4, 0.72);
+        backdrop-filter: blur(6px);
+      }
+
+      .modal-card {
+        width: 100%;
+        max-width: 640px;
+        max-height: 88vh;
+        overflow-y: auto;
+        background: var(--panel);
+        border: 1px solid #3a3a3a;
+        border-radius: 1.2rem;
+        padding: 1.4rem;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+      }
+
+      .adopt-card {
+        max-width: 440px;
+      }
+
+      .modal-card h2 {
+        margin: 0.15rem 0 0.6rem;
+        font-size: 1.6rem;
+      }
+
+      .modal-kicker {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--accent-soft);
+      }
+
+      .modal-copy {
+        margin: 0 0 1rem;
+        color: var(--muted);
+      }
+
+      .modal-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .icon-button {
+        width: 2.4rem;
+        height: 2.4rem;
+        flex: 0 0 auto;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      .icon-button:hover {
+        background: #333;
+      }
+
+      .icon-button:focus-visible,
+      .shop-buy:focus-visible,
+      .start-over:focus-visible,
+      .rename-form button:focus-visible {
+        outline: 3px solid #ffd98a;
+        outline-offset: 2px;
+      }
+
+      .adopt-form {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .adopt-form label {
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      .adopt-form input,
+      .rename-form input {
+        width: 100%;
+        padding: 0.8rem 0.9rem;
+        border-radius: 0.7rem;
+        border: 1px solid #3a3a3a;
+        background: #111;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 1rem;
+      }
+
+      .adopt-form input:focus,
+      .rename-form input:focus {
+        outline: 2px solid #9fcdf0;
+        outline-offset: 1px;
+      }
+
+      .adopt-form .primary-button {
+        width: 100%;
+        margin-top: 0.25rem;
+      }
+
+      .modal-note {
+        margin: 1rem 0 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.4;
+      }
+
+      .rewards-points {
+        margin: 0.7rem 0 1rem;
+        color: #ffd98a;
+        font-weight: 700;
+      }
+
+      .shop-section {
+        margin-top: 0.9rem;
+        padding-top: 0.9rem;
+        border-top: 1px solid var(--border);
+      }
+
+      .shop-section h3 {
+        margin: 0 0 0.2rem;
+        font-size: 1rem;
+      }
+
+      .shop-help {
+        margin: 0 0 0.6rem;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .shop-grid {
+        display: grid;
+        gap: 0.6rem;
+        grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      }
+
+      .shop-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 0.8rem;
+        background: #141414;
+      }
+
+      .shop-item.equipped {
+        border-color: #7aa46b;
+        box-shadow: inset 0 0 0 1px rgba(122, 164, 107, 0.35);
+      }
+
+      .shop-icon {
+        font-size: 1.5rem;
+        line-height: 1;
+      }
+
+      .shop-item h4 {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      .shop-item p {
+        flex: 1;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.35;
+      }
+
+      .shop-cost {
+        color: #ffd98a;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .shop-buy {
+        margin-top: 0.35rem;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid #444;
+        border-radius: 0.55rem;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .shop-buy:hover:not(:disabled) {
+        background: #333;
+      }
+
+      .shop-buy:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .shop-buy.accent {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      .shop-buy.accent:hover:not(:disabled) {
+        filter: brightness(1.1);
+      }
+
+      .sticker-grid {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      }
+
+      .sticker {
+        padding: 0.6rem 0.4rem;
+        border: 1px dashed #3a3a3a;
+        border-radius: 0.7rem;
+        background: #111;
+        text-align: center;
+        opacity: 0.55;
+      }
+
+      .sticker.earned {
+        border: 1px solid #c79b45;
+        background: linear-gradient(180deg, #2a2418, #18140d);
+        opacity: 1;
+      }
+
+      .sticker-icon {
+        display: block;
+        font-size: 1.6rem;
+        line-height: 1.2;
+      }
+
+      .sticker strong {
+        display: block;
+        margin-top: 0.2rem;
+        font-size: 0.78rem;
+      }
+
+      .sticker small {
+        display: block;
+        margin-top: 0.15rem;
+        color: var(--muted);
+        font-size: 0.68rem;
+        line-height: 1.3;
+      }
+
+      .rename-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .rename-form input {
+        flex: 1;
+        min-width: 140px;
+      }
+
+      .rename-form button {
+        padding: 0.7rem 0.9rem;
+        border: 1px solid var(--border);
+        border-radius: 0.65rem;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .start-over {
+        display: block;
+        margin: 1.4rem auto 0;
+        padding: 0;
+        border: none;
+        background: none;
+        color: #ff9a9a;
+        font-family: inherit;
+        font-size: 0.85rem;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+
+      @media (max-width: 520px) {
+        .modal-card {
+          padding: 1rem;
+        }
+
+        .shop-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        }
+
+        .hud-mood {
+          justify-self: start;
+        }
       }
     </style>
   </head>
@@ -311,8 +706,8 @@
       <section class="page-header">
         <h1>Bear the Puppy</h1>
         <p>
-          Meet Bear, a fluffy black and white Shih Tzu puppy. Fill his bowls, throw his ball, and
-          keep him cosy.
+          Meet Bear, a fluffy black and white Shih Tzu puppy. Adopt him, fill his bowls, teach him
+          tricks, and keep him cosy.
         </p>
       </section>
 
@@ -386,11 +781,19 @@
         <div id="game-container">
           <div class="speech" id="speech" aria-hidden="true">Woof! I am Bear.</div>
           <div class="banner" id="banner" aria-hidden="true"><span></span></div>
+          <div class="pet-badge" aria-live="polite">
+            <span aria-hidden="true">🐾</span> <strong id="pet-name-badge">Bear</strong>
+          </div>
         </div>
 
         <p id="status" class="sr-only" role="status" aria-live="polite">
           Bear is waiting for you.
         </p>
+
+        <div class="tricks-row" id="tricks-row" hidden>
+          <span class="tricks-label">Tricks</span>
+          <div class="tricks-buttons" id="tricks-buttons"></div>
+        </div>
 
         <div class="game-controls">
           <button id="feed-button" type="button">
@@ -408,18 +811,114 @@
           <button id="sleep-button" type="button">
             <span class="control-icon" aria-hidden="true">😴</span> Nap
           </button>
+          <button id="rewards-button" type="button" class="reward">
+            <span class="control-icon" aria-hidden="true">🎁</span> Rewards
+          </button>
           <button id="reset-button" type="button" class="ghost">
             <span class="control-icon" aria-hidden="true">↺</span> Reset
           </button>
         </div>
 
         <p class="game-tip">
-          Tap Bear to pet him, or tap the food bowl, water bowl, ball, and bed in his room.
+          Tap Bear to pet him, or tap the bowls, ball, and bed. Care points unlock tricks, outfits,
+          and stickers in Rewards.
         </p>
 
         <a href="../../../games.html" class="back-link">&larr; Back to games</a>
       </section>
     </main>
+
+    <div class="game-modal" id="adopt-modal" hidden>
+      <div class="modal-card adopt-card" role="dialog" aria-modal="true" aria-labelledby="adopt-title">
+        <p class="modal-kicker">A new friend</p>
+        <h2 id="adopt-title">Adopt Bear</h2>
+        <p class="modal-copy">
+          Bear is a fluffy black and white Shih Tzu puppy looking for a home. What will you name
+          him?
+        </p>
+        <form class="adopt-form" id="adopt-form">
+          <label for="adopt-name">His name</label>
+          <input
+            id="adopt-name"
+            name="name"
+            type="text"
+            maxlength="16"
+            autocomplete="off"
+            spellcheck="false"
+            value="Bear"
+            required
+          />
+          <button id="adopt-submit" type="submit" class="primary-button">Adopt Bear</button>
+        </form>
+        <p class="modal-note">
+          His progress is saved only on this device. No accounts, no ads, no tracking.
+        </p>
+      </div>
+    </div>
+
+    <div class="game-modal" id="rewards-modal" hidden>
+      <div
+        class="modal-card rewards-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rewards-title"
+      >
+        <div class="modal-head">
+          <div>
+            <p class="modal-kicker">Care points</p>
+            <h2 id="rewards-title">Goodie Basket</h2>
+          </div>
+          <button id="rewards-close" class="icon-button" type="button" aria-label="Close rewards">
+            ✕
+          </button>
+        </div>
+        <p class="rewards-points">❤️ <strong id="shop-points">0</strong> care points to spend</p>
+
+        <section class="shop-section">
+          <h3>New tricks</h3>
+          <p class="shop-help">Teach Bear something new, then use the trick buttons under his room.</p>
+          <div class="shop-grid" id="shop-tricks"></div>
+        </section>
+
+        <section class="shop-section">
+          <h3>Wardrobe</h3>
+          <p class="shop-help">Dress him up. You can change outfits any time.</p>
+          <div class="shop-grid" id="shop-accessories"></div>
+        </section>
+
+        <section class="shop-section">
+          <h3>Room</h3>
+          <p class="shop-help">A fresh rug for his cosy corner.</p>
+          <div class="shop-grid" id="shop-rugs"></div>
+        </section>
+
+        <section class="shop-section">
+          <h3>Sticker book</h3>
+          <p class="shop-help">Little reminders of the fun you have had together.</p>
+          <div class="sticker-grid" id="sticker-grid"></div>
+        </section>
+
+        <section class="shop-section">
+          <h3>His name</h3>
+          <form class="rename-form" id="rename-form">
+            <label class="sr-only" for="rename-input">Puppy's name</label>
+            <input
+              id="rename-input"
+              type="text"
+              maxlength="16"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="submit">Save name</button>
+          </form>
+        </section>
+
+        <button id="start-over" class="start-over" type="button">
+          Start over with a new puppy
+        </button>
+        <p class="modal-note">Everything is saved on this device only.</p>
+      </div>
+    </div>
 
     <footer>
       <p>
