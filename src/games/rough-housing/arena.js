@@ -5,9 +5,10 @@ const RAPIER = RAPIER_NS.default ?? RAPIER_NS;
 
 /* ------------------------------------------------------------------ *
  * Rough Housing — the arena
- * Ten pieces' worth of foam: 10 bases, 10 hinged cushions (two panels
- * posed into a fold), 20 triangle pillows. Whole thing floats over lava.
- * Every piece is a Rapier rigid body so the fort can come down.
+ * Foam pieces: 10 bases, 10 hinged cushions (two panels posed into a fold),
+ * 20 triangle pillows and 4 bent bases (two thick panels joined in a 90° L,
+ * a corner platform that makes stacking easier). Whole thing floats over
+ * lava. Every piece is a Rapier rigid body so the fort can come down.
  * ------------------------------------------------------------------ */
 
 export const LAVA_Y = -1.4;
@@ -16,6 +17,7 @@ export const ZONE = { halfX: 14, halfZ: 11 };
 export const PIECE_DEFS = {
   base: { label: 'Base', total: 10, mass: 9, size: [6.6, 0.875, 3.3] },
   cushion: { label: 'Cushion', total: 10, mass: 6, panel: [3.3, 0.55, 3.3], defaultFold: Math.PI / 3 },
+  bent: { label: 'Bent base', total: 4, mass: 10, panel: [3.3, 0.875, 3.3], defaultFold: Math.PI / 2 },
   triangle: { label: 'Triangle', total: 20, mass: 2.4, size: [2.6, 1.4, 2.4] },
 };
 
@@ -53,6 +55,7 @@ const WEAVE = (() => {
 const MATERIALS = {
   base: new THREE.MeshStandardMaterial({ color: 0x8b5cf6, map: WEAVE, roughness: 0.95 }),
   cushion: new THREE.MeshStandardMaterial({ color: 0xff2e9a, map: WEAVE, roughness: 0.95 }),
+  bent: new THREE.MeshStandardMaterial({ color: 0x6d28d9, map: WEAVE, roughness: 0.95 }),
   triangle: new THREE.MeshStandardMaterial({ color: 0x2ec4ff, map: WEAVE, roughness: 0.95 }),
 };
 
@@ -76,6 +79,22 @@ export function makePieceVisual(type, fold = 0, overrideMaterial = null) {
     const panelB = new THREE.Mesh(panelGeometry, material);
     panelB.position.set(1.65 * Math.cos(fold), 1.65 * Math.sin(fold), 0);
     panelB.rotation.z = fold;
+    [panelA, panelB].forEach((panel) => {
+      panel.castShadow = castShadow;
+      panel.receiveShadow = true;
+      group.add(panel);
+    });
+    return group;
+  }
+
+  if (type === 'bent') {
+    // Flat L-shaped corner platform: two 3.3 panels meeting at 90°.
+    const panelGeometry = new THREE.BoxGeometry(3.3, 0.875, 3.3);
+    const panelA = new THREE.Mesh(panelGeometry, material);
+    panelA.position.set(-0.825, 0, 0.825);
+    const panelB = new THREE.Mesh(panelGeometry, material);
+    panelB.position.set(0.825, 0, -0.825);
+    panelB.rotation.y = Math.PI / 2;
     [panelA, panelB].forEach((panel) => {
       panel.castShadow = castShadow;
       panel.receiveShadow = true;
@@ -248,7 +267,7 @@ export class Arena {
   }
 
   counts() {
-    const counts = { base: 0, cushion: 0, triangle: 0 };
+    const counts = { base: 0, cushion: 0, bent: 0, triangle: 0 };
     for (const piece of this.pieces) counts[piece.type] += 1;
     return counts;
   }
@@ -297,6 +316,26 @@ export class Arena {
           RAPIER.ColliderDesc.cuboid(hx, hy, hz)
             .setTranslation(hx * Math.cos(fold), hx * Math.sin(fold), 0)
             .setRotation({ x: hinge.x, y: hinge.y, z: hinge.z, w: hinge.w }),
+          def.mass / 2
+        )
+      );
+    } else if (type === 'bent') {
+      const [w, h, d] = def.panel;
+      const hx = w / 2;
+      const hy = h / 2;
+      const hz = d / 2;
+      colliders.push(
+        common(
+          RAPIER.ColliderDesc.cuboid(hx, hy, hz).setTranslation(-0.825, 0, 0.825),
+          def.mass / 2
+        )
+      );
+      const corner = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+      colliders.push(
+        common(
+          RAPIER.ColliderDesc.cuboid(hx, hy, hz)
+            .setTranslation(0.825, 0, -0.825)
+            .setRotation({ x: corner.x, y: corner.y, z: corner.z, w: corner.w }),
           def.mass / 2
         )
       );

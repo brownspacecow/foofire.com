@@ -10,10 +10,27 @@ const FIXED = 1 / 60;
 const EMPTY_KEYS = new Set();
 const TARGET_SCORE = 3;
 const BASE_MASS = 30;
+const CONTROLS = [
+  { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', jump: 'Space', dash: 'ShiftLeft' },
+  {
+    left: 'ArrowLeft',
+    right: 'ArrowRight',
+    up: 'ArrowUp',
+    down: 'ArrowDown',
+    jump: 'ShiftRight',
+    dash: 'Slash',
+  },
+];
+const PAD = { deadzone: 0.35, jump: 0, dash: [1, 2], start: 9 };
+const padPrev = [
+  { a: false, start: false, left: false, right: false },
+  { a: false, start: false, left: false, right: false },
+];
+let activePads = [null, null];
 const BUILD_HINT =
-  'Click a piece to pick it up · wheel lifts it · Q/E turn · W/S tilt · A/D roll · [ ] fold · click the grid to place · Z undo';
+  'Click a piece to pick it up · wheel lifts it · Q/E turn · W/S tilt · A/D roll · [ ] fold · click the grid to place · Z undo · R random fort';
 const FIGHT_HINT =
-  'P1: WASD move · Space jump · Shift cartwheel/tumble — P2: arrows move · RShift jump · / cartwheel';
+  'P1: WASD move · Space jump · Shift cartwheel/tumble — P2: arrows move · RShift jump · / cartwheel — Pads: stick move · A jump · X dash · Start pauses';
 
 await RAPIER.init();
 
@@ -36,19 +53,27 @@ const ui = {
   tray: document.querySelector('#tray'),
   trayBase: document.querySelector('#tray-base'),
   trayCushion: document.querySelector('#tray-cushion'),
+  trayBent: document.querySelector('#tray-bent'),
   trayTriangle: document.querySelector('#tray-triangle'),
   countBase: document.querySelector('#count-base'),
   countCushion: document.querySelector('#count-cushion'),
+  countBent: document.querySelector('#count-bent'),
   countTriangle: document.querySelector('#count-triangle'),
   trayUndo: document.querySelector('#tray-undo'),
   trayClear: document.querySelector('#tray-clear'),
+  trayRandom: document.querySelector('#tray-random'),
   startMatch: document.querySelector('#start-match'),
   pose: document.querySelector('#pose-readout'),
   banner: document.querySelector('#banner'),
   bannerLabel: document.querySelector('#banner span'),
   hint: document.querySelector('#hint'),
   overlay: document.querySelector('#overlay'),
-  panels: [document.querySelector('#panel-intro'), document.querySelector('#panel-select'), document.querySelector('#panel-match')],
+  panels: [
+    document.querySelector('#panel-intro'),
+    document.querySelector('#panel-select'),
+    document.querySelector('#panel-match'),
+    document.querySelector('#panel-pause'),
+  ],
   introStart: document.querySelector('#intro-start'),
   selectStart: document.querySelector('#select-start'),
   choiceP1: document.querySelector('#choice-p1'),
@@ -59,6 +84,10 @@ const ui = {
   matchSub: document.querySelector('#match-sub'),
   btnAgain: document.querySelector('#btn-again'),
   btnChange: document.querySelector('#btn-change'),
+  pauseResume: document.querySelector('#pause-resume'),
+  pauseRestart: document.querySelector('#pause-restart'),
+  pauseQuit: document.querySelector('#pause-quit'),
+  pauseShake: document.querySelector('#pause-shake'),
   status: document.querySelector('#status'),
   mute: document.querySelector('#mute-button'),
   fullscreen: document.querySelector('#fullscreen-button'),
@@ -250,12 +279,21 @@ const state = {
   fallTimer: 0,
   impactCooldown: 0,
   shake: 0,
+  hitstop: 0,
+  pausedFrom: null,
+  reducedShake: false,
   fightersDirty: true,
   held: null,
   ghost: null,
   ghostValid: false,
   undo: [],
 };
+
+try {
+  state.reducedShake = window.localStorage.getItem('roughHousingReducedShake') === '1';
+} catch (error) {
+  /* storage can be blocked */
+}
 
 const fighters = [];
 const keys = new Set();
@@ -356,6 +394,7 @@ function refreshMute() {
   ui.mute.setAttribute('aria-label', muted ? 'Unmute sound effects' : 'Mute sound effects');
 }
 refreshMute();
+refreshShakeButton();
 
 ui.mute.addEventListener('click', () => {
   audio.unlock();
@@ -431,7 +470,7 @@ function updateHud() {
 
 function updateTray() {
   const counts = arena.counts();
-  const types = ['base', 'cushion', 'triangle'];
+  const types = ['base', 'cushion', 'bent', 'triangle'];
   types.forEach((type) => {
     const left = PIECE_DEFS[type].total - counts[type];
     const countEl = ui[`count${type[0].toUpperCase()}${type.slice(1)}`];
@@ -468,24 +507,13 @@ function ensureFighters(force) {
   if (!force && fighters.length === 2) return;
   for (const fighter of fighters) fighter.dispose();
   fighters.length = 0;
-  const controls = [
-    { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', jump: 'Space', dash: 'ShiftLeft' },
-    {
-      left: 'ArrowLeft',
-      right: 'ArrowRight',
-      up: 'ArrowUp',
-      down: 'ArrowDown',
-      jump: 'ShiftRight',
-      dash: 'Slash',
-    },
-  ];
   for (let i = 0; i < 2; i += 1) {
     fighters.push(
       new Fighter({
         spec: ROSTER[state.picks[i]],
         world,
         scene: gameScene,
-        controls: controls[i],
+        controls: CONTROLS[i],
         index: i,
       })
     );
@@ -495,6 +523,7 @@ function ensureFighters(force) {
 
 function enterIntro() {
   state.phase = 'intro';
+  ui.phaseLabel.textContent = 'Choose a wrestler';
   showPanel('panel-intro');
   ui.tray.hidden = true;
   ui.pose.hidden = true;
@@ -552,6 +581,8 @@ function launchCountdown(spots) {
   state.impactCooldown = 0;
   state.fallTimer = 0;
   state.shake = 0;
+  state.hitstop = 0;
+  state.pausedFrom = null;
   hideOverlay();
   ui.tray.hidden = true;
   ui.pose.hidden = true;
@@ -751,6 +782,7 @@ function handleImpacts(dt) {
 
       audio.hit();
       state.shake = Math.min(0.9, state.shake + 0.2 + relative * 0.015);
+      state.hitstop = Math.max(state.hitstop, launched ? 0.06 : 0.045);
     }
   }
 
@@ -781,6 +813,7 @@ function handleImpacts(dt) {
         fighter.flop(0.85, lv.x || 0, lv.z || 0);
         audio.hit();
         state.shake = Math.min(0.9, state.shake + 0.2);
+        state.hitstop = Math.max(state.hitstop, 0.05);
       }
     }
   }
@@ -996,8 +1029,225 @@ function pickSelectAt() {
   audio.ui();
 }
 
+/* --------------------------------------------------------------- gamepads */
+function connectedPads() {
+  try {
+    if (!navigator.getGamepads) return [null, null];
+    const pads = Array.from(navigator.getGamepads()).filter((pad) => pad && pad.connected);
+    return [pads[0] || null, pads[1] || null];
+  } catch (error) {
+    return [null, null];
+  }
+}
+
+function padPressed(pad, index) {
+  return Boolean(pad && pad.buttons && pad.buttons[index] && pad.buttons[index].pressed);
+}
+
+function padDirections(pad) {
+  const ax = pad && Number.isFinite(pad.axes?.[0]) ? pad.axes[0] : 0;
+  const ay = pad && Number.isFinite(pad.axes?.[1]) ? pad.axes[1] : 0;
+  return {
+    left: ax < -PAD.deadzone || padPressed(pad, 14),
+    right: ax > PAD.deadzone || padPressed(pad, 15),
+    up: ay < -PAD.deadzone || padPressed(pad, 12),
+    down: ay > PAD.deadzone || padPressed(pad, 13),
+  };
+}
+
+function addPadKeys(pad, player, out) {
+  if (!pad) return;
+  const controls = CONTROLS[player];
+  const dir = padDirections(pad);
+  if (dir.left) out.add(controls.left);
+  if (dir.right) out.add(controls.right);
+  if (dir.up) out.add(controls.up);
+  if (dir.down) out.add(controls.down);
+  if (padPressed(pad, PAD.jump)) out.add(controls.jump);
+  if (PAD.dash.some((button) => padPressed(pad, button))) out.add(controls.dash);
+}
+
+function handlePadStart() {
+  if (state.phase === 'select' && state.ready[0] && state.ready[1]) beginMatch();
+  else if (state.phase === 'build') startCountdown();
+  else togglePause();
+}
+
+function handlePadAction(player) {
+  if (state.phase === 'intro') enterSelect();
+  else if (state.phase === 'select') toggleReady(player);
+  else if (state.phase === 'matchover') playAgain();
+  else if (state.phase === 'paused') resumeGame();
+}
+
+function handlePadDirection(player, delta) {
+  if (state.phase === 'select') movePick(player, delta);
+}
+
+function pollGamepads() {
+  activePads = connectedPads();
+  activePads.forEach((pad, player) => {
+    const prev = padPrev[player];
+    const dir = padDirections(pad);
+    const a = padPressed(pad, PAD.jump);
+    const start = padPressed(pad, PAD.start);
+    if (start && !prev.start) handlePadStart();
+    if (a && !prev.a) handlePadAction(player);
+    if (dir.left && !prev.left) handlePadDirection(player, -1);
+    if (dir.right && !prev.right) handlePadDirection(player, 1);
+    prev.start = start;
+    prev.a = a;
+    prev.left = dir.left;
+    prev.right = dir.right;
+  });
+}
+
+/* ------------------------------------------------------------ pause menu */
+function refreshShakeButton() {
+  if (!ui.pauseShake) return;
+  ui.pauseShake.textContent = state.reducedShake ? 'Reduced shake: On' : 'Reduced shake: Off';
+  ui.pauseShake.setAttribute('aria-pressed', String(state.reducedShake));
+}
+
+function canPause() {
+  return (
+    state.phase === 'countdown' ||
+    state.phase === 'fight' ||
+    state.phase === 'falling' ||
+    state.phase === 'roundover'
+  );
+}
+
+function pauseGame() {
+  if (!canPause()) return;
+  state.pausedFrom = state.phase;
+  state.phase = 'paused';
+  keys.clear();
+  cancelHeld();
+  ui.tray.hidden = true;
+  ui.pose.hidden = true;
+  ui.phaseLabel.textContent = 'Paused';
+  refreshShakeButton();
+  showPanel('panel-pause');
+  status('Paused.');
+}
+
+function resumeGame() {
+  if (state.phase !== 'paused') return;
+  const phase = state.pausedFrom || 'fight';
+  state.pausedFrom = null;
+  state.phase = phase;
+  hideOverlay();
+  accumulator = 0;
+  lastTime = performance.now();
+  ui.phaseLabel.textContent = phase === 'countdown' ? 'Get ready' : 'Wrestle!';
+  status(phase === 'countdown' ? 'Get ready to wrestle.' : 'Back to it.');
+}
+
+function togglePause() {
+  if (state.phase === 'paused') resumeGame();
+  else pauseGame();
+}
+
+function restartRound() {
+  if (state.phase !== 'paused') return;
+  state.pausedFrom = null;
+  arena.sync();
+  const spots = arena.pieces.length >= 2 ? arena.spawnPoints() : null;
+  if (!spots) {
+    arena.clear();
+    state.undo = [];
+    state.builder = 0;
+    enterBuild();
+    banner('Rebuild the fort', 1.3);
+    return;
+  }
+  launchCountdown(spots);
+  banner('ROUND RESTART', 0.9);
+  status('Round restarted.');
+}
+
+function quitToMenu() {
+  if (state.phase !== 'paused') return;
+  state.pausedFrom = null;
+  state.scores = [0, 0];
+  state.round = 1;
+  state.builder = 0;
+  state.undo = [];
+  state.shake = 0;
+  state.hitstop = 0;
+  state.fallTimer = 0;
+  arena.clear();
+  cancelHeld();
+  enterIntro();
+  audio.ui();
+}
+
+/* ------------------------------------------------------------ random fort */
+function randomFort() {
+  if (state.phase !== 'build') return;
+  cancelHeld();
+  arena.clear();
+  state.undo = [];
+  const range = (min, max) => min + Math.random() * (max - min);
+  const pickOne = (list) => list[Math.floor(Math.random() * list.length)];
+  const cells = [];
+  for (const x of [-8, 0, 8]) for (const z of [-4, 4]) cells.push({ x, z });
+  for (let i = cells.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cells[i], cells[j]] = [cells[j], cells[i]];
+  }
+  const bases = [];
+  const baseCount = Math.min(cells.length, 4 + Math.floor(Math.random() * 3));
+  for (let i = 0; i < baseCount; i += 1) {
+    const cell = cells[i];
+    const pose = {
+      x: cell.x + range(-0.5, 0.5),
+      y: 0.8,
+      z: cell.z + range(-0.5, 0.5),
+      yaw: range(-0.12, 0.12),
+      pitch: 0,
+      roll: 0,
+      fold: 0,
+    };
+    const piece = arena.place('base', pose);
+    state.undo.push(piece);
+    bases.push({ piece, pose });
+  }
+  const topTypes = ['bent', 'bent', 'triangle', 'cushion', 'triangle'];
+  const topCount = Math.min(bases.length, 2 + Math.floor(Math.random() * 3));
+  for (let i = 0; i < topCount; i += 1) {
+    const base = bases[i];
+    const type = pickOne(topTypes);
+    const def = PIECE_DEFS[type];
+    const halfHeight = type === 'triangle' ? 0.7 : type === 'bent' ? 0.4375 : 0.275;
+    const pose = {
+      x: base.pose.x + range(-1.0, 1.0),
+      y: 0.875 + halfHeight + 0.4,
+      z: base.pose.z + range(-0.4, 0.4),
+      yaw: range(-0.45, 0.45),
+      pitch: 0,
+      roll: 0,
+      fold: def.defaultFold || 0,
+    };
+    state.undo.push(arena.place(type, pose));
+  }
+  audio.place();
+  updateTray();
+  banner('Random fort!', 1.2);
+  status('Random fort ready. Add to it or start the match.');
+}
+
 /* ----------------------------------------------------------------- events */
 function handleKey(code) {
+  if (state.phase === 'paused') {
+    if (code === 'Escape' || code === 'KeyP') resumeGame();
+    return;
+  }
+  if (canPause() && (code === 'Escape' || code === 'KeyP')) {
+    pauseGame();
+    return;
+  }
   if (state.phase === 'intro') {
     if (code === 'Enter' || code === 'Space') enterSelect();
     return;
@@ -1020,8 +1270,10 @@ function handleKey(code) {
 
   if (code === 'Digit1') beginHolding('base');
   else if (code === 'Digit2') beginHolding('cushion');
-  else if (code === 'Digit3') beginHolding('triangle');
+  else if (code === 'Digit3') beginHolding('bent');
+  else if (code === 'Digit4') beginHolding('triangle');
   else if (code === 'KeyZ') undoLast();
+  else if (code === 'KeyR') randomFort();
   else if (code === 'Enter') startCountdown();
   else if (code === 'Escape' || code === 'Backspace') cancelHeld();
 
@@ -1033,10 +1285,10 @@ function handleKey(code) {
   else if (code === 'KeyS') state.held.pitch += step;
   else if (code === 'KeyA') state.held.roll -= step;
   else if (code === 'KeyD') state.held.roll += step;
-  else if (code === 'BracketLeft') {
+  else if (code === 'BracketLeft' && state.held.type !== 'bent') {
     state.held.fold = Math.max(0, state.held.fold - step);
     rebuildGhost();
-  } else if (code === 'BracketRight') {
+  } else if (code === 'BracketRight' && state.held.type !== 'bent') {
     state.held.fold = Math.min(Math.PI * 0.85, state.held.fold + step);
     rebuildGhost();
   } else if (code === 'KeyX') {
@@ -1104,9 +1356,11 @@ renderer.domElement.addEventListener(
 
 ui.trayBase.addEventListener('click', () => beginHolding('base'));
 ui.trayCushion.addEventListener('click', () => beginHolding('cushion'));
+ui.trayBent.addEventListener('click', () => beginHolding('bent'));
 ui.trayTriangle.addEventListener('click', () => beginHolding('triangle'));
 ui.trayUndo.addEventListener('click', undoLast);
 ui.trayClear.addEventListener('click', clearArena);
+ui.trayRandom.addEventListener('click', randomFort);
 ui.startMatch.addEventListener('click', startCountdown);
 ui.introStart.addEventListener('click', () => {
   audio.unlock();
@@ -1122,6 +1376,29 @@ ui.btnAgain.addEventListener('click', () => {
 ui.btnChange.addEventListener('click', () => {
   audio.unlock();
   changeWrestlers();
+});
+ui.pauseResume.addEventListener('click', () => {
+  audio.unlock();
+  resumeGame();
+});
+ui.pauseRestart.addEventListener('click', () => {
+  audio.unlock();
+  restartRound();
+});
+ui.pauseQuit.addEventListener('click', () => {
+  audio.unlock();
+  quitToMenu();
+});
+ui.pauseShake.addEventListener('click', () => {
+  audio.unlock();
+  state.reducedShake = !state.reducedShake;
+  try {
+    window.localStorage.setItem('roughHousingReducedShake', state.reducedShake ? '1' : '0');
+  } catch (error) {
+    /* ignore */
+  }
+  refreshShakeButton();
+  audio.ui();
 });
 
 /* -------------------------------------------------------------- animation */
@@ -1143,6 +1420,7 @@ function tick(now) {
   const dt = Math.min(0.045, (now - lastTime) / 1000);
   lastTime = now;
   state.time += dt;
+  pollGamepads();
 
   if (state.bannerUntil && state.time > state.bannerUntil) {
     ui.banner.classList.remove('show');
@@ -1152,6 +1430,17 @@ function tick(now) {
   if (state.phase === 'intro' || state.phase === 'select') {
     animateSelect(dt);
     renderer.render(selectScene, selectCamera);
+    return;
+  }
+
+  if (state.phase === 'paused') {
+    renderer.render(gameScene, gameCamera);
+    return;
+  }
+
+  if (state.hitstop > 0) {
+    state.hitstop = Math.max(0, state.hitstop - dt);
+    renderer.render(gameScene, gameCamera);
     return;
   }
 
@@ -1191,7 +1480,10 @@ function tick(now) {
       status('Wrestle!');
     }
   } else if (state.phase === 'fight' || state.phase === 'falling') {
-    for (const fighter of fighters) fighter.update(dt, keys, state.time);
+    const inputKeys = new Set(keys);
+    addPadKeys(activePads[0], 0, inputKeys);
+    addPadKeys(activePads[1], 1, inputKeys);
+    for (const fighter of fighters) fighter.update(dt, inputKeys, state.time);
     handleImpacts(dt);
     const pruned = arena.pruneFallen();
     if (pruned) audio.splash();
@@ -1204,7 +1496,7 @@ function tick(now) {
 
   state.shake = Math.max(0, state.shake - dt * 2.2);
   gameCamera.position.copy(cameraBase);
-  if (state.shake > 0.02) {
+  if (!state.reducedShake && state.shake > 0.02) {
     gameCamera.position.x += (Math.random() - 0.5) * state.shake;
     gameCamera.position.y += (Math.random() - 0.5) * state.shake;
     gameCamera.position.z += (Math.random() - 0.5) * state.shake * 0.5;

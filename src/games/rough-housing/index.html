@@ -196,6 +196,10 @@
         background: #ff2e9a;
       }
 
+      .tray-swatch.bent {
+        background: #6d28d9;
+      }
+
       .tray-swatch.triangle {
         background: #2ec4ff;
       }
@@ -453,6 +457,7 @@
 
       .pick-buttons {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.6rem;
         justify-content: center;
         margin-top: 0.5rem;
@@ -588,6 +593,11 @@
                 <span>Cushion</span>
                 <b id="count-cushion">10</b>
               </button>
+              <button class="tray-item" id="tray-bent" type="button">
+                <span class="tray-swatch bent" aria-hidden="true"></span>
+                <span>Bent</span>
+                <b id="count-bent">4</b>
+              </button>
               <button class="tray-item" id="tray-triangle" type="button">
                 <span class="tray-swatch triangle" aria-hidden="true"></span>
                 <span>Triangle</span>
@@ -597,6 +607,7 @@
             <div class="tray-actions">
               <button class="tray-btn" id="tray-undo" type="button">Undo</button>
               <button class="tray-btn" id="tray-clear" type="button">Clear</button>
+              <button class="tray-btn" id="tray-random" type="button">Random fort</button>
               <button class="tray-start" id="start-match" type="button">Start the match</button>
             </div>
           </div>
@@ -621,7 +632,8 @@
               <p class="rh-controls">
                 Build with the mouse and the pose keys. Fight with
                 <kbd>WASD</kbd> + <kbd>Space</kbd> + <kbd>Shift</kbd> and
-                <kbd>← ↑ → ↓</kbd> + <kbd>RShift</kbd> + <kbd>/</kbd>.
+                <kbd>← ↑ → ↓</kbd> + <kbd>RShift</kbd> + <kbd>/</kbd>. Two gamepads
+                work too: left stick moves, A jumps, X dashes.
               </p>
               <button id="intro-start" class="rh-btn" type="button">Choose wrestlers</button>
             </div>
@@ -642,9 +654,22 @@
               </div>
               <p class="rh-controls">
                 P1: <kbd>A</kbd>/<kbd>D</kbd> then <kbd>Space</kbd>. P2: <kbd>←</kbd>/<kbd>→</kbd> then
-                <kbd>RShift</kbd>. Or click a wrestler.
+                <kbd>RShift</kbd>. Or click a wrestler. Pads: left/right picks, A readies.
               </p>
               <button id="select-start" class="rh-btn" type="button" disabled>Start building</button>
+            </div>
+
+            <div class="rh-card" id="panel-pause" hidden>
+              <p class="rh-kicker">Paused</p>
+              <h2>Take five</h2>
+              <p>No one scores while you're here.</p>
+              <div class="pick-buttons">
+                <button id="pause-resume" class="rh-btn" type="button">Resume</button>
+                <button id="pause-restart" class="rh-btn secondary" type="button">Restart round</button>
+                <button id="pause-quit" class="rh-btn secondary" type="button">Quit to menu</button>
+                <button id="pause-shake" class="rh-btn secondary" type="button" aria-pressed="false">Reduced shake: Off</button>
+              </div>
+              <p class="rh-controls">Escape or Start resumes. Reduced shake softens camera hits.</p>
             </div>
 
             <div class="rh-card" id="panel-match" hidden>
