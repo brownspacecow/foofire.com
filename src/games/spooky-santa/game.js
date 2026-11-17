@@ -1086,9 +1086,64 @@ const santa = buildSanta();
  * Grown-ups, kid and dog
  * ------------------------------------------------------------------ */
 
-function makeCone(radius, halfAngle, color, opacity) {
-  const group = new THREE.Group();
-  const geometry = new THREE.CircleGeometry(radius, 30, -halfAngle, halfAngle * 2);
+const CONE_Y = 0.045;
+
+/** Distance from (x, z) along `angle` until a wall or solid stops it. */
+function rayHitDistance(x, z, angle, maxDist) {
+  const dx = Math.cos(angle);
+  const dz = Math.sin(angle);
+  let best = maxDist;
+
+  for (const s of solids) {
+    let t0 = 0;
+    let t1 = maxDist;
+    let hit = true;
+    const p = [-dx, dx, -dz, dz];
+    const q = [x - s.minX, s.maxX - x, z - s.minZ, s.maxZ - z];
+
+    for (let i = 0; i < 4; i += 1) {
+      if (Math.abs(p[i]) < 1e-9) {
+        if (q[i] < 0) {
+          hit = false;
+          break;
+        }
+      } else {
+        const t = q[i] / p[i];
+        if (p[i] < 0) {
+          if (t > t1) {
+            hit = false;
+            break;
+          }
+          if (t > t0) t0 = t;
+        } else {
+          if (t < t0) {
+            hit = false;
+            break;
+          }
+          if (t < t1) t1 = t;
+        }
+      }
+    }
+
+    if (hit && t0 > 0.02 && t0 < best) best = t0;
+  }
+
+  return best;
+}
+
+/**
+ * Flashlight, stare and tree-light wedges are rebuilt from rays every frame so
+ * walls actually stop them, matching what the detection code believes.
+ */
+function makeCone(radius, halfAngle, color, opacity, segments = 26) {
+  const positions = new Float32Array((segments + 2) * 3);
+  const positionAttribute = new THREE.BufferAttribute(positions, 3);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', positionAttribute);
+  const index = [];
+  for (let i = 0; i < segments; i += 1) index.push(0, i + 1, i + 2);
+  geometry.setIndex(index);
+
   const material = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
@@ -1098,10 +1153,10 @@ function makeCone(radius, halfAngle, color, opacity) {
     toneMapped: false,
     blending: THREE.AdditiveBlending,
   });
+
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.rotation.x = -Math.PI / 2;
-  mesh.position.y = 0.045;
-  group.add(mesh);
+  mesh.frustumCulled = false;
+  scene.add(mesh);
 
   const origin = new THREE.Mesh(
     new THREE.CircleGeometry(0.22, 14),
@@ -1115,11 +1170,39 @@ function makeCone(radius, halfAngle, color, opacity) {
     })
   );
   origin.rotation.x = -Math.PI / 2;
-  origin.position.y = 0.05;
-  group.add(origin);
+  scene.add(origin);
 
-  scene.add(group);
-  return { group, material, base: color, opacity };
+  return {
+    mesh,
+    origin,
+    material,
+    base: color,
+    opacity,
+    radius,
+    half: halfAngle,
+    segments,
+    positionAttribute,
+  };
+}
+
+/** Redraw a wedge from (x, z) facing `dir`, clipped at the first wall. */
+function placeCone(cone, x, z, dir) {
+  const array = cone.positionAttribute.array;
+  array[0] = x;
+  array[1] = CONE_Y;
+  array[2] = z;
+
+  for (let i = 0; i <= cone.segments; i += 1) {
+    const angle = dir - cone.half + (i / cone.segments) * cone.half * 2;
+    const reach = rayHitDistance(x, z, angle, cone.radius);
+    const at = (i + 1) * 3;
+    array[at] = x + Math.cos(angle) * reach;
+    array[at + 1] = CONE_Y;
+    array[at + 2] = z + Math.sin(angle) * reach;
+  }
+
+  cone.positionAttribute.needsUpdate = true;
+  cone.origin.position.set(x, CONE_Y, z);
 }
 
 function makeAlertMarker() {
@@ -1234,7 +1317,7 @@ function buildDog() {
 const dadRig = buildDad();
 const dogRig = buildDog();
 const kidCone = makeCone(4.4, 0.55, 0xa9e8ff, 0.12);
-const treeCone = makeCone(7.6, 0.19, 0xc8ffd0, 0.1);
+const treeCone = makeCone(7.6, 0.19, 0xc8ffd0, 0.13);
 const kidMarker = makeAlertMarker();
 const treeMarker = null;
 
@@ -1435,7 +1518,7 @@ function resetRound() {
   kid.awake = false;
   kid.awakeT = 0;
   kid.dir = Math.PI / 2;
-  kidCone.group.visible = false;
+  kidCone.mesh.visible = false;
   setKidPose(false);
   kidMarker.visible = false;
 
@@ -1614,10 +1697,11 @@ function visibility(o) {
   const dz = player.z - o.z;
   const d = Math.hypot(dx, dz);
   if (d > o.range) return 0;
-  if (d > 1.05 && blocked(o.x, o.z, player.x, player.z)) return 0;
-  if (d > 1.05 && Math.abs(angDiff(Math.atan2(dz, dx), o.dir)) > o.half) return 0;
-  const near = d < 1.05 ? 1 : 1 - (d / o.range) * 0.55;
-  return clamp(near, 0.25, 1);
+  /* Walls block light at every range, including the close "noticed you" field. */
+  if (d > 0.001 && blocked(o.x, o.z, player.x, player.z)) return 0;
+  const inCone = d < 1.05 || Math.abs(angDiff(Math.atan2(dz, dx), o.dir)) <= o.half;
+  if (!inCone) return 0;
+  return clamp(d < 1.05 ? 1 : 1 - (d / o.range) * 0.55, 0.25, 1);
 }
 
 function observers() {
@@ -1903,8 +1987,7 @@ function updateDad(dt) {
   dadRig.group.position.set(dad.x, Math.abs(Math.sin(dad.walk)) * 0.03, dad.z);
   dadRig.group.rotation.y = Math.PI / 2 - dad.dir;
 
-  dadRig.cone.group.position.set(dad.x, 0, dad.z);
-  dadRig.cone.group.rotation.y = -dad.dir;
+  placeCone(dadRig.cone, dad.x, dad.z, dad.dir);
   dadRig.marker.position.set(dad.x, 2.0, dad.z);
 }
 
@@ -1914,7 +1997,7 @@ function updateKid(dt) {
     if (kid.awakeT <= 0) {
       kid.awake = false;
       setKidPose(false);
-      kidCone.group.visible = false;
+      kidCone.mesh.visible = false;
       kidMarker.visible = false;
       announce('The kid went back to sleep.');
     } else {
@@ -1925,8 +2008,7 @@ function updateKid(dt) {
   }
 
   kidRig.position.y = 0.72 + (kid.awake ? 0.04 + Math.sin(state.elapsed * 3) * 0.015 : 0);
-  kidCone.group.position.set(kid.x, 0, kid.z);
-  kidCone.group.rotation.y = -kid.dir;
+  placeCone(kidCone, kid.x, kid.z, kid.dir);
   kidMarker.position.set(kid.x, 1.75, kid.z);
 }
 
@@ -1965,9 +2047,8 @@ function updateDog(dt) {
 function updateTreeLights(dt) {
   const sweep = Math.sin(state.elapsed * 0.42);
   treeLight.dir = Math.PI / 2 + sweep * 1.05;
-  treeCone.group.position.set(TREE_LIGHT.x, 0, TREE_LIGHT.z);
-  treeCone.group.rotation.y = -treeLight.dir;
-  treeCone.material.opacity = 0.08 + (sweep * 0.5 + 0.5) * 0.05;
+  placeCone(treeCone, TREE_LIGHT.x, TREE_LIGHT.z, treeLight.dir);
+  treeCone.material.opacity = 0.13 + (sweep * 0.5 + 0.5) * 0.06;
 }
 
 /* ------------------------------------------------------------------ *
@@ -2310,9 +2391,9 @@ if (typeof ResizeObserver !== 'undefined') {
 /* Menu poses so the house looks alive before the first delivery. */
 santa.group.position.set(player.x, 0, player.z);
 santa.group.rotation.y = Math.PI / 2 - player.dir;
-dadRig.cone.group.position.set(dad.x, 0, dad.z);
-dadRig.cone.group.rotation.y = -dad.dir;
-kidCone.group.visible = false;
+placeCone(dadRig.cone, dad.x, dad.z, dad.dir);
+placeCone(kidCone, kid.x, kid.z, kid.dir);
+kidCone.mesh.visible = false;
 cookieGroup.visible = true;
 updateHud(true);
 
