@@ -9,12 +9,20 @@ const TAU = Math.PI * 2;
 const FIXED = 1 / 60;
 const EMPTY_KEYS = new Set();
 const TARGET_SCORE = 3;
+const BASE_MASS = 30;
 const BUILD_HINT =
   'Click a piece to pick it up · wheel lifts it · Q/E turn · W/S tilt · A/D roll · [ ] fold · click the grid to place · Z undo';
 const FIGHT_HINT =
   'P1: WASD move · Space jump · Shift cartwheel/tumble — P2: arrows move · RShift jump · / cartwheel';
 
 await RAPIER.init();
+
+// Bulk absorbs part of a hit: at the 30-unit base mass a shove is 1.0, while
+// Big Daddy (75) and Big Momma (82) take roughly 60-63% of the knockback.
+function knockbackResistance(fighter) {
+  const mass = fighter.spec.body.mass || BASE_MASS;
+  return Math.max(0.55, Math.min(1.15, Math.sqrt(BASE_MASS / mass)));
+}
 
 /* ------------------------------------------------------------------ DOM */
 const container = document.querySelector('#game-container');
@@ -535,6 +543,30 @@ function enterBuild() {
   status(`Round ${state.round}. Player ${state.builder + 1} is building the arena.`);
 }
 
+function launchCountdown(spots) {
+  ensureFighters(false);
+  fighters.forEach((fighter, index) => fighter.respawn(spots[index]));
+  state.phase = 'countdown';
+  state.countdown = 3.5;
+  state.lastCount = 4;
+  state.impactCooldown = 0;
+  state.fallTimer = 0;
+  state.shake = 0;
+  hideOverlay();
+  ui.tray.hidden = true;
+  ui.pose.hidden = true;
+  ui.phaseLabel.textContent = 'Get ready';
+  ui.roundLabel.textContent = `Round ${state.round}`;
+  ui.hint.textContent = FIGHT_HINT;
+  arena.setGridVisible(false);
+  arena.updateSpawnMarkers(false);
+  cancelHeld();
+  updateHud();
+  banner('GET READY', 0.6);
+  status('Get ready to wrestle.');
+  audio.ui();
+}
+
 function startCountdown() {
   if (state.phase !== 'build') return;
   if (arena.pieces.length < 2) {
@@ -546,21 +578,7 @@ function startCountdown() {
     banner('Build something first!', 1.6);
     return;
   }
-  ensureFighters(false);
-  fighters.forEach((fighter, index) => fighter.respawn(spots[index]));
-  state.phase = 'countdown';
-  state.countdown = 3.5;
-  state.lastCount = 4;
-  state.impactCooldown = 0;
-  ui.tray.hidden = true;
-  ui.pose.hidden = true;
-  ui.phaseLabel.textContent = 'Get ready';
-  ui.hint.textContent = FIGHT_HINT;
-  arena.setGridVisible(false);
-  cancelHeld();
-  banner('GET READY', 0.6);
-  status('Get ready to wrestle.');
-  audio.ui();
+  launchCountdown(spots);
 }
 
 function endRound(winner) {
@@ -603,12 +621,23 @@ function showMatchOver() {
 }
 
 function playAgain() {
+  // Run it back on the fort that is already standing. Only rebuild when the
+  // fight wrecked enough of it that there is nowhere to spawn.
+  arena.sync();
+  const spots = arena.pieces.length >= 2 ? arena.spawnPoints() : null;
   state.scores = [0, 0];
   state.round = 1;
   state.builder = 0;
-  arena.clear();
   state.undo = [];
-  enterBuild();
+  if (!spots) {
+    arena.clear();
+    enterBuild();
+    banner('Fresh fort', 1.2);
+    return;
+  }
+  launchCountdown(spots);
+  banner('RUN IT BACK', 0.9);
+  status('Rematch on the same fort. Get ready.');
 }
 
 function changeWrestlers() {
@@ -685,11 +714,12 @@ function handleImpacts(dt) {
       const power = launched ? 10.5 : 6.2;
       const shove = (target, sx, sz, weight) => {
         const tv = target.body.linvel();
+        const tank = knockbackResistance(target);
         target.body.setLinvel(
           {
-            x: tv.x + sx * power * weight,
-            y: Math.max(tv.y, 0) + (launched ? 4.4 : 2.4) * weight,
-            z: tv.z + sz * power * weight,
+            x: tv.x + sx * power * weight * tank,
+            y: Math.max(tv.y, 0) + (launched ? 4.4 : 2.4) * weight * tank,
+            z: tv.z + sz * power * weight * tank,
           },
           true
         );
@@ -739,8 +769,13 @@ function handleImpacts(dt) {
         Math.abs(pp.y - fp.y) < fighter.spec.body.height * 0.65
       ) {
         const fv = fighter.body.linvel();
+        const tank = knockbackResistance(fighter);
         fighter.body.setLinvel(
-          { x: fv.x + lv.x * 0.55, y: fv.y + 2.4, z: fv.z + lv.z * 0.55 },
+          {
+            x: fv.x + lv.x * 0.55 * tank,
+            y: fv.y + 2.4 * tank,
+            z: fv.z + lv.z * 0.55 * tank,
+          },
           true
         );
         fighter.flop(0.85, lv.x || 0, lv.z || 0);
@@ -1129,6 +1164,7 @@ function tick(now) {
   }
 
   arena.sync();
+  arena.updateSpawnMarkers(state.phase === 'build');
   arena.lavaTexture.offset.x = (arena.lavaTexture.offset.x + dt * 0.01) % 1;
   arena.lavaTexture.offset.y = (arena.lavaTexture.offset.y + dt * 0.005) % 1;
 

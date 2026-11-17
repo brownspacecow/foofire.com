@@ -133,6 +133,54 @@ function lavaTexture() {
 const QUAT = new THREE.Quaternion();
 const EULER = new THREE.Euler();
 
+/* Spawn markers: a ring, a soft beam and a P1/P2 tag sitting on the piece
+ * each wrestler will start on. Only shown while the fort is being built. */
+function spawnLabel(text, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 96);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 58px "Press Start 2P", "Courier New", monospace';
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = 'rgba(20, 10, 36, 0.92)';
+  ctx.strokeText(text, 64, 50);
+  ctx.fillStyle = color;
+  ctx.fillText(text, 64, 50);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false })
+  );
+  sprite.scale.set(1.6, 1.2, 1);
+  return sprite;
+}
+
+function makeSpawnMarker(index) {
+  const color = index === 0 ? 0xff2e63 : 0x2ec4ff;
+  const group = new THREE.Group();
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1.05, 0.09, 8, 36),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.04;
+  group.add(ring);
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, 2.2, 8),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.28, depthWrite: false })
+  );
+  beam.position.y = 1.14;
+  group.add(beam);
+  const label = spawnLabel(index === 0 ? 'P1' : 'P2', index === 0 ? '#ff2e63' : '#2ec4ff');
+  label.position.y = 2.6;
+  group.add(label);
+  group.visible = false;
+  return { group, ring, beam, label };
+}
+
 export class Arena {
   constructor(scene, world) {
     this.scene = scene;
@@ -186,6 +234,12 @@ export class Arena {
       new THREE.LineBasicMaterial({ color: 0xffd93d, transparent: true, opacity: 0.55 })
     );
     scene.add(this.border);
+
+    this.markerRoot = new THREE.Group();
+    this.markerRoot.visible = false;
+    scene.add(this.markerRoot);
+    this.spawnMarkers = [makeSpawnMarker(0), makeSpawnMarker(1)];
+    this.spawnMarkers.forEach((marker) => this.markerRoot.add(marker.group));
   }
 
   setGridVisible(visible) {
@@ -326,27 +380,110 @@ export class Arena {
     return removed;
   }
 
+  spawnCandidates() {
+    const raw = this.pieces.map((piece) => {
+      const box = piece.box;
+      return {
+        x: (box.min.x + box.max.x) / 2,
+        z: (box.min.z + box.max.z) / 2,
+        top: box.max.y,
+        bottom: box.min.y,
+        width: box.max.x - box.min.x,
+        minX: box.min.x,
+        maxX: box.max.x,
+        minZ: box.min.z,
+        maxZ: box.max.z,
+      };
+    });
+    // A piece with another one resting on it is not a usable surface.
+    const usable = raw.filter(
+      (spot) =>
+        !raw.some((other) => {
+          if (other === spot) return false;
+          if (other.top <= spot.top + 0.15) return false;
+          if (other.bottom > spot.top + 0.35) return false;
+          const overlapX =
+            Math.min(spot.maxX, other.maxX) - Math.max(spot.minX, other.minX);
+          const overlapZ =
+            Math.min(spot.maxZ, other.maxZ) - Math.max(spot.minZ, other.minZ);
+          return overlapX > 0.3 && overlapZ > 0.3;
+        })
+    );
+    return usable.length ? usable : raw;
+  }
+
+  spawnPair(first, second) {
+    const point = (spot, other, index) => {
+      const offset = Math.min(1.5, Math.max(0.75, spot.width * 0.23));
+      let dir = Math.sign(spot.x - other.x);
+      if (!dir) dir = index === 0 ? -1 : 1;
+      // Stay on the piece even when it is narrower than the normal offset.
+      const room = Math.max(0, (spot.maxX - spot.minX) / 2 - 0.55);
+      const shift = Math.min(offset, room);
+      return {
+        x: spot.x + dir * shift,
+        z: spot.z,
+        top: spot.top,
+        width: spot.width,
+      };
+    };
+    return [point(first, second, 0), point(second, first, 1)];
+  }
+
+  pickSpawnSpots(spots) {
+    if (!spots.length) return null;
+    let first = null;
+    let second = null;
+    let best = Infinity;
+    for (let i = 0; i < spots.length; i += 1) {
+      for (let j = i + 1; j < spots.length; j += 1) {
+        const a = spots[i];
+        const b = spots[j];
+        const distance = Math.hypot(a.x - b.x, a.z - b.z);
+        if (distance < 2.6) continue;
+        const heightGap = Math.abs(a.top - b.top);
+        if (heightGap > 2.5) continue;
+        // Matching heights first, then as much clear space as possible, so
+        // neither wrestler starts on the tall side of the fort.
+        const score = heightGap * 8 - Math.min(distance, 14);
+        if (score < best) {
+          best = score;
+          first = a;
+          second = b;
+        }
+      }
+    }
+    if (!first) {
+      const sorted = [...spots].sort((a, b) => b.top - a.top);
+      first = sorted[0];
+      second = sorted[1] || sorted[0];
+    }
+    return this.spawnPair(first, second);
+  }
+
+  updateSpawnMarkers(visible) {
+    const show = Boolean(visible) && this.pieces.length > 0;
+    this.markerRoot.visible = show;
+    if (!show) return;
+    const spots = this.pickSpawnSpots(this.spawnCandidates());
+    if (!spots) {
+      this.markerRoot.visible = false;
+      return;
+    }
+    spots.forEach((spot, index) => {
+      const marker = this.spawnMarkers[index];
+      if (!marker) return;
+      marker.group.visible = true;
+      marker.group.position.set(spot.x, spot.top + 0.06, spot.z);
+      const ringScale = Math.min(1.3, Math.max(0.7, spot.width * 0.2));
+      marker.ring.scale.setScalar(ringScale);
+      marker.beam.position.y = 1.14 + ringScale * 0.2;
+      marker.label.position.y = 2.6;
+    });
+  }
+
   spawnPoints() {
     this.sync();
-    const spots = this.pieces
-      .map((piece) => ({
-        x: (piece.box.min.x + piece.box.max.x) / 2,
-        z: (piece.box.min.z + piece.box.max.z) / 2,
-        top: piece.box.max.y,
-        width: piece.box.max.x - piece.box.min.x,
-      }))
-      .sort((a, b) => b.top - a.top);
-    if (!spots.length) return null;
-    const first = spots[0];
-    const second =
-      spots.find((spot) => Math.hypot(spot.x - first.x, spot.z - first.z) > 3) ||
-      spots[1] ||
-      first;
-    const offsetA = Math.min(1.5, Math.max(0.9, first.width * 0.25));
-    const offsetB = Math.min(1.5, Math.max(0.9, second.width * 0.25));
-    return [
-      { x: first.x - offsetA, z: first.z, top: first.top },
-      { x: second.x + offsetB, z: second.z, top: second.top },
-    ];
+    return this.pickSpawnSpots(this.spawnCandidates());
   }
 }
