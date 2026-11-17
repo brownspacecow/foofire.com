@@ -849,7 +849,9 @@ export function createWorld(scene) {
     new THREE.MeshLambertMaterial({ color: 0x6d8043 })
   );
   outer.rotation.x = -Math.PI / 2;
-  outer.position.y = -2.4;
+  /* Keep the backdrop below the track's lowest dip. When it sat at -2.4
+   * it cut through valleys and looked like green water on the road. */
+  outer.position.y = -18;
   scene.add(outer);
 
   const sky = addSky(scene);

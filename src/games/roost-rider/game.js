@@ -26,9 +26,9 @@ const BOOST_MAX = 72;
 const ACCEL = 25;
 const BOOST_ACCEL = 27;
 const BRAKE_POWER = 38;
-const DRAG = 0.0072;
-const BOOST_DRAIN = 27;
-const BOOST_REGEN = 5.5;
+const DRAG = 0.0028;
+const BOOST_DRAIN = 24;
+const BOOST_REGEN = 6.5;
 const PLAYER_LANE = -1.6;
 
 const AI_SETUPS = [
@@ -39,7 +39,7 @@ const AI_SETUPS = [
     helmet: 0xfff3d6,
     number: 12,
     lane: 3.2,
-    baseSpeed: 40.5,
+    baseSpeed: 38.5,
     phase: 0,
   },
   {
@@ -49,7 +49,7 @@ const AI_SETUPS = [
     helmet: 0x2b2f33,
     number: 21,
     lane: -5.1,
-    baseSpeed: 42,
+    baseSpeed: 40,
     phase: 2.1,
   },
   {
@@ -59,7 +59,7 @@ const AI_SETUPS = [
     helmet: 0xffd93d,
     number: 33,
     lane: 5.2,
-    baseSpeed: 43.5,
+    baseSpeed: 41.5,
     phase: 4.2,
   },
 ];
@@ -471,8 +471,8 @@ function updatePlayer(dt) {
   p.steer += (steerInput - p.steer) * (1 - Math.exp(-9 * dt));
 
   const cornering = Math.min(1, Math.abs(p.speed) / 34);
-  p.drift += -steerInput * 1.55 * cornering * (onTrack ? 1 : 1.3) * dt;
-  p.drift *= Math.exp(-4.2 * dt);
+  p.drift += -steerInput * 1.05 * cornering * (onTrack ? 1.2 : 1.1) * dt;
+  p.drift *= Math.exp(-5 * dt);
   p.drift = clamp(p.drift, -0.5, 0.5);
 
   const forwardX = Math.sin(p.yaw);
@@ -481,7 +481,7 @@ function updatePlayer(dt) {
   const behind = terrainHeight(p.x - forwardX * 6, p.z - forwardZ * 6);
   const slope = (ahead - behind) / 12;
 
-  const maxSpeed = (boosting ? BOOST_MAX : BASE_MAX) * (onTrack ? 1 : 0.62);
+  const maxSpeed = (boosting ? BOOST_MAX : BASE_MAX) * (onTrack ? 1 : 0.72);
 
   if (p.grounded) {
     if (throttle > 0) {
@@ -489,7 +489,7 @@ function updatePlayer(dt) {
       p.speed +=
         (ACCEL * throttle + (boosting ? BOOST_ACCEL : 0)) *
         (0.32 + 0.68 * headroom) *
-        (onTrack ? 1 : 0.5) *
+        (onTrack ? 1 : 0.62) *
         dt;
     }
 
@@ -503,7 +503,7 @@ function updatePlayer(dt) {
     }
 
     p.speed += -GRAVITY * slope * 0.9 * dt;
-    p.speed -= p.speed * Math.abs(p.speed) * DRAG * (onTrack ? 1 : 1.7) * dt;
+    p.speed -= p.speed * Math.abs(p.speed) * DRAG * (onTrack ? 1 : 1.4) * dt;
 
     if (p.speed > maxSpeed) p.speed -= (p.speed - maxSpeed) * 2.2 * dt;
     p.speed = clamp(p.speed, -9, BOOST_MAX + 8);
@@ -662,7 +662,7 @@ function landPlayer(impact) {
   const p = player;
   const hard = clamp((impact - 6) / 18, 0, 1);
 
-  p.speed *= 1 - hard * 0.3;
+  p.speed *= 1 - hard * 0.2;
   p.suspension = Math.min(1.5, 0.25 + hard * 1.1);
   p.suspensionVel = -hard * 2;
 
@@ -737,8 +737,8 @@ function updateAI(dt) {
     if (rider.dist < LAPS * TRACK_LENGTH) {
       let target = rider.baseSpeed;
       const gap = player.distance - rider.dist;
-      if (gap > 45) target *= 1.09;
-      else if (gap < -45) target *= 0.94;
+      if (gap > 55) target *= 1.06;
+      else if (gap < -35) target *= 0.88;
 
       rider.speed += (target - rider.speed) * (1 - Math.exp(-0.7 * dt));
       rider.dist += rider.speed * dt;
