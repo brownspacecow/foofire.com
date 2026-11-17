@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ball Pit Bonanza | Foofire Games</title>
+    <meta
+      name="description"
+      content="Play Ball Pit Bonanza, a three.js ball pit for kids. Shove the balls around, dig up treasures like old watches and lost pizza, sell them for coins, and buy upgrades and prizes."
+    />
+    <meta property="og:title" content="Ball Pit Bonanza | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Wade through a giant ball pit, dig up buried treasure, and spend your coins on upgrades and prizes."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/ball-pit/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      .pit-game {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 0 1rem 3.5rem;
+      }
+
+      .pit-hud {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1.3rem;
+        padding: 0.9rem 1rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        border-bottom: none;
+      }
+
+      .hud-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 4.6rem;
+      }
+
+      .hud-stat .stat-label {
+        font-size: 0.44rem;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+
+      .hud-stat strong {
+        font-family: var(--font-pixel);
+        font-size: 0.7rem;
+        line-height: 1.5;
+        color: var(--accent-soft);
+        overflow-wrap: anywhere;
+      }
+
+      .pit-message {
+        flex: 1 1 14rem;
+        min-height: 1.6rem;
+        margin: 0;
+        color: var(--text);
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .hud-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+      }
+
+      .ghost-button {
+        padding: 0.6rem 0.75rem;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.44rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .ghost-button:hover {
+        background: #46318c;
+      }
+
+      .ghost-button:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--ink);
+      }
+
+      .icon-button {
+        width: 2.7rem;
+        height: 2.7rem;
+        padding: 0;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .icon-button:hover {
+        background: #46318c;
+      }
+
+      .icon-button[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      #game-container {
+        position: relative;
+        width: 100%;
+        height: clamp(430px, 68vh, 700px);
+        overflow: hidden;
+        background: #0a0418;
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+        touch-action: none;
+        cursor: crosshair;
+      }
+
+      #game-container:focus-visible {
+        outline: 4px dashed var(--accent-soft);
+        outline-offset: 3px;
+      }
+
+      #game-container canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .pit-fallback {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .win-banner {
+        position: absolute;
+        top: 1rem;
+        left: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        max-width: min(90%, 24rem);
+        padding: 0.7rem 1.2rem;
+        border: 3px solid var(--ink);
+        background: var(--accent-soft);
+        color: var(--ink);
+        text-align: center;
+        opacity: 0;
+        transform: translate(-50%, -1rem) scale(0.85);
+        transition: opacity 0.2s steps(2), transform 0.25s cubic-bezier(0.2, 1.5, 0.4, 1);
+        pointer-events: none;
+        box-shadow: 4px 4px 0 var(--ink);
+        z-index: 2;
+      }
+
+      .win-banner.show {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+
+      .win-banner .banner-kicker {
+        font-family: var(--font-pixel);
+        font-size: 0.44rem;
+        letter-spacing: 0.12em;
+      }
+
+      .win-banner strong {
+        font-family: var(--font-pixel);
+        font-size: 0.68rem;
+        line-height: 1.6;
+      }
+
+      .win-banner small {
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .win-banner.rare {
+        background: linear-gradient(135deg, #c084fc, #7c3aed);
+        color: #fff8e7;
+      }
+
+      .win-banner.ultra {
+        background: linear-gradient(135deg, #ffd93d, #ff8fc7 55%, #2ec4ff);
+        box-shadow: 0 0 0 3px #fff8e7, 4px 4px 0 var(--ink);
+      }
+
+      .pit-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem 2rem;
+        padding: 1rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        border-top: none;
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .dpad {
+        display: grid;
+        grid-template-columns: repeat(3, 2.75rem);
+        grid-template-rows: repeat(3, 2.75rem);
+        gap: 0.32rem;
+      }
+
+      .dpad button,
+      .dig-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        font-family: var(--font-pixel);
+        color: var(--ink);
+        background: var(--blue);
+        box-shadow: 3px 3px 0 var(--ink);
+        cursor: pointer;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .dpad button {
+        font-size: 1rem;
+      }
+
+      .dpad button:hover,
+      .dig-button:hover {
+        filter: brightness(1.12);
+        transform: translate(-1px, -1px);
+      }
+
+      .dpad button:active,
+      .dig-button:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--ink);
+      }
+
+      .dpad [data-move="up"] {
+        grid-area: 1 / 2;
+      }
+
+      .dpad [data-move="left"] {
+        grid-area: 2 / 1;
+      }
+
+      .dpad .dpad-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        grid-area: 2 / 2;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--accent-soft);
+        font-size: 1rem;
+      }
+
+      .dpad [data-move="right"] {
+        grid-area: 2 / 3;
+      }
+
+      .dpad [data-move="down"] {
+        grid-area: 3 / 2;
+      }
+
+      .dig-button {
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: min(100%, 17rem);
+        min-height: 5.6rem;
+        padding: 0.9rem 1.4rem;
+        font-size: clamp(0.62rem, 2.1vw, 0.8rem);
+        line-height: 1.6;
+        background: linear-gradient(180deg, var(--accent-soft), #ffb703);
+        box-shadow: 5px 5px 0 var(--ink);
+      }
+
+      .dig-button small {
+        font-family: var(--font-body);
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        opacity: 0.7;
+      }
+
+      .dig-button.cooling {
+        background: var(--violet);
+        color: var(--text);
+      }
+
+      .pit-tip {
+        max-width: 46rem;
+        margin: 1rem auto 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      .pit-panel {
+        margin-top: 1.5rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .pit-panel summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem 1rem;
+        padding: 0.9rem 1rem;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .pit-panel summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .pit-panel summary::before {
+        content: "▶";
+        margin-right: 0.35rem;
+        color: var(--accent);
+        font-size: 0.7rem;
+      }
+
+      .pit-panel[open] summary::before {
+        content: "▼";
+      }
+
+      .panel-title {
+        margin-right: auto;
+        font-family: var(--font-pixel);
+        font-size: 0.62rem;
+        line-height: 1.6;
+        color: var(--accent-soft);
+      }
+
+      .panel-count {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.08rem;
+        font-size: 0.45rem;
+      }
+
+      .panel-count strong {
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        font-weight: 400;
+        color: var(--text);
+      }
+
+      .panel-count span {
+        color: var(--muted);
+      }
+
+      .panel-body {
+        padding: 0 1rem 1rem;
+      }
+
+      .panel-hint {
+        margin: 0 0 0.8rem;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .shop-heading {
+        margin: 0.9rem 0 0.6rem;
+        font-size: clamp(0.62rem, 2vw, 0.76rem);
+        line-height: 1.7;
+        color: var(--text);
+      }
+
+      .shop-heading::before {
+        content: "★ ";
+        color: var(--accent);
+      }
+
+      .shop-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 0.7rem;
+      }
+
+      .shop-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 0.75rem 0.8rem 0.8rem;
+        background: #1b1238;
+        border: 3px solid var(--border);
+      }
+
+      .shop-card.maxed {
+        border-color: var(--accent-soft);
+        background: linear-gradient(180deg, #35236b, #241a4d);
+      }
+
+      .shop-card.owned {
+        border-color: var(--green);
+        background: linear-gradient(180deg, #1f4433, #172b24);
+      }
+
+      .shop-head {
+        display: flex;
+        align-items: baseline;
+        gap: 0.45rem;
+      }
+
+      .shop-emoji {
+        font-size: 1.35rem;
+        line-height: 1;
+      }
+
+      .shop-name {
+        margin: 0;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 0.92rem;
+        font-weight: 800;
+        line-height: 1.3;
+      }
+
+      .shop-pips {
+        display: flex;
+        gap: 3px;
+        margin-left: auto;
+      }
+
+      .shop-pips .pip {
+        width: 8px;
+        height: 8px;
+        border: 1px solid var(--muted);
+        background: transparent;
+        transform: rotate(45deg);
+      }
+
+      .shop-pips .pip.on {
+        background: var(--accent-soft);
+        border-color: #fff6d6;
+        box-shadow: 0 0 5px var(--accent-soft);
+      }
+
+      .shop-blurb {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.45;
+      }
+
+      .shop-effect {
+        margin: 0;
+        color: var(--accent-soft);
+        font-size: 0.76rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .shop-buy {
+        margin-top: auto;
+        padding: 0.55rem 0.7rem;
+        border: 3px solid var(--ink);
+        background: var(--accent-soft);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.46rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .shop-buy:hover:not(:disabled) {
+        filter: brightness(1.1);
+        transform: translate(-1px, -1px);
+      }
+
+      .shop-buy:disabled {
+        cursor: not-allowed;
+        opacity: 0.62;
+        background: var(--panel-soft);
+        color: var(--text);
+        box-shadow: none;
+      }
+
+      .shop-buy.maxed,
+      .shop-buy.owned {
+        background: var(--green);
+        color: var(--ink);
+        opacity: 1;
+      }
+
+      .pack-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 0.6rem;
+      }
+
+      .pack-card {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 0.65rem;
+        background: #1b1238;
+        border: 3px solid var(--border);
+      }
+
+      .pack-emoji {
+        font-size: 1.7rem;
+        line-height: 1;
+      }
+
+      .pack-info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .pack-name {
+        margin: 0;
+        color: var(--text);
+        font-size: 0.84rem;
+        font-weight: 800;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+      }
+
+      .pack-meta {
+        margin: 0.1rem 0 0;
+        color: var(--muted);
+        font-size: 0.7rem;
+        line-height: 1.35;
+      }
+
+      .pack-meta strong {
+        color: var(--accent-soft);
+      }
+
+      .pack-sell {
+        flex: 0 0 auto;
+        padding: 0.45rem 0.55rem;
+        border: 2px solid var(--ink);
+        background: var(--accent-soft);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        line-height: 1.5;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .pack-sell:hover {
+        filter: brightness(1.1);
+      }
+
+      .pack-empty {
+        margin: 0.6rem 0;
+        padding: 0.9rem;
+        border: 2px dashed var(--border);
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-align: center;
+      }
+
+      .panel-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.55rem;
+        margin-top: 0.9rem;
+      }
+
+      .panel-button {
+        padding: 0.55rem 0.7rem;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.44rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .panel-button:hover:not(:disabled) {
+        background: #46318c;
+      }
+
+      .panel-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .panel-note {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 0.72rem;
+      }
+
+      .back-link {
+        display: block;
+        width: fit-content;
+        margin: 1.5rem auto 0;
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      /* Full screen: HUD, pit and controls fill the display. */
+      .pit-game:fullscreen {
+        max-width: none;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        background: #120a2a;
+      }
+
+      .pit-game:fullscreen .pit-hud {
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        box-shadow: none;
+      }
+
+      .pit-game:fullscreen #game-container {
+        flex: 1 1 auto;
+        height: auto;
+        min-height: 0;
+      }
+
+      .pit-game:fullscreen .pit-tip,
+      .pit-game:fullscreen .back-link,
+      .pit-game:fullscreen .pit-panel {
+        display: none;
+      }
+
+      @media (max-width: 700px) {
+        .pit-message {
+          order: 3;
+          flex-basis: 100%;
+        }
+
+        .hud-actions .ghost-button {
+          flex: 1 1 auto;
+        }
+
+        #game-container {
+          height: clamp(380px, 60vh, 560px);
+        }
+      }
+
+      @media (max-width: 420px) {
+        .pit-hud,
+        .pit-controls {
+          padding: 0.8rem 0.7rem;
+        }
+
+        .hud-stat {
+          min-width: 3.9rem;
+        }
+
+        .dpad {
+          grid-template-columns: repeat(3, 2.5rem);
+          grid-template-rows: repeat(3, 2.5rem);
+        }
+
+        .dig-button {
+          min-height: 4.6rem;
+        }
+
+        .shop-grid,
+        .pack-list {
+          grid-template-columns: 1fr;
+        }
+
+        .panel-note {
+          margin-left: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .win-banner {
+          transition-duration: 0.01ms;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Ball Pit Bonanza</h1>
+        <p>
+          Wade into the biggest ball pit in the arcade. Shove the balls around, dig with both
+          hands, and pull out whatever has been lost down there — old watches, soggy pizza, and if
+          you are truly lucky, something brand new that definitely should not be in a ball pit.
+          Sell your haul for coins, then spend them on lucky charms, speedy sneakers and a wilder
+          playground.
+        </p>
+      </section>
+
+      <section class="pit-game" id="pit-game" aria-label="Ball Pit Bonanza">
+        <div class="pit-hud">
+          <div class="hud-stat">
+            <span class="stat-label">Coins</span>
+            <strong id="coin-count">0</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Finds</span>
+            <strong id="find-count">0</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Backpack</span>
+            <strong id="pack-count">0</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Best Find</span>
+            <strong id="best-count">0</strong>
+          </div>
+          <p class="pit-message" id="message" role="status" aria-live="polite">
+            Wade into the balls and press DIG!
+          </p>
+          <div class="hud-actions">
+            <button class="ghost-button" id="backpack-button" type="button">🎒 Backpack</button>
+            <button class="ghost-button" id="shop-button" type="button">🛍️ Shop</button>
+            <button
+              class="icon-button"
+              id="fullscreen-button"
+              type="button"
+              aria-label="Play in full screen"
+              aria-pressed="false"
+            >
+              ⛶
+            </button>
+            <button
+              class="icon-button"
+              id="mute-button"
+              type="button"
+              aria-label="Mute sounds"
+              aria-pressed="false"
+            >
+              🔊
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="game-container"
+          tabindex="0"
+          role="application"
+          aria-label="3D ball pit. Use the arrow keys or WASD to walk, or click the pit to move there. Press Space to dig."
+        >
+          <div class="win-banner" id="win-banner" aria-hidden="true">
+            <span class="banner-kicker" id="win-kicker">FOUND!</span>
+            <strong id="win-name">Old Watch</strong>
+            <small id="win-meta">worth 12 coins</small>
+          </div>
+        </div>
+
+        <div class="pit-controls">
+          <div class="dpad" role="group" aria-label="Move around the ball pit">
+            <button type="button" data-move="up" aria-label="Walk away">▲</button>
+            <button type="button" data-move="left" aria-label="Walk left">◀</button>
+            <span class="dpad-center" aria-hidden="true">✥</span>
+            <button type="button" data-move="right" aria-label="Walk right">▶</button>
+            <button type="button" data-move="down" aria-label="Walk closer">▼</button>
+          </div>
+          <button class="dig-button" id="dig-button" type="button">
+            <span id="dig-label">DIG</span>
+            <small>Space bar</small>
+          </button>
+        </div>
+
+        <p class="pit-tip">
+          Click or tap the pit to walk there, or use WASD / the arrow keys. Press DIG (or Space) to
+          fling the balls away — most digs are just balls, but every so often something good pops
+          out. Everything you find goes in your backpack until you sell it.
+        </p>
+
+        <details class="pit-panel" id="pack-panel">
+          <summary>
+            <span class="panel-title">🎒 Backpack</span>
+            <span class="panel-count">
+              <strong id="pack-summary">0 items</strong>
+              <span>sell your finds</span>
+            </span>
+          </summary>
+          <div class="panel-body">
+            <p class="panel-hint">
+              Sell a whole stack at once. Coins buy upgrades and prizes in the shop.
+            </p>
+            <div class="pack-list" id="pack-list" role="list"></div>
+            <p class="pack-empty" id="pack-empty">Your backpack is empty — go dig!</p>
+            <div class="panel-footer">
+              <button class="panel-button" id="sell-junk-button" type="button">
+                Sell all junk
+              </button>
+              <button class="panel-button" id="sell-all-button" type="button">Sell everything</button>
+              <span class="panel-note" id="save-note">Progress saves automatically in this browser.</span>
+            </div>
+          </div>
+        </details>
+
+        <details class="pit-panel" id="shop-panel">
+          <summary>
+            <span class="panel-title">🛍️ Ball Pit Shop</span>
+            <span class="panel-count">
+              <strong id="shop-coins">0 coins</strong>
+              <span>spend your haul</span>
+            </span>
+          </summary>
+          <div class="panel-body">
+            <h2 class="shop-heading">Upgrades</h2>
+            <div class="shop-grid" id="shop-list"></div>
+            <h2 class="shop-heading">Prizes</h2>
+            <p class="panel-hint">One-of-a-kind buddies and trophies for your ball pit.</p>
+            <div class="shop-grid" id="prize-list"></div>
+          </div>
+        </details>
+
+        <a href="../../../games.html" class="back-link">&larr; Back to games</a>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

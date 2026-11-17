@@ -4,6 +4,13 @@
  */
 export const games = [
   {
+    id: 'ball-pit',
+    title: 'Ball Pit Bonanza',
+    description:
+      'Wade through a giant ball pit, shove the balls around, and dig up buried treasure — old watches, soggy pizza, and maybe something brand new. Sell your haul for upgrades and prizes.',
+    path: './src/games/ball-pit/index.html',
+  },
+  {
     id: 'spooky-santa',
     title: 'Spooky Santa',
     description:

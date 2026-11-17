@@ -23,6 +23,9 @@ src/
     pizza-homestead/  # Pizza Homestead: Fun Room Rush three.js game
       index.html
       game.js
+    ball-pit/       # Ball Pit Bonanza three.js game
+      index.html
+      game.js
   components/
   pages/
   data/
