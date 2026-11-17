@@ -6,12 +6,12 @@
     <title>Rough Housing | Foofire Games</title>
     <meta
       name="description"
-      content="Rough Housing: build a couch-fort wrestling arena out of Nugget pieces, then body-slam your friend into the lava. A local two-player physics game for kids."
+      content="Rough Housing: build a couch-fort wrestling arena out of foam pieces, then body-slam your friend into the lava. A local two-player physics game for kids."
     />
     <meta property="og:title" content="Rough Housing | Foofire Games" />
     <meta
       property="og:description"
-      content="Build a couch-fort wrestling arena out of ten Nuggets, then knock your friend into the lava. Local two-player physics chaos."
+      content="Build a couch-fort wrestling arena out of ten foam pieces, then knock your friend into the lava. Local two-player physics chaos."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com/src/games/rough-housing/index.html" />
@@ -172,6 +172,13 @@
         background: #431f4a;
       }
 
+      .tray-item.pad-focus,
+      .tray-btn.pad-focus,
+      .tray-start.pad-focus {
+        outline: 3px solid #ffd93d;
+        outline-offset: 2px;
+      }
+
       .tray-item:disabled {
         opacity: 0.35;
         cursor: not-allowed;
@@ -194,6 +201,10 @@
 
       .tray-swatch.cushion {
         background: #ff2e9a;
+      }
+
+      .tray-swatch.bent {
+        background: #6d28d9;
       }
 
       .tray-swatch.triangle {
@@ -415,6 +426,11 @@
         cursor: not-allowed;
       }
 
+      #panel-pause .rh-btn:focus {
+        outline: 3px solid #8c1b2e;
+        outline-offset: 3px;
+      }
+
       .rh-btn.secondary {
         background: #e8dcc4;
       }
@@ -453,6 +469,7 @@
 
       .pick-buttons {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.6rem;
         justify-content: center;
         margin-top: 0.5rem;
@@ -477,6 +494,12 @@
         color: var(--text);
         font-weight: 600;
         text-decoration: underline;
+      }
+
+      @media (max-width: 930px) {
+        .rh-hint {
+          display: none;
+        }
       }
 
       @media (max-width: 720px) {
@@ -548,7 +571,7 @@
       <section class="page-header">
         <h1>Rough Housing</h1>
         <p>
-          Ten Nuggets, one lava pit, two kids who should know better. Build a couch-fort arena,
+          Ten foam pieces, one lava pit, two kids who should know better. Build a couch-fort arena,
           pick a wrestler, and knock the other one off the foam.
         </p>
       </section>
@@ -588,6 +611,11 @@
                 <span>Cushion</span>
                 <b id="count-cushion">10</b>
               </button>
+              <button class="tray-item" id="tray-bent" type="button">
+                <span class="tray-swatch bent" aria-hidden="true"></span>
+                <span>Bent</span>
+                <b id="count-bent">4</b>
+              </button>
               <button class="tray-item" id="tray-triangle" type="button">
                 <span class="tray-swatch triangle" aria-hidden="true"></span>
                 <span>Triangle</span>
@@ -597,6 +625,7 @@
             <div class="tray-actions">
               <button class="tray-btn" id="tray-undo" type="button">Undo</button>
               <button class="tray-btn" id="tray-clear" type="button">Clear</button>
+              <button class="tray-btn" id="tray-random" type="button">Random fort</button>
               <button class="tray-start" id="start-match" type="button">Start the match</button>
             </div>
           </div>
@@ -610,7 +639,7 @@
               <p class="rh-kicker">Foam-fort wrestling federation</p>
               <h2>Rough Housing</h2>
               <p>
-                One player builds the arena out of ten Nuggets. Then both players climb on and
+                One player builds the arena out of ten foam pieces. Then both players climb on and
                 try to bump, jump and cartwheel the other into the lava.
               </p>
               <ul class="rules">
@@ -619,9 +648,10 @@
                 <li><span aria-hidden="true">🌋</span><span>Last wrestler on the foam scores a point. First to 3 wins.</span></li>
               </ul>
               <p class="rh-controls">
-                Build with the mouse and the pose keys. Fight with
+                Build with the mouse or a controller. Fight with
                 <kbd>WASD</kbd> + <kbd>Space</kbd> + <kbd>Shift</kbd> and
-                <kbd>← ↑ → ↓</kbd> + <kbd>RShift</kbd> + <kbd>/</kbd>.
+                <kbd>← ↑ → ↓</kbd> + <kbd>RShift</kbd> + <kbd>/</kbd>. Two gamepads
+                work too: left stick moves, A jumps, X dashes.
               </p>
               <button id="intro-start" class="rh-btn" type="button">Choose wrestlers</button>
             </div>
@@ -642,18 +672,32 @@
               </div>
               <p class="rh-controls">
                 P1: <kbd>A</kbd>/<kbd>D</kbd> then <kbd>Space</kbd>. P2: <kbd>←</kbd>/<kbd>→</kbd> then
-                <kbd>RShift</kbd>. Or click a wrestler.
+                <kbd>RShift</kbd>. Or click a wrestler. Pads: left/right picks, A readies.
               </p>
               <button id="select-start" class="rh-btn" type="button" disabled>Start building</button>
+            </div>
+
+            <div class="rh-card" id="panel-pause" hidden>
+              <p class="rh-kicker">Paused</p>
+              <h2>Take five</h2>
+              <p>No one scores while you're here.</p>
+              <div class="pick-buttons">
+                <button id="pause-resume" class="rh-btn" type="button">Resume</button>
+                <button id="pause-restart" class="rh-btn secondary" type="button">Restart round</button>
+                <button id="pause-quit" class="rh-btn secondary" type="button">Quit to menu</button>
+                <button id="pause-shake" class="rh-btn secondary" type="button" aria-pressed="false">Reduced shake: Off</button>
+              </div>
+              <p class="rh-controls" id="pause-note" hidden>This round is already decided. Resume to continue.</p>
+              <p class="rh-controls">Escape, Start or B resumes. D-pad picks, A selects. Reduced shake softens camera hits.</p>
             </div>
 
             <div class="rh-card" id="panel-match" hidden>
               <p class="rh-kicker">Match over</p>
               <h2 id="match-title">Player 1 wins!</h2>
               <p id="match-sub">3 – 0</p>
-              <p class="rh-controls">Same wrestlers, or pick new ones?</p>
+              <p class="rh-controls">Run it back on the same fort, or pick new wrestlers.</p>
               <div class="pick-buttons">
-                <button id="btn-again" class="rh-btn" type="button">Play again</button>
+                <button id="btn-again" class="rh-btn" type="button">Run it back</button>
                 <button id="btn-change" class="rh-btn secondary" type="button">Change wrestlers</button>
               </div>
             </div>
@@ -663,7 +707,7 @@
         </div>
 
         <p class="game-tip" id="game-tip">
-          Build a fort with ten Nuggets' worth of foam, then wrestle on it. No attack button: run,
+          Build a fort from ten foam pieces, then wrestle on it. No attack button: run,
           jump and cartwheel into each other and let physics decide.
         </p>
 

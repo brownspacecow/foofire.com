@@ -39,7 +39,7 @@ const AI_SETUPS = [
     helmet: 0xfff3d6,
     number: 12,
     lane: 3.2,
-    baseSpeed: 38.5,
+    baseSpeed: 30.5,
     phase: 0,
   },
   {
@@ -49,7 +49,7 @@ const AI_SETUPS = [
     helmet: 0x2b2f33,
     number: 21,
     lane: -5.1,
-    baseSpeed: 40,
+    baseSpeed: 32,
     phase: 2.1,
   },
   {
@@ -59,7 +59,7 @@ const AI_SETUPS = [
     helmet: 0xffd93d,
     number: 33,
     lane: 5.2,
-    baseSpeed: 41.5,
+    baseSpeed: 33.5,
     phase: 4.2,
   },
 ];
@@ -466,6 +466,14 @@ function updatePlayer(dt) {
     p.yaw += steerInput * turnRate * authority * reverseSign * dt;
   } else {
     p.yaw += steerInput * 3.6 * dt;
+    /* Big jumps fly for over two seconds, far longer than any straight on
+     * this circuit. With hands off the bars, drift the nose back toward the
+     * trail so huge air still lands on the racing line instead of the weeds. */
+    if (Math.abs(steerInput) < 0.05) {
+      const trackYaw = Math.atan2(ground.tx, ground.tz);
+      const error = Math.atan2(Math.sin(trackYaw - p.yaw), Math.cos(trackYaw - p.yaw));
+      if (Math.abs(error) < 1.6) p.yaw += error * (1 - Math.exp(-4.5 * dt));
+    }
   }
 
   p.steer += (steerInput - p.steer) * (1 - Math.exp(-9 * dt));
@@ -662,7 +670,7 @@ function landPlayer(impact) {
   const p = player;
   const hard = clamp((impact - 6) / 18, 0, 1);
 
-  p.speed *= 1 - hard * 0.2;
+  p.speed *= 1 - hard * 0.15;
   p.suspension = Math.min(1.5, 0.25 + hard * 1.1);
   p.suspensionVel = -hard * 2;
 
@@ -737,8 +745,8 @@ function updateAI(dt) {
     if (rider.dist < LAPS * TRACK_LENGTH) {
       let target = rider.baseSpeed;
       const gap = player.distance - rider.dist;
-      if (gap > 55) target *= 1.06;
-      else if (gap < -35) target *= 0.88;
+      if (gap > 55) target *= 1.04;
+      else if (gap < -35) target *= 0.86;
 
       rider.speed += (target - rider.speed) * (1 - Math.exp(-0.7 * dt));
       rider.dist += rider.speed * dt;
