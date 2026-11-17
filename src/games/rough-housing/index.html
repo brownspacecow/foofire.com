@@ -172,6 +172,13 @@
         background: #431f4a;
       }
 
+      .tray-item.pad-focus,
+      .tray-btn.pad-focus,
+      .tray-start.pad-focus {
+        outline: 3px solid #ffd93d;
+        outline-offset: 2px;
+      }
+
       .tray-item:disabled {
         opacity: 0.35;
         cursor: not-allowed;
@@ -419,6 +426,11 @@
         cursor: not-allowed;
       }
 
+      #panel-pause .rh-btn:focus {
+        outline: 3px solid #8c1b2e;
+        outline-offset: 3px;
+      }
+
       .rh-btn.secondary {
         background: #e8dcc4;
       }
@@ -482,6 +494,12 @@
         color: var(--text);
         font-weight: 600;
         text-decoration: underline;
+      }
+
+      @media (max-width: 930px) {
+        .rh-hint {
+          display: none;
+        }
       }
 
       @media (max-width: 720px) {
@@ -630,7 +648,7 @@
                 <li><span aria-hidden="true">🌋</span><span>Last wrestler on the foam scores a point. First to 3 wins.</span></li>
               </ul>
               <p class="rh-controls">
-                Build with the mouse and the pose keys. Fight with
+                Build with the mouse or a controller. Fight with
                 <kbd>WASD</kbd> + <kbd>Space</kbd> + <kbd>Shift</kbd> and
                 <kbd>← ↑ → ↓</kbd> + <kbd>RShift</kbd> + <kbd>/</kbd>. Two gamepads
                 work too: left stick moves, A jumps, X dashes.
@@ -669,7 +687,8 @@
                 <button id="pause-quit" class="rh-btn secondary" type="button">Quit to menu</button>
                 <button id="pause-shake" class="rh-btn secondary" type="button" aria-pressed="false">Reduced shake: Off</button>
               </div>
-              <p class="rh-controls">Escape or Start resumes. Reduced shake softens camera hits.</p>
+              <p class="rh-controls" id="pause-note" hidden>This round is already decided. Resume to continue.</p>
+              <p class="rh-controls">Escape, Start or B resumes. D-pad picks, A selects. Reduced shake softens camera hits.</p>
             </div>
 
             <div class="rh-card" id="panel-match" hidden>

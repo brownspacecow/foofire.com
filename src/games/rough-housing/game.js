@@ -23,12 +23,13 @@ const CONTROLS = [
 ];
 const PAD = { deadzone: 0.35, jump: 0, dash: [1, 2], start: 9 };
 const padPrev = [
-  { a: false, start: false, left: false, right: false },
-  { a: false, start: false, left: false, right: false },
+  { a: false, b: false, start: false, left: false, right: false, up: false, down: false },
+  { a: false, b: false, start: false, left: false, right: false, up: false, down: false },
 ];
+const buildPrev = { a: false, b: false, x: false, up: false, down: false, left: false, right: false };
 let activePads = [null, null];
 const BUILD_HINT =
-  'Click a piece to pick it up · wheel lifts it · Q/E turn · W/S tilt · A/D roll · [ ] fold · click the grid to place · Z undo · R random fort';
+  'Mouse: click a piece, wheel lifts, Q/E turn, W/S tilt, A/D roll, [ ] fold, click the grid to place. Pad: D-pad picks in the tray, A uses/places, stick moves, X grabs, B cancels, LB/RB lifts, LT/RT folds, X/Y rolls, right stick turns, Start begins.';
 const FIGHT_HINT =
   'P1: WASD move · Space jump · Shift cartwheel/tumble — P2: arrows move · RShift jump · / cartwheel — Pads: stick move · A jump · X dash · Start pauses';
 
@@ -88,11 +89,30 @@ const ui = {
   pauseRestart: document.querySelector('#pause-restart'),
   pauseQuit: document.querySelector('#pause-quit'),
   pauseShake: document.querySelector('#pause-shake'),
+  pauseNote: document.querySelector('#pause-note'),
   status: document.querySelector('#status'),
   mute: document.querySelector('#mute-button'),
   fullscreen: document.querySelector('#fullscreen-button'),
   gameShell: document.querySelector('.rh-game'),
 };
+
+const BUILD_FOCUS = [
+  { kind: 'piece', type: 'base', button: ui.trayBase },
+  { kind: 'piece', type: 'cushion', button: ui.trayCushion },
+  { kind: 'piece', type: 'bent', button: ui.trayBent },
+  { kind: 'piece', type: 'triangle', button: ui.trayTriangle },
+  { kind: 'undo', button: ui.trayUndo },
+  { kind: 'clear', button: ui.trayClear },
+  { kind: 'random', button: ui.trayRandom },
+  { kind: 'start', button: ui.startMatch },
+];
+
+const PAUSE_OPTIONS = [
+  { button: ui.pauseResume, action: 'resume' },
+  { button: ui.pauseRestart, action: 'restart' },
+  { button: ui.pauseQuit, action: 'quit' },
+  { button: ui.pauseShake, action: 'shake' },
+];
 
 /* -------------------------------------------------------------- renderer */
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -281,12 +301,17 @@ const state = {
   shake: 0,
   hitstop: 0,
   pausedFrom: null,
+  pauseIndex: 0,
   reducedShake: false,
   fightersDirty: true,
   held: null,
   ghost: null,
   ghostValid: false,
   undo: [],
+  buildFocus: 0,
+  buildPad: false,
+  buildCursor: { x: 0, z: 0 },
+  padGhost: false,
 };
 
 try {
@@ -309,6 +334,21 @@ const ghostMat = new THREE.MeshStandardMaterial({
   depthWrite: false,
   roughness: 0.6,
 });
+
+const buildCursorMesh = new THREE.Mesh(
+  new THREE.TorusGeometry(0.72, 0.07, 8, 28),
+  new THREE.MeshBasicMaterial({
+    color: 0xffd93d,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    depthTest: false,
+  })
+);
+buildCursorMesh.rotation.x = -Math.PI / 2;
+buildCursorMesh.renderOrder = 6;
+buildCursorMesh.visible = false;
+gameScene.add(buildCursorMesh);
 
 /* ------------------------------------------------------------------ audio */
 const audio = (() => {
@@ -557,6 +597,9 @@ function beginMatch() {
 
 function enterBuild() {
   state.phase = 'build';
+  state.buildFocus = 0;
+  state.buildPad = false;
+  state.padGhost = false;
   hideOverlay();
   ui.tray.hidden = false;
   ui.pose.hidden = true;
@@ -567,6 +610,9 @@ function enterBuild() {
   for (const fighter of fighters) fighter.hide();
   cancelHeld();
   updateTray();
+  if (!isBuildFocusEnabled(state.buildFocus)) moveBuildFocus(1);
+  updateBuildFocus();
+  updateBuildCursor();
   updateHud();
   banner(`PLAYER ${state.builder + 1} BUILDS`, 1.6);
   status(`Round ${state.round}. Player ${state.builder + 1} is building the arena.`);
@@ -592,6 +638,10 @@ function launchCountdown(spots) {
   arena.setGridVisible(false);
   arena.updateSpawnMarkers(false);
   cancelHeld();
+  state.buildPad = false;
+  state.padGhost = false;
+  updateBuildFocus();
+  updateBuildCursor();
   updateHud();
   banner('GET READY', 0.6);
   status('Get ready to wrestle.');
@@ -600,6 +650,9 @@ function launchCountdown(spots) {
 
 function startCountdown() {
   if (state.phase !== 'build') return;
+  // A piece held at the bell is not in arena.pieces; restore/cancel it first
+  // so the two-piece check sees the real fort.
+  if (state.held) cancelHeld();
   if (arena.pieces.length < 2) {
     banner('Build something first!', 1.6);
     return;
@@ -847,14 +900,17 @@ function rebuildGhost() {
   state.ghost = ghost;
 }
 
-function beginHolding(type) {
+function beginHolding(type, fromPad = false) {
   if (state.phase !== 'build') return;
+  if (state.held) cancelHeld();
   const counts = arena.counts();
   const left = PIECE_DEFS[type].total - counts[type];
   if (left <= 0) {
     banner(`No ${PIECE_DEFS[type].label.toLowerCase()} pieces left`, 1.2);
     return;
   }
+  if (!fromPad) state.buildPad = false;
+  state.padGhost = fromPad;
   state.held = {
     type,
     fold: PIECE_DEFS[type].defaultFold || 0,
@@ -862,24 +918,36 @@ function beginHolding(type) {
     pitch: 0,
     roll: 0,
     lift: 0.15,
-    x: 0,
-    z: 0,
+    x: fromPad ? state.buildCursor.x : 0,
+    z: fromPad ? state.buildCursor.z : 0,
     pose: null,
+    origin: null,
   };
   state.ghostValid = false;
   rebuildGhost();
   ui.pose.hidden = false;
+  updateBuildFocus();
+  updateBuildCursor();
   audio.pick();
 }
 
-function cancelHeld() {
+function cancelHeld(restore = true) {
+  const held = state.held;
   state.held = null;
   state.ghostValid = false;
+  state.padGhost = false;
   if (state.ghost) {
     gameScene.remove(state.ghost);
     state.ghost = null;
   }
   if (ui.pose) ui.pose.hidden = true;
+  if (held?.origin && restore) {
+    const returned = arena.place(held.type, held.origin);
+    if (state.phase === 'build') state.undo.push(returned);
+    updateTray();
+  }
+  updateBuildFocus();
+  updateBuildCursor();
 }
 
 function updateGhost() {
@@ -887,10 +955,12 @@ function updateGhost() {
   const ghost = state.ghost;
   if (!held || !ghost) return;
 
-  const hit = pointerToArena();
-  if (hit) {
-    held.x = Math.max(-ZONE.halfX + 1, Math.min(ZONE.halfX - 1, hit.x));
-    held.z = Math.max(-ZONE.halfZ + 1, Math.min(ZONE.halfZ - 1, hit.z));
+  if (!state.padGhost) {
+    const hit = pointerToArena();
+    if (hit) {
+      held.x = Math.max(-ZONE.halfX + 1, Math.min(ZONE.halfX - 1, hit.x));
+      held.z = Math.max(-ZONE.halfZ + 1, Math.min(ZONE.halfZ - 1, hit.z));
+    }
   }
 
   ghost.rotation.order = 'YXZ';
@@ -910,6 +980,8 @@ function updateGhost() {
     box.max.z <= ZONE.halfZ + 0.02;
   state.ghostValid = inside && !arena.overlaps(box);
   ghostMat.color.set(state.ghostValid ? 0x4ade80 : 0xff4d5e);
+  state.buildCursor.x = held.x;
+  state.buildCursor.z = held.z;
 
   held.pose = {
     x: ghost.position.x,
@@ -935,6 +1007,7 @@ function placeHeld() {
   }
   const piece = arena.place(state.held.type, state.held.pose);
   state.undo.push(piece);
+  if (state.held) state.held.origin = null;
   audio.place();
   state.shake = Math.min(0.5, state.shake + 0.08);
   updateTray();
@@ -952,11 +1025,56 @@ function undoLast() {
 }
 
 function clearArena() {
+  cancelHeld(false);
   arena.clear();
   state.undo = [];
-  cancelHeld();
   updateTray();
+  updateBuildFocus();
   banner('Arena cleared', 1);
+}
+
+function holdPiece(piece, fromPad = false) {
+  if (!piece || !arena.pieces.includes(piece)) return;
+  if (state.held) cancelHeld();
+  const translation = piece.body.translation();
+  const rotation = piece.body.rotation();
+  const euler = new THREE.Euler().setFromQuaternion(
+    new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
+    'YXZ'
+  );
+  const origin = {
+    x: translation.x,
+    y: translation.y,
+    z: translation.z,
+    yaw: euler.y,
+    pitch: euler.x,
+    roll: euler.z,
+    fold: piece.pose.fold || 0,
+  };
+  if (!fromPad) state.buildPad = false;
+  state.padGhost = fromPad;
+  state.buildCursor.x = translation.x;
+  state.buildCursor.z = translation.z;
+  state.held = {
+    type: piece.type,
+    fold: origin.fold,
+    yaw: origin.yaw,
+    pitch: origin.pitch,
+    roll: origin.roll,
+    lift: 0.4,
+    x: translation.x,
+    z: translation.z,
+    pose: null,
+    origin,
+  };
+  arena.remove(piece);
+  state.undo = state.undo.filter((entry) => entry !== piece);
+  rebuildGhost();
+  ui.pose.hidden = false;
+  updateTray();
+  updateBuildFocus();
+  updateBuildCursor();
+  audio.pick();
 }
 
 function pickUpAt() {
@@ -965,31 +1083,169 @@ function pickUpAt() {
   if (!hits.length) return;
   let object = hits[0].object;
   while (object && !object.userData.piece) object = object.parent;
-  const piece = object?.userData.piece;
-  if (!piece || !arena.pieces.includes(piece)) return;
-  const translation = piece.body.translation();
-  const rotation = piece.body.rotation();
-  const euler = new THREE.Euler().setFromQuaternion(
-    new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
-    'YXZ'
-  );
-  state.held = {
-    type: piece.type,
-    fold: piece.pose.fold || 0,
-    yaw: euler.y,
-    pitch: euler.x,
-    roll: euler.z,
-    lift: 0.4,
-    x: translation.x,
-    z: translation.z,
-    pose: null,
+  holdPiece(object?.userData.piece, false);
+}
+
+/* --------------------------------------------------------- build gamepad */
+function buildPad() {
+  return activePads[state.builder] || activePads[0] || activePads[1];
+}
+
+function isBuildFocusEnabled(index) {
+  const item = BUILD_FOCUS[index];
+  if (!item || state.phase !== 'build') return false;
+  if (item.kind === 'piece') {
+    const counts = arena.counts();
+    return PIECE_DEFS[item.type].total - counts[item.type] > 0;
+  }
+  if (item.kind === 'undo') return state.undo.length > 0;
+  if (item.kind === 'clear') return arena.pieces.length > 0;
+  return true;
+}
+
+function updateBuildFocus() {
+  const show = state.phase === 'build' && state.buildPad && !state.held;
+  BUILD_FOCUS.forEach((item, index) => {
+    item.button?.classList.toggle('pad-focus', show && index === state.buildFocus);
+  });
+}
+
+function moveBuildFocus(delta) {
+  if (state.phase !== 'build' || state.held) return;
+  for (let step = 1; step <= BUILD_FOCUS.length; step += 1) {
+    const next = (state.buildFocus + delta * step + BUILD_FOCUS.length) % BUILD_FOCUS.length;
+    if (isBuildFocusEnabled(next)) {
+      state.buildFocus = next;
+      updateBuildFocus();
+      audio.ui();
+      return;
+    }
+  }
+}
+
+function activateBuildFocus() {
+  if (state.phase !== 'build' || state.held) return;
+  const item = BUILD_FOCUS[state.buildFocus];
+  if (!item || !isBuildFocusEnabled(state.buildFocus)) return;
+  if (item.kind === 'piece') beginHolding(item.type, true);
+  else if (item.kind === 'undo') undoLast();
+  else if (item.kind === 'clear') clearArena();
+  else if (item.kind === 'random') randomFort();
+  else if (item.kind === 'start') startCountdown();
+  if (state.phase !== 'build' || state.held) return;
+  if (!isBuildFocusEnabled(state.buildFocus)) moveBuildFocus(1);
+  updateBuildFocus();
+}
+
+function grabAtCursor() {
+  if (state.phase !== 'build' || state.held) return;
+  const { x, z } = state.buildCursor;
+  const reach = 0.6;
+  let best = null;
+  for (const piece of arena.pieces) {
+    const box = piece.box;
+    if (x < box.min.x - reach || x > box.max.x + reach) continue;
+    if (z < box.min.z - reach || z > box.max.z + reach) continue;
+    if (!best || box.max.y > best.box.max.y) best = piece;
+  }
+  if (best) holdPiece(best, true);
+  else banner('Nothing to grab here', 1.1);
+}
+
+function updateBuildCursor() {
+  buildCursorMesh.visible = state.phase === 'build' && state.buildPad && !state.held;
+  if (buildCursorMesh.visible) {
+    buildCursorMesh.position.set(state.buildCursor.x, 0.08, state.buildCursor.z);
+  }
+  updateBuildFocus();
+}
+
+function updatePadBuild(dt) {
+  if (state.phase !== 'build') return;
+  const pad = buildPad();
+  if (!pad) return;
+
+  const ax = Number.isFinite(pad.axes?.[0]) ? pad.axes[0] : 0;
+  const ay = Number.isFinite(pad.axes?.[1]) ? pad.axes[1] : 0;
+  const rx = Number.isFinite(pad.axes?.[2]) ? pad.axes[2] : 0;
+  const ry = Number.isFinite(pad.axes?.[3]) ? pad.axes[3] : 0;
+  const dpad = {
+    left: padPressed(pad, 14),
+    right: padPressed(pad, 15),
+    up: padPressed(pad, 12),
+    down: padPressed(pad, 13),
   };
-  arena.remove(piece);
-  state.undo = state.undo.filter((entry) => entry !== piece);
-  rebuildGhost();
-  ui.pose.hidden = false;
-  updateTray();
-  audio.pick();
+  const a = padPressed(pad, 0);
+  const b = padPressed(pad, 1);
+  const x = padPressed(pad, 2);
+  const y = padPressed(pad, 3);
+  const lb = padPressed(pad, 4);
+  const rb = padPressed(pad, 5);
+  const lt = padPressed(pad, 6);
+  const rt = padPressed(pad, 7);
+  const any =
+    Math.abs(ax) > PAD.deadzone ||
+    Math.abs(ay) > PAD.deadzone ||
+    Math.abs(rx) > PAD.deadzone ||
+    Math.abs(ry) > PAD.deadzone ||
+    a || b || x || y || lb || rb || lt || rt ||
+    dpad.left || dpad.right || dpad.up || dpad.down;
+  if (any) state.buildPad = true;
+
+  let mx = Math.abs(ax) > PAD.deadzone ? ax : 0;
+  let mz = Math.abs(ay) > PAD.deadzone ? ay : 0;
+  if (state.held && (dpad.left || dpad.right || dpad.up || dpad.down)) {
+    mx = (dpad.right ? 1 : 0) - (dpad.left ? 1 : 0);
+    mz = (dpad.down ? 1 : 0) - (dpad.up ? 1 : 0);
+  }
+  const len = Math.hypot(mx, mz);
+  if (len > 0.001) {
+    const scale = Math.min(1, len) / len;
+    const dx = mx * scale * 14 * dt;
+    const dz = mz * scale * 14 * dt;
+    if (state.held) {
+      state.held.x = Math.max(-ZONE.halfX + 1, Math.min(ZONE.halfX - 1, state.held.x + dx));
+      state.held.z = Math.max(-ZONE.halfZ + 1, Math.min(ZONE.halfZ - 1, state.held.z + dz));
+      state.padGhost = true;
+      state.buildCursor.x = state.held.x;
+      state.buildCursor.z = state.held.z;
+    } else {
+      state.buildCursor.x = Math.max(-ZONE.halfX + 1, Math.min(ZONE.halfX - 1, state.buildCursor.x + dx));
+      state.buildCursor.z = Math.max(-ZONE.halfZ + 1, Math.min(ZONE.halfZ - 1, state.buildCursor.z + dz));
+    }
+  }
+
+  if (state.held) {
+    const held = state.held;
+    held.lift = Math.max(0.05, Math.min(9, held.lift + ((rb ? 1 : 0) - (lb ? 1 : 0)) * 2.5 * dt));
+    held.yaw += rx * 1.6 * dt;
+    held.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, held.pitch + ry * 1.2 * dt));
+    held.roll += ((y ? 1 : 0) - (x ? 1 : 0)) * 1.5 * dt;
+    if (held.type === 'cushion') {
+      held.fold = Math.max(0, Math.min(Math.PI * 0.85, held.fold + ((rt ? 1 : 0) - (lt ? 1 : 0)) * 1.4 * dt));
+    }
+    if (a && !buildPrev.a) {
+      updateGhost();
+      placeHeld();
+    } else if (b && !buildPrev.b) cancelHeld();
+  } else {
+    if (!isBuildFocusEnabled(state.buildFocus)) moveBuildFocus(1);
+    if (dpad.up && !buildPrev.up) moveBuildFocus(-1);
+    if (dpad.down && !buildPrev.down) moveBuildFocus(1);
+    if (dpad.left && !buildPrev.left) moveBuildFocus(-1);
+    if (dpad.right && !buildPrev.right) moveBuildFocus(1);
+    if (a && !buildPrev.a) activateBuildFocus();
+    if (x && !buildPrev.x) grabAtCursor();
+  }
+
+  buildPrev.a = a;
+  buildPrev.b = b;
+  buildPrev.x = x;
+  buildPrev.up = dpad.up;
+  buildPrev.down = dpad.down;
+  buildPrev.left = dpad.left;
+  buildPrev.right = dpad.right;
+  updateBuildCursor();
 }
 
 /* --------------------------------------------------------------- selection */
@@ -1077,7 +1333,7 @@ function handlePadAction(player) {
   if (state.phase === 'intro') enterSelect();
   else if (state.phase === 'select') toggleReady(player);
   else if (state.phase === 'matchover') playAgain();
-  else if (state.phase === 'paused') resumeGame();
+  else if (state.phase === 'paused') activatePauseOption();
 }
 
 function handlePadDirection(player, delta) {
@@ -1090,15 +1346,25 @@ function pollGamepads() {
     const prev = padPrev[player];
     const dir = padDirections(pad);
     const a = padPressed(pad, PAD.jump);
+    const b = padPressed(pad, 1);
     const start = padPressed(pad, PAD.start);
     if (start && !prev.start) handlePadStart();
     if (a && !prev.a) handlePadAction(player);
-    if (dir.left && !prev.left) handlePadDirection(player, -1);
-    if (dir.right && !prev.right) handlePadDirection(player, 1);
+    if (state.phase === 'paused') {
+      if (b && !prev.b) resumeGame();
+      if (dir.up && !prev.up) movePauseFocus(-1);
+      if (dir.down && !prev.down) movePauseFocus(1);
+    } else {
+      if (dir.left && !prev.left) handlePadDirection(player, -1);
+      if (dir.right && !prev.right) handlePadDirection(player, 1);
+    }
     prev.start = start;
     prev.a = a;
+    prev.b = b;
     prev.left = dir.left;
     prev.right = dir.right;
+    prev.up = dir.up;
+    prev.down = dir.down;
   });
 }
 
@@ -1118,22 +1384,73 @@ function canPause() {
   );
 }
 
+function toggleShake() {
+  state.reducedShake = !state.reducedShake;
+  try {
+    window.localStorage.setItem('roughHousingReducedShake', state.reducedShake ? '1' : '0');
+  } catch (error) {
+    /* storage can be blocked */
+  }
+  refreshShakeButton();
+  audio.ui();
+}
+
+function updatePauseFocus() {
+  if (state.phase !== 'paused') return;
+  const option = PAUSE_OPTIONS[state.pauseIndex];
+  if (!option || option.button.disabled) return;
+  option.button.focus({ preventScroll: true });
+}
+
+function movePauseFocus(delta) {
+  if (state.phase !== 'paused') return;
+  for (let step = 1; step <= PAUSE_OPTIONS.length; step += 1) {
+    const next = (state.pauseIndex + delta * step + PAUSE_OPTIONS.length) % PAUSE_OPTIONS.length;
+    if (!PAUSE_OPTIONS[next].button.disabled) {
+      state.pauseIndex = next;
+      updatePauseFocus();
+      audio.ui();
+      return;
+    }
+  }
+}
+
+function activatePauseOption() {
+  if (state.phase !== 'paused') return;
+  const option = PAUSE_OPTIONS[state.pauseIndex];
+  if (!option || option.button.disabled) return;
+  if (option.action === 'resume') resumeGame();
+  else if (option.action === 'restart') restartRound();
+  else if (option.action === 'quit') quitToMenu();
+  else if (option.action === 'shake') toggleShake();
+}
+
+function blurPauseFocus() {
+  const active = document.activeElement;
+  if (active && PAUSE_OPTIONS.some((option) => option.button === active)) active.blur();
+}
+
 function pauseGame() {
   if (!canPause()) return;
   state.pausedFrom = state.phase;
   state.phase = 'paused';
+  state.pauseIndex = 0;
   keys.clear();
   cancelHeld();
   ui.tray.hidden = true;
   ui.pose.hidden = true;
   ui.phaseLabel.textContent = 'Paused';
+  ui.pauseRestart.disabled = state.pausedFrom === 'roundover';
+  if (ui.pauseNote) ui.pauseNote.hidden = state.pausedFrom !== 'roundover';
   refreshShakeButton();
   showPanel('panel-pause');
+  updatePauseFocus();
   status('Paused.');
 }
 
 function resumeGame() {
   if (state.phase !== 'paused') return;
+  blurPauseFocus();
   const phase = state.pausedFrom || 'fight';
   state.pausedFrom = null;
   state.phase = phase;
@@ -1150,7 +1467,10 @@ function togglePause() {
 }
 
 function restartRound() {
-  if (state.phase !== 'paused') return;
+  // In roundover the point is already banked. Restarting there would keep it
+  // while skipping advanceRound's match-ending check, so restart is locked.
+  if (state.phase !== 'paused' || state.pausedFrom === 'roundover') return;
+  blurPauseFocus();
   state.pausedFrom = null;
   arena.sync();
   const spots = arena.pieces.length >= 2 ? arena.spawnPoints() : null;
@@ -1169,6 +1489,7 @@ function restartRound() {
 
 function quitToMenu() {
   if (state.phase !== 'paused') return;
+  blurPauseFocus();
   state.pausedFrom = null;
   state.scores = [0, 0];
   state.round = 1;
@@ -1177,8 +1498,8 @@ function quitToMenu() {
   state.shake = 0;
   state.hitstop = 0;
   state.fallTimer = 0;
+  cancelHeld(false);
   arena.clear();
-  cancelHeld();
   enterIntro();
   audio.ui();
 }
@@ -1186,7 +1507,7 @@ function quitToMenu() {
 /* ------------------------------------------------------------ random fort */
 function randomFort() {
   if (state.phase !== 'build') return;
-  cancelHeld();
+  cancelHeld(false);
   arena.clear();
   state.undo = [];
   const range = (min, max) => min + Math.random() * (max - min);
@@ -1234,6 +1555,7 @@ function randomFort() {
   }
   audio.place();
   updateTray();
+  updateBuildFocus();
   banner('Random fort!', 1.2);
   status('Random fort ready. Add to it or start the match.');
 }
@@ -1242,6 +1564,9 @@ function randomFort() {
 function handleKey(code) {
   if (state.phase === 'paused') {
     if (code === 'Escape' || code === 'KeyP') resumeGame();
+    else if (code === 'ArrowUp') movePauseFocus(-1);
+    else if (code === 'ArrowDown') movePauseFocus(1);
+    // Enter is left to the focused button so it only fires once.
     return;
   }
   if (canPause() && (code === 'Escape' || code === 'KeyP')) {
@@ -1324,12 +1649,20 @@ window.addEventListener('blur', () => keys.clear());
 
 renderer.domElement.addEventListener('pointermove', (event) => {
   updatePointer(event);
+  state.buildPad = false;
+  state.padGhost = false;
+  updateBuildFocus();
+  updateBuildCursor();
   if (state.phase === 'build' && state.held) updateGhost();
 });
 
 renderer.domElement.addEventListener('pointerdown', (event) => {
   audio.unlock();
   updatePointer(event);
+  state.buildPad = false;
+  state.padGhost = false;
+  updateBuildFocus();
+  updateBuildCursor();
   if (state.phase === 'intro') {
     enterSelect();
     return;
@@ -1339,8 +1672,12 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
     return;
   }
   if (state.phase !== 'build' || event.button !== 0) return;
-  if (state.held) placeHeld();
-  else pickUpAt();
+  if (state.held) {
+    updateGhost();
+    placeHeld();
+  } else {
+    pickUpAt();
+  }
 });
 
 renderer.domElement.addEventListener(
@@ -1348,11 +1685,21 @@ renderer.domElement.addEventListener(
   (event) => {
     if (state.phase !== 'build' || !state.held) return;
     event.preventDefault();
+    state.buildPad = false;
+    state.padGhost = false;
+    updateBuildFocus();
     const next = state.held.lift + (event.deltaY > 0 ? -0.3 : 0.3);
     state.held.lift = Math.max(0.05, Math.min(9, next));
   },
   { passive: false }
 );
+
+ui.tray.addEventListener('pointerdown', () => {
+  state.buildPad = false;
+  state.padGhost = false;
+  updateBuildFocus();
+  updateBuildCursor();
+});
 
 ui.trayBase.addEventListener('click', () => beginHolding('base'));
 ui.trayCushion.addEventListener('click', () => beginHolding('cushion'));
@@ -1391,14 +1738,13 @@ ui.pauseQuit.addEventListener('click', () => {
 });
 ui.pauseShake.addEventListener('click', () => {
   audio.unlock();
-  state.reducedShake = !state.reducedShake;
-  try {
-    window.localStorage.setItem('roughHousingReducedShake', state.reducedShake ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
-  refreshShakeButton();
-  audio.ui();
+  toggleShake();
+});
+
+PAUSE_OPTIONS.forEach((option, index) => {
+  option.button.addEventListener('focus', () => {
+    if (state.phase === 'paused') state.pauseIndex = index;
+  });
 });
 
 /* -------------------------------------------------------------- animation */
@@ -1458,7 +1804,9 @@ function tick(now) {
   arena.lavaTexture.offset.y = (arena.lavaTexture.offset.y + dt * 0.005) % 1;
 
   if (state.phase === 'build') {
+    updatePadBuild(dt);
     updateGhost();
+    updateBuildCursor();
     const pruned = arena.pruneFallen();
     if (pruned) {
       audio.splash();
