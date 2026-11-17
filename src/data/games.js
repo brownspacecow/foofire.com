@@ -46,6 +46,13 @@ export const games = [
     path: './src/games/zombie-deer/index.html',
   },
   {
+    id: 'the-grin',
+    title: 'The Grin',
+    description:
+      'A four-stage bullet-hell boss fight with touch controls. Something at the end of the hallway is wearing a smile you recognise, and it is coming apart. Dodge, strike, and decide whether to spare what is left.',
+    path: './src/games/the-grin/index.html',
+  },
+  {
     id: 'bear',
     title: 'Bear the Puppy',
     description:
