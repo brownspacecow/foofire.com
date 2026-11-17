@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ *
  * Ball Pit Bonanza — shop
- * Four upgrade tracks you can level up, plus one-off prizes.
+ * Seven upgrade tracks you can level up, plus one-off prizes.
  * ------------------------------------------------------------------ */
 
 export const UPGRADES = [
@@ -47,6 +47,34 @@ export const UPGRADES = [
         level
       ],
   },
+  {
+    id: 'value',
+    name: 'Coin Polisher',
+    emoji: '🪙',
+    max: 5,
+    costs: [60, 180, 450, 1000, 2200],
+    blurb: 'Rub every find until it shines so it sells for more coins.',
+    effect: (level) =>
+      level === 0 ? 'Normal sale value' : `Sale value +${level * 10}%`,
+  },
+  {
+    id: 'haste',
+    name: 'Turbo Hands',
+    emoji: '👐',
+    max: 4,
+    costs: [75, 240, 650, 1500],
+    blurb: 'Dig again sooner with a pair of extremely turbocharged hands.',
+    effect: (level) => `${(0.55 - level * 0.045).toFixed(2)}s dig cooldown`,
+  },
+  {
+    id: 'case',
+    name: 'Display Case',
+    emoji: '🏆',
+    max: 4,
+    costs: [90, 280, 750, 1700],
+    blurb: 'Add another glass shelf for showing off your favourite finds.',
+    effect: (level) => `${2 + level} display spots`,
+  },
 ];
 
 export const PRIZES = [
@@ -58,11 +86,25 @@ export const PRIZES = [
     blurb: 'A rubber duck that paddles along behind you.',
   },
   {
+    id: 'pet-rock',
+    name: 'Pet Rock',
+    emoji: '🪨',
+    cost: 120,
+    blurb: 'A very loyal rock that hops along behind you.',
+  },
+  {
     id: 'bear-plush',
     name: 'Bear Plush',
     emoji: '🧸',
     cost: 150,
     blurb: 'Bear the Puppy, ball pit edition, rides on your back.',
+  },
+  {
+    id: 'tiny-umbrella',
+    name: 'Tiny Umbrella',
+    emoji: '☂️',
+    cost: 300,
+    blurb: 'It floats above your head. It does not actually stop balls.',
   },
   {
     id: 'neon-crown',
@@ -72,11 +114,39 @@ export const PRIZES = [
     blurb: 'A glowing crown for the champion of the pit.',
   },
   {
+    id: 'lucky-cat',
+    name: 'Lucky Cat',
+    emoji: '🐈',
+    cost: 450,
+    blurb: 'A waving cat that makes digging a little luckier.',
+  },
+  {
+    id: 'robot-buddy',
+    name: 'Robot Buddy',
+    emoji: '🤖',
+    cost: 550,
+    blurb: 'A beeping little robot that rolls along beside you.',
+  },
+  {
+    id: 'mega-case',
+    name: 'Mega Display Case',
+    emoji: '🏛️',
+    cost: 700,
+    blurb: 'Three extra glass shelves for your collection.',
+  },
+  {
     id: 'confetti-cannon',
     name: 'Confetti Cannon',
     emoji: '🎉',
     cost: 800,
     blurb: 'Extra confetti bursts every time you find treasure.',
+  },
+  {
+    id: 'golden-spatula',
+    name: 'Golden Spatula',
+    emoji: '🍳',
+    cost: 1100,
+    blurb: 'Every find sells for 15% more. It is a very fancy spatula.',
   },
 ];
 
