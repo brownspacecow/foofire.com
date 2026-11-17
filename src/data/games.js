@@ -4,11 +4,25 @@
  */
 export const games = [
   {
+    id: 'spooky-santa',
+    title: 'Spooky Santa',
+    description:
+      'Sneak down the chimney, dodge flashlight beams, the dog and the sweeping tree lights, and leave every present without being detected before sunrise.',
+    path: './src/games/spooky-santa/index.html',
+  },
+  {
     id: 'pizza-homestead',
     title: 'Pizza Homestead: Fun Room Rush',
     description:
       'Raid a very sincere pizza buffet, eat slices at the booths for arcade money, and whack Hank the mascot in the Fun Room before Mom says it is time to go.',
     path: './src/games/pizza-homestead/index.html',
+  },
+  {
+    id: 'claw-machine',
+    title: 'Claw Crew',
+    description:
+      'Steer the claw and fill your saved Plushie Dex with 100 original characters — including a wild digital circus and some cute-spooky friends.',
+    path: './src/games/claw-machine/index.html',
   },
   {
     id: 'zombie-deer',

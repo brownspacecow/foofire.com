@@ -173,6 +173,52 @@ muteButton.addEventListener('click', () => {
   if (!audio.isMuted()) audio.ui();
 });
 
+/*
+ * Full screen keeps the page from scrolling under small thumbs.
+ * Hidden where the browser has no element full screen (for example an iframe).
+ */
+const fullscreenButton = document.querySelector('#fullscreen-button');
+const gameShell = document.querySelector('.ph-game');
+const canFullscreen = Boolean(
+  fullscreenButton && gameShell && document.fullscreenEnabled && gameShell.requestFullscreen
+);
+
+const refreshFullscreenButton = () => {
+  if (!fullscreenButton) return;
+  const active = Boolean(document.fullscreenElement);
+  fullscreenButton.textContent = active ? '⤡' : '⛶';
+  fullscreenButton.setAttribute('aria-pressed', String(active));
+  fullscreenButton.setAttribute('aria-label', active ? 'Leave full screen' : 'Play in full screen');
+};
+
+if (fullscreenButton) {
+  if (!canFullscreen) {
+    fullscreenButton.hidden = true;
+  } else {
+    refreshFullscreenButton();
+
+    fullscreenButton.addEventListener('click', async () => {
+      audio.unlock();
+      audio.ui();
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else {
+          await gameShell.requestFullscreen({ navigationUI: 'hide' });
+        }
+      } catch (error) {
+        /* Full screen can be refused, for example inside an embedded frame. */
+      }
+      refreshFullscreenButton();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      refreshFullscreenButton();
+      sizeScene();
+    });
+  }
+}
+
 // ----------------------------------------------------------------- state
 const state = {
   phase: 'menu', // menu | play | over
