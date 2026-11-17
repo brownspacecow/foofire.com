@@ -67,6 +67,7 @@ const AI_SETUPS = [
 /* ------------------------------------------------------------------ DOM */
 
 const container = document.querySelector('#game-container');
+const coarsePointer = window.matchMedia('(pointer: coarse)');
 
 const els = {
   speed: document.querySelector('#speed-value'),
@@ -204,7 +205,7 @@ function init() {
     antialias: true,
     powerPreference: 'high-performance',
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarsePointer.matches ? 1.4 : 1.8));
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.domElement.setAttribute(
     'aria-label',
@@ -367,6 +368,11 @@ function startRace() {
   prepareRace();
 
   els.startOverlay.classList.remove('is-open');
+
+  if (coarsePointer.matches && !document.fullscreenElement) {
+    container.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
   state.phase = 'countdown';
   state.countdown = 3;
   state.lastCount = 3;
@@ -409,7 +415,7 @@ function updateCountdown(dt) {
 
 /* --------------------------------------------------------------- physics */
 
-function updateInput(dt) {
+function updateInput() {
   const throttle = keys.has('up') || touch.up;
   const brake = keys.has('down') || touch.down;
   const left = keys.has('left') || touch.left;
@@ -420,9 +426,8 @@ function updateInput(dt) {
   input.boost = keys.has('boost') || touch.boost;
   input.preload = keys.has('preload') || touch.preload;
 
-  const target = (right ? 1 : 0) - (left ? 1 : 0);
-  input.steer += (target - input.steer) * (1 - Math.exp(-11 * dt));
-  if (Math.abs(input.steer) < 0.002) input.steer = 0;
+  /* Positive yaw turns left on screen: left adds, right subtracts. */
+  input.steer = (left ? 1 : 0) - (right ? 1 : 0);
 }
 
 function updatePlayer(dt) {
@@ -453,11 +458,11 @@ function updatePlayer(dt) {
 
   const steerInput = racing ? input.steer : 0;
   const speedRatio = Math.min(1, Math.abs(p.speed) / BASE_MAX);
-  const turnRate = (2.05 - 1.1 * speedRatio) * (onTrack ? 1 : 0.84);
+  const turnRate = (2.2 - 1.1 * speedRatio) * (onTrack ? 1 : 0.84);
   const reverseSign = p.speed < -0.4 ? -1 : 1;
 
   if (p.grounded) {
-    const authority = Math.min(1, Math.abs(p.speed) / 7);
+    const authority = Math.min(1, Math.abs(p.speed) / 4.5);
     p.yaw += steerInput * turnRate * authority * reverseSign * dt;
   } else {
     p.yaw += steerInput * 3.6 * dt;
@@ -1059,11 +1064,19 @@ function bindEvents() {
 
     const press = (event) => {
       event.preventDefault();
+      try {
+        button.setPointerCapture(event.pointerId);
+      } catch (error) {
+        /* Pointer capture is optional; the press still registers. */
+      }
       touch[control] = true;
       button.classList.add('is-pressed');
       audio.unlock();
     };
-    const release = () => {
+    const release = (event) => {
+      if (event && button.hasPointerCapture(event.pointerId)) {
+        button.releasePointerCapture(event.pointerId);
+      }
       touch[control] = false;
       button.classList.remove('is-pressed');
     };
@@ -1071,7 +1084,7 @@ function bindEvents() {
     button.addEventListener('pointerdown', press);
     button.addEventListener('pointerup', release);
     button.addEventListener('pointercancel', release);
-    button.addEventListener('pointerleave', release);
+    button.addEventListener('lostpointercapture', release);
     button.addEventListener('contextmenu', (event) => event.preventDefault());
   });
 
@@ -1108,7 +1121,7 @@ function resize() {
   const width = container.clientWidth || 800;
   const height = container.clientHeight || 500;
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarsePointer.matches ? 1.4 : 1.8));
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
@@ -1124,7 +1137,7 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   state.now += dt;
 
-  updateInput(dt);
+  updateInput();
 
   if (state.phase === 'racing') state.raceTime += dt;
   if (state.phase === 'countdown') updateCountdown(dt);
