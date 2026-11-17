@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>High Scores | Foofire Games</title>
+    <meta
+      name="description"
+      content="Your high scores for every Foofire Games game, saved right in your browser."
+    />
+    <meta property="og:title" content="High Scores | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Your high scores for every Foofire Games game, saved right in your browser."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/scores.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="./index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="./index.html">Home</a>
+          <a href="./games.html">Games</a>
+          <a href="./scores.html" aria-current="page">Scores</a>
+          <a href="./disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>High Scores</h1>
+        <p>
+          Every score is saved in this browser. Beat one of your best runs and it lands here —
+          the top five for each game.
+        </p>
+      </section>
+
+      <div id="scoreboards" aria-live="polite"></div>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+      </p>
+      <a href="./disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./src/scores.js"></script>
+  </body>
+</html>

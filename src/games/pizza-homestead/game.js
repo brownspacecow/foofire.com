@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getBest, submitScore } from '../../utils/scores.js';
 
 /* ------------------------------------------------------------------ *
  * Pizza Homestead: Fun Room Rush
@@ -17,7 +18,6 @@ const ROUND_SECONDS = 75;
 const CASH_PER_SLICE = 2;
 const CABINET_COST = 2;
 const EAT_SECONDS = 1.4;
-const BEST_KEY = 'pizzaHomesteadBest';
 const BOUNDS = { minX: -8.5, maxX: 8.5, minZ: -6.1, maxZ: 5.8 };
 const PAN_Z = -1.55;
 const SODA_POS = new THREE.Vector3(0.55, 0, -2.2);
@@ -153,23 +153,6 @@ try {
   /* Storage may be blocked; sound defaults to on. */
 }
 
-const readBest = () => {
-  try {
-    const value = Number(window.localStorage.getItem(BEST_KEY) || 0);
-    return Number.isFinite(value) && value > 0 ? value : 0;
-  } catch (error) {
-    return 0;
-  }
-};
-
-const saveBest = (value) => {
-  try {
-    window.localStorage.setItem(BEST_KEY, String(value));
-  } catch (error) {
-    /* ignore */
-  }
-};
-
 const refreshMuteButton = () => {
   const muted = audio.isMuted();
   muteButton.textContent = muted ? '🔇' : '🔊';
@@ -203,7 +186,7 @@ const state = {
   whacks: 0,
   combo: 0,
   bestCombo: 0,
-  best: readBest(),
+  best: getBest('pizza-homestead'),
   lastTick: 99,
   hintAt: -1,
   lastHint: '',
@@ -2356,11 +2339,9 @@ function endRound() {
     resetEatingPose();
   }
 
-  const isNewBest = state.score > state.best;
-  if (isNewBest) {
-    state.best = state.score;
-    saveBest(state.best);
-  }
+  const result = submitScore('pizza-homestead', state.score);
+  state.best = result.best;
+  const isNewBest = result.isBest;
   const rank = rankFor(state.score);
 
   overlayKicker.textContent = isNewBest ? 'A new personal best' : 'The receipts are printing';

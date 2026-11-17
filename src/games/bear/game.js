@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getBest, submitScore } from '../../utils/scores.js';
 
 /* ------------------------------------------------------------------ *
  * Bear the Puppy
@@ -14,6 +15,7 @@ const bannerLabel = bannerEl.querySelector('span');
 const moodEmojiEl = document.querySelector('#mood-emoji');
 const moodLabelEl = document.querySelector('#mood-label');
 const scoreEl = document.querySelector('#care-score');
+const bestEl = document.querySelector('#care-best');
 
 const needEls = {};
 document.querySelectorAll('.need').forEach((el) => {
@@ -51,6 +53,7 @@ const needs = { fullness: 70, hydration: 70, happiness: 70, energy: 70 };
 const state = {
   time: 0,
   score: 0,
+  best: getBest('bear'),
   mode: 'idle', // idle | walk | eat | drink | sleep
   modeTimer: 0,
   walk: null,
@@ -1420,6 +1423,11 @@ function updateHud() {
   }
 
   scoreEl.textContent = String(state.score);
+
+  if (state.score > state.best) {
+    state.best = submitScore('bear', state.score).best;
+  }
+  if (bestEl) bestEl.textContent = String(Math.max(state.best, state.score));
 
   const average = (needs.fullness + needs.hydration + needs.happiness + needs.energy) / 4;
   let emoji = '🐶';

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createAudio } from './audio.js';
+import { getBest, submitScore } from '../../utils/scores.js';
 
 /* ------------------------------------------------------------------ *
  * DOM
@@ -10,6 +11,7 @@ const healthFill = document.querySelector('#health-fill');
 const healthLabel = document.querySelector('#health-label');
 const waveLabel = document.querySelector('#wave-label');
 const scoreLabel = document.querySelector('#score-label');
+const bestLabel = document.querySelector('#best-label');
 const killsLabel = document.querySelector('#kills-label');
 const overlay = document.querySelector('#overlay');
 const overlayTitle = document.querySelector('#overlay-title');
@@ -3365,6 +3367,7 @@ const state = {
   phase: 'menu',
   wave: 0,
   score: 0,
+  best: getBest('zombie-deer'),
   kills: 0,
   health: 100,
   active: 0,
@@ -3395,6 +3398,7 @@ function updateHud() {
   healthLabel.textContent = `${Math.round(health)}%`;
   waveLabel.textContent = state.wave;
   scoreLabel.textContent = state.score;
+  if (bestLabel) bestLabel.textContent = Math.max(state.best, state.score);
   killsLabel.textContent = state.kills;
 }
 
@@ -3528,8 +3532,16 @@ function damageHouse(amount) {
 
 function gameOver() {
   state.phase = 'over';
+  const result = submitScore('zombie-deer', state.score);
+  state.best = result.best;
+  updateHud();
   overlayTitle.textContent = 'The reindeer got in';
-  overlayText.textContent = `You held them off for ${state.wave} wave${state.wave === 1 ? '' : 's'} and scored ${state.score} points. The presents survived, at least.`;
+  const bestLine = result.isBest
+    ? ' That is a new personal best! 🏆'
+    : state.best > 0
+      ? ` Your best is ${state.best}.`
+      : '';
+  overlayText.textContent = `You held them off for ${state.wave} wave${state.wave === 1 ? '' : 's'} and scored ${state.score} points.${bestLine} The presents survived, at least.`;
   startButton.textContent = 'Try again';
   overlay.classList.remove('hidden');
   container.classList.remove('playing');
