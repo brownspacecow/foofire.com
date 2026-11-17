@@ -23,6 +23,8 @@ export const games = [
     description:
       'Steer the claw and fill your saved Plushie Dex with 100 original characters — including a wild digital circus and some cute-spooky friends.',
     path: './src/games/claw-machine/index.html',
+    /** Claw Crew tracks a collection, so its board shows progress, not a best. */
+    progress: { total: 100, unit: 'plushies' },
   },
   {
     id: 'zombie-deer',

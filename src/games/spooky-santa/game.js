@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createAudio } from './audio.js';
+import { getBest, submitScore } from '../../utils/scores.js';
 
 /* ------------------------------------------------------------------ *
  * Spooky Santa
@@ -65,7 +66,6 @@ for (let i = 0; i < 5; i += 1) {
 
 const audio = createAudio();
 const MUTE_KEY = 'spookySantaMuted';
-const BEST_KEY = 'spookySantaBest';
 
 try {
   if (window.localStorage.getItem(MUTE_KEY) === '1') audio.setMuted(true);
@@ -139,22 +139,6 @@ if (fullscreenButton) {
     });
   }
 }
-
-const readBest = () => {
-  try {
-    return Number(window.localStorage.getItem(BEST_KEY)) || 0;
-  } catch (error) {
-    return 0;
-  }
-};
-
-const saveBest = (value) => {
-  try {
-    window.localStorage.setItem(BEST_KEY, String(value));
-  } catch (error) {
-    /* ignore */
-  }
-};
 
 /* ------------------------------------------------------------------ *
  * Rules of the night
@@ -1523,7 +1507,7 @@ const treeLight = { dir: Math.PI / 2 };
 
 const cookie = { eaten: false };
 
-let bestScore = readBest();
+let bestScore = getBest('spooky-santa');
 
 /* ------------------------------------------------------------------ *
  * UI helpers
@@ -1720,10 +1704,7 @@ function endRound(won, reason) {
     if (state.peak < 30 && timeLeft > 55) stars = 3;
   }
 
-  if (score > bestScore) {
-    bestScore = score;
-    saveBest(bestScore);
-  }
+  bestScore = submitScore('spooky-santa', score).best;
 
   if (won) {
     audio.win();

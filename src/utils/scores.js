@@ -10,6 +10,7 @@ const MAX_SCORES = 5;
 /** Bests saved by games before this module existed, so old scores survive. */
 const LEGACY_BEST_KEYS = {
   'pizza-homestead': 'pizzaHomesteadBest',
+  'spooky-santa': 'spookySantaBest',
 };
 
 const toScore = (value) => {
@@ -86,6 +87,21 @@ export function getBest(gameId) {
   return entries.length ? entries[0].score : 0;
 }
 
+/** Most recently recorded score, for games that track progress instead of a best. */
+export function getLatest(gameId) {
+  const entries = getScores(gameId);
+  if (!entries.length) return 0;
+  return entries.reduce((latest, entry) => (entry.at >= latest.at ? entry : latest), entries[0])
+    .score;
+}
+
+/** Forget a game's scores, for when its progress is reset in-game. */
+export function clearScores(gameId) {
+  const store = readStore();
+  delete store[gameId];
+  writeStore(store);
+}
+
 /**
  * Record a finished score and return the best score now on record, whether
  * this run beat it, and the updated top-five list.
@@ -99,7 +115,9 @@ export function submitScore(gameId, score) {
   const isBest = value > previousBest;
 
   if (value > 0) {
-    entries.push({ score: value, at: Date.now() });
+    /* Keep timestamps strictly increasing so "latest" stays unambiguous. */
+    const at = Math.max(Date.now(), entries.reduce((latest, entry) => Math.max(latest, entry.at + 1), 0));
+    entries.push({ score: value, at });
     store[gameId] = sortScores(entries);
     writeStore(store);
   }
