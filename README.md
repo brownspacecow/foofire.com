@@ -17,6 +17,24 @@ Tagline: **Games for kids.**
 src/
   main.js          # Game portal navigation logic
   games/
+    rough-housing/  # Rough Housing: local two-player couch-fort wrestling
+      index.html
+      game.js
+      arena.js
+      characters.js
+      fighters.js
+    roost-rider/    # Roost Rider first-person off-road motorcycle race
+      index.html
+      game.js
+      track.js
+      riders.js
+      audio.js
+    escape-earth/   # Escape Earth: Survive Grandma's House three-level game
+      index.html
+      game.js
+      level-drive.js
+      level-dolls.js
+      level-remote.js
     bear/          # Bear the Puppy three.js game
       index.html
       game.js

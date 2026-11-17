@@ -2066,6 +2066,8 @@ document.addEventListener('fullscreenchange', () => {
 
 /* ------------------------------------------------------------------ start */
 loadProgress();
+/* Surface a best find saved before the shared scoreboard existed. */
+if (state.bestFind > getBest('ball-pit')) submitScore('ball-pit', state.bestFind);
 sound.setMuted(state.muted);
 applyPitSize();
 buildPit();

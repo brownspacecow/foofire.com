@@ -4,6 +4,34 @@
  */
 export const games = [
   {
+    id: 'rough-housing',
+    title: 'Rough Housing',
+    description:
+      'Build a couch-fort wrestling arena out of ten Nuggets, then bump, jump and cartwheel your friend into the lava. Local two-player physics chaos.',
+    path: './src/games/rough-housing/index.html',
+  },
+  {
+    id: 'roost-rider',
+    title: 'Roost Rider',
+    description:
+      'A first-person off-road motorcycle race: three laps, three rivals, big jumps and nitro on a dusty dirt circuit. Preload the lips, land your spins, and keep it pinned.',
+    path: './src/games/roost-rider/index.html',
+  },
+  {
+    id: 'rhythm-break',
+    title: 'Soft Reset',
+    description:
+      'A two-minute rhythm break with two original early-2000s hip-hop grooves and a reggae one-drop. Four pads, no failing, and nothing that needs you for a hundred seconds. For whoever has been holding everything together since 6 a.m.',
+    path: './src/games/rhythm-break/index.html',
+  },
+  {
+    id: 'escape-earth',
+    title: "Escape Earth: Survive Grandma's House",
+    description:
+      'Three levels of bad decisions: survive the drive to Grandma\'s, escape Raggedy Ann and Andy in the dark, and hold the remote against your head without getting caught.',
+    path: './src/games/escape-earth/index.html',
+  },
+  {
     id: 'ball-pit',
     title: 'Ball Pit Bonanza',
     description:
@@ -30,6 +58,8 @@ export const games = [
     description:
       'Steer the claw and fill your saved Plushie Dex with 100 original characters — including a wild digital circus and some cute-spooky friends.',
     path: './src/games/claw-machine/index.html',
+    /** Claw Crew tracks a collection, so its board shows progress, not a best. */
+    progress: { total: 100, unit: 'plushies' },
   },
   {
     id: 'zombie-deer',
@@ -37,6 +67,13 @@ export const games = [
     description:
       'Defend a snow-covered house from waves of zombie reindeer. Throw snowballs, light up the tree, and call Bear the puppy for backup.',
     path: './src/games/zombie-deer/index.html',
+  },
+  {
+    id: 'the-grin',
+    title: 'The Grin',
+    description:
+      'A four-stage bullet-hell boss fight with touch controls. Something at the end of the hallway is wearing a smile you recognise, and it is coming apart. Dodge, strike, and decide whether to spare what is left.',
+    path: './src/games/the-grin/index.html',
   },
   {
     id: 'bear',
