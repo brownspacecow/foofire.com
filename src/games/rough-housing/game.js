@@ -3,6 +3,7 @@ import * as RAPIER_NS from '@dimforge/rapier3d-compat';
 import { ROSTER, buildRig } from './characters.js';
 import { Arena, LAVA_Y, ZONE, PIECE_DEFS, makePieceVisual } from './arena.js';
 import { Fighter, DASH } from './fighters.js';
+import { canRestartFromPhase, restartLockMessage } from './rules.js';
 
 const RAPIER = RAPIER_NS.default ?? RAPIER_NS;
 const TAU = Math.PI * 2;
@@ -1440,8 +1441,12 @@ function pauseGame() {
   ui.tray.hidden = true;
   ui.pose.hidden = true;
   ui.phaseLabel.textContent = 'Paused';
-  ui.pauseRestart.disabled = state.pausedFrom === 'roundover';
-  if (ui.pauseNote) ui.pauseNote.hidden = state.pausedFrom !== 'roundover';
+  const restartLocked = !canRestartFromPhase(state.pausedFrom);
+  ui.pauseRestart.disabled = restartLocked;
+  if (ui.pauseNote) {
+    ui.pauseNote.hidden = !restartLocked;
+    ui.pauseNote.textContent = restartLockMessage(state.pausedFrom);
+  }
   refreshShakeButton();
   showPanel('panel-pause');
   updatePauseFocus();
@@ -1467,9 +1472,10 @@ function togglePause() {
 }
 
 function restartRound() {
-  // In roundover the point is already banked. Restarting there would keep it
-  // while skipping advanceRound's match-ending check, so restart is locked.
-  if (state.phase !== 'paused' || state.pausedFrom === 'roundover') return;
+  // A pending fall or a scored round is already decided. Restarting there would
+  // wipe a point before it is awarded or keep a banked one while skipping
+  // advanceRound's match-ending check.
+  if (state.phase !== 'paused' || !canRestartFromPhase(state.pausedFrom)) return;
   blurPauseFocus();
   state.pausedFrom = null;
   arena.sync();
