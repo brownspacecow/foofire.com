@@ -117,7 +117,8 @@
         transition: opacity 0.25s ease;
       }
 
-      body.is-playing .grin-back {
+      body.is-playing .grin-back,
+      body.is-playing .grin-scores {
         opacity: 0;
         pointer-events: none;
       }
@@ -144,6 +145,9 @@
         <div class="grin-scanlines" aria-hidden="true"></div>
         <div class="grin-tools">
           <a class="grin-icon grin-back" href="../../../games.html" aria-label="Back to games">&larr;</a>
+          <a class="grin-icon grin-scores" href="../../../scores.html" aria-label="High scores"
+            >🏆</a
+          >
           <button
             id="grin-mute"
             class="grin-icon"
