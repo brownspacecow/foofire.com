@@ -5,7 +5,7 @@ const RAPIER = RAPIER_NS.default ?? RAPIER_NS;
 
 /* ------------------------------------------------------------------ *
  * Rough Housing — the arena
- * Ten Nuggets' worth of foam: 10 bases, 10 hinged cushions (two panels
+ * Ten pieces' worth of foam: 10 bases, 10 hinged cushions (two panels
  * posed into a fold), 20 triangle pillows. Whole thing floats over lava.
  * Every piece is a Rapier rigid body so the fort can come down.
  * ------------------------------------------------------------------ */
@@ -152,7 +152,7 @@ export class Arena {
     this.lava = lava;
 
     /*
-     * An invisible shelf under the build zone. It only collides with Nugget
+     * An invisible shelf under the build zone. It only collides with foam
      * pieces (collision group 2), never with wrestlers (group 1), so the fort
      * can sit in mid-air over the lava while a knocked-off wrestler drops
      * straight past it and into the soup.

@@ -159,6 +159,10 @@ export class Fighter {
       return;
     }
 
+    // Vertical speed is tracked separately so the movement branches below do
+    // not overwrite a jump with the velocity sampled before it was applied.
+    let velY = v.y;
+
     const ray = new RAPIER.Ray({ x: t.x, y: t.y, z: t.z }, { x: 0, y: -1, z: 0 });
     let hit = null;
     try {
@@ -202,7 +206,8 @@ export class Fighter {
       this.flopTimer <= 0 &&
       this.dash.state !== 'active'
     ) {
-      body.setLinvel({ x: v.x, y: this.spec.body.jump, z: v.z }, true);
+      velY = this.spec.body.jump;
+      body.setLinvel({ x: v.x, y: velY, z: v.z }, true);
       this.grounded = false;
       this.jumpKick = 1;
     }
@@ -246,22 +251,22 @@ export class Fighter {
 
     if (this.flopTimer > 0) {
       const drag = Math.exp(-dt * 1.2);
-      body.setLinvel({ x: v.x * drag, y: v.y, z: v.z * drag }, true);
+      body.setLinvel({ x: v.x * drag, y: velY, z: v.z * drag }, true);
     } else if (this.dash.state === 'windup') {
       const drag = Math.exp(-dt * 7);
-      body.setLinvel({ x: v.x * drag, y: v.y, z: v.z * drag }, true);
+      body.setLinvel({ x: v.x * drag, y: velY, z: v.z * drag }, true);
     } else if (this.dash.state === 'active') {
       body.setLinvel(
         {
           x: this.dash.dir.x * this.spec.body.dashSpeed,
-          y: v.y,
+          y: velY,
           z: this.dash.dir.z * this.spec.body.dashSpeed,
         },
         true
       );
     } else if (this.dash.state === 'recover') {
       const drag = Math.exp(-dt * 4);
-      body.setLinvel({ x: v.x * drag, y: v.y, z: v.z * drag }, true);
+      body.setLinvel({ x: v.x * drag, y: velY, z: v.z * drag }, true);
     } else {
       const control = this.grounded ? 1 : 0.5;
       const targetX = hasInput ? dirX * this.spec.body.speed : 0;
@@ -270,7 +275,7 @@ export class Fighter {
       body.setLinvel(
         {
           x: v.x + (targetX - v.x) * k,
-          y: v.y,
+          y: velY,
           z: v.z + (targetZ - v.z) * k,
         },
         true
