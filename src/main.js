@@ -11,6 +11,16 @@ const renderGameList = (container, list) => {
       const card = document.createElement('article');
       card.className = 'game-card';
 
+      if (game.image) {
+        const shot = document.createElement('img');
+        shot.className = 'game-card-shot';
+        shot.src = game.image;
+        shot.alt = `Screenshot of ${game.title}`;
+        shot.loading = 'lazy';
+        shot.decoding = 'async';
+        card.append(shot);
+      }
+
       const title = document.createElement('h3');
       title.textContent = game.title;
       card.append(title);

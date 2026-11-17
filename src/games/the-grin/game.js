@@ -8,6 +8,9 @@
 import { createAudio } from './audio.js';
 import { BossRenderer, STAGE_MORPHS } from './boss.js';
 import { createAttack, STAGE_ATTACKS } from './patterns.js';
+import { getBest, submitScore } from '../../utils/scores.js';
+
+const GAME_ID = 'the-grin';
 
 const W = 540;
 const H = 960;
@@ -100,6 +103,8 @@ let deadT = 0;
 let endingT = 0;
 let endingKind = 'win';
 let runStarted = 0;
+let bestScore = getBest(GAME_ID);
+let lastScore = 0;
 let hpDisplay = 100;
 let soulTrail = [];
 let pointer = { id: null, down: false, ax: 0, ay: 0, x: 0, y: 0, moved: false };
@@ -527,6 +532,7 @@ function hurtPlayer(amount) {
 }
 
 function die() {
+  settleRun(false);
   setState('dead');
   deadT = 0;
   soul.alive = false;
@@ -573,7 +579,21 @@ function retryStage() {
   say([{ who: 'narrator', text: 'You are still here. That is the whole trick.' }], startMenu);
 }
 
+/**
+ * Score a run from damage dealt, stages reached, and a clean-run bonus for
+ * finishing with fewer hits, then save it to the shared high score store.
+ */
+function settleRun(finished) {
+  const damage = Math.max(0, boss.maxHp - boss.hp) * 10;
+  const stageBonus = boss.stage * 150;
+  const cleanBonus = finished ? Math.max(0, 600 - player.hits * 50) : 0;
+  lastScore = Math.round(damage + stageBonus + cleanBonus);
+  const result = submitScore(GAME_ID, lastScore);
+  bestScore = Math.max(bestScore, result.best);
+}
+
 function startEnding(kind) {
+  settleRun(true);
   endingKind = kind;
   endingT = 0;
   setState(kind === 'win' ? 'win' : 'spare');
@@ -1749,7 +1769,16 @@ function drawEnding() {
     ctx.textAlign = 'center';
     ctx.font = '13px "Courier New", monospace';
     ctx.fillStyle = 'rgba(205,190,218,0.75)';
-    ctx.fillText(`time ${runTimeText()}   ·   hits taken ${player.hits}   ·   mercy ${mercy}/3`, W / 2, 606);
+    ctx.fillText(
+      `score ${lastScore.toLocaleString('en-US')}   ·   best ${bestScore.toLocaleString('en-US')}`,
+      W / 2,
+      602
+    );
+    ctx.fillText(
+      `time ${runTimeText()}   ·   hits taken ${player.hits}   ·   mercy ${mercy}/3`,
+      W / 2,
+      624
+    );
 
     ctx.font = 'italic 15px Georgia, serif';
     ctx.fillStyle = endingKind === 'win' ? 'rgba(255,175,190,0.6)' : 'rgba(210,200,240,0.65)';

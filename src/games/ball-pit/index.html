@@ -207,6 +207,28 @@
         box-shadow: 0 0 0 3px #fff8e7, 4px 4px 0 var(--ink);
       }
 
+      .win-banner.event {
+        background: linear-gradient(135deg, #2ec4ff, #a855f7);
+        color: #fff8e7;
+      }
+
+      .pit-event {
+        margin: 0;
+        padding: 0.32rem 0.5rem;
+        border: 2px solid var(--ink);
+        background: var(--violet);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        line-height: 1.6;
+        white-space: nowrap;
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .pit-event[hidden] {
+        display: none;
+      }
+
       .pit-controls {
         display: flex;
         flex-wrap: wrap;
@@ -758,6 +780,7 @@
           <p class="pit-message" id="message" role="status" aria-live="polite">
             Wade into the balls and press DIG!
           </p>
+          <p class="pit-event" id="event-pill" hidden></p>
           <div class="hud-actions">
             <button class="ghost-button" id="backpack-button" type="button">🎒 Backpack</button>
             <button class="ghost-button" id="shop-button" type="button">🛍️ Shop</button>
@@ -812,7 +835,9 @@
         <p class="pit-tip">
           Click or tap the pit to walk there, or use WASD / the arrow keys. Press DIG (or Space) to
           fling the balls away — most digs are just balls, but every so often something good pops
-          out. Everything you find goes in your backpack until you sell it.
+          out. Digging the same spot over and over wears it out, so wade somewhere new: fresh spots
+          are luckier and every five in a row pays an explorer bonus. Keep an eye out for random
+          pit events too — ballalanches, duck parades, golden hours and worse.
         </p>
 
         <details class="pit-panel" id="pack-panel">

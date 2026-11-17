@@ -1,0 +1,9 @@
+{
+  "name": "foofire",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/games/rough-housing/rules.test.js src/games/rough-housing/forts.test.js"
+  }
+}
