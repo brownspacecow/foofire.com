@@ -17,6 +17,12 @@ Tagline: **Games for kids.**
 src/
   main.js          # Game portal navigation logic
   games/
+    roost-rider/    # Roost Rider first-person off-road motorcycle race
+      index.html
+      game.js
+      track.js
+      riders.js
+      audio.js
     escape-earth/   # Escape Earth: Survive Grandma's House three-level game
       index.html
       game.js

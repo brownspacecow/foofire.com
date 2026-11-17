@@ -4,6 +4,13 @@
  */
 export const games = [
   {
+    id: 'roost-rider',
+    title: 'Roost Rider',
+    description:
+      'A first-person off-road motorcycle race: three laps, three rivals, big jumps and nitro on a dusty dirt circuit. Preload the lips, land your spins, and keep it pinned.',
+    path: './src/games/roost-rider/index.html',
+  },
+  {
     id: 'rhythm-break',
     title: 'Soft Reset',
     description:
