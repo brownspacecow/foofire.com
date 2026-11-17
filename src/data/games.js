@@ -86,6 +86,14 @@ export const games = [
     path: './src/games/the-grin/index.html',
   },
   {
+    id: 'spark-curfew',
+    title: 'Spark Curfew',
+    description:
+      'Run a backyard fireworks show before curfew. Little fireworks bring the daylight, the big shells only go up at night, and the bigger the burst the bigger the crowd and the payout.',
+    image: './public/screenshots/spark-curfew.webp',
+    path: './src/games/spark-curfew/index.html',
+  },
+  {
     id: 'bear',
     title: 'Bear the Puppy',
     description:
