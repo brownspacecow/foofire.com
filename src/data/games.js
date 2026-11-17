@@ -8,6 +8,7 @@ export const games = [
     title: 'Rough Housing',
     description:
       'Build a couch-fort wrestling arena out of ten foam pieces, then bump, jump and cartwheel your friend into the lava. Local two-player physics chaos.',
+    image: './public/screenshots/rough-housing.webp',
     path: './src/games/rough-housing/index.html',
   },
   {
