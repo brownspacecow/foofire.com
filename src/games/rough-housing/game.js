@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as RAPIER_NS from '@dimforge/rapier3d-compat';
 import { ROSTER, buildRig } from './characters.js';
 import { Arena, LAVA_Y, ZONE, PIECE_DEFS, makePieceVisual } from './arena.js';
+import { buildRandomFort } from './forts.js';
 import { Fighter, DASH } from './fighters.js';
 import { canRestartFromPhase, restartLockMessage } from './rules.js';
 
@@ -1516,54 +1517,15 @@ function randomFort() {
   cancelHeld(false);
   arena.clear();
   state.undo = [];
-  const range = (min, max) => min + Math.random() * (max - min);
-  const pickOne = (list) => list[Math.floor(Math.random() * list.length)];
-  const cells = [];
-  for (const x of [-8, 0, 8]) for (const z of [-4, 4]) cells.push({ x, z });
-  for (let i = cells.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cells[i], cells[j]] = [cells[j], cells[i]];
-  }
-  const bases = [];
-  const baseCount = Math.min(cells.length, 4 + Math.floor(Math.random() * 3));
-  for (let i = 0; i < baseCount; i += 1) {
-    const cell = cells[i];
-    const pose = {
-      x: cell.x + range(-0.5, 0.5),
-      y: 0.8,
-      z: cell.z + range(-0.5, 0.5),
-      yaw: range(-0.12, 0.12),
-      pitch: 0,
-      roll: 0,
-      fold: 0,
-    };
-    const piece = arena.place('base', pose);
-    state.undo.push(piece);
-    bases.push({ piece, pose });
-  }
-  const topTypes = ['bent', 'bent', 'triangle', 'cushion', 'triangle'];
-  const topCount = Math.min(bases.length, 2 + Math.floor(Math.random() * 3));
-  for (let i = 0; i < topCount; i += 1) {
-    const base = bases[i];
-    const type = pickOne(topTypes);
-    const def = PIECE_DEFS[type];
-    const halfHeight = type === 'triangle' ? 0.7 : type === 'bent' ? 0.4375 : 0.275;
-    const pose = {
-      x: base.pose.x + range(-1.0, 1.0),
-      y: 0.875 + halfHeight + 0.4,
-      z: base.pose.z + range(-0.4, 0.4),
-      yaw: range(-0.45, 0.45),
-      pitch: 0,
-      roll: 0,
-      fold: def.defaultFold || 0,
-    };
-    state.undo.push(arena.place(type, pose));
+  const fort = buildRandomFort();
+  for (const entry of fort.pieces) {
+    state.undo.push(arena.place(entry.type, entry.pose));
   }
   audio.place();
   updateTray();
   updateBuildFocus();
-  banner('Random fort!', 1.2);
-  status('Random fort ready. Add to it or start the match.');
+  banner(`${fort.name}!`, 1.4);
+  status(`${fort.name} ready. Add to it or start the match.`);
 }
 
 /* ----------------------------------------------------------------- events */

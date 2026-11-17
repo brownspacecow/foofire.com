@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import * as RAPIER_NS from '@dimforge/rapier3d-compat';
+import { PIECE_DEFS } from './pieces.js';
+
+export { PIECE_DEFS };
 
 const RAPIER = RAPIER_NS.default ?? RAPIER_NS;
 
@@ -13,13 +16,6 @@ const RAPIER = RAPIER_NS.default ?? RAPIER_NS;
 
 export const LAVA_Y = -1.4;
 export const ZONE = { halfX: 14, halfZ: 11 };
-
-export const PIECE_DEFS = {
-  base: { label: 'Base', total: 10, mass: 9, size: [6.6, 0.875, 3.3] },
-  cushion: { label: 'Cushion', total: 10, mass: 6, panel: [3.3, 0.55, 3.3], defaultFold: Math.PI / 3 },
-  bent: { label: 'Bent base', total: 4, mass: 10, panel: [3.3, 0.875, 3.3], defaultFold: Math.PI / 2 },
-  triangle: { label: 'Triangle', total: 20, mass: 2.4, size: [2.6, 1.4, 2.4] },
-};
 
 const TAU = Math.PI * 2;
 
@@ -274,6 +270,7 @@ export class Arena {
 
   place(type, pose) {
     const def = PIECE_DEFS[type];
+    const fold = pose.fold || 0;
     QUAT.setFromEuler(EULER.set(pose.pitch || 0, pose.yaw || 0, pose.roll || 0, 'YXZ'));
 
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
@@ -303,7 +300,6 @@ export class Arena {
       const hx = w / 2;
       const hy = h / 2;
       const hz = d / 2;
-      const fold = pose.fold || 0;
       colliders.push(
         common(
           RAPIER.ColliderDesc.cuboid(hx, hy, hz).setTranslation(-hx, 0, 0),
@@ -360,6 +356,9 @@ export class Arena {
       visual,
       box: new THREE.Box3(),
       pose: { ...pose },
+      // Flat tops are safe spawn decks: bases, bent corners and unfolded
+      // cushions. Folded cushions and triangles are ramps.
+      flat: type === 'base' || type === 'bent' || (type === 'cushion' && fold < 0.25),
     };
     visual.userData.piece = piece;
     this.pieces.push(piece);
@@ -432,6 +431,7 @@ export class Arena {
         maxX: box.max.x,
         minZ: box.min.z,
         maxZ: box.max.z,
+        flat: piece.flat,
       };
     });
     // A piece with another one resting on it is not a usable surface.
@@ -471,13 +471,18 @@ export class Arena {
 
   pickSpawnSpots(spots) {
     if (!spots.length) return null;
+    // Never open a round on a ramp when the fort has a proper deck. Folded
+    // cushions and triangles have sloped tops, so a wrestler dropped there
+    // slides straight off; decks keep the spawn fair.
+    const decks = spots.filter((spot) => spot.flat);
+    const pool = decks.length ? decks : spots;
     let first = null;
     let second = null;
     let best = Infinity;
-    for (let i = 0; i < spots.length; i += 1) {
-      for (let j = i + 1; j < spots.length; j += 1) {
-        const a = spots[i];
-        const b = spots[j];
+    for (let i = 0; i < pool.length; i += 1) {
+      for (let j = i + 1; j < pool.length; j += 1) {
+        const a = pool[i];
+        const b = pool[j];
         const distance = Math.hypot(a.x - b.x, a.z - b.z);
         if (distance < 2.6) continue;
         const heightGap = Math.abs(a.top - b.top);
@@ -493,7 +498,7 @@ export class Arena {
       }
     }
     if (!first) {
-      const sorted = [...spots].sort((a, b) => b.top - a.top);
+      const sorted = [...pool].sort((a, b) => b.top - a.top);
       first = sorted[0];
       second = sorted[1] || sorted[0];
     }
