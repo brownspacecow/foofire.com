@@ -134,6 +134,56 @@
         color: var(--muted);
       }
 
+      .hud-fullscreen {
+        justify-self: end;
+        width: 2.6rem;
+        height: 2.6rem;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 0.7rem;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .hud-fullscreen:hover {
+        filter: brightness(1.15);
+      }
+
+      /* Full screen: HUD, room and controls fill the display. */
+      .bear-game:fullscreen {
+        max-width: none;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        background: #120a2a;
+      }
+
+      .bear-game:fullscreen .hud {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+      }
+
+      .bear-game:fullscreen #game-container {
+        flex: 1 1 auto;
+        height: auto;
+        min-height: 0;
+        border-radius: 0;
+        border: none;
+      }
+
+      .bear-game:fullscreen .game-tip,
+      .bear-game:fullscreen .back-link {
+        display: none;
+      }
+
       #game-container {
         position: relative;
         width: 100%;
@@ -381,6 +431,16 @@
               <span class="hud-score">❤️ <span id="care-score">0</span> care points</span>
             </div>
           </div>
+
+          <button
+            id="fullscreen-button"
+            class="hud-fullscreen"
+            type="button"
+            aria-label="Play in full screen"
+            aria-pressed="false"
+          >
+            ⛶
+          </button>
         </div>
 
         <div id="game-container">

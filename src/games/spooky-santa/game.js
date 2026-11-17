@@ -93,6 +93,53 @@ muteButton.addEventListener('click', () => {
   if (!audio.isMuted()) audio.uiClick();
 });
 
+/*
+ * Full screen keeps the page from scrolling under small thumbs.
+ * Hidden where the browser has no element full screen (for example an iframe).
+ */
+const fullscreenButton = document.querySelector('#fullscreen-button');
+const gameShell = document.querySelector('.ss-game');
+const canFullscreen = Boolean(
+  fullscreenButton && gameShell && document.fullscreenEnabled && gameShell.requestFullscreen
+);
+
+const refreshFullscreenButton = () => {
+  if (!fullscreenButton) return;
+  const active = Boolean(document.fullscreenElement);
+  fullscreenButton.textContent = active ? '⤡' : '⛶';
+  fullscreenButton.setAttribute('aria-pressed', String(active));
+  fullscreenButton.setAttribute('aria-label', active ? 'Leave full screen' : 'Play in full screen');
+};
+
+if (fullscreenButton) {
+  if (!canFullscreen) {
+    fullscreenButton.hidden = true;
+  } else {
+    refreshFullscreenButton();
+
+    fullscreenButton.addEventListener('click', async () => {
+      audio.unlock();
+      audio.uiClick();
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else {
+          await gameShell.requestFullscreen({ navigationUI: 'hide' });
+        }
+      } catch (error) {
+        /* Full screen can be refused, for example inside an embedded frame. */
+      }
+      refreshFullscreenButton();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      refreshFullscreenButton();
+      sizeScene();
+      updateCamera(0);
+    });
+  }
+}
+
 const readBest = () => {
   try {
     return Number(window.localStorage.getItem(BEST_KEY)) || 0;
@@ -163,13 +210,20 @@ const HIDE_SPOTS = [
   { x: 9.0, z: -2.4, label: 'pantry' },
 ];
 
+/** Walk-in closets. Standing inside one hides Santa from every pair of eyes. */
+const SAFE_CLOSETS = [
+  { x: -2.6, z: -6.3, w: 1.8, d: 1.2, open: 'south', label: 'living room closet' },
+  { x: 3.1, z: -5.2, w: 1.8, d: 1.2, open: 'south', label: 'kitchen closet' },
+  { x: -4.1, z: 3.75, w: 1.8, d: 1.2, open: 'south', label: 'bedroom closet' },
+];
+
 const COOKIE = { x: 2.4, z: -5.35, r: 1.15 };
 
 const CREAK_ZONES = [
   { minX: -8.2, maxX: -3.6, minZ: 1.35, maxZ: 2.7 },
   { minX: -6.2, maxX: -3.8, minZ: -1.4, maxZ: 0.3 },
-  { minX: 2.2, maxX: 4.3, minZ: -1.8, maxZ: -0.2 },
-  { minX: -5.6, maxX: -3.0, minZ: 4.0, maxZ: 5.8 },
+  { minX: 2.2, maxX: 4.3, minZ: -1.8, maxZ: -0.6 },
+  { minX: -5.6, maxX: -3.0, minZ: 4.7, maxZ: 5.8 },
 ];
 
 const TOY_SPOTS = [
@@ -999,6 +1053,84 @@ const hideMarkers = HIDE_SPOTS.map((spot) => {
   return { spot, marker };
 });
 
+/* ------------------------------------------------------------------ *
+ * Safe-space closets
+ * Standing inside one of these hides Santa completely: the sight test
+ * returns zero and the detection meter empties quickly.
+ * ------------------------------------------------------------------ */
+
+const closetBody = new THREE.MeshStandardMaterial({ color: 0x443052, roughness: 0.92 });
+const closetTrim = new THREE.MeshStandardMaterial({ color: 0x2a1e36, roughness: 0.85 });
+
+function buildSafeCloset(def) {
+  const { x, z, w, d, open } = def;
+  const thickness = 0.14;
+  const height = 1.7;
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  scene.add(group);
+
+  /* Back panel sits opposite the open side. */
+  const backZ = open === 'north' ? d / 2 - thickness / 2 : -d / 2 + thickness / 2;
+  box(w, height, thickness, closetBody, 0, height / 2, backZ, group);
+  addSolid(x, z + backZ, w, thickness);
+
+  /* Side panels with a lighter cap so they read as furniture. */
+  [-1, 1].forEach((side) => {
+    const sx = side * (w / 2 - thickness / 2);
+    box(thickness, height, d, closetBody, sx, height / 2, 0, group);
+    addSolid(x + sx, z, thickness, d);
+    box(thickness + 0.04, 0.07, d + 0.04, closetTrim, sx, height + 0.02, 0, group);
+  });
+
+  /* Hanging rail and two coats, high enough for Santa to walk under. */
+  const rail = cylinder(0.03, 0.03, w - thickness * 2, M.metal, 0, height - 0.16, backZ * 0.4, group, 8);
+  rail.rotation.z = Math.PI / 2;
+  [-0.34, 0.3].forEach((offset, index) => {
+    const coat = box(0.34, 0.5, 0.16, index ? M.fabricWarm : M.fabric, offset, height - 0.5, backZ * 0.45, group);
+    coat.rotation.z = index ? -0.04 : 0.05;
+  });
+
+  /* Glowing floor patch marking the safe space. */
+  const glow = new THREE.Mesh(
+    new THREE.PlaneGeometry(w - thickness * 2.6, d - thickness * 2.6),
+    new THREE.MeshBasicMaterial({
+      color: 0x4fd6a0,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 0.028;
+  group.add(glow);
+
+  return {
+    ...def,
+    group,
+    glow,
+    inner: {
+      minX: x - w / 2 + thickness + 0.02,
+      maxX: x + w / 2 - thickness - 0.02,
+      minZ: z - d / 2 + thickness + 0.02,
+      maxZ: z + d / 2 - thickness - 0.02,
+    },
+  };
+}
+
+const safeClosets = SAFE_CLOSETS.map(buildSafeCloset);
+
+function safeClosetAt(x, z) {
+  for (const closet of safeClosets) {
+    const { inner } = closet;
+    if (x > inner.minX && x < inner.maxX && z > inner.minZ && z < inner.maxZ) return closet;
+  }
+  return null;
+}
+
 /* Squeaky toys. */
 const toys = TOY_SPOTS.map((spot) => {
   const group = new THREE.Group();
@@ -1336,6 +1468,7 @@ const state = {
   lastSeenAt: -9,
   sneak: false,
   hiding: null,
+  safeCloset: null,
   placing: null,
   focus: null,
   dash: 0,
@@ -1435,6 +1568,7 @@ function updateHud(force = false) {
 
 function hintFor() {
   if (state.hiding) return 'Hidden. Press action to slip back out.';
+  if (state.safeCloset) return `Safe inside the ${state.safeCloset.label}. Walk out to rejoin the sneaking.`;
   if (state.placing) return 'Leaving the present... stay still.';
   const focus = state.focus;
   if (focus) {
@@ -1489,6 +1623,7 @@ function resetRound() {
   state.lastSeenAt = -9;
   state.sneak = false;
   state.hiding = null;
+  state.safeCloset = null;
   state.placing = null;
   state.focus = null;
   state.dash = 0;
@@ -1566,6 +1701,7 @@ function startRound() {
 function endRound(won, reason) {
   state.phase = won ? 'win' : 'lose';
   state.hiding = null;
+  state.safeCloset = null;
   state.placing = null;
   state.dash = 0;
   santa.group.visible = true;
@@ -1692,7 +1828,7 @@ function noisePing(x, z, amount) {
  * ------------------------------------------------------------------ */
 
 function visibility(o) {
-  if (state.phase !== 'play' || state.hiding) return 0;
+  if (state.phase !== 'play' || state.hiding || state.safeCloset) return 0;
   const dx = player.x - o.x;
   const dz = player.z - o.z;
   const d = Math.hypot(dx, dz);
@@ -1787,8 +1923,8 @@ function updateDetection(dt) {
 
   if (anySeen > 0) {
     state.lastSeenAt = state.elapsed;
-  } else if (state.elapsed - state.lastSeenAt > 0.55) {
-    state.detection -= 22 * dt;
+  } else if (state.safeCloset || state.elapsed - state.lastSeenAt > 0.55) {
+    state.detection -= (state.safeCloset ? 38 : 22) * dt;
   }
 
   state.detection = clamp(state.detection, 0, 100);
@@ -1847,6 +1983,7 @@ function updatePlayer(dt) {
       santa.group.visible = true;
       audio.unhide();
     }
+    state.safeCloset = null;
     return;
   }
 
@@ -1922,6 +2059,15 @@ function updatePlayer(dt) {
     const before = Math.floor(state.placing.t / 0.5);
     const after = Math.floor((state.placing.t + dt) / 0.5);
     if (after > before) audio.jingle();
+  }
+
+  /* Safe-space closets: walk in and the house cannot see you at all. */
+  const wasSafe = Boolean(state.safeCloset);
+  state.safeCloset = safeClosetAt(player.x, player.z);
+  if (state.safeCloset && !wasSafe) {
+    audio.hide();
+    banner('SAFE SPACE', 1400);
+    announce(`You are tucked inside the ${state.safeCloset.label}. Nobody can see you in here.`);
   }
 }
 
@@ -2019,7 +2165,7 @@ function updateDog(dt) {
   const dx = target.x - dog.x;
   const dz = target.z - dog.z;
   const len = Math.hypot(dx, dz);
-  const curious = dist(player.x, player.z, dog.x, dog.z) < 3.2 && !state.hiding;
+  const curious = dist(player.x, player.z, dog.x, dog.z) < 3.2 && !state.hiding && !state.safeCloset;
   const speed = curious ? 2.5 : 1.55;
 
   if (len > 0.3) {
@@ -2312,6 +2458,14 @@ function animateAmbient(dt) {
 
   hideMarkers.forEach(({ marker }) => {
     marker.material.opacity = 0.18 + Math.sin(state.elapsed * 2) * 0.08;
+  });
+
+  safeClosets.forEach((closet) => {
+    const occupied = state.safeCloset === closet;
+    closet.glow.material.opacity = occupied
+      ? 0.32 + Math.sin(state.elapsed * 5) * 0.08
+      : 0.13 + Math.sin(state.elapsed * 2.4) * 0.04;
+    closet.glow.material.color.setHex(occupied ? 0x8affc1 : 0x4fd6a0);
   });
 
   hearthRing.material.opacity = state.delivered >= TOTAL_PRESENTS ? 0.5 + Math.sin(state.elapsed * 5) * 0.25 : 0.28;

@@ -124,6 +124,37 @@
         color: var(--ink);
       }
 
+      /* Full screen: HUD, cabinet and controls fill the display. */
+      .claw-game:fullscreen {
+        max-width: none;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        background: #120a2a;
+      }
+
+      .claw-game:fullscreen .claw-hud {
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        box-shadow: none;
+      }
+
+      .claw-game:fullscreen #game-container {
+        flex: 1 1 auto;
+        height: auto;
+        min-height: 0;
+      }
+
+      .claw-game:fullscreen .claw-tip,
+      .claw-game:fullscreen .back-link,
+      .claw-game:fullscreen .dex-panel {
+        display: none;
+      }
+
       #game-container {
         position: relative;
         width: 100%;
@@ -936,6 +967,15 @@
             Move the claw over a plushie, then drop!
           </p>
           <div class="hud-actions">
+            <button
+              class="icon-button"
+              id="fullscreen-button"
+              type="button"
+              aria-label="Play in full screen"
+              aria-pressed="false"
+            >
+              ⛶
+            </button>
             <button
               class="icon-button"
               id="mute-button"
