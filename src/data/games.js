@@ -4,6 +4,13 @@
  */
 export const games = [
   {
+    id: 'rough-housing',
+    title: 'Rough Housing',
+    description:
+      'Build a couch-fort wrestling arena out of ten Nuggets, then bump, jump and cartwheel your friend into the lava. Local two-player physics chaos.',
+    path: './src/games/rough-housing/index.html',
+  },
+  {
     id: 'roost-rider',
     title: 'Roost Rider',
     description:
