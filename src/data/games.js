@@ -4,6 +4,13 @@
  */
 export const games = [
   {
+    id: 'escape-earth',
+    title: "Escape Earth: Survive Grandma's House",
+    description:
+      'Three levels of bad decisions: survive the drive to Grandma\'s, escape Raggedy Ann and Andy in the dark, and hold the remote against your head without getting caught.',
+    path: './src/games/escape-earth/index.html',
+  },
+  {
     id: 'ball-pit',
     title: 'Ball Pit Bonanza',
     description:
