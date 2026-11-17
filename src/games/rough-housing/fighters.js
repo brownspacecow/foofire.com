@@ -8,6 +8,11 @@ const TAU = Math.PI * 2;
 
 export const DASH = { windup: 0.1, active: 0.45, recover: 0.26, cooldown: 1.15 };
 
+// Jump feel: accept a jump pressed a little before landing, and still allow a
+// jump for a moment after stepping off an edge.
+const JUMP_BUFFER = 0.14;
+const COYOTE_TIME = 0.12;
+
 /* ------------------------------------------------------------------ *
  * Rough Housing — fighters
  * A dynamic Rapier capsule with locked rotation drives the body, and a
@@ -53,6 +58,8 @@ export class Fighter {
     this.prevVy = 0;
     this.prevJump = false;
     this.prevDash = false;
+    this.jumpBuffer = 0;
+    this.coyote = 0;
     this.out = false;
     this.outAt = 0;
     this.flopTimer = 0;
@@ -83,6 +90,8 @@ export class Fighter {
     this.lean = 0;
     this.prevJump = false;
     this.prevDash = false;
+    this.jumpBuffer = 0;
+    this.coyote = 0;
     this.dash.state = 'ready';
     this.dash.cd = 0;
     this.dash.timer = 0;
@@ -198,20 +207,28 @@ export class Fighter {
     this.flopTimer = Math.max(0, this.flopTimer - dt);
     this.dash.cd = Math.max(0, this.dash.cd - dt);
 
+    // Coyote time keeps the last grounded moment alive briefly, so a jump
+    // pressed just as the feet leave a platform still counts.
+    this.coyote = this.grounded ? COYOTE_TIME : Math.max(0, this.coyote - dt);
+
     const jumpDown = down(c.jump);
+    if (jumpDown && !this.prevJump) this.jumpBuffer = JUMP_BUFFER;
+    else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
+    this.prevJump = jumpDown;
+
     if (
-      jumpDown &&
-      !this.prevJump &&
-      this.grounded &&
+      this.jumpBuffer > 0 &&
+      this.coyote > 0 &&
       this.flopTimer <= 0 &&
       this.dash.state !== 'active'
     ) {
       velY = this.spec.body.jump;
       body.setLinvel({ x: v.x, y: velY, z: v.z }, true);
       this.grounded = false;
+      this.coyote = 0;
+      this.jumpBuffer = 0;
       this.jumpKick = 1;
     }
-    this.prevJump = jumpDown;
 
     const dashDown = down(c.dash);
     if (
