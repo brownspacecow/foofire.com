@@ -5,6 +5,9 @@
  * The compositor builds one flat timeline of musical events (in beats) plus
  * the note chart. The audio scheduler and the game both read the same times,
  * so the notes always land with the drums.
+ *
+ * Each track has an eight-bar progression, alternating drum/bass/key patterns
+ * every two bars, section-end fills, and two different eight-bar lead phrases.
  * ---------------------------------------------------------------------- */
 
 const mtof = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
@@ -73,7 +76,6 @@ const CHART_PATTERNS = {
 const GENTLE_SUBSTITUTE = { a: 'a', b: 'b', c: 'b', d: 'b', e: 'b', g: 'g' };
 
 const HATS_8 = [0, 2, 4, 6, 8, 10, 12, 14];
-const HATS_16 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
 /* ------------------------------------------------------------- Golden Hour */
 
@@ -85,6 +87,9 @@ const GOLDEN_HOUR = {
   bpm: 90,
   swing: 0.05,
   lengthLabel: '1:41',
+  echo: 0.2,
+  echoWet: 0.22,
+  vinylGain: 0.05,
   palette: {
     sky: ['#251027', '#4a2130'],
     glow: '#f6c976',
@@ -92,163 +97,427 @@ const GOLDEN_HOUR = {
   },
   progression: [
     { voicing: [53, 57, 60, 64, 67], root: 41, alt: 45, fifth: 48 },
-    { voicing: [52, 55, 59, 62], root: 40, alt: 43, fifth: 47 },
     { voicing: [50, 53, 57, 60, 64], root: 38, alt: 41, fifth: 45 },
+    { voicing: [52, 55, 59, 62], root: 40, alt: 43, fifth: 47 },
     { voicing: [48, 52, 55, 59, 62], root: 36, alt: 40, fifth: 43 },
+    { voicing: [53, 57, 60, 64, 67], root: 41, alt: 45, fifth: 48 },
+    { voicing: [50, 53, 57, 60, 64], root: 38, alt: 41, fifth: 45 },
+    { voicing: [46, 50, 53, 57, 60], root: 34, alt: 38, fifth: 41 },
+    { voicing: [48, 53, 55, 58, 60], root: 36, alt: 39, fifth: 43 },
   ],
-  keysPattern: [
-    { step: 0, len: 2.4, gain: 1 },
-    { step: 7, len: 1.3, gain: 0.7 },
-    { step: 11, len: 1.5, gain: 0.55 },
-  ],
-  bassPattern: [
-    { step: 0, note: 'root', len: 2.2, gain: 1 },
-    { step: 6, note: 'root', len: 0.8, gain: 0.8 },
-    { step: 10, note: 'alt', len: 1.2, gain: 0.9 },
-    { step: 14, note: 'fifth', len: 0.7, gain: 0.7 },
-  ],
-  lead: [
+  keysPatterns: [
     [
-      { step: 0, midi: 69, len: 1.2 },
-      { step: 4, midi: 72, len: 0.8 },
-      { step: 7, midi: 74, len: 0.4 },
-      { step: 8, midi: 72, len: 1.4 },
-      { step: 14, midi: 69, len: 0.8 },
+      { step: 0, len: 2.4, gain: 1 },
+      { step: 7, len: 1.3, gain: 0.7 },
+      { step: 11, len: 1.5, gain: 0.55 },
     ],
     [
-      { step: 0, midi: 67, len: 1.1 },
-      { step: 4, midi: 69, len: 0.7 },
-      { step: 8, midi: 72, len: 1.4 },
-      { step: 12, midi: 74, len: 0.7 },
-      { step: 14, midi: 72, len: 0.7 },
+      { step: 0, len: 3.2, gain: 0.9 },
+      { step: 6, len: 1.2, gain: 0.65 },
+      { step: 10, len: 1.6, gain: 0.75 },
     ],
     [
-      { step: 0, midi: 77, len: 0.8 },
-      { step: 3, midi: 74, len: 0.6 },
-      { step: 6, midi: 72, len: 0.6 },
-      { step: 8, midi: 69, len: 1.2 },
-      { step: 12, midi: 67, len: 0.7 },
-      { step: 14, midi: 65, len: 0.8 },
+      { step: 2, len: 1.4, gain: 0.7 },
+      { step: 8, len: 2.4, gain: 1 },
+      { step: 12, len: 1.2, gain: 0.6 },
+    ],
+  ],
+  bassPatterns: [
+    [
+      { step: 0, note: 'root', len: 2.2, gain: 1 },
+      { step: 6, note: 'root', len: 0.8, gain: 0.8 },
+      { step: 10, note: 'alt', len: 1.2, gain: 0.9 },
+      { step: 14, note: 'fifth', len: 0.7, gain: 0.7 },
     ],
     [
-      { step: 0, midi: 64, len: 1.6 },
-      { step: 4, midi: 67, len: 0.7 },
-      { step: 8, midi: 69, len: 1.6 },
-      { step: 12, midi: 72, len: 0.8 },
-      { step: 14, midi: 74, len: 0.8 },
+      { step: 0, note: 'root', len: 1.4, gain: 1 },
+      { step: 3, note: 'fifth', len: 0.7, gain: 0.7 },
+      { step: 7, note: 'root', len: 1, gain: 0.85 },
+      { step: 11, note: 'alt', len: 1.4, gain: 0.8 },
+      { step: 14, note: 'octave', len: 0.6, gain: 0.6 },
+    ],
+  ],
+  leads: [
+    [
+      [
+        { step: 0, midi: 69, len: 1.2 },
+        { step: 4, midi: 72, len: 0.8 },
+        { step: 7, midi: 74, len: 0.4 },
+        { step: 8, midi: 72, len: 1.4 },
+        { step: 14, midi: 69, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 67, len: 1.1 },
+        { step: 4, midi: 69, len: 0.7 },
+        { step: 8, midi: 72, len: 1.4 },
+        { step: 12, midi: 74, len: 0.7 },
+        { step: 14, midi: 72, len: 0.7 },
+      ],
+      [
+        { step: 0, midi: 76, len: 0.8 },
+        { step: 3, midi: 74, len: 0.6 },
+        { step: 6, midi: 72, len: 0.6 },
+        { step: 8, midi: 71, len: 1.2 },
+        { step: 12, midi: 72, len: 0.7 },
+        { step: 14, midi: 74, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 72, len: 1.6 },
+        { step: 4, midi: 69, len: 0.7 },
+        { step: 8, midi: 67, len: 1.6 },
+        { step: 12, midi: 64, len: 0.8 },
+        { step: 14, midi: 67, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 72, len: 1.2 },
+        { step: 4, midi: 69, len: 0.8 },
+        { step: 8, midi: 65, len: 1.6 },
+        { step: 12, midi: 69, len: 0.8 },
+        { step: 14, midi: 72, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 74, len: 1.4 },
+        { step: 4, midi: 77, len: 0.8 },
+        { step: 8, midi: 76, len: 1.2 },
+        { step: 12, midi: 74, len: 0.8 },
+        { step: 14, midi: 72, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 70, len: 1.6 },
+        { step: 4, midi: 74, len: 0.8 },
+        { step: 8, midi: 77, len: 1.4 },
+        { step: 12, midi: 74, len: 0.8 },
+        { step: 14, midi: 72, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 72, len: 2.4 },
+        { step: 8, midi: 70, len: 0.8 },
+        { step: 10, midi: 67, len: 0.8 },
+        { step: 12, midi: 65, len: 2.4 },
+      ],
+    ],
+    [
+      [
+        { step: 0, midi: 65, len: 0.8 },
+        { step: 2, midi: 69, len: 0.8 },
+        { step: 4, midi: 72, len: 1.2 },
+        { step: 8, midi: 74, len: 0.8 },
+        { step: 10, midi: 72, len: 0.8 },
+        { step: 12, midi: 69, len: 1.6 },
+        { step: 14, midi: 67, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 65, len: 1.2 },
+        { step: 4, midi: 69, len: 0.8 },
+        { step: 8, midi: 72, len: 0.8 },
+        { step: 10, midi: 74, len: 1.2 },
+        { step: 12, midi: 72, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 71, len: 0.8 },
+        { step: 2, midi: 74, len: 0.8 },
+        { step: 4, midi: 76, len: 1.2 },
+        { step: 8, midi: 79, len: 0.8 },
+        { step: 10, midi: 77, len: 0.8 },
+        { step: 12, midi: 76, len: 1.6 },
+        { step: 14, midi: 74, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 72, len: 2.4 },
+        { step: 8, midi: 76, len: 1.2 },
+        { step: 10, midi: 74, len: 1.2 },
+        { step: 12, midi: 72, len: 0.8 },
+        { step: 14, midi: 67, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 69, len: 0.8 },
+        { step: 2, midi: 72, len: 0.8 },
+        { step: 4, midi: 77, len: 1.4 },
+        { step: 8, midi: 76, len: 0.8 },
+        { step: 10, midi: 74, len: 0.8 },
+        { step: 12, midi: 72, len: 2 },
+      ],
+      [
+        { step: 0, midi: 74, len: 1.2 },
+        { step: 4, midi: 76, len: 0.8 },
+        { step: 8, midi: 77, len: 1.2 },
+        { step: 12, midi: 81, len: 1.2 },
+        { step: 14, midi: 79, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 77, len: 1.6 },
+        { step: 4, midi: 74, len: 0.8 },
+        { step: 8, midi: 70, len: 1.2 },
+        { step: 10, midi: 74, len: 0.8 },
+        { step: 12, midi: 77, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 79, len: 2.4 },
+        { step: 8, midi: 77, len: 0.8 },
+        { step: 10, midi: 74, len: 0.8 },
+        { step: 12, midi: 72, len: 2.4 },
+      ],
     ],
   ],
   drums: {
-    soft: { kick: [0, 10], rim: [4, 12], hat: HATS_8 },
-    verse: { kick: [0, 3, 7, 10, 14], snare: [4, 12], hat: HATS_8, open: [14] },
-    hook: {
-      kick: [0, 3, 7, 10, 13, 15],
-      snare: [4, 12],
-      clap: [4, 12],
-      hat: HATS_16,
-      open: [14],
-    },
+    soft: [
+      { kick: [0, 10], rim: [4, 12], hat: HATS_8 },
+      { kick: [0, 7, 10], rim: [4, 12], hat: [0, 2, 4, 6, 8, 9, 10, 12, 14] },
+    ],
+    verse: [
+      { kick: [0, 3, 7, 10, 14], snare: [4, 12], hat: HATS_8, open: [14] },
+      {
+        kick: [0, 3, 6, 10, 13],
+        snare: [4, 12],
+        hat: [0, 2, 3, 4, 6, 8, 10, 11, 12, 14],
+        open: [6, 14],
+      },
+    ],
+    hook: [
+      { kick: [0, 3, 7, 10, 13, 15], snare: [4, 12], clap: [4, 12], hat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], open: [14] },
+      {
+        kick: [0, 2, 3, 7, 10, 14],
+        snare: [4, 12],
+        clap: [4, 12],
+        hat: [0, 2, 4, 5, 6, 8, 10, 12, 13, 14, 15],
+        open: [7, 14],
+      },
+    ],
+  },
+  fills: {
+    a: [
+      { type: 'snare', step: 13, gain: 0.6 },
+      { type: 'snare', step: 14, gain: 0.8 },
+      { type: 'tom', step: 15, gain: 0.9 },
+    ],
+    b: [
+      { type: 'snare', step: 12, gain: 0.5 },
+      { type: 'tom', step: 13, gain: 0.8 },
+      { type: 'tom', step: 14, gain: 0.9 },
+      { type: 'snare', step: 15, gain: 1 },
+    ],
   },
   arrangement: [
     { bars: 2, keys: true, pad: true },
-    { bars: 8, drums: 'verse', keys: true, bass: true, chart: ['a', 'b'] },
-    { bars: 8, drums: 'hook', keys: true, bass: true, lead: true, chart: ['b', 'c', 'b', 'd'], vox: [12] },
-    { bars: 4, drums: 'soft', keys: true, bass: true, pad: true, chart: ['g', 'a'] },
-    { bars: 8, drums: 'hook', keys: true, bass: true, lead: true, chart: ['c', 'd', 'b', 'e'], vox: [12] },
-    { bars: 4, drums: 'verse', keys: true, bass: true, chart: ['b', 'a'] },
-    { bars: 4, keys: true, pad: true },
+    { bars: 2, drums: 'soft', keys: true, bass: true, fill: 'a' },
+    { bars: 8, drums: 'verse', keys: true, bass: true, chart: ['a', 'b'], crash: true, fill: 'a' },
+    { bars: 8, drums: 'hook', keys: true, bass: true, lead: 0, chart: ['b', 'c', 'b', 'd'], vox: [12], crash: true, fill: 'b' },
+    { bars: 4, drums: 'soft', keys: true, bass: true, pad: true, chart: ['g', 'a'], fill: 'a' },
+    { bars: 8, drums: 'hook', keys: true, bass: true, lead: 1, chart: ['c', 'd', 'b', 'e'], crash: true, fill: 'b' },
+    { bars: 4, drums: 'verse', keys: true, bass: true, chart: ['b', 'a'], fill: 'a' },
+    { bars: 2, keys: true, pad: true },
   ],
 };
 
-/* ------------------------------------------------------- Flip Phone Summer */
+/* --------------------------------------------------------------- Sunday Drop */
 
-const FLIP_PHONE = {
-  id: 'flip-phone',
-  title: 'Flip Phone Summer',
-  blurb: 'Blippy synth bells, handclaps and a bounce built for dancing in the kitchen with the blinds open.',
-  vibe: 'Bouncy · bright',
-  bpm: 104,
-  swing: 0.035,
-  lengthLabel: '1:37',
+const SUNDAY_DROP = {
+  id: 'sunday-drop',
+  title: 'Sunday Drop',
+  blurb: 'A sun-warmed one-drop: offbeat skanks, a walking bassline and plenty of echo. For the slow part of the afternoon.',
+  vibe: 'Sun-warmed · one-drop',
+  bpm: 74,
+  swing: 0.02,
+  lengthLabel: '1:57',
+  echo: 0.33,
+  echoWet: 0.3,
+  vinylGain: 0.02,
   palette: {
-    sky: ['#101a2e', '#2b2450'],
-    glow: '#8fe6d8',
-    haze: '#b79bff',
+    sky: ['#12241d', '#3b2f1d'],
+    glow: '#e7c66a',
+    haze: '#7ed0a9',
   },
   progression: [
-    { voicing: [55, 58, 62, 65, 69], root: 43, alt: 46, fifth: 50 },
-    { voicing: [48, 51, 55, 58, 62], root: 36, alt: 39, fifth: 43 },
-    { voicing: [51, 55, 58, 62, 65], root: 39, alt: 43, fifth: 46 },
-    { voicing: [53, 57, 60, 63, 67], root: 41, alt: 45, fifth: 48 },
+    { voicing: [48, 52, 55, 59], root: 36, alt: 40, fifth: 43 },
+    { voicing: [45, 48, 52, 55], root: 33, alt: 36, fifth: 40 },
+    { voicing: [53, 57, 60, 64], root: 41, alt: 45, fifth: 48 },
+    { voicing: [43, 47, 50, 52], root: 43, alt: 47, fifth: 50 },
+    { voicing: [48, 52, 55, 59], root: 36, alt: 40, fifth: 43 },
+    { voicing: [45, 48, 52, 55], root: 33, alt: 36, fifth: 40 },
+    { voicing: [50, 53, 57, 60], root: 38, alt: 41, fifth: 45 },
+    { voicing: [43, 47, 50, 53], root: 43, alt: 47, fifth: 50 },
   ],
-  keysPattern: [
-    { step: 2, len: 1.2, gain: 0.9 },
-    { step: 6, len: 0.8, gain: 0.6 },
-    { step: 10, len: 1.4, gain: 0.8 },
-    { step: 14, len: 0.7, gain: 0.5 },
-  ],
-  bassPattern: [
-    { step: 0, note: 'root', len: 0.9, gain: 1 },
-    { step: 3, note: 'root', len: 0.5, gain: 0.6 },
-    { step: 6, note: 'fifth', len: 0.7, gain: 0.8 },
-    { step: 8, note: 'root', len: 0.9, gain: 0.9 },
-    { step: 11, note: 'alt', len: 0.5, gain: 0.6 },
-    { step: 14, note: 'octave', len: 0.6, gain: 0.7 },
-  ],
-  lead: [
+  bassPatterns: [
     [
-      { step: 0, midi: 74, len: 0.8 },
-      { step: 2, midi: 77, len: 0.4 },
-      { step: 4, midi: 74, len: 0.8 },
-      { step: 7, midi: 70, len: 0.4 },
-      { step: 8, midi: 67, len: 1.2 },
-      { step: 12, midi: 70, len: 0.7 },
-      { step: 14, midi: 72, len: 0.7 },
+      { step: 0, note: 'root', len: 1.4, gain: 1 },
+      { step: 3, note: 'fifth', len: 0.5, gain: 0.7 },
+      { step: 6, note: 'octave', len: 0.8, gain: 0.85 },
+      { step: 10, note: 'root', len: 1.2, gain: 0.9 },
+      { step: 14, note: 'alt', len: 0.6, gain: 0.6 },
     ],
     [
-      { step: 0, midi: 74, len: 1.4 },
-      { step: 4, midi: 77, len: 0.7 },
-      { step: 6, midi: 79, len: 0.7 },
-      { step: 8, midi: 77, len: 0.7 },
-      { step: 10, midi: 74, len: 0.7 },
-      { step: 12, midi: 70, len: 1.4 },
-    ],
-    [
-      { step: 0, midi: 72, len: 0.7 },
-      { step: 2, midi: 74, len: 0.7 },
-      { step: 4, midi: 77, len: 0.7 },
-      { step: 6, midi: 79, len: 0.7 },
-      { step: 8, midi: 77, len: 1.2 },
-      { step: 12, midi: 74, len: 0.7 },
-      { step: 14, midi: 72, len: 0.4 },
-    ],
-    [
-      { step: 0, midi: 70, len: 1.4 },
-      { step: 4, midi: 67, len: 1.1 },
-      { step: 8, midi: 74, len: 0.7 },
-      { step: 10, midi: 72, len: 0.7 },
-      { step: 12, midi: 70, len: 2 },
+      { step: 0, note: 'root', len: 0.9, gain: 1 },
+      { step: 2, note: 'root', len: 0.4, gain: 0.6 },
+      { step: 6, note: 'fifth', len: 1.2, gain: 0.85 },
+      { step: 9, note: 'octave', len: 0.7, gain: 0.75 },
+      { step: 12, note: 'alt', len: 1, gain: 0.8 },
+      { step: 15, note: 'root', len: 0.5, gain: 0.6 },
     ],
   ],
+  skankPatterns: [[4, 12], [4, 12, 14], [4, 10, 12]],
+  organPatterns: [
+    [2, 7, 10, 14],
+    [2, 6, 10, 14, 15],
+  ],
+  leads: [
+    [
+      [
+        { step: 0, midi: 67, len: 1.2 },
+        { step: 4, midi: 72, len: 0.8 },
+        { step: 6, midi: 71, len: 0.8 },
+        { step: 8, midi: 67, len: 1.6 },
+        { step: 12, midi: 64, len: 0.8 },
+        { step: 14, midi: 67, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 69, len: 1.2 },
+        { step: 4, midi: 72, len: 0.8 },
+        { step: 8, midi: 76, len: 1.2 },
+        { step: 10, midi: 74, len: 0.8 },
+        { step: 12, midi: 72, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 69, len: 1.2 },
+        { step: 4, midi: 72, len: 0.8 },
+        { step: 8, midi: 77, len: 1.6 },
+        { step: 12, midi: 76, len: 0.8 },
+        { step: 14, midi: 72, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 71, len: 2.4 },
+        { step: 8, midi: 74, len: 1.2 },
+        { step: 10, midi: 71, len: 0.8 },
+        { step: 12, midi: 67, len: 2 },
+      ],
+      [
+        { step: 0, midi: 72, len: 0.8 },
+        { step: 2, midi: 74, len: 0.8 },
+        { step: 4, midi: 76, len: 1.2 },
+        { step: 8, midi: 72, len: 0.8 },
+        { step: 10, midi: 69, len: 0.8 },
+        { step: 12, midi: 67, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 69, len: 1.2 },
+        { step: 4, midi: 72, len: 0.8 },
+        { step: 8, midi: 76, len: 1.2 },
+        { step: 12, midi: 79, len: 1.6 },
+        { step: 14, midi: 76, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 77, len: 1.6 },
+        { step: 4, midi: 76, len: 0.8 },
+        { step: 8, midi: 74, len: 1.2 },
+        { step: 10, midi: 72, len: 0.8 },
+        { step: 12, midi: 74, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 71, len: 2.4 },
+        { step: 8, midi: 74, len: 0.8 },
+        { step: 10, midi: 71, len: 0.8 },
+        { step: 12, midi: 67, len: 2.4 },
+      ],
+    ],
+    [
+      [
+        { step: 0, midi: 76, len: 0.8 },
+        { step: 2, midi: 79, len: 0.8 },
+        { step: 4, midi: 76, len: 1.2 },
+        { step: 8, midi: 72, len: 1.2 },
+        { step: 10, midi: 69, len: 0.8 },
+        { step: 12, midi: 67, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 72, len: 1.2 },
+        { step: 4, midi: 76, len: 0.8 },
+        { step: 8, midi: 79, len: 1.2 },
+        { step: 10, midi: 81, len: 0.8 },
+        { step: 12, midi: 79, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 77, len: 1.2 },
+        { step: 2, midi: 76, len: 0.8 },
+        { step: 4, midi: 72, len: 0.8 },
+        { step: 8, midi: 69, len: 1.6 },
+        { step: 12, midi: 72, len: 0.8 },
+        { step: 14, midi: 76, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 74, len: 2.4 },
+        { step: 8, midi: 71, len: 0.8 },
+        { step: 10, midi: 74, len: 0.8 },
+        { step: 12, midi: 79, len: 2 },
+      ],
+      [
+        { step: 0, midi: 79, len: 0.8 },
+        { step: 2, midi: 76, len: 0.8 },
+        { step: 4, midi: 72, len: 1.2 },
+        { step: 8, midi: 69, len: 0.8 },
+        { step: 10, midi: 72, len: 0.8 },
+        { step: 12, midi: 76, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 81, len: 1.2 },
+        { step: 4, midi: 79, len: 0.8 },
+        { step: 8, midi: 76, len: 1.2 },
+        { step: 12, midi: 72, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 74, len: 1.2 },
+        { step: 4, midi: 77, len: 0.8 },
+        { step: 8, midi: 81, len: 1.2 },
+        { step: 10, midi: 79, len: 0.8 },
+        { step: 12, midi: 77, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 74, len: 2.4 },
+        { step: 8, midi: 71, len: 0.8 },
+        { step: 10, midi: 67, len: 0.8 },
+        { step: 12, midi: 72, len: 2.4 },
+      ],
+    ],
+  ],
+  leadKind: 'melodica',
   drums: {
-    soft: { kick: [0, 8], rim: [4, 12], hat: HATS_8 },
-    verse: { kick: [0, 3, 6, 10, 13], snare: [4, 12], hat: HATS_8, open: [7, 15] },
-    hook: {
-      kick: [0, 2, 3, 6, 8, 10, 13, 15],
-      snare: [4, 12],
-      clap: [4, 12],
-      hat: HATS_16,
-      open: [14],
-    },
+    soft: [
+      { kick: [8], rim: [8], hat: HATS_8 },
+      { kick: [8], rim: [8], hat: [0, 2, 3, 4, 6, 8, 10, 12, 14] },
+    ],
+    verse: [
+      { kick: [8], rim: [8], hat: HATS_8, open: [14] },
+      { kick: [8], rim: [8, 15], hat: [0, 2, 3, 4, 6, 8, 10, 11, 12, 14], open: [11] },
+    ],
+    chorus: [
+      { kick: [8], rim: [8], hat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], open: [14] },
+      {
+        kick: [7, 8],
+        rim: [8],
+        hat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14],
+        open: [6, 14],
+      },
+    ],
+  },
+  fills: {
+    a: [
+      { type: 'rim', step: 12, gain: 0.6 },
+      { type: 'rim', step: 14, gain: 0.8 },
+      { type: 'tom', step: 15, gain: 0.9 },
+    ],
+    b: [
+      { type: 'tom', step: 12, gain: 0.7 },
+      { type: 'tom', step: 13, gain: 0.8 },
+      { type: 'rim', step: 14, gain: 0.9 },
+      { type: 'tom', step: 15, gain: 1 },
+    ],
   },
   arrangement: [
-    { bars: 2, arp: true, pad: true },
-    { bars: 8, drums: 'verse', keys: true, bass: true, chart: ['a', 'b'] },
-    { bars: 8, drums: 'hook', keys: true, bass: true, lead: true, arp: true, chart: ['b', 'c', 'c', 'd'], vox: [12] },
-    { bars: 4, keys: true, bass: true, arp: true, pad: true, chart: ['g'] },
-    { bars: 8, drums: 'hook', keys: true, bass: true, lead: true, arp: true, chart: ['c', 'd', 'b', 'e'] },
-    { bars: 8, drums: 'verse', keys: true, bass: true, arp: true, chart: ['b', 'b', 'a', 'b'] },
-    { bars: 4, keys: true, arp: true, pad: true },
+    { bars: 2, skank: true, bass: true, pad: true },
+    { bars: 2, drums: 'soft', skank: true, bass: true, organ: true, fill: 'a' },
+    { bars: 8, drums: 'verse', skank: true, bass: true, chart: ['a', 'b'], crash: true, fill: 'a' },
+    { bars: 8, drums: 'chorus', skank: true, bass: true, organ: true, lead: 0, chart: ['b', 'c', 'b', 'd'], crash: true, fill: 'b' },
+    { bars: 4, skank: true, bass: true, organ: true, pad: true, chart: ['g'] },
+    { bars: 8, drums: 'chorus', skank: true, bass: true, organ: true, lead: 1, chart: ['c', 'd', 'b', 'e'], crash: true, fill: 'b' },
+    { bars: 4, skank: true, bass: true, organ: true, pad: true },
   ],
 };
 
@@ -262,6 +531,9 @@ const SLOW_POUR = {
   bpm: 82,
   swing: 0.055,
   lengthLabel: '1:40',
+  echo: 0.25,
+  echoWet: 0.24,
+  vinylGain: 0.055,
   palette: {
     sky: ['#121018', '#2c1f2d'],
     glow: '#e2b6ff',
@@ -272,56 +544,183 @@ const SLOW_POUR = {
     { voicing: [44, 48, 51, 55, 58], root: 32, alt: 36, fifth: 39 },
     { voicing: [41, 44, 48, 51, 55], root: 29, alt: 32, fifth: 36 },
     { voicing: [43, 47, 50, 53, 56], root: 31, alt: 35, fifth: 38 },
+    { voicing: [48, 51, 55, 58, 62], root: 36, alt: 39, fifth: 43 },
+    { voicing: [44, 48, 51, 55, 58], root: 32, alt: 36, fifth: 39 },
+    { voicing: [49, 53, 56, 60, 63], root: 37, alt: 41, fifth: 44 },
+    { voicing: [43, 47, 50, 53, 56], root: 31, alt: 35, fifth: 38 },
   ],
-  keysPattern: [
-    { step: 0, len: 3.6, gain: 1 },
-    { step: 10, len: 2.2, gain: 0.7 },
-  ],
-  bassPattern: [
-    { step: 0, note: 'root', len: 3.2, gain: 1 },
-    { step: 10, note: 'fifth', len: 1.4, gain: 0.7 },
-  ],
-  lead: [
+  keysPatterns: [
     [
-      { step: 0, midi: 67, len: 1.6 },
-      { step: 6, midi: 70, len: 0.7 },
-      { step: 8, midi: 72, len: 1.2 },
-      { step: 12, midi: 70, len: 0.7 },
+      { step: 0, len: 3.6, gain: 1 },
+      { step: 10, len: 2.2, gain: 0.7 },
     ],
     [
-      { step: 0, midi: 75, len: 1.6 },
-      { step: 4, midi: 72, len: 0.7 },
-      { step: 8, midi: 70, len: 1.2 },
-      { step: 12, midi: 67, len: 1.6 },
+      { step: 0, len: 2.4, gain: 0.8 },
+      { step: 6, len: 1.4, gain: 0.55 },
+      { step: 10, len: 2.6, gain: 0.9 },
+    ],
+  ],
+  bassPatterns: [
+    [
+      { step: 0, note: 'root', len: 3.2, gain: 1 },
+      { step: 10, note: 'fifth', len: 1.4, gain: 0.7 },
     ],
     [
-      { step: 0, midi: 63, len: 1.2 },
-      { step: 4, midi: 67, len: 0.7 },
-      { step: 8, midi: 70, len: 0.7 },
-      { step: 10, midi: 72, len: 0.7 },
-      { step: 12, midi: 75, len: 1.6 },
+      { step: 0, note: 'root', len: 2, gain: 1 },
+      { step: 6, note: 'alt', len: 1.2, gain: 0.6 },
+      { step: 10, note: 'fifth', len: 2, gain: 0.75 },
+    ],
+  ],
+  leads: [
+    [
+      [
+        { step: 0, midi: 67, len: 1.6 },
+        { step: 6, midi: 70, len: 0.7 },
+        { step: 8, midi: 72, len: 1.2 },
+        { step: 12, midi: 70, len: 0.7 },
+      ],
+      [
+        { step: 0, midi: 75, len: 1.6 },
+        { step: 4, midi: 72, len: 0.7 },
+        { step: 8, midi: 70, len: 1.2 },
+        { step: 12, midi: 67, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 63, len: 1.2 },
+        { step: 4, midi: 67, len: 0.7 },
+        { step: 8, midi: 70, len: 0.7 },
+        { step: 10, midi: 72, len: 0.7 },
+        { step: 12, midi: 75, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 74, len: 2.4 },
+        { step: 8, midi: 70, len: 0.7 },
+        { step: 10, midi: 67, len: 2.4 },
+      ],
+      [
+        { step: 0, midi: 72, len: 1.2 },
+        { step: 4, midi: 75, len: 0.8 },
+        { step: 8, midi: 79, len: 1.6 },
+        { step: 12, midi: 75, len: 0.8 },
+        { step: 14, midi: 72, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 70, len: 1.6 },
+        { step: 4, midi: 72, len: 0.8 },
+        { step: 8, midi: 75, len: 1.2 },
+        { step: 12, midi: 77, len: 1.2 },
+        { step: 14, midi: 75, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 77, len: 1.6 },
+        { step: 4, midi: 75, len: 0.8 },
+        { step: 8, midi: 72, len: 1.2 },
+        { step: 10, midi: 70, len: 0.8 },
+        { step: 12, midi: 68, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 70, len: 2.4 },
+        { step: 8, midi: 67, len: 1.2 },
+        { step: 10, midi: 63, len: 2.4 },
+      ],
     ],
     [
-      { step: 0, midi: 74, len: 2.4 },
-      { step: 8, midi: 70, len: 0.7 },
-      { step: 10, midi: 67, len: 2.4 },
+      [
+        { step: 0, midi: 63, len: 1.2 },
+        { step: 3, midi: 67, len: 0.8 },
+        { step: 6, midi: 70, len: 0.8 },
+        { step: 8, midi: 72, len: 1.6 },
+        { step: 12, midi: 75, len: 0.8 },
+        { step: 14, midi: 72, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 75, len: 2.4 },
+        { step: 8, midi: 79, len: 0.8 },
+        { step: 10, midi: 77, len: 0.8 },
+        { step: 12, midi: 75, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 72, len: 1.2 },
+        { step: 4, midi: 70, len: 0.8 },
+        { step: 8, midi: 67, len: 1.2 },
+        { step: 12, midi: 63, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 70, len: 2.4 },
+        { step: 8, midi: 74, len: 0.8 },
+        { step: 10, midi: 70, len: 0.8 },
+        { step: 12, midi: 67, len: 2 },
+      ],
+      [
+        { step: 0, midi: 75, len: 1.2 },
+        { step: 4, midi: 77, len: 0.8 },
+        { step: 8, midi: 79, len: 1.2 },
+        { step: 12, midi: 82, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 81, len: 1.6 },
+        { step: 4, midi: 79, len: 0.8 },
+        { step: 8, midi: 75, len: 1.2 },
+        { step: 10, midi: 72, len: 0.8 },
+        { step: 12, midi: 75, len: 1.6 },
+      ],
+      [
+        { step: 0, midi: 77, len: 1.2 },
+        { step: 4, midi: 75, len: 0.8 },
+        { step: 8, midi: 72, len: 1.6 },
+        { step: 12, midi: 70, len: 0.8 },
+        { step: 14, midi: 68, len: 0.8 },
+      ],
+      [
+        { step: 0, midi: 70, len: 2.4 },
+        { step: 8, midi: 67, len: 1.2 },
+        { step: 10, midi: 63, len: 2.4 },
+      ],
     ],
   ],
   drums: {
-    soft: { kick: [0, 10], rim: [4, 12], hat: HATS_8 },
-    groove: { kick: [0, 3, 7, 10, 14], snare: [4, 12], hat: HATS_8, open: [14] },
+    soft: [
+      { kick: [0, 10], rim: [4, 12], hat: HATS_8 },
+      {
+        kick: [0, 7, 10],
+        rim: [4, 12, 15],
+        hat: [0, 2, 4, 6, 8, 9, 10, 12, 14],
+      },
+    ],
+    groove: [
+      { kick: [0, 3, 7, 10, 14], snare: [4, 12], hat: HATS_8, open: [14] },
+      {
+        kick: [0, 3, 7, 10, 13],
+        snare: [4, 12],
+        hat: [0, 2, 4, 6, 7, 8, 10, 12, 14],
+        open: [6, 14],
+      },
+    ],
+  },
+  fills: {
+    a: [
+      { type: 'rim', step: 13, gain: 0.6 },
+      { type: 'rim', step: 14, gain: 0.7 },
+      { type: 'tom', step: 15, gain: 0.8 },
+    ],
+    b: [
+      { type: 'tom', step: 12, gain: 0.7 },
+      { type: 'rim', step: 13, gain: 0.8 },
+      { type: 'tom', step: 14, gain: 0.8 },
+      { type: 'rim', step: 15, gain: 0.9 },
+    ],
   },
   arrangement: [
     { bars: 2, keys: true, pad: true },
-    { bars: 8, drums: 'soft', keys: true, bass: true, pad: true, chart: ['a', 'g', 'a', 'a'] },
-    { bars: 8, drums: 'soft', keys: true, bass: true, lead: true, pad: true, chart: ['a', 'b', 'b', 'g'] },
-    { bars: 4, keys: true, bass: true, pad: true },
-    { bars: 8, drums: 'groove', keys: true, bass: true, lead: true, pad: true, chart: ['b', 'c', 'b', 'a'] },
+    { bars: 8, drums: 'soft', keys: true, bass: true, pad: true, chart: ['a', 'g', 'a', 'a'], crash: true, fill: 'a' },
+    { bars: 8, drums: 'soft', keys: true, bass: true, lead: 0, pad: true, chart: ['a', 'b', 'b', 'g'], crash: true, fill: 'b' },
+    { bars: 4, keys: true, bass: true, pad: true, chart: ['g'], fill: 'a' },
+    { bars: 8, drums: 'groove', keys: true, bass: true, lead: 1, pad: true, chart: ['b', 'c', 'b', 'a'], crash: true, fill: 'b' },
     { bars: 4, keys: true, pad: true },
   ],
 };
 
-export const TRACKS = [GOLDEN_HOUR, FLIP_PHONE, SLOW_POUR];
+export const TRACKS = [GOLDEN_HOUR, SUNDAY_DROP, SLOW_POUR];
 
 const bassMidi = (chord, kind) => {
   switch (kind) {
@@ -338,6 +737,9 @@ const bassMidi = (chord, kind) => {
 
 const swingBeat = (step, swing) => step * 0.25 + (step % 2 === 1 ? swing : 0);
 
+const pickVariant = (variants, barIndex, every = 2) =>
+  variants[Math.floor(barIndex / every) % variants.length];
+
 /**
  * Turn a track spec into a flat event timeline and a playable note chart.
  * `difficulty` is 'gentle' (straight eighths) or 'groove' (adds syncopation).
@@ -348,15 +750,16 @@ export function buildSong(track, difficulty = 'gentle') {
   let barCursor = 0;
 
   for (const section of track.arrangement) {
-    const drums = section.drums ? track.drums[section.drums] : null;
-
     for (let b = 0; b < section.bars; b += 1) {
       const globalBar = barCursor + b;
       const chord = track.progression[globalBar % track.progression.length];
       const barBeat = globalBar * 4;
       const at = (step) => barBeat + swingBeat(step, track.swing);
 
-      if (drums) {
+      if (section.drums) {
+        const pack = track.drums[section.drums];
+        const drums = Array.isArray(pack) ? pickVariant(pack, globalBar) : pack;
+
         for (const step of drums.kick || []) {
           events.push({ type: 'kick', beat: at(step), gain: 1 });
         }
@@ -378,8 +781,9 @@ export function buildSong(track, difficulty = 'gentle') {
         }
       }
 
-      if (section.keys) {
-        for (const stab of track.keysPattern) {
+      if (section.keys && track.keysPatterns) {
+        const stabs = pickVariant(track.keysPatterns, globalBar);
+        for (const stab of stabs) {
           events.push({
             type: 'chord',
             beat: at(stab.step),
@@ -390,14 +794,41 @@ export function buildSong(track, difficulty = 'gentle') {
         }
       }
 
-      if (section.bass) {
-        for (const note of track.bassPattern) {
+      if (section.bass && track.bassPatterns) {
+        const pattern = pickVariant(track.bassPatterns, globalBar);
+        for (const note of pattern) {
           events.push({
             type: 'bass',
             beat: at(note.step),
             midi: bassMidi(chord, note.note),
             dur: note.len,
             gain: note.gain,
+          });
+        }
+      }
+
+      if (section.skank && track.skankPatterns) {
+        const pattern = pickVariant(track.skankPatterns, globalBar);
+        for (const step of pattern) {
+          events.push({
+            type: 'skank',
+            beat: at(step),
+            notes: chord.voicing.map((midi) => midi + 12),
+            dur: 0.3,
+            gain: 1,
+          });
+        }
+      }
+
+      if (section.organ && track.organPatterns) {
+        const pattern = pickVariant(track.organPatterns, globalBar);
+        for (const step of pattern) {
+          events.push({
+            type: 'organ',
+            beat: at(step),
+            notes: chord.voicing.map((midi) => midi + 12),
+            dur: 0.6,
+            gain: 0.8,
           });
         }
       }
@@ -418,10 +849,18 @@ export function buildSong(track, difficulty = 'gentle') {
         }
       }
 
-      if (section.lead) {
-        const phrase = track.lead[b % track.lead.length];
-        for (const note of phrase) {
-          events.push({ type: 'lead', beat: at(note.step), midi: note.midi, dur: note.len, gain: 1 });
+      if (typeof section.lead === 'number') {
+        const phrase = track.leads[section.lead % track.leads.length];
+        const barNotes = phrase[b % phrase.length];
+        for (const note of barNotes) {
+          events.push({
+            type: 'lead',
+            kind: track.leadKind,
+            beat: at(note.step),
+            midi: note.midi,
+            dur: note.len,
+            gain: 1,
+          });
         }
       }
 
@@ -431,11 +870,27 @@ export function buildSong(track, difficulty = 'gentle') {
         }
       }
 
+      if (section.fill && track.fills && track.fills[section.fill] && b === section.bars - 1) {
+        for (const hit of track.fills[section.fill]) {
+          events.push({ type: hit.type, beat: at(hit.step), gain: hit.gain ?? 1 });
+        }
+      }
+
+      if (section.crash && b === 0) {
+        events.push({ type: 'crash', beat: barBeat, gain: 0.8 });
+      }
+
       if (section.chart) {
         let name = section.chart[b % section.chart.length];
         if (difficulty === 'gentle') name = GENTLE_SUBSTITUTE[name] || 'a';
-        for (const [step, lane] of CHART_PATTERNS[name]) {
-          notes.push({ beat: at(step), lane, strength: step % 4 === 0 ? 1 : 0.7 });
+        // Mirror every four bars so a repeated pattern still feels like a reply.
+        const mirror = Math.floor(b / 4) % 2 === 1;
+        for (const [step, rawLane] of CHART_PATTERNS[name]) {
+          notes.push({
+            beat: at(step),
+            lane: mirror ? 3 - rawLane : rawLane,
+            strength: step % 4 === 0 ? 1 : 0.7,
+          });
         }
       }
     }
@@ -551,12 +1006,12 @@ export class MusicEngine {
     const delay = ctx.createDelay(1);
     delay.delayTime.value = Math.min(0.9, song.secPerBeat * 0.75);
     const feedback = ctx.createGain();
-    feedback.gain.value = 0.22;
+    feedback.gain.value = song.track.echo ?? 0.22;
     const delayDamp = ctx.createBiquadFilter();
     delayDamp.type = 'lowpass';
     delayDamp.frequency.value = 2400;
     const wet = ctx.createGain();
-    wet.gain.value = 0.22;
+    wet.gain.value = song.track.echoWet ?? 0.22;
     const send = ctx.createGain();
     send.gain.value = 0.75;
     delay.connect(delayDamp);
@@ -567,7 +1022,7 @@ export class MusicEngine {
     send.connect(delay);
     this.delaySend = send;
 
-    this._startVinyl(music);
+    this._startVinyl(music, song.track.vinylGain ?? 0.045);
 
     // A breath of quiet, then four clicks, then the downbeat.
     this.startTime = ctx.currentTime + 1.4 + song.secPerBeat * 4;
@@ -690,8 +1145,20 @@ export class MusicEngine {
       case 'rim':
         this._rim(time, event.gain);
         break;
+      case 'tom':
+        this._tom(time, event.gain);
+        break;
+      case 'crash':
+        this._crash(time, event.gain);
+        break;
       case 'chord':
         this._chord(time, event.notes, dur, event.gain);
+        break;
+      case 'skank':
+        this._skank(time, event.notes, dur, event.gain);
+        break;
+      case 'organ':
+        this._organ(time, event.notes, dur, event.gain);
         break;
       case 'bass':
         this._bass(time, event.midi, dur, event.gain);
@@ -703,7 +1170,8 @@ export class MusicEngine {
         this._bell(time, event.midi, event.gain);
         break;
       case 'lead':
-        this._lead(time, event.midi, dur, event.gain);
+        if (event.kind === 'melodica') this._melodica(time, event.midi, dur, event.gain);
+        else this._lead(time, event.midi, dur, event.gain);
         break;
       case 'vox':
         this._vox(time, event.gain);
@@ -913,6 +1381,42 @@ export class MusicEngine {
     source.stop(time + 0.05);
   }
 
+  _tom(time, gain = 1) {
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(230, time);
+    osc.frequency.exponentialRampToValueAtTime(95, time + 0.18);
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(0.16 * gain, time + 0.005);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
+    osc.connect(env);
+    env.connect(this.musicGain);
+    env.connect(this.reverbSend);
+    osc.start(time);
+    osc.stop(time + 0.24);
+  }
+
+  _crash(time, gain = 1) {
+    const ctx = this.ctx;
+    const source = ctx.createBufferSource();
+    source.buffer = this.noise;
+    const high = ctx.createBiquadFilter();
+    high.type = 'highpass';
+    high.frequency.value = 5200;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(0.05 * gain, time + 0.006);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 1.1);
+    source.connect(high);
+    high.connect(env);
+    env.connect(this.musicGain);
+    env.connect(this.reverbSend);
+    source.start(time, Math.random() * 1.5);
+    source.stop(time + 1.15);
+  }
+
   /* --------------------------------------------------------- instruments */
 
   _chord(time, notes, dur, gain = 1) {
@@ -944,6 +1448,76 @@ export class MusicEngine {
         voice.connect(low);
         osc.start(time);
         osc.stop(time + Math.max(0.25, dur) + 0.05);
+      }
+    }
+  }
+
+  _skank(time, notes, dur, gain = 1) {
+    const ctx = this.ctx;
+    const low = ctx.createBiquadFilter();
+    low.type = 'lowpass';
+    low.frequency.value = 4200;
+    const high = ctx.createBiquadFilter();
+    high.type = 'highpass';
+    high.frequency.value = 480;
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 1500;
+    band.Q.value = 1.1;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(0.05 * gain, time + 0.006);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + Math.max(0.14, dur));
+    high.connect(band);
+    band.connect(low);
+    low.connect(env);
+    env.connect(this.musicGain);
+    env.connect(this.delaySend);
+    env.connect(this.reverbSend);
+
+    for (const midi of notes) {
+      const osc = ctx.createOscillator();
+      const voice = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = mtof(midi);
+      osc.detune.value = Math.random() * 8 - 4;
+      voice.gain.value = 0.35;
+      osc.connect(voice);
+      voice.connect(high);
+      osc.start(time);
+      osc.stop(time + Math.max(0.16, dur) + 0.05);
+    }
+  }
+
+  _organ(time, notes, dur, gain = 1) {
+    const ctx = this.ctx;
+    const low = ctx.createBiquadFilter();
+    low.type = 'lowpass';
+    low.frequency.value = 1800;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(0.028 * gain, time + 0.01);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + Math.max(0.2, dur));
+    low.connect(env);
+    env.connect(this.musicGain);
+    env.connect(this.delaySend);
+    env.connect(this.reverbSend);
+
+    for (const midi of notes) {
+      const freq = mtof(midi);
+      for (const [mult, amp] of [
+        [1, 0.45],
+        [2, 0.12],
+      ]) {
+        const osc = ctx.createOscillator();
+        const voice = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = freq * mult;
+        voice.gain.value = amp;
+        osc.connect(voice);
+        voice.connect(low);
+        osc.start(time);
+        osc.stop(time + Math.max(0.24, dur) + 0.05);
       }
     }
   }
@@ -1087,6 +1661,46 @@ export class MusicEngine {
     }
   }
 
+  _melodica(time, midi, dur, gain = 1) {
+    const ctx = this.ctx;
+    const out = ctx.createGain();
+    const length = Math.max(0.2, dur);
+    out.gain.setValueAtTime(0.0001, time);
+    out.gain.exponentialRampToValueAtTime(0.06 * gain, time + 0.045);
+    out.gain.setValueAtTime(0.06 * gain, time + length * 0.6);
+    out.gain.exponentialRampToValueAtTime(0.0001, time + length);
+    const low = ctx.createBiquadFilter();
+    low.type = 'lowpass';
+    low.frequency.value = 2200;
+    out.connect(low);
+    low.connect(this.delaySend || this.musicGain);
+    low.connect(this.reverbSend);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = mtof(midi);
+    const body = ctx.createOscillator();
+    const bodyGain = ctx.createGain();
+    body.type = 'sine';
+    body.frequency.value = mtof(midi) * 2;
+    bodyGain.gain.value = 0.2;
+    osc.connect(out);
+    body.connect(bodyGain);
+    bodyGain.connect(out);
+
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 5.2;
+    lfoGain.gain.value = 9;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.detune);
+
+    for (const node of [osc, body, lfo]) {
+      node.start(time);
+      node.stop(time + length + 0.08);
+    }
+  }
+
   _vox(time, gain = 1) {
     const ctx = this.ctx;
     const out = ctx.createGain();
@@ -1132,7 +1746,7 @@ export class MusicEngine {
 
   /* --------------------------------------------------------------- beds */
 
-  _startVinyl(destination) {
+  _startVinyl(destination, level = 0.045) {
     const ctx = this.ctx;
     const source = ctx.createBufferSource();
     source.buffer = this._vinylBuffer(2.5);
@@ -1141,7 +1755,7 @@ export class MusicEngine {
     low.type = 'lowpass';
     low.frequency.value = 4800;
     const gain = ctx.createGain();
-    gain.gain.value = 0.045;
+    gain.gain.value = level;
     source.connect(low);
     low.connect(gain);
     gain.connect(destination);

@@ -7,7 +7,7 @@ export const games = [
     id: 'rhythm-break',
     title: 'Soft Reset',
     description:
-      'A two-minute rhythm break with three original early-2000s hip-hop grooves. Four pads, no failing, and nothing that needs you for a hundred seconds. For whoever has been holding everything together since 6 a.m.',
+      'A two-minute rhythm break with two original early-2000s hip-hop grooves and a reggae one-drop. Four pads, no failing, and nothing that needs you for a hundred seconds. For whoever has been holding everything together since 6 a.m.',
     path: './src/games/rhythm-break/index.html',
   },
   {

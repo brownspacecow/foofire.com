@@ -34,11 +34,11 @@ const WHISPERS = {
     { at: 58, text: 'You are not behind on anything right now.' },
     { at: 82, text: 'This part is just for you.' },
   ],
-  'flip-phone': [
-    { at: 10, text: 'Nobody needs anything for the next two minutes.' },
-    { at: 30, text: 'Let the kitchen be messy.' },
-    { at: 56, text: 'You can be bad at this. It still counts.' },
-    { at: 80, text: 'Breathe in for four. Out for six.' },
+  'sunday-drop': [
+    { at: 14, text: 'Nothing but this part of the afternoon.' },
+    { at: 42, text: 'Let your shoulders drop on the offbeat.' },
+    { at: 72, text: 'You do not have to earn the rest.' },
+    { at: 96, text: 'One more breath. Then back to it, or not.' },
   ],
   'slow-pour': [
     { at: 12, text: 'Slow is allowed.' },
