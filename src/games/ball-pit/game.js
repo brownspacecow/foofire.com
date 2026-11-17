@@ -12,6 +12,7 @@ const findCountEl = document.querySelector('#find-count');
 const packCountEl = document.querySelector('#pack-count');
 const bestCountEl = document.querySelector('#best-count');
 const messageEl = document.querySelector('#message');
+const eventPill = document.querySelector('#event-pill');
 const digButton = document.querySelector('#dig-button');
 const muteButton = document.querySelector('#mute-button');
 const fullscreenButton = document.querySelector('#fullscreen-button');
@@ -520,18 +521,28 @@ const balls = [];
 const BASE_BALL_COUNT = isMobile ? 120 : 190;
 const BALLS_PER_LEVEL = isMobile ? 20 : 35;
 
-function spawnBall() {
+function spawnBallAt(x, y, z, temporary = false) {
   const mesh = new THREE.Mesh(ballGeometry, ballMaterials[Math.floor(Math.random() * ballMaterials.length)]);
-  mesh.position.set(
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+  const ball = { mesh, vel: new THREE.Vector3(0, 0, 0), temporary };
+  balls.push(ball);
+  return ball;
+}
+
+function removeBall(ball) {
+  const index = balls.indexOf(ball);
+  if (index >= 0) balls.splice(index, 1);
+  scene.remove(ball.mesh);
+}
+
+function spawnBall() {
+  const ball = spawnBallAt(
     (Math.random() * 2 - 1) * (pit.halfX - BALL_RADIUS - 0.3),
     BALL_RADIUS + Math.random() * 1.6,
     (Math.random() * 2 - 1) * (pit.halfZ - BALL_RADIUS - 0.3)
   );
-  scene.add(mesh);
-  balls.push({
-    mesh,
-    vel: new THREE.Vector3((Math.random() - 0.5) * 0.6, 0, (Math.random() - 0.5) * 0.6),
-  });
+  ball.vel.set((Math.random() - 0.5) * 0.6, 0, (Math.random() - 0.5) * 0.6);
 }
 
 function ensureBallCount() {
@@ -1076,6 +1087,9 @@ function stepBalls(dt) {
 /* ------------------------------------------------------------------- dig */
 let lastDigAt = -10;
 let bannerTimeout = 0;
+const digHistory = [];
+let explorerStreak = 0;
+let lastDigPoint = null;
 
 function say(text) {
   messageEl.textContent = text;
@@ -1085,9 +1099,10 @@ function showBanner(kicker, name, meta, rarity) {
   winKicker.textContent = kicker;
   winName.textContent = name;
   winMeta.textContent = meta;
-  winBanner.classList.remove('rare', 'ultra');
+  winBanner.classList.remove('rare', 'ultra', 'event');
   if (rarity === 'rare') winBanner.classList.add('rare');
   if (rarity === 'ultra') winBanner.classList.add('ultra');
+  if (rarity === 'event') winBanner.classList.add('event');
   winBanner.classList.add('show');
   winBanner.setAttribute('aria-hidden', 'false');
 
@@ -1097,11 +1112,11 @@ function showBanner(kicker, name, meta, rarity) {
       winBanner.classList.remove('show');
       winBanner.setAttribute('aria-hidden', 'true');
     },
-    rarity === 'ultra' ? 4200 : 2400
+    rarity === 'ultra' ? 4200 : rarity === 'event' ? 3600 : 2400
   );
 }
 
-function revealFind({ item, value }) {
+function grantFind(item, value) {
   const entry = state.backpack[item.id] || { count: 0, total: 0 };
   entry.count += 1;
   entry.total += value;
@@ -1110,6 +1125,17 @@ function revealFind({ item, value }) {
   state.finds += 1;
   if (item.id === 'iphone-17') state.iphones += 1;
 
+  if (value > state.bestFind) {
+    state.bestFind = value;
+    const result = submitScore('ball-pit', value);
+    if (result && Number.isFinite(result.best)) {
+      state.bestFind = Math.max(state.bestFind, result.best);
+    }
+  }
+}
+
+function revealFind({ item, value }) {
+  grantFind(item, value);
   spawnFindSprite(item);
 
   const ultra = item.rarity === 'ultra';
@@ -1138,31 +1164,27 @@ function revealFind({ item, value }) {
       : `${item.name} goes in your backpack — ${coinsText(value)} coins once you sell it.`
   );
 
-  if (value > state.bestFind) {
-    state.bestFind = value;
-    const result = submitScore('ball-pit', value);
-    if (result && Number.isFinite(result.best)) {
-      state.bestFind = Math.max(state.bestFind, result.best);
-    }
-  }
-
   saveProgress();
   renderHud();
   renderPack();
 }
 
 function dig() {
-  if (nowSec - lastDigAt < DIG_COOLDOWN) return;
+  const bigDig = activeEvent?.def.id === 'bigdig';
+  const cooldown = bigDig ? 0.3 : DIG_COOLDOWN;
+  if (nowSec - lastDigAt < cooldown) return;
   lastDigAt = nowSec;
 
   sound.unlock();
   sound.dig();
 
-  const radius = 1.45 + 0.32 * state.upgrades.scoop;
+  const px = player.position.x;
+  const pz = player.position.z;
+  const radius = (1.45 + 0.32 * state.upgrades.scoop) * (bigDig ? 1.7 : 1);
 
   for (const ball of balls) {
-    const dx = ball.mesh.position.x - player.position.x;
-    const dz = ball.mesh.position.z - player.position.z;
+    const dx = ball.mesh.position.x - px;
+    const dz = ball.mesh.position.z - pz;
     const distance = Math.hypot(dx, dz);
     if (distance > radius) continue;
 
@@ -1176,19 +1198,435 @@ function dig() {
 
   spawnDigRing(radius);
 
-  const luck = state.upgrades.luck;
-  const chance = Math.min(0.92, BASE_FIND_CHANCE + luck * 0.05);
+  if (goldenBall) {
+    const goldenDistance = Math.hypot(goldenBall.position.x - px, goldenBall.position.z - pz);
+    if (goldenDistance <= Math.max(radius, 2.1)) {
+      claimGoldenBall();
+      return;
+    }
+  }
+
+  const nearbyDigs = digHistory.filter(
+    (digPoint) => nowSec - digPoint.at < 18 && Math.hypot(digPoint.x - px, digPoint.z - pz) < 1.35
+  ).length;
+  digHistory.push({ x: px, z: pz, at: nowSec });
+  if (digHistory.length > 60) digHistory.shift();
+
+  const freshness = Math.max(0.28, 1 - nearbyDigs * 0.18);
+
+  let explorerBonus = 0;
+  const movedOn = lastDigPoint === null || Math.hypot(px - lastDigPoint.x, pz - lastDigPoint.z) > 2.2;
+  const stayedPut =
+    lastDigPoint !== null && Math.hypot(px - lastDigPoint.x, pz - lastDigPoint.z) < 1.2;
+
+  if (stayedPut) {
+    explorerStreak = 1;
+  } else if (movedOn) {
+    explorerStreak += 1;
+  }
+  lastDigPoint = { x: px, z: pz };
+
+  if (movedOn && explorerStreak % 5 === 0) {
+    explorerBonus = 10;
+    state.coins = Math.min(MAX_COINS, state.coins + explorerBonus);
+    sound.coin();
+    saveProgress();
+    renderHud();
+    renderShop();
+  }
+
+  let chance = BASE_FIND_CHANCE + state.upgrades.luck * 0.05;
+  if (activeEvent?.def.id === 'bouncy') chance += 0.18;
+  chance += Math.min(0.12, explorerStreak * 0.015);
+  chance = clamp(chance * freshness, 0.06, 0.95);
+
+  const valueMultiplier = activeEvent?.def.id === 'golden' ? 2 : 1;
 
   if (Math.random() < chance) {
-    const find = rollFind(luck);
+    const find = rollFind(state.upgrades.luck);
     if (find) {
-      revealFind(find);
+      revealFind({ item: find.item, value: Math.round(find.value * valueMultiplier) });
       return;
     }
   }
 
   sound.empty();
+
+  if (explorerBonus > 0) {
+    showBanner(
+      'EXPLORER BONUS!',
+      `${explorerStreak} fresh spots`,
+      `+${explorerBonus} coins`,
+      'event'
+    );
+    say(`${explorerStreak} fresh spots in a row — explorer bonus! +${explorerBonus} coins.`);
+    return;
+  }
+
+  if (freshness < 0.6) {
+    say('These balls are all fluffed up — wade somewhere new for better luck!');
+    return;
+  }
+
   say('Just balls this time — keep digging!');
+}
+
+/* ----------------------------------------------------------------- events */
+const EVENTS = [
+  {
+    id: 'bouncy',
+    name: 'BOUNCY BONANZA',
+    emoji: '🏀',
+    weight: 3,
+    duration: 14,
+    announce: 'The whole pit is bouncing! Digging is luckier while it lasts.',
+  },
+  {
+    id: 'golden',
+    name: 'GOLDEN HOUR',
+    emoji: '✨',
+    weight: 3,
+    duration: 25,
+    announce: 'Everything you dig up is worth double for a little while!',
+  },
+  {
+    id: 'avalanche',
+    name: 'BALLALANCHE',
+    emoji: '🌊',
+    weight: 3,
+    duration: 0,
+    announce: 'A wall of balls just fell into the pit. Run!',
+    start: startAvalanche,
+  },
+  {
+    id: 'sock',
+    name: 'SOCK RAIN',
+    emoji: '🧦',
+    weight: 2,
+    duration: 0,
+    announce: 'Somebody’s laundry just landed in the ball pit.',
+    start: startSockRain,
+  },
+  {
+    id: 'burp',
+    name: 'PIT BURP',
+    emoji: '🫧',
+    weight: 2,
+    duration: 0,
+    announce: 'The ball pit burped. Everybody out.',
+    start: startBurp,
+  },
+  {
+    id: 'ducks',
+    name: 'DUCK PARADE',
+    emoji: '🦆',
+    weight: 2,
+    duration: 16,
+    announce: 'Make way — the ducks are doing laps.',
+    start: startDuckParade,
+    stop: stopDuckParade,
+  },
+  {
+    id: 'disco',
+    name: 'DISCO TIME',
+    emoji: '🪩',
+    weight: 2,
+    duration: 18,
+    announce: 'Somebody turned the ball pit into a disco.',
+    start: startDisco,
+    stop: stopDisco,
+  },
+  {
+    id: 'bigdig',
+    name: 'SUPER SCOOP',
+    emoji: '🥄',
+    weight: 2,
+    duration: 12,
+    announce: 'Your hands are giant and the scoop is huge!',
+  },
+  {
+    id: 'goldenball',
+    name: 'GOLDEN BALL',
+    emoji: '🌟',
+    weight: 2,
+    duration: 22,
+    announce: 'A golden ball is hiding in the pit. Dig near it for treasure!',
+    start: spawnGoldenBall,
+    stop: removeGoldenBall,
+  },
+];
+
+let activeEvent = null;
+let nextEventAt = performance.now() / 1000 + 16;
+const recentEventIds = [];
+let eventPillSecond = -1;
+let bouncyPulse = 0;
+let duckParade = [];
+let goldenBall = null;
+let goldenBallSpin = 0;
+let discoParty = false;
+
+function pickEvent() {
+  const pool = EVENTS.filter((event) => !recentEventIds.includes(event.id));
+  const total = pool.reduce((sum, event) => sum + event.weight, 0);
+  let roll = Math.random() * total;
+  for (const event of pool) {
+    roll -= event.weight;
+    if (roll <= 0) return event;
+  }
+  return pool[0] || null;
+}
+
+function updateEventPill() {
+  if (!activeEvent) {
+    eventPill.hidden = true;
+    return;
+  }
+
+  const seconds = Math.ceil(activeEvent.remaining);
+  if (seconds === eventPillSecond) return;
+  eventPillSecond = seconds;
+  eventPill.hidden = false;
+  eventPill.textContent = `${activeEvent.def.emoji} ${activeEvent.def.name} · ${seconds}s`;
+}
+
+function maybeStartEvent() {
+  if (activeEvent || nowSec < nextEventAt) return;
+
+  const def = pickEvent();
+  if (!def) return;
+
+  recentEventIds.push(def.id);
+  while (recentEventIds.length > 4) recentEventIds.shift();
+
+  showBanner('PIT EVENT!', `${def.emoji} ${def.name}`, def.announce, 'event');
+  say(def.announce);
+  sound.event();
+
+  if (def.duration > 0) {
+    activeEvent = { def, remaining: def.duration };
+    eventPillSecond = -1;
+    updateEventPill();
+    if (def.start) def.start();
+  } else if (def.start) {
+    def.start();
+  }
+
+  nextEventAt = nowSec + (def.duration || 0) + 24 + Math.random() * 16;
+}
+
+function finishEvent() {
+  if (!activeEvent) return;
+
+  const def = activeEvent.def;
+  activeEvent = null;
+  eventPill.hidden = true;
+  if (def.stop) def.stop();
+
+  say(
+    def.id === 'goldenball'
+      ? 'The golden ball rolled away. Maybe next time!'
+      : 'The pit settles down. Back to digging!'
+  );
+}
+
+function updateEvent(dt) {
+  if (activeEvent) {
+    activeEvent.remaining -= dt;
+
+    if (activeEvent.remaining <= 0) {
+      finishEvent();
+    } else {
+      const id = activeEvent.def.id;
+      updateEventPill();
+
+      if (id === 'bouncy') {
+        bouncyPulse -= dt;
+        if (bouncyPulse <= 0) {
+          bouncyPulse = 0.5;
+          for (const ball of balls) {
+            ball.vel.y += 1.4 + Math.random() * 1.2;
+            ball.vel.x += (Math.random() - 0.5) * 1.4;
+            ball.vel.z += (Math.random() - 0.5) * 1.4;
+          }
+        }
+      }
+
+      if (id === 'disco') {
+        const hue = (elapsed * 0.18) % 1;
+        pinkGlow.color.setHSL(hue, 1, 0.62);
+        blueGlow.color.setHSL((hue + 0.5) % 1, 1, 0.62);
+      }
+    }
+  }
+
+  for (const paradeDuck of duckParade) {
+    paradeDuck.position.x += dt * 1.15;
+    paradeDuck.position.y = 1.05 + Math.sin(elapsed * 3 + paradeDuck.position.z) * 0.08;
+    if (paradeDuck.position.x > pit.halfX + 2) paradeDuck.position.x = -pit.halfX - 2;
+  }
+
+  if (goldenBall) {
+    goldenBallSpin += dt;
+    goldenBall.rotation.y += dt * 1.6;
+    goldenBall.position.y = 1.25 + Math.sin(goldenBallSpin * 2.2) * 0.15;
+  }
+}
+
+function startAvalanche() {
+  const side = Math.floor(Math.random() * 4);
+
+  for (let i = 0; i < 18; i++) {
+    const jitter = Math.random() * 1.3 - 0.65;
+    let x;
+    let z;
+
+    if (side === 0) {
+      x = (Math.random() * 2 - 1) * (pit.halfX - 1);
+      z = -pit.halfZ + 0.7 + Math.random() * 0.8;
+    } else if (side === 1) {
+      x = (Math.random() * 2 - 1) * (pit.halfX - 1);
+      z = pit.halfZ - 0.7 - Math.random() * 0.8;
+    } else if (side === 2) {
+      x = -pit.halfX + 0.7 + Math.random() * 0.8;
+      z = (Math.random() * 2 - 1) * (pit.halfZ - 1);
+    } else {
+      x = pit.halfX - 0.7 - Math.random() * 0.8;
+      z = (Math.random() * 2 - 1) * (pit.halfZ - 1);
+    }
+
+    const ball = spawnBallAt(x + jitter, 2.4 + Math.random() * 1.8, z + jitter, true);
+    ball.vel.set((Math.random() - 0.5) * 2.4, -1 - Math.random(), (Math.random() - 0.5) * 2.4);
+    window.setTimeout(() => removeBall(ball), 24000);
+  }
+}
+
+function startSockRain() {
+  const gains = [];
+
+  for (let i = 0; i < 3; i++) {
+    const find = rollFind(state.upgrades.luck);
+    if (!find) continue;
+    grantFind(find.item, find.value);
+    gains.push(find);
+  }
+
+  if (!gains.length) return;
+
+  sound.find('common');
+  const summary = gains
+    .map(({ item, value }) => `${item.emoji} ${item.name} (${coinsText(value)} coins)`)
+    .join(' · ');
+  say(`Sock rain! You caught: ${summary}`);
+
+  saveProgress();
+  renderHud();
+  renderPack();
+}
+
+function startBurp() {
+  for (const ball of balls) {
+    ball.vel.y += 2.2 + Math.random() * 2.6;
+    ball.vel.x += (Math.random() - 0.5) * 2.6;
+    ball.vel.z += (Math.random() - 0.5) * 2.6;
+  }
+  sound.burp();
+}
+
+function startDuckParade() {
+  stopDuckParade();
+
+  for (let i = 0; i < 6; i++) {
+    const paradeDuck = buildDuck();
+    paradeDuck.position.set(
+      -pit.halfX - 1.2 - i * 0.9,
+      1.05,
+      (Math.random() * 2 - 1) * (pit.halfZ - 1.2)
+    );
+    paradeDuck.rotation.y = Math.PI / 2;
+    scene.add(paradeDuck);
+    duckParade.push(paradeDuck);
+  }
+}
+
+function stopDuckParade() {
+  duckParade.forEach((paradeDuck) => {
+    scene.remove(paradeDuck);
+    paradeDuck.traverse((object) => {
+      if (object.geometry) object.geometry.dispose();
+    });
+  });
+  duckParade = [];
+}
+
+function startDisco() {
+  discoParty = true;
+  pinkGlow.color.setHex(0xff00e5);
+  blueGlow.color.setHex(0x00ffd5);
+}
+
+function stopDisco() {
+  discoParty = false;
+  pinkGlow.color.setHex(0xff2e63);
+  blueGlow.color.setHex(0x2ec4ff);
+}
+
+function spawnGoldenBall() {
+  removeGoldenBall();
+
+  goldenBall = new THREE.Mesh(
+    new THREE.SphereGeometry(0.4, 18, 14),
+    new THREE.MeshStandardMaterial({
+      color: 0xffd93d,
+      emissive: 0xffd93d,
+      emissiveIntensity: 0.85,
+      metalness: 0.8,
+      roughness: 0.2,
+    })
+  );
+  goldenBall.position.set(
+    (Math.random() * 2 - 1) * (pit.halfX - 1.3),
+    1.25,
+    (Math.random() * 2 - 1) * (pit.halfZ - 1.3)
+  );
+  goldenBall.add(new THREE.PointLight(0xffd93d, 16, 6, 2));
+  scene.add(goldenBall);
+  goldenBallSpin = 0;
+}
+
+function removeGoldenBall() {
+  if (!goldenBall) return;
+  scene.remove(goldenBall);
+  goldenBall.traverse((object) => {
+    if (object.geometry) object.geometry.dispose();
+    if (object.material) object.material.dispose();
+  });
+  goldenBall = null;
+  goldenBallSpin = 0;
+}
+
+function claimGoldenBall() {
+  removeGoldenBall();
+
+  if (activeEvent && activeEvent.def.id === 'goldenball') {
+    activeEvent = null;
+    eventPill.hidden = true;
+  }
+
+  const find = rollFind(state.upgrades.luck + 3);
+  if (!find) return;
+
+  const value = Math.round(find.value * 2.5);
+  grantFind(find.item, value);
+  spawnFindSprite(find.item);
+  sound.ultra();
+  burstConfetti(player.position.x, player.position.z, 30);
+  showBanner('GOLDEN BALL!', find.item.name, `worth ${coinsText(value)} coins`, 'ultra');
+  say(`The golden ball cracked open — ${find.item.name}! ${coinsText(value)} coins.`);
+
+  saveProgress();
+  renderHud();
+  renderPack();
 }
 
 /* ------------------------------------------------------------------- HUD */
@@ -1658,11 +2096,13 @@ function animate() {
   const steps = 2;
   for (let i = 0; i < steps; i++) stepBalls(dt / steps);
 
+  updateEvent(dt);
+  maybeStartEvent();
   updateEffects(dt);
   updateCamera(dt);
 
   if (discoBall) {
-    discoBall.rotation.y += dt * 0.6;
+    discoBall.rotation.y += dt * (discoParty ? 3.2 : 0.6);
   }
 
   digButton.classList.toggle('cooling', nowSec - lastDigAt < DIG_COOLDOWN);

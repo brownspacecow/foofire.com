@@ -80,6 +80,17 @@ export const sound = {
     });
   },
 
+  event() {
+    [392, 523, 659, 784].forEach((note, index) => {
+      tone(note, index * 0.08, 0.18, 'triangle', 0.05);
+    });
+  },
+
+  burp() {
+    tone(110, 0, 0.28, 'sawtooth', 0.035, 55);
+    tone(70, 0.18, 0.35, 'triangle', 0.03, 45);
+  },
+
   ultra() {
     RARITY_REWARD.ultra.forEach((note, index) => {
       tone(note, index * 0.1, 0.35, 'square', 0.035);
