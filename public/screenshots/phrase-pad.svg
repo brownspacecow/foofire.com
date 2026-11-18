@@ -1,0 +1,214 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-label="Phrase Pad touch synthesizer with a glowing pad, loop recorder, and sound presets">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#251047" />
+      <stop offset="0.55" stop-color="#130a2b" />
+      <stop offset="1" stop-color="#080414" />
+    </linearGradient>
+    <radialGradient id="pinkGlow" cx="0.12" cy="0.1" r="0.6">
+      <stop offset="0" stop-color="#ff2e63" stop-opacity="0.28" />
+      <stop offset="1" stop-color="#ff2e63" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="blueGlow" cx="0.9" cy="0.85" r="0.6">
+      <stop offset="0" stop-color="#2ec4ff" stop-opacity="0.18" />
+      <stop offset="1" stop-color="#2ec4ff" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="pad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a2b6e" />
+      <stop offset="0.5" stop-color="#1a0f34" />
+      <stop offset="1" stop-color="#07030f" />
+    </linearGradient>
+    <linearGradient id="fill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff2e63" />
+      <stop offset="0.6" stop-color="#ffd93d" />
+      <stop offset="1" stop-color="#3ddc84" />
+    </linearGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#a855f7" stroke-opacity="0.16" />
+    </pattern>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" />
+    </filter>
+  </defs>
+
+  <rect width="1200" height="750" fill="url(#bg)" />
+  <rect width="1200" height="750" fill="url(#grid)" />
+  <rect width="1200" height="750" fill="url(#pinkGlow)" />
+  <rect width="1200" height="750" fill="url(#blueGlow)" />
+
+  <!-- Hardware case -->
+  <rect x="70" y="60" width="1060" height="618" fill="#0a0518" />
+  <rect x="58" y="48" width="1060" height="618" fill="#211343" stroke="#0a0518" stroke-width="8" />
+  <line x1="58" y1="128" x2="1118" y2="128" stroke="#0a0518" stroke-width="6" />
+
+  <circle cx="86" cy="76" r="6" fill="#3d2a72" stroke="#0a0518" stroke-width="3" />
+  <circle cx="1090" cy="76" r="6" fill="#3d2a72" stroke="#0a0518" stroke-width="3" />
+  <circle cx="86" cy="644" r="6" fill="#3d2a72" stroke="#0a0518" stroke-width="3" />
+  <circle cx="1090" cy="644" r="6" fill="#3d2a72" stroke="#0a0518" stroke-width="3" />
+
+  <text x="92" y="94" fill="#ffd93d" font-family="'Courier New', monospace" font-size="27" font-weight="bold" letter-spacing="2">PHRASE PAD</text>
+  <text x="93" y="116" fill="#bcacf0" font-family="'Courier New', monospace" font-size="11" letter-spacing="4">POCKET TOUCH SYNTH · PP-01</text>
+
+  <!-- Little LCDs -->
+  <rect x="742" y="66" width="105" height="50" fill="#120a24" stroke="#0a0518" stroke-width="4" />
+  <text x="754" y="84" fill="#7f6fbd" font-family="'Courier New', monospace" font-size="9" letter-spacing="2">NOTE</text>
+  <text x="754" y="107" fill="#ffd93d" font-family="'Courier New', monospace" font-size="20" font-weight="bold">C4</text>
+
+  <rect x="857" y="66" width="105" height="50" fill="#120a24" stroke="#0a0518" stroke-width="4" />
+  <text x="869" y="84" fill="#7f6fbd" font-family="'Courier New', monospace" font-size="9" letter-spacing="2">TONE</text>
+  <text x="869" y="107" fill="#3ddc84" font-family="'Courier New', monospace" font-size="20" font-weight="bold">72%</text>
+
+  <rect x="972" y="66" width="132" height="50" fill="#120a24" stroke="#0a0518" stroke-width="4" />
+  <text x="984" y="84" fill="#7f6fbd" font-family="'Courier New', monospace" font-size="9" letter-spacing="2">SOUND</text>
+  <text x="984" y="105" fill="#fff8e7" font-family="'Courier New', monospace" font-size="14" font-weight="bold">NEON LEAD</text>
+
+  <circle cx="1116" cy="76" r="7" fill="#3ddc84" filter="url(#glow)" />
+  <text x="1108" y="104" fill="#3ddc84" font-family="'Courier New', monospace" font-size="9" text-anchor="middle" letter-spacing="1">LIVE</text>
+
+  <!-- Touch pad -->
+  <rect x="98" y="156" width="714" height="424" fill="#0a0518" />
+  <rect x="88" y="146" width="714" height="424" fill="url(#pad)" stroke="#0a0518" stroke-width="8" />
+
+  <g stroke="#fff8e7" stroke-opacity="0.09">
+    <line x1="159" y1="150" x2="159" y2="566" />
+    <line x1="230" y1="150" x2="230" y2="566" />
+    <line x1="301" y1="150" x2="301" y2="566" />
+    <line x1="372" y1="150" x2="372" y2="566" />
+    <line x1="443" y1="150" x2="443" y2="566" />
+    <line x1="514" y1="150" x2="514" y2="566" />
+    <line x1="585" y1="150" x2="585" y2="566" />
+    <line x1="656" y1="150" x2="656" y2="566" />
+    <line x1="727" y1="150" x2="727" y2="566" />
+    <line x1="92" y1="250" x2="798" y2="250" />
+    <line x1="92" y1="354" x2="798" y2="354" />
+    <line x1="92" y1="458" x2="798" y2="458" />
+  </g>
+
+  <rect x="480" y="150" width="71" height="416" fill="#ffd93d" fill-opacity="0.08" />
+
+  <!-- Recorded phrase fingerprint -->
+  <g fill="#ffd93d" fill-opacity="0.5">
+    <circle cx="185" cy="470" r="3" />
+    <circle cx="210" cy="440" r="3" />
+    <circle cx="235" cy="455" r="3" />
+    <circle cx="260" cy="390" r="3" />
+    <circle cx="285" cy="410" r="3" />
+    <circle cx="310" cy="360" r="3" />
+    <circle cx="340" cy="380" r="3" />
+    <circle cx="370" cy="330" r="3" />
+    <circle cx="400" cy="350" r="3" />
+    <circle cx="430" cy="300" r="3" />
+    <circle cx="465" cy="320" r="3" />
+    <circle cx="500" cy="280" r="3" />
+    <circle cx="535" cy="300" r="3" />
+    <circle cx="570" cy="250" r="3" />
+    <circle cx="605" cy="270" r="3" />
+    <circle cx="640" cy="230" r="3" />
+    <circle cx="675" cy="280" r="3" />
+    <circle cx="710" cy="240" r="3" />
+    <circle cx="745" cy="290" r="3" />
+  </g>
+  <g fill="#8be9ff">
+    <circle cx="260" cy="330" r="4" filter="url(#glow)" />
+    <circle cx="430" cy="240" r="4" filter="url(#glow)" />
+    <circle cx="570" cy="200" r="4" filter="url(#glow)" />
+    <circle cx="710" cy="190" r="4" filter="url(#glow)" />
+  </g>
+
+  <polyline points="120,520 190,480 240,468 300,410 360,390 430,330 500,310 570,260 640,240 720,200" fill="none" stroke="#ffd93d" stroke-opacity="0.33" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Finger -->
+  <line x1="515" y1="150" x2="515" y2="566" stroke="#ffd93d" stroke-opacity="0.38" stroke-dasharray="5 8" />
+  <line x1="92" y1="370" x2="798" y2="370" stroke="#ffd93d" stroke-opacity="0.38" stroke-dasharray="5 8" />
+  <circle cx="515" cy="370" r="58" fill="#ffd93d" fill-opacity="0.12" filter="url(#soft)" />
+  <circle cx="515" cy="370" r="23" fill="none" stroke="#ffd93d" stroke-width="4" filter="url(#glow)" />
+  <circle cx="515" cy="370" r="5" fill="#ffd93d" />
+  <text x="548" y="374" fill="#ffd93d" font-family="'Courier New', monospace" font-size="15" font-weight="bold">G4</text>
+
+  <!-- Axis labels and corner ticks -->
+  <text x="64" y="166" fill="#bcacf0" font-family="'Courier New', monospace" font-size="9" letter-spacing="1" transform="rotate(-90 64 166)">BRIGHT</text>
+  <text x="64" y="548" fill="#bcacf0" font-family="'Courier New', monospace" font-size="9" letter-spacing="1" transform="rotate(-90 64 548)">DARK</text>
+  <g fill="#bcacf0" font-family="'Courier New', monospace" font-size="9" text-anchor="middle">
+    <text x="123" y="590">C3</text>
+    <text x="194" y="590">F3</text>
+    <text x="265" y="590">G3</text>
+    <text x="336" y="590">A#3</text>
+    <text x="407" y="590">C4</text>
+    <text x="478" y="590">D#4</text>
+    <text x="549" y="590">F4</text>
+    <text x="620" y="590">G4</text>
+    <text x="691" y="590">A#4</text>
+    <text x="762" y="590">C5</text>
+  </g>
+
+  <!-- Sound buttons -->
+  <text x="838" y="164" fill="#ffd93d" font-family="'Courier New', monospace" font-size="11" letter-spacing="2">SOUND</text>
+  <g font-family="'Courier New', monospace" font-size="13" font-weight="bold">
+    <rect x="838" y="174" width="130" height="48" fill="#ffd93d" stroke="#0a0518" stroke-width="4" />
+    <text x="850" y="194" fill="#0a0518" font-size="9" letter-spacing="1">01</text>
+    <text x="850" y="212" fill="#0a0518">NEON LEAD</text>
+
+    <rect x="978" y="174" width="130" height="48" fill="#33236b" stroke="#0a0518" stroke-width="4" />
+    <text x="990" y="194" fill="#bcacf0" font-size="9" letter-spacing="1">02</text>
+    <text x="990" y="212" fill="#fff8e7">GLASS BELL</text>
+
+    <rect x="838" y="232" width="130" height="48" fill="#33236b" stroke="#0a0518" stroke-width="4" />
+    <text x="850" y="252" fill="#bcacf0" font-size="9" letter-spacing="1">03</text>
+    <text x="850" y="270" fill="#fff8e7">RUBBER BASS</text>
+
+    <rect x="978" y="232" width="130" height="48" fill="#33236b" stroke="#0a0518" stroke-width="4" />
+    <text x="990" y="252" fill="#bcacf0" font-size="9" letter-spacing="1">04</text>
+    <text x="990" y="270" fill="#fff8e7">VAPOR PAD</text>
+
+    <rect x="838" y="290" width="130" height="48" fill="#33236b" stroke="#0a0518" stroke-width="4" />
+    <text x="850" y="310" fill="#bcacf0" font-size="9" letter-spacing="1">05</text>
+    <text x="850" y="328" fill="#fff8e7">COPPER PLUCK</text>
+
+    <rect x="978" y="290" width="130" height="48" fill="#33236b" stroke="#0a0518" stroke-width="4" />
+    <text x="990" y="310" fill="#bcacf0" font-size="9" letter-spacing="1">06</text>
+    <text x="990" y="328" fill="#fff8e7">PIXEL CHIP</text>
+  </g>
+
+  <!-- Key and scale -->
+  <text x="838" y="366" fill="#bcacf0" font-family="'Courier New', monospace" font-size="9" letter-spacing="2">KEY</text>
+  <rect x="838" y="372" width="126" height="38" fill="#120a24" stroke="#0a0518" stroke-width="4" />
+  <text x="850" y="397" fill="#fff8e7" font-family="'Courier New', monospace" font-size="15" font-weight="bold">C</text>
+
+  <text x="982" y="366" fill="#bcacf0" font-family="'Courier New', monospace" font-size="9" letter-spacing="2">SCALE</text>
+  <rect x="982" y="372" width="126" height="38" fill="#120a24" stroke="#0a0518" stroke-width="4" />
+  <text x="994" y="396" fill="#fff8e7" font-family="'Courier New', monospace" font-size="11" font-weight="bold">MINOR PENT</text>
+
+  <!-- Gate rate -->
+  <text x="838" y="438" fill="#bcacf0" font-family="'Courier New', monospace" font-size="9" letter-spacing="2">GATE RATE</text>
+  <g font-family="'Courier New', monospace" font-size="11" font-weight="bold" text-anchor="middle">
+    <rect x="838" y="444" width="44" height="32" fill="#33236b" stroke="#0a0518" stroke-width="4" />
+    <text x="860" y="465" fill="#fff8e7">1/4</text>
+    <rect x="882" y="444" width="44" height="32" fill="#ffd93d" stroke="#0a0518" stroke-width="4" />
+    <text x="904" y="465" fill="#0a0518">1/8</text>
+    <rect x="926" y="444" width="44" height="32" fill="#33236b" stroke="#0a0518" stroke-width="4" />
+    <text x="948" y="465" fill="#fff8e7">1/16</text>
+  </g>
+  <text x="838" y="508" fill="#bcacf0" font-family="'Courier New', monospace" font-size="10">DRAG TO PLAY.</text>
+  <text x="838" y="526" fill="#bcacf0" font-family="'Courier New', monospace" font-size="10">SLIDE UP FOR LIGHT.</text>
+  <text x="838" y="544" fill="#bcacf0" font-family="'Courier New', monospace" font-size="10">LOOP IT. LAYER IT.</text>
+
+  <!-- Loop recorder deck -->
+  <rect x="88" y="600" width="1020" height="52" fill="#120a24" stroke="#0a0518" stroke-width="5" />
+  <rect x="100" y="610" width="90" height="32" fill="#ff2e63" stroke="#0a0518" stroke-width="3" />
+  <circle cx="116" cy="626" r="5" fill="#fff8e7" />
+  <text x="130" y="631" fill="#fff8e7" font-family="'Courier New', monospace" font-size="12" font-weight="bold">REC</text>
+
+  <rect x="200" y="610" width="90" height="32" fill="#3ddc84" stroke="#0a0518" stroke-width="3" />
+  <text x="216" y="631" fill="#0a0518" font-family="'Courier New', monospace" font-size="12" font-weight="bold">▶ PLAY</text>
+
+  <rect x="304" y="620" width="680" height="12" fill="#0d0620" stroke="#0a0518" stroke-width="3" />
+  <rect x="304" y="620" width="430" height="12" fill="url(#fill)" />
+  <text x="1000" y="631" fill="#bcacf0" font-family="'Courier New', monospace" font-size="9" text-anchor="end">BAR 2 / 4</text>
+</svg>

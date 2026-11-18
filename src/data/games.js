@@ -4,6 +4,14 @@
  */
 export const games = [
   {
+    id: 'phrase-pad',
+    title: 'Phrase Pad',
+    description:
+      'A pocket touch synth: drag your finger across the neon pad to play in any scale, slide up for brightness, and stack a looping phrase layer by layer. No wrong notes, no downloads.',
+    image: './public/screenshots/phrase-pad.svg',
+    path: './src/games/phrase-pad/index.html',
+  },
+  {
     id: 'spot-your-friends',
     title: 'Spot Your Friends',
     description:
