@@ -20,11 +20,12 @@ export function createCrowd(scene, { max = 40 } = {}) {
   const people = [];
   const slots = [];
 
-  for (let row = 0; row < 2; row += 1) {
+  for (let row = 0; row < 3; row += 1) {
     for (let i = 0; i < 20; i += 1) {
       slots.push({
-        x: -9.5 + i * 1.0 + (row === 1 ? 0.5 : 0),
-        z: -7 - row * 1.05,
+        x: -9.5 + i * 1.0 + (row % 2 === 1 ? 0.5 : 0),
+        z: -6.9 - row * 0.66,
+        scale: 1 - row * 0.05,
       });
     }
   }
@@ -119,7 +120,7 @@ export function createCrowd(scene, { max = 40 } = {}) {
       const person = makePerson(people.length);
       person.position.set(slot.x, 0, slot.z);
       person.rotation.y = (Math.random() - 0.5) * 0.45;
-      person.scale.setScalar(1.02 + Math.random() * 0.12);
+      person.scale.setScalar((1.02 + Math.random() * 0.12) * (slot.scale || 1));
       group.add(person);
       people.push(person);
     }
@@ -129,6 +130,13 @@ export function createCrowd(scene, { max = 40 } = {}) {
   function reset() {
     people.forEach((person) => group.remove(person));
     people.length = 0;
+  }
+
+  function remove(count = 1) {
+    for (let i = 0; i < count && people.length > 0; i += 1) {
+      group.remove(people.pop());
+    }
+    return people.length;
   }
 
   function cheer(strength = 1) {
@@ -161,6 +169,7 @@ export function createCrowd(scene, { max = 40 } = {}) {
       return people.length;
     },
     add,
+    remove,
     reset,
     cheer,
     update,

@@ -6,7 +6,8 @@
  *  - `night` the big shells that only go up after dark and pay the real money
  *
  * Big Bertha is the super grand finale: lighting her freezes the clock, ends the
- * show and hands the player a time bonus based on the seconds left.
+ * show and hands the player a time bonus based on the seconds left. She will not
+ * even come off the shelf until the whole street has turned out to watch.
  *
  * Every firework is a pure data definition: the renderer decides how to draw it.
  */
@@ -39,8 +40,8 @@ export const FIREWORKS = [
     icon: '🎇',
     kind: 'day',
     price: 18,
-    payout: 28,
-    crowd: 2,
+    payout: 27,
+    crowd: 1,
     blurb: 'A mint-green shower that looks best with a blue sky behind it.',
     palette: [0x3ddc84, 0x2ec4ff, 0xfff8e7, 0xa8ffd0],
     height: 1.0,
@@ -61,7 +62,7 @@ export const FIREWORKS = [
     kind: 'day',
     price: 30,
     payout: 46,
-    crowd: 3,
+    crowd: 1,
     blurb: 'Slow, colourful smoke that hangs around in the daylight.',
     palette: [0xff2e63, 0xa855f7, 0x2ec4ff, 0x3ddc84],
     height: 1.4,
@@ -81,8 +82,8 @@ export const FIREWORKS = [
     icon: '🕯️',
     kind: 'night',
     price: 55,
-    payout: 110,
-    crowd: 2,
+    payout: 84,
+    crowd: 1,
     blurb: 'The reliable starter. Red and gold balls over the fence.',
     palette: [0xff3b30, 0xffd93d, 0xfff8e7],
     height: 7,
@@ -102,8 +103,8 @@ export const FIREWORKS = [
     icon: '🚀',
     kind: 'night',
     price: 110,
-    payout: 250,
-    crowd: 3,
+    payout: 165,
+    crowd: 1,
     blurb: 'A screech, a trail, and a clean blue crack in the dark.',
     palette: [0x2ec4ff, 0xffffff, 0x3ddc84],
     height: 8.5,
@@ -130,8 +131,8 @@ export const FIREWORKS = [
     icon: '🎂',
     kind: 'night',
     price: 220,
-    payout: 560,
-    crowd: 4,
+    payout: 320,
+    crowd: 2,
     blurb: 'Twenty-five shots in a row. The fence gets crowded for this one.',
     palette: [0xff8a00, 0xff2e63, 0xffd93d, 0xfff8e7],
     height: 9.5,
@@ -158,8 +159,8 @@ export const FIREWORKS = [
     icon: '🎆',
     kind: 'night',
     price: 450,
-    payout: 1300,
-    crowd: 5,
+    payout: 620,
+    crowd: 2,
     blurb: 'The neighbours bring folding chairs for this one.',
     palette: [0xa855f7, 0xff2e63, 0xfff8e7, 0xffd93d],
     height: 11,
@@ -190,7 +191,7 @@ export const FIREWORKS = [
     payout: 0,
     crowd: 0,
     finale: true,
-    blurb: 'The super grand finale. One button, one white sky.',
+    blurb: 'The super grand finale. One button, one white sky. The street has to be packed first.',
     palette: [0xffffff, 0xffd93d, 0xff2e63, 0x2ec4ff, 0xa855f7],
     height: 12,
     flightSeconds: 2.2,

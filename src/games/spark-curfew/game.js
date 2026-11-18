@@ -39,6 +39,11 @@ const statusEl = document.querySelector('#status');
 const standList = document.querySelector('#stand-list');
 const standHint = document.querySelector('#stand-hint');
 const whiteout = document.querySelector('#whiteout');
+const comboBadge = document.querySelector('#combo-badge');
+const comboLabel = document.querySelector('#combo-label');
+const comboCount = document.querySelector('#combo-count');
+const comboBar = document.querySelector('#combo-bar');
+const damageFlash = document.querySelector('#damage-flash');
 
 /* ------------------------------------------------------------------ *
  * Constants
@@ -46,15 +51,33 @@ const whiteout = document.querySelector('#whiteout');
 
 const GAME_ID = 'spark-curfew';
 const MUTE_KEY = 'sparkCurfewMuted';
-const SHOW_SECONDS = 120;
-const TIME_BONUS_PER_SECOND = 50;
+const SHOW_SECONDS = 240;
+const TIME_BONUS_PER_SECOND = 30;
 const DAY_SECONDS = 12;
 const START_CASH = 80;
-const CROWD_MAX = 40;
-const CROWD_STEP = 0.04;
-const CROWD_BONUS_MAX = 2.6;
+const CROWD_MAX = 60;
+const CROWD_STEP = 0.01;
+const CROWD_BONUS_MAX = 1.6;
 const FUSE_SECONDS = 0.75;
 const PLACE = { minX: -6.4, maxX: 6.4, minZ: -5.4, maxZ: 2.4 };
+
+// Big Bertha only comes out once the whole street has turned up.
+const FINALE_CROWD = CROWD_MAX;
+
+// Chaining: light one, the fuses around it catch, and every burst inside the
+// window keeps the chain alive. Too many in one chain and the rack can misfire.
+const CHAIN_WINDOW = 2.1;
+const CHAIN_RADIUS = 4.2;
+const CHAIN_STAGGER = 0.28;
+const CHAIN_LINKS_MAX = 5;
+const CHAIN_SAFE = 4;
+const CHAIN_RISK_STEP = 0.13;
+const CHAIN_RISK_MAX = 0.6;
+const CHAIN_MULT_STEP = 0.3;
+const CHAIN_MULT_MAX = 2.8;
+const MISFIRE_SHARE = 0.1;
+const MISFIRE_CAP = 150;
+const MISFIRE_CROWD = 5;
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isNarrowScreen = window.matchMedia('(max-width: 760px)').matches;
@@ -152,6 +175,46 @@ const setText = (element, text) => {
 };
 
 const crowdBonus = () => Math.min(CROWD_BONUS_MAX, 1 + state.crowd * CROWD_STEP);
+const comboMultiplier = () =>
+  Math.min(CHAIN_MULT_MAX, 1 + Math.max(0, state.combo - 1) * CHAIN_MULT_STEP);
+const chainRisk = (combo) => Math.min(CHAIN_RISK_MAX, (combo - CHAIN_SAFE) * CHAIN_RISK_STEP);
+
+function refreshComboBadge() {
+  if (!comboBadge) return;
+
+  if (state.combo <= 0) {
+    comboBadge.classList.remove('show', 'risk');
+    return;
+  }
+
+  const risky = state.combo > CHAIN_SAFE;
+  comboBadge.classList.add('show');
+  comboBadge.classList.toggle('risk', risky);
+  setText(comboLabel, risky ? 'danger' : 'chain');
+  setText(comboCount, `×${state.combo}`);
+  comboBar.style.transform = `scaleX(${Math.max(0, state.comboTimer / CHAIN_WINDOW)})`;
+}
+
+function chainHit() {
+  state.combo = state.comboTimer > 0 ? state.combo + 1 : 1;
+  state.comboTimer = CHAIN_WINDOW;
+  state.bestChain = Math.max(state.bestChain, state.combo);
+  refreshComboBadge();
+  if (state.combo >= 3) audio.chain(state.combo);
+  return state.combo;
+}
+
+function updateCombo(dt) {
+  if (state.combo <= 0) return;
+
+  state.comboTimer = Math.max(0, state.comboTimer - dt);
+  comboBar.style.transform = `scaleX(${state.comboTimer / CHAIN_WINDOW})`;
+
+  if (state.comboTimer <= 0) {
+    state.combo = 0;
+    comboBadge.classList.remove('show', 'risk');
+  }
+}
 
 /* ------------------------------------------------------------------ *
  * State
@@ -165,6 +228,11 @@ const state = {
   crowd: 0,
   peakCrowd: 0,
   lit: 0,
+  combo: 0,
+  comboTimer: 0,
+  bestChain: 0,
+  mishaps: 0,
+  damageTaken: 0,
   biggest: null,
   timeLeft: SHOW_SECONDS,
   sky: 'night',
@@ -786,6 +854,8 @@ function explode(firework, position, fromShot = false) {
   if (!fromShot) burstPosition.y = firework.height;
   const isFinale = Boolean(firework.finale);
 
+  const combo = isFinale ? 0 : chainHit();
+
   spawnBurst(firework.particles, burstPosition, firework.palette, firework.kind);
   spawnGlow(
     burstPosition,
@@ -843,7 +913,90 @@ function explode(firework, position, fromShot = false) {
     return;
   }
 
-  if (state.phase === 'play') award(firework, burstPosition);
+  if (isFinale || state.phase !== 'play') return;
+
+  award(firework, burstPosition);
+  if (combo >= 3) spawnEcho(firework, burstPosition, combo);
+  if (combo > CHAIN_SAFE && Math.random() < chainRisk(combo)) {
+    triggerMisfire(burstPosition);
+  }
+}
+
+function spawnEcho(firework, position, combo) {
+  const echoes = combo >= 6 ? 2 : 1;
+
+  for (let i = 0; i < echoes; i += 1) {
+    const echoPosition = position.clone().add(
+      new THREE.Vector3(
+        (Math.random() - 0.5) * 5.4,
+        (Math.random() - 0.5) * 2.4,
+        (Math.random() - 0.5) * 2
+      )
+    );
+    const scale = 0.34 + Math.min(0.3, combo * 0.03);
+
+    spawnBurst(
+      {
+        count: Math.round(firework.particles.count * scale),
+        speed: firework.particles.speed * 0.62,
+        life: firework.particles.life * 0.72,
+        gravity: firework.particles.gravity,
+        size: firework.particles.size * 0.8,
+        drag: firework.particles.drag,
+        yBias: firework.particles.yBias || 0,
+      },
+      echoPosition,
+      firework.palette,
+      firework.kind
+    );
+    spawnGlow(
+      echoPosition,
+      firework.palette[i % firework.palette.length],
+      2.4,
+      firework.kind,
+      0.5
+    );
+  }
+
+  audio.sparkle(0.7 + combo * 0.12);
+}
+
+function triggerMisfire(position) {
+  const penalty = Math.min(MISFIRE_CAP, Math.max(8, Math.round(state.cash * MISFIRE_SHARE)));
+  state.cash = Math.max(0, state.cash - penalty);
+  state.crowd = crowd.remove(MISFIRE_CROWD);
+  state.mishaps += 1;
+  state.damageTaken += penalty;
+  state.combo = 0;
+  state.comboTimer = 0;
+  refreshComboBadge();
+
+  const low = position.clone();
+  low.y = Math.max(1.4, position.y - 2.4);
+  spawnBurst(
+    { count: 90, speed: 5.5, life: 1.4, gravity: 6, size: 0.5, drag: 0.88, yBias: 0.4 },
+    low,
+    [0xff5a3c, 0x3a2a2a, 0xffb347],
+    'night'
+  );
+  spawnGlow(low, 0xff3b30, 4.5, 'night', 0.8);
+  flash(low, 0xff5a3c, 1.2);
+  shakeCamera(0.78, 0.7);
+  audio.damage();
+
+  if (damageFlash) {
+    damageFlash.classList.remove('on');
+    void damageFlash.offsetWidth;
+    damageFlash.classList.add('on');
+  }
+
+  showBanner(`MISFIRE! −${formatMoney(penalty)} damage.`, 2600);
+  addFloater(`−${formatMoney(penalty)} DAMAGE`, position, 'damage');
+  statusEl.textContent = `Too many at once — the rack tipped. Damage ${formatMoney(
+    penalty
+  )}, crowd ${state.crowd}.`;
+  updateHud();
+  updateStand();
 }
 
 function launchShot(firework, position) {
@@ -1010,8 +1163,25 @@ function placeFirework(fireworkId, x, z) {
   statusEl.textContent = `${firework.name} placed. Tap it to light the fuse.`;
 }
 
-function lightPlaced(item) {
-  if (!item || item.userData.state !== 'ready' || state.finale) return;
+function chainLinks(source) {
+  return placed
+    .filter(
+      (other) =>
+        other !== source &&
+        other.userData.state === 'ready' &&
+        !other.userData.firework.finale
+    )
+    .map((other) => ({ other, distance: other.position.distanceTo(source.position) }))
+    .filter((entry) => entry.distance <= CHAIN_RADIUS)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, CHAIN_LINKS_MAX)
+    .map((entry) => entry.other);
+}
+
+function lightPlaced(item, chained = false) {
+  if (!item || !placed.includes(item) || state.finale) return;
+  if (item.userData.state !== 'ready' && item.userData.state !== 'queued') return;
+
   const firework = item.userData.firework;
   item.userData.state = 'fuse';
   item.userData.fuse = FUSE_SECONDS;
@@ -1030,8 +1200,30 @@ function lightPlaced(item) {
     return;
   }
 
-  showBanner('Fuse lit!');
-  statusEl.textContent = 'Fuse lit.';
+  if (chained) {
+    statusEl.textContent = 'Chain fuse caught!';
+    return;
+  }
+
+  const links = chainLinks(item);
+  if (!links.length) {
+    showBanner('Fuse lit!');
+    statusEl.textContent = 'Fuse lit.';
+    return;
+  }
+
+  links.forEach((link, index) => {
+    link.userData.state = 'queued';
+    link.userData.ring.material.color.setHex(0xffa23c);
+    pendingBursts.push({
+      time: 0.34 + index * CHAIN_STAGGER,
+      run: () => lightPlaced(link, true),
+    });
+  });
+
+  audio.chain(links.length + 1);
+  showBanner(`CHAIN! ${links.length + 1} fuses lit.`, 1800);
+  statusEl.textContent = `Chain fuse! ${links.length + 1} fireworks going up.`;
 }
 
 function removePlaced(index) {
@@ -1064,6 +1256,13 @@ function updatePlaced(dt) {
 
     data.ring.material.opacity = 0.28 + (Math.sin(data.age * 5) + 1) * 0.16;
     data.ring.scale.setScalar(1 + Math.sin(data.age * 3.2) * 0.07);
+
+    if (data.state === 'queued') {
+      data.spark.visible = true;
+      data.spark.scale.setScalar(0.6 + Math.random() * 0.5);
+      data.spark.material.opacity = 0.4 + Math.random() * 0.4;
+      continue;
+    }
 
     if (data.state !== 'fuse') continue;
 
@@ -1217,6 +1416,10 @@ function clearEffects() {
   });
 
   floatersEl.replaceChildren();
+
+  state.combo = 0;
+  state.comboTimer = 0;
+  refreshComboBadge();
 }
 
 /* ------------------------------------------------------------------ *
@@ -1240,7 +1443,9 @@ function startDay() {
 
 function award(firework, position) {
   const bonus = crowdBonus();
-  const payout = Math.round(firework.payout * bonus);
+  const chain = state.combo;
+  const chainBonus = comboMultiplier();
+  const payout = Math.round(firework.payout * bonus * chainBonus);
 
   state.cash += payout;
   state.score += payout;
@@ -1248,20 +1453,24 @@ function award(firework, position) {
 
   if (!state.biggest || firework.price > state.biggest.price) state.biggest = firework;
 
-  state.crowd = crowd.add(firework.crowd);
+  state.crowd = crowd.add(firework.crowd + Math.min(2, chain - 1));
   state.peakCrowd = Math.max(state.peakCrowd, state.crowd);
 
-  crowd.cheer(firework.kind === 'day' ? 0.7 : 1.2);
+  crowd.cheer(firework.kind === 'day' ? 0.7 : 1.2 + Math.min(1.4, chain * 0.25));
   audio.cash();
   audio.cheer(firework.kind === 'day' ? 0.4 : 1);
 
   addFloater(`+${formatMoney(payout)}`, position, firework.kind);
+  if (chain >= 2) addFloater(`chain ×${chain}`, position, 'chain');
 
   if (firework.kind === 'day') startDay();
 
   updateHud();
   updateStand();
-  statusEl.textContent = `${firework.name} paid ${formatMoney(payout)}. Crowd ${state.crowd}.`;
+  statusEl.textContent =
+    chain >= 2
+      ? `Chain ×${chain}! ${firework.name} paid ${formatMoney(payout)}. Crowd ${state.crowd}.`
+      : `${firework.name} paid ${formatMoney(payout)}. Crowd ${state.crowd}.`;
 }
 
 function addFloater(text, position, kind) {
@@ -1308,6 +1517,11 @@ function startShow() {
   state.finale = false;
   state.finaleTime = 0;
   state.finaleBonus = 0;
+  state.combo = 0;
+  state.comboTimer = 0;
+  state.bestChain = 0;
+  state.mishaps = 0;
+  state.damageTaken = 0;
 
   clearEffects();
   obliterated.splice(0).forEach(({ child, visible }) => {
@@ -1334,7 +1548,9 @@ function startShow() {
   startButton.blur();
   clock.getDelta();
 
-  statusEl.textContent = `Show started. You have ${formatMoney(START_CASH)} and two minutes.`;
+  statusEl.textContent = `Show started. You have ${formatMoney(START_CASH)} and ${Math.round(
+    SHOW_SECONDS / 60
+  )} minutes to work up to Big Bertha.`;
 }
 
 function endShow(reason) {
@@ -1381,12 +1597,16 @@ function endShow(reason) {
     addStatCell('Time bonus', `+${formatMoney(timeBonus)}`);
     addStatCell('Final score', formatMoney(finalScore));
     addStatCell('Fireworks lit', String(state.lit));
+    addStatCell('Best chain', state.bestChain > 1 ? `×${state.bestChain}` : '—');
+    addStatCell('Mishaps', state.mishaps > 0 ? `−${formatMoney(state.damageTaken)}` : '—');
     addStatCell('Peak crowd', String(state.peakCrowd));
     addStatCell('Best show', formatMoney(state.best));
   } else {
     addStatCell('Earned', formatMoney(earned));
     addStatCell('Fireworks lit', String(state.lit));
     addStatCell('Biggest firework', state.biggest ? state.biggest.name : '—');
+    addStatCell('Best chain', state.bestChain > 1 ? `×${state.bestChain}` : '—');
+    addStatCell('Mishaps', state.mishaps > 0 ? `−${formatMoney(state.damageTaken)}` : '—');
     addStatCell('Peak crowd', String(state.peakCrowd));
     addStatCell('Best show', formatMoney(state.best));
     addStatCell('Cash left', formatMoney(state.cash));
@@ -1477,9 +1697,13 @@ function buildStand() {
     payout.textContent = firework.finale ? 'Ends the show' : `Pays ${formatMoney(firework.payout)}`;
     const crowdGain = document.createElement('span');
     crowdGain.textContent = firework.finale
-      ? `Time bonus ${formatMoney(TIME_BONUS_PER_SECOND)}/sec`
+      ? `Bonus ${formatMoney(TIME_BONUS_PER_SECOND)}/sec`
       : `Crowd +${firework.crowd}`;
-    figures.append(payout, crowdGain);
+    const gate = document.createElement('span');
+    gate.className = 'stand-gate';
+    gate.hidden = !firework.finale;
+    if (firework.finale) gate.textContent = `Street ${state.crowd}/${FINALE_CROWD}`;
+    figures.append(payout, crowdGain, gate);
 
     const actions = document.createElement('div');
     actions.className = 'stand-actions';
@@ -1503,7 +1727,7 @@ function buildStand() {
     actions.append(buy, light);
     card.append(top, blurb, figures, actions);
 
-    standRefs.set(firework.id, { card, buy, light, owned });
+    standRefs.set(firework.id, { card, buy, light, owned, gate });
     return card;
   });
 
@@ -1518,6 +1742,9 @@ function updateStandHint() {
   else if (state.finale) text = 'Big Bertha is up. This is the last firework.';
   else if (state.sky !== 'night') text = 'Daytime: little ones only. Big fireworks wait for night.';
   else if (state.selected) text = 'Tap the yard to set it down, then tap it to light it.';
+  else if (state.crowd < FINALE_CROWD)
+    text = `Chain them up to pack the street (${state.crowd}/${FINALE_CROWD}). Big Bertha needs the whole street out.`;
+  else text = 'Street packed! Big Bertha is ready when you are.';
 
   setText(standHint, text);
 }
@@ -1530,13 +1757,18 @@ function updateStand() {
     if (!ref) continue;
 
     const owned = state.owned[firework.id] || 0;
-    const canBuy = state.phase === 'play' && !state.finale && state.cash >= firework.price;
+    const streetLocked = Boolean(firework.finale) && state.crowd < FINALE_CROWD;
+    const canBuy =
+      state.phase === 'play' && !state.finale && state.cash >= firework.price && !streetLocked;
     const nightLocked = firework.kind === 'night' && state.sky !== 'night';
     const selected = state.selected === firework.id;
 
     ref.buy.disabled = !canBuy;
-    ref.buy.textContent =
-      state.cash >= firework.price ? `Buy ${formatMoney(firework.price)}` : `Need ${formatMoney(firework.price)}`;
+    ref.buy.textContent = streetLocked
+      ? `Street ${state.crowd}/${FINALE_CROWD}`
+      : state.cash >= firework.price
+        ? `Buy ${formatMoney(firework.price)}`
+        : `Need ${formatMoney(firework.price)}`;
 
     ref.light.disabled = state.phase !== 'play' || state.finale || owned < 1 || nightLocked;
     ref.light.textContent = state.finale
@@ -1550,14 +1782,26 @@ function updateStand() {
             : `Light ×${owned}`;
 
     ref.card.classList.toggle('is-selected', selected);
-    ref.card.classList.toggle('is-locked', nightLocked);
+    ref.card.classList.toggle('is-locked', nightLocked || streetLocked);
     ref.owned.hidden = owned < 1;
     ref.owned.textContent = owned > 0 ? `×${owned}` : '';
+
+    if (ref.gate) {
+      ref.gate.classList.toggle('ready', !streetLocked);
+      ref.gate.textContent = streetLocked
+        ? `Street ${state.crowd}/${FINALE_CROWD}`
+        : 'Street packed!';
+    }
   }
 }
 
 function buyFirework(firework) {
   if (state.phase !== 'play' || state.finale) return;
+
+  if (firework.finale && state.crowd < FINALE_CROWD) {
+    showBanner(`Big Bertha needs the whole street out — crowd ${state.crowd}/${FINALE_CROWD}.`);
+    return;
+  }
 
   if (state.cash < firework.price) {
     showBanner(`You need ${formatMoney(firework.price - state.cash)} more for that one.`);
@@ -1872,6 +2116,7 @@ function tick() {
     else checkBroke(dt);
   }
 
+  updateCombo(dt);
   updateHudClock();
   renderer.render(scene, camera);
 }

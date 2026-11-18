@@ -247,6 +247,117 @@
         text-shadow: 0 3px 0 #7a3d00, 0 0 12px rgba(255, 255, 255, 0.85);
       }
 
+      .floater.chain {
+        color: #ffd93d;
+        font-size: clamp(0.42rem, 1.5vw, 0.6rem);
+        text-shadow: 0 2px 0 #6b3d00, 0 0 10px rgba(255, 217, 61, 0.9);
+      }
+
+      .floater.damage {
+        color: #ff8a8a;
+        text-shadow: 0 3px 0 #5c0f0f, 0 0 12px rgba(255, 60, 40, 0.8);
+      }
+
+      .combo-badge {
+        position: absolute;
+        right: 0.7rem;
+        top: 0.7rem;
+        z-index: 4;
+        display: none;
+        min-width: 5.4rem;
+        padding: 0.32rem 0.45rem 0.4rem;
+        background: rgba(20, 9, 38, 0.92);
+        border: 2px solid var(--accent-soft);
+        box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+        color: #fff3cf;
+        pointer-events: none;
+        transition: border-color 0.15s steps(2), background 0.15s steps(2);
+      }
+
+      .combo-badge.show {
+        display: block;
+      }
+
+      .combo-badge.risk {
+        background: rgba(62, 11, 18, 0.94);
+        border-color: #ff5a3c;
+        box-shadow: 0 0 0 2px rgba(255, 90, 60, 0.28), 3px 3px 0 rgba(0, 0, 0, 0.5);
+      }
+
+      .combo-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.45rem;
+      }
+
+      .combo-label {
+        font-family: var(--font-pixel);
+        font-size: 0.36rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #f0a85a;
+      }
+
+      .combo-badge.risk .combo-label {
+        color: #ff8a7a;
+        animation: sc-pulse 0.7s steps(2) infinite;
+      }
+
+      .combo-count {
+        font-family: var(--font-pixel);
+        font-size: 0.58rem;
+        font-weight: 400;
+        line-height: 1.2;
+      }
+
+      .combo-bar {
+        display: block;
+        height: 0.3rem;
+        margin-top: 0.28rem;
+        background: #3a2a70;
+        overflow: hidden;
+      }
+
+      .combo-bar i {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: var(--accent-soft);
+        transform-origin: left center;
+        transition: background 0.15s steps(2);
+      }
+
+      .combo-badge.risk .combo-bar i {
+        background: #ff5a3c;
+      }
+
+      .damage-flash {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        opacity: 0;
+        background: radial-gradient(
+          circle at 50% 58%,
+          rgba(255, 60, 40, 0) 38%,
+          rgba(255, 42, 20, 0.62) 100%
+        );
+        pointer-events: none;
+      }
+
+      .damage-flash.on {
+        animation: sc-damage 0.5s ease-out;
+      }
+
+      @keyframes sc-damage {
+        0% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
       @keyframes sc-float {
         0% {
           opacity: 0;
@@ -611,10 +722,23 @@
 
       .stand-figures {
         display: flex;
-        gap: 0.55rem;
+        flex-wrap: wrap;
+        gap: 0.4rem 0.55rem;
         font-size: 0.7rem;
         font-weight: 800;
         color: #ffd98a;
+      }
+
+      .stand-gate {
+        color: #ff7a6a;
+      }
+
+      .stand-gate.ready {
+        color: var(--green);
+      }
+
+      .stand-gate[hidden] {
+        display: none;
       }
 
       .stand-actions {
@@ -916,8 +1040,9 @@
         <h1>Spark Curfew</h1>
         <p>
           The street is dark, the yard is yours, and the firework stand is open. Little fireworks
-          bring the sun up. The huge ones only go up after dark. Save up for Big Bertha, the super
-          grand finale — light her before curfew and the faster you do it, the bigger your time bonus.
+          bring the sun up, the huge ones only go up after dark, and fireworks placed together share
+          a fuse. Chain them for combo payouts, pack the yard with neighbours, and save Big Bertha
+          for the end — light her before curfew and the faster you do it, the bigger your time bonus.
         </p>
       </section>
 
@@ -942,7 +1067,7 @@
             </div>
             <div class="hud-stat">
               <span class="hud-label">Curfew</span>
-              <strong id="time">2:00</strong>
+              <strong id="time">4:00</strong>
               <em class="hud-sub" id="time-bonus" title="Time bonus for the seconds left">+$0</em>
             </div>
           </div>
@@ -979,6 +1104,14 @@
           <div class="placing-hint" id="placing-hint" hidden></div>
           <div class="banner" id="banner" aria-hidden="true"><span></span></div>
           <div class="floaters" id="floaters" aria-hidden="true"></div>
+          <div class="combo-badge" id="combo-badge" aria-hidden="true">
+            <div class="combo-top">
+              <span class="combo-label" id="combo-label">chain</span>
+              <strong class="combo-count" id="combo-count">×2</strong>
+            </div>
+            <span class="combo-bar"><i id="combo-bar"></i></span>
+          </div>
+          <div class="damage-flash" id="damage-flash" aria-hidden="true"></div>
           <div class="whiteout" id="whiteout" aria-hidden="true"></div>
 
           <div class="overlay intro" id="overlay">
@@ -1004,8 +1137,16 @@
                   <span>Little fireworks bring the daylight with them. The big shells only go up at night.</span>
                 </li>
                 <li>
+                  <span aria-hidden="true">🧨</span>
+                  <span>Fireworks placed close together share a fuse. Light one and its neighbours catch, so you can chain a whole cluster in one tap.</span>
+                </li>
+                <li>
+                  <span aria-hidden="true">⚠️</span>
+                  <span>Keep the chain going for bigger payouts — but five or more in one chain can misfire and cost you cash, crowd and the chain.</span>
+                </li>
+                <li>
                   <span aria-hidden="true">💥</span>
-                  <span>Big Bertha is the super grand finale. The faster you light her, the bigger the time bonus. The crowd multiplies every payout too.</span>
+                  <span>Big Bertha is the super grand finale, but she only comes out once the whole street is watching. Pack the yard to unlock her, then light her fast for a time bonus.</span>
                 </li>
               </ul>
               <p class="controls-line" id="overlay-controls">
@@ -1034,8 +1175,9 @@
         </section>
 
         <p class="game-tip">
-          Little fireworks = daylight, big fireworks = night. Build the crowd, save $900 for Big
-          Bertha, and light her fast — the seconds left become your time bonus.
+          Little fireworks = daylight, big fireworks = night. Cluster them so one tap chains the
+          whole group — but five or more in a chain can misfire and cost you. Pack the street to
+          unlock Big Bertha, then light her fast: the seconds left become your time bonus.
         </p>
 
         <a href="../../../games.html" class="back-link">&larr; Back to games</a>

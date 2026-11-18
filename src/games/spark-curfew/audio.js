@@ -338,6 +338,28 @@ export function createAudio() {
       tone({ type: 'square', from: 1318, dur: 0.16, vol: 0.05, delay: 0.06 });
     },
 
+    chain(level = 2) {
+      if (!ensure()) return;
+      const base = 520 + Math.min(6, level) * 90;
+      for (let i = 0; i < 3; i += 1) {
+        tone({
+          type: 'square',
+          from: base * (1 + i * 0.16),
+          to: base * (1.32 + i * 0.2),
+          dur: 0.08,
+          vol: 0.032,
+          delay: i * 0.05,
+        });
+      }
+    },
+
+    damage() {
+      if (!ensure()) return;
+      noise({ dur: 0.5, vol: 0.11, filter: { type: 'lowpass', freq: 900, to: 90, q: 1.1 } });
+      tone({ type: 'sawtooth', from: 180, to: 45, dur: 0.5, vol: 0.11, filter: { type: 'lowpass', freq: 700, to: 90 } });
+      tone({ type: 'square', from: 96, to: 42, dur: 0.32, vol: 0.06, delay: 0.08 });
+    },
+
     finaleWarning() {
       if (!ensure()) return;
       [0, 0.35, 0.7].forEach((delay, index) => {
