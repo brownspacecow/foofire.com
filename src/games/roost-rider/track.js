@@ -73,16 +73,19 @@ const wrapArc = (delta) => {
 /* ------------------------------------------------------------- profile */
 
 const JUMPS = [
-  { at: 0.075, up: 17, crest: 3, down: 10, height: 2.5 },
-  { at: 0.245, up: 14, crest: 2, down: 8, height: 1.9 },
-  { at: 0.405, up: 20, crest: 4, down: 12, height: 3.2 },
-  { at: 0.585, up: 12, crest: 2, down: 7, height: 1.6 },
-  { at: 0.785, up: 16, crest: 3, down: 10, height: 2.3 },
+  { at: 0.075, up: 20, crest: 4, down: 22, height: 6.5 },
+  { at: 0.175, up: 15, crest: 3, down: 16, height: 5 },
+  { at: 0.27, up: 22, crest: 5, down: 26, height: 8 },
+  { at: 0.375, up: 17, crest: 4, down: 20, height: 6 },
+  { at: 0.47, up: 13, crest: 2, down: 14, height: 4.5 },
+  { at: 0.555, up: 24, crest: 5, down: 28, height: 9 },
+  { at: 0.69, up: 16, crest: 3, down: 18, height: 5.5 },
+  { at: 0.83, up: 19, crest: 4, down: 22, height: 7 },
 ];
 
 const WHOOPS = [
-  { at: 0.33, len: 46, amp: 0.6, count: 6 },
-  { at: 0.685, len: 42, amp: 0.5, count: 5 },
+  { at: 0.12, len: 44, amp: 0.6, count: 6 },
+  { at: 0.73, len: 48, amp: 0.5, count: 5 },
 ];
 
 function featureHeight(arc) {

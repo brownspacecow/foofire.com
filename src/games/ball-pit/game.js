@@ -13,27 +13,32 @@ const packCountEl = document.querySelector('#pack-count');
 const bestCountEl = document.querySelector('#best-count');
 const messageEl = document.querySelector('#message');
 const eventPill = document.querySelector('#event-pill');
-const digButton = document.querySelector('#dig-button');
 const muteButton = document.querySelector('#mute-button');
 const fullscreenButton = document.querySelector('#fullscreen-button');
 const backpackButton = document.querySelector('#backpack-button');
 const shopButton = document.querySelector('#shop-button');
+const displayButton = document.querySelector('#display-button');
 const winBanner = document.querySelector('#win-banner');
 const winKicker = document.querySelector('#win-kicker');
 const winName = document.querySelector('#win-name');
 const winMeta = document.querySelector('#win-meta');
-const packPanel = document.querySelector('#pack-panel');
 const packList = document.querySelector('#pack-list');
 const packEmpty = document.querySelector('#pack-empty');
-const packSummary = document.querySelector('#pack-summary');
 const sellJunkButton = document.querySelector('#sell-junk-button');
 const sellAllButton = document.querySelector('#sell-all-button');
 const saveNote = document.querySelector('#save-note');
-const shopPanel = document.querySelector('#shop-panel');
 const shopList = document.querySelector('#shop-list');
 const prizeList = document.querySelector('#prize-list');
 const shopCoins = document.querySelector('#shop-coins');
-const moveButtons = [...document.querySelectorAll('[data-move]')];
+const pitModal = document.querySelector('#pit-modal');
+const modalClose = document.querySelector('#modal-close');
+const modalTitle = document.querySelector('#modal-title');
+const tabButtons = [...document.querySelectorAll('[data-tab]')];
+const panes = [...document.querySelectorAll('[data-pane]')];
+const caseSlots = document.querySelector('#case-slots');
+const casePicker = document.querySelector('#case-picker');
+const caseEmpty = document.querySelector('#case-empty');
+const modalToast = document.querySelector('#modal-toast');
 
 /* -------------------------------------------------------------- constants */
 const SAVE_KEY = 'foofire.ballPit.save.v1';
@@ -60,8 +65,9 @@ const state = {
   bestFind: getBest('ball-pit'),
   iphones: 0,
   backpack: {},
-  upgrades: { luck: 0, speed: 0, scoop: 0, playground: 0 },
+  upgrades: { luck: 0, speed: 0, scoop: 0, playground: 0, value: 0, haste: 0, case: 0 },
   prizes: new Set(),
+  display: [],
   muted: false,
   storage: true,
 };
@@ -77,6 +83,18 @@ function lerpAngle(from, to, t) {
 }
 
 const coinsText = (value) => value.toLocaleString('en-US');
+
+const saleBonus = () =>
+  1 + state.upgrades.value * 0.1 + (state.prizes.has('golden-spatula') ? 0.15 : 0);
+const displaySlots = () =>
+  2 + state.upgrades.case + (state.prizes.has('mega-case') ? 3 : 0);
+const polishedValue = (value) => Math.round(value * saleBonus());
+const digCooldown = () => Math.max(0.3, DIG_COOLDOWN - state.upgrades.haste * 0.045);
+
+function digRadius() {
+  const bigDig = activeEvent?.def.id === 'bigdig';
+  return (1.45 + 0.32 * state.upgrades.scoop) * (bigDig ? 1.7 : 1);
+}
 
 /* ---------------------------------------------------------------- renderer */
 const scene = new THREE.Scene();
@@ -564,6 +582,9 @@ const playerMotion = new THREE.Vector3();
 let duck = null;
 let bear = null;
 let crown = null;
+let petRock = null;
+let robotBuddy = null;
+let umbrella = null;
 
 function buildDuck() {
   const group = new THREE.Group();
@@ -587,6 +608,115 @@ function buildDuck() {
     eye.position.set(x, 0.21, 0.2);
     group.add(eye);
   });
+
+  return group;
+}
+
+function buildPetRock() {
+  const group = new THREE.Group();
+  const rock = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.17, 0),
+    mat(0x8b8fa3, { roughness: 0.95 })
+  );
+  rock.scale.set(1.15, 0.8, 1);
+  rock.castShadow = true;
+  group.add(rock);
+
+  [-0.055, 0.055].forEach((x) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), mat(0x120a2a));
+    eye.position.set(x, 0.04, 0.155);
+    group.add(eye);
+  });
+
+  return group;
+}
+
+function buildRobotBuddy() {
+  const group = new THREE.Group();
+  const body = box(
+    group,
+    0.3,
+    0.3,
+    0.24,
+    mat(0x7dd3fc, { metalness: 0.4, roughness: 0.35 }),
+    0,
+    0.32,
+    0
+  );
+  body.castShadow = true;
+
+  const head = box(
+    group,
+    0.24,
+    0.2,
+    0.2,
+    mat(0xa855f7, { metalness: 0.4, roughness: 0.35 }),
+    0,
+    0.58,
+    0
+  );
+  head.castShadow = true;
+
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffd93d });
+  [-0.06, 0.06].forEach((x) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), eyeMat);
+    eye.position.set(x, 0.59, 0.11);
+    group.add(eye);
+  });
+
+  const antenna = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.015, 0.015, 0.16, 6),
+    mat(0xd1d5db, { metalness: 0.7, roughness: 0.3 })
+  );
+  antenna.position.y = 0.75;
+  group.add(antenna);
+
+  const bulb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.045, 8, 6),
+    new THREE.MeshBasicMaterial({ color: 0xff2e63 })
+  );
+  bulb.position.y = 0.84;
+  group.add(bulb);
+
+  [-0.1, 0.1].forEach((x) => {
+    const wheel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.09, 0.05, 10),
+      mat(0x1b1238, { roughness: 0.9 })
+    );
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(x, 0.09, 0);
+    group.add(wheel);
+  });
+
+  return group;
+}
+
+function buildUmbrella() {
+  const group = new THREE.Group();
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.015, 0.015, 0.62, 6),
+    mat(0xf3d2a2, { roughness: 0.6 })
+  );
+  pole.position.y = 0.31;
+  group.add(pole);
+
+  const canopy = new THREE.Mesh(
+    new THREE.ConeGeometry(0.46, 0.2, 12, 1, true),
+    new THREE.MeshStandardMaterial({
+      color: 0xff2e63,
+      roughness: 0.7,
+      side: THREE.DoubleSide,
+    })
+  );
+  canopy.position.y = 0.64;
+  group.add(canopy);
+
+  const knob = new THREE.Mesh(
+    new THREE.SphereGeometry(0.03, 8, 6),
+    mat(0xffd93d, { metalness: 0.5, roughness: 0.3 })
+  );
+  knob.position.y = 0.76;
+  group.add(knob);
 
   return group;
 }
@@ -674,12 +804,30 @@ function buildPlayer() {
   duck = buildDuck();
   duck.visible = false;
   scene.add(duck);
+
+  petRock = buildPetRock();
+  petRock.visible = false;
+  petRock.position.set(0, 0.18, -1);
+  scene.add(petRock);
+
+  robotBuddy = buildRobotBuddy();
+  robotBuddy.visible = false;
+  robotBuddy.position.set(1, 0, 0);
+  scene.add(robotBuddy);
+
+  umbrella = buildUmbrella();
+  umbrella.visible = false;
+  umbrella.position.set(0, 1.68, 0);
+  player.add(umbrella);
 }
 
 function applyPrizeVisuals() {
   if (crown) crown.visible = state.prizes.has('neon-crown');
   if (bear) bear.visible = state.prizes.has('bear-plush');
   if (duck) duck.visible = state.prizes.has('duck-buddy');
+  if (petRock) petRock.visible = state.prizes.has('pet-rock');
+  if (robotBuddy) robotBuddy.visible = state.prizes.has('robot-buddy');
+  if (umbrella) umbrella.visible = state.prizes.has('tiny-umbrella');
 }
 
 /* ---------------------------------------------------------------- effects */
@@ -801,8 +949,21 @@ function setTargetFromEvent(event) {
 
 renderer.domElement.addEventListener('pointerdown', (event) => {
   sound.unlock();
+  if (isModalOpen()) return;
+
   dragging = true;
   setTargetFromEvent(event);
+
+  if (
+    playerState.hasTarget &&
+    Math.hypot(
+      playerState.target.x - player.position.x,
+      playerState.target.z - player.position.z
+    ) <= digRadius()
+  ) {
+    playerState.hasTarget = false;
+    dig();
+  }
 });
 
 renderer.domElement.addEventListener('pointermove', (event) => {
@@ -818,10 +979,21 @@ renderer.domElement.addEventListener('pointercancel', stopDrag);
 renderer.domElement.addEventListener('pointerleave', stopDrag);
 
 window.addEventListener('keydown', (event) => {
+  if (event.code === 'Escape' && isModalOpen()) {
+    closeModal();
+    return;
+  }
+  if (isModalOpen()) {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
+      event.preventDefault();
+    }
+    return;
+  }
+
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
     event.preventDefault();
   }
-  if (event.code === 'Space') {
+  if (event.code === 'Space' || event.code === 'KeyF') {
     sound.unlock();
     dig();
     return;
@@ -834,40 +1006,6 @@ window.addEventListener('keyup', (event) => {
 });
 window.addEventListener('blur', () => keys.clear());
 
-const MOVE_CODES = {
-  up: 'ArrowUp',
-  left: 'ArrowLeft',
-  right: 'ArrowRight',
-  down: 'ArrowDown',
-};
-
-moveButtons.forEach((button) => {
-  const code = MOVE_CODES[button.dataset.move];
-  if (!code) return;
-
-  const press = (event) => {
-    event.preventDefault();
-    sound.unlock();
-    keys.add(code);
-    playerState.hasTarget = false;
-  };
-  const release = () => keys.delete(code);
-
-  button.addEventListener('pointerdown', press);
-  button.addEventListener('pointerup', release);
-  button.addEventListener('pointerleave', release);
-  button.addEventListener('pointercancel', release);
-});
-
-digButton.addEventListener('pointerdown', (event) => {
-  event.preventDefault();
-  sound.unlock();
-  dig();
-});
-digButton.addEventListener('click', (event) => {
-  if (event.detail === 0) dig();
-});
-
 container.addEventListener('pointerdown', () => {
   try {
     container.focus({ preventScroll: true });
@@ -878,6 +1016,11 @@ container.addEventListener('pointerdown', () => {
 
 /* --------------------------------------------------------------- movement */
 function updatePlayer(dt) {
+  if (isModalOpen()) {
+    playerMotion.set(0, 0, 0);
+    return;
+  }
+
   const speed = BASE_SPEED + SPEED_PER_LEVEL * state.upgrades.speed;
   let dx = 0;
   let dz = 0;
@@ -930,6 +1073,28 @@ function updatePlayer(dt) {
     duck.position.z += (player.position.z + behindZ - duck.position.z) * k;
     duck.position.y = 1.05 + (reducedMotion ? 0 : Math.sin(elapsed * 4) * 0.06);
     duck.rotation.y = lerpAngle(duck.rotation.y, player.rotation.y, k);
+  }
+
+  if (petRock && petRock.visible) {
+    const behindX = Math.sin(player.rotation.y) * -1.35;
+    const behindZ = Math.cos(player.rotation.y) * -1.35;
+    const k = Math.min(1, dt * 3.5);
+    petRock.position.x += (player.position.x + behindX - petRock.position.x) * k;
+    petRock.position.z += (player.position.z + behindZ - petRock.position.z) * k;
+    petRock.position.y = 0.05 + (reducedMotion ? 0 : Math.abs(Math.sin(elapsed * 5)) * 0.1);
+  }
+
+  if (robotBuddy && robotBuddy.visible) {
+    const sideX = Math.cos(player.rotation.y) * 0.95;
+    const sideZ = -Math.sin(player.rotation.y) * 0.95;
+    const k = Math.min(1, dt * 3.5);
+    robotBuddy.position.x += (player.position.x + sideX - robotBuddy.position.x) * k;
+    robotBuddy.position.z += (player.position.z + sideZ - robotBuddy.position.z) * k;
+    robotBuddy.rotation.y = lerpAngle(robotBuddy.rotation.y, player.rotation.y, k);
+  }
+
+  if (umbrella && umbrella.visible) {
+    umbrella.rotation.z = reducedMotion ? 0 : Math.sin(elapsed * 2.4) * 0.08;
   }
 }
 
@@ -1095,14 +1260,30 @@ function say(text) {
   messageEl.textContent = text;
 }
 
+let toastTimeout = 0;
+
+function notifyModal(text, kind = 'sell') {
+  if (!isModalOpen()) return;
+
+  modalToast.textContent = text;
+  modalToast.classList.toggle('unlock', kind === 'unlock');
+  modalToast.hidden = false;
+  window.clearTimeout(toastTimeout);
+  toastTimeout = window.setTimeout(() => {
+    modalToast.hidden = true;
+  }, 2800);
+}
+
 function showBanner(kicker, name, meta, rarity) {
   winKicker.textContent = kicker;
   winName.textContent = name;
   winMeta.textContent = meta;
-  winBanner.classList.remove('rare', 'ultra', 'event');
+  winBanner.classList.remove('rare', 'ultra', 'event', 'sell', 'unlock');
   if (rarity === 'rare') winBanner.classList.add('rare');
   if (rarity === 'ultra') winBanner.classList.add('ultra');
   if (rarity === 'event') winBanner.classList.add('event');
+  if (rarity === 'sell') winBanner.classList.add('sell');
+  if (rarity === 'unlock') winBanner.classList.add('unlock');
   winBanner.classList.add('show');
   winBanner.setAttribute('aria-hidden', 'false');
 
@@ -1112,7 +1293,13 @@ function showBanner(kicker, name, meta, rarity) {
       winBanner.classList.remove('show');
       winBanner.setAttribute('aria-hidden', 'true');
     },
-    rarity === 'ultra' ? 4200 : rarity === 'event' ? 3600 : 2400
+    rarity === 'ultra'
+      ? 4200
+      : rarity === 'event'
+        ? 3600
+        : rarity === 'unlock'
+          ? 3200
+          : 2400
   );
 }
 
@@ -1171,7 +1358,7 @@ function revealFind({ item, value }) {
 
 function dig() {
   const bigDig = activeEvent?.def.id === 'bigdig';
-  const cooldown = bigDig ? 0.3 : DIG_COOLDOWN;
+  const cooldown = bigDig ? Math.min(0.3, digCooldown()) : digCooldown();
   if (nowSec - lastDigAt < cooldown) return;
   lastDigAt = nowSec;
 
@@ -1180,7 +1367,7 @@ function dig() {
 
   const px = player.position.x;
   const pz = player.position.z;
-  const radius = (1.45 + 0.32 * state.upgrades.scoop) * (bigDig ? 1.7 : 1);
+  const radius = digRadius();
 
   for (const ball of balls) {
     const dx = ball.mesh.position.x - px;
@@ -1236,6 +1423,7 @@ function dig() {
   }
 
   let chance = BASE_FIND_CHANCE + state.upgrades.luck * 0.05;
+  if (state.prizes.has('lucky-cat')) chance += 0.04;
   if (activeEvent?.def.id === 'bouncy') chance += 0.18;
   chance += Math.min(0.12, explorerStreak * 0.015);
   chance = clamp(chance * freshness, 0.06, 0.95);
@@ -1640,7 +1828,6 @@ function renderHud() {
   packCountEl.textContent = coinsText(backpackTotal());
   bestCountEl.textContent = coinsText(state.bestFind);
   shopCoins.textContent = `${coinsText(state.coins)} coins`;
-  packSummary.textContent = `${backpackTotal()} ${backpackTotal() === 1 ? 'item' : 'items'}`;
 }
 
 function updateMuteButton() {
@@ -1662,16 +1849,21 @@ function sellStack(itemId) {
   const item = ITEM_BY_ID.get(itemId);
   if (!entry || !item || entry.count <= 0) return;
 
-  state.coins = Math.min(MAX_COINS, state.coins + entry.total);
+  const payout = polishedValue(entry.total);
+  state.coins = Math.min(MAX_COINS, state.coins + payout);
   delete state.backpack[itemId];
+  state.display = state.display.filter((id) => id !== itemId);
 
   sound.coin();
-  say(`Sold ${entry.count} × ${item.name} for ${coinsText(entry.total)} coins.`);
+  showBanner('SOLD!', `+${coinsText(payout)} coins`, `${entry.count} × ${item.name}`, 'sell');
+  notifyModal(`SOLD! +${coinsText(payout)} coins — ${entry.count} × ${item.name}`);
+  say(`Sold ${entry.count} × ${item.name} for ${coinsText(payout)} coins.`);
 
   saveProgress();
   renderHud();
   renderPack();
   renderShop();
+  renderCase();
 }
 
 function sellEverything(junkOnly) {
@@ -1684,19 +1876,30 @@ function sellEverything(junkOnly) {
   let coins = 0;
   let count = 0;
   ids.forEach((id) => {
-    coins += state.backpack[id].total;
+    coins += polishedValue(state.backpack[id].total);
     count += state.backpack[id].count;
     delete state.backpack[id];
   });
+  state.display = state.display.filter((id) => !ids.includes(id));
 
   state.coins = Math.min(MAX_COINS, state.coins + coins);
   sound.coin();
+  showBanner(
+    'SOLD!',
+    `+${coinsText(coins)} coins`,
+    `${count} item${count === 1 ? '' : 's'} sold`,
+    'sell'
+  );
+  notifyModal(
+    `SOLD! +${coinsText(coins)} coins for ${count} item${count === 1 ? '' : 's'}`
+  );
   say(`Sold ${count} item${count === 1 ? '' : 's'} for ${coinsText(coins)} coins.`);
 
   saveProgress();
   renderHud();
   renderPack();
   renderShop();
+  renderCase();
 }
 
 function packCard(item, entry) {
@@ -1720,7 +1923,7 @@ function packCard(item, entry) {
   meta.className = 'pack-meta';
   meta.append(`${entry.count} × ${item.label} · `);
   const value = document.createElement('strong');
-  value.textContent = `${coinsText(entry.total)} coins`;
+  value.textContent = `${coinsText(polishedValue(entry.total))} coins`;
   meta.append(value);
 
   info.append(name, meta);
@@ -1729,7 +1932,10 @@ function packCard(item, entry) {
   button.className = 'pack-sell';
   button.type = 'button';
   button.textContent = 'Sell';
-  button.setAttribute('aria-label', `Sell ${entry.count} ${item.name} for ${entry.total} coins`);
+  button.setAttribute(
+    'aria-label',
+    `Sell ${entry.count} ${item.name} for ${polishedValue(entry.total)} coins`
+  );
   button.addEventListener('click', () => sellStack(item.id));
 
   card.append(emoji, info, button);
@@ -1752,6 +1958,117 @@ function renderPack() {
 
   sellJunkButton.disabled = !ids.some((id) => ITEM_BY_ID.get(id).rarity === 'junk');
   sellAllButton.disabled = ids.length === 0;
+}
+
+function caseSlot(item) {
+  const slot = document.createElement('div');
+  slot.className = 'case-slot';
+
+  if (!item) {
+    slot.classList.add('empty');
+    slot.textContent = 'Empty spot';
+    return slot;
+  }
+
+  const emoji = document.createElement('span');
+  emoji.className = 'case-emoji';
+  emoji.textContent = item.emoji;
+  emoji.setAttribute('aria-hidden', 'true');
+
+  const name = document.createElement('p');
+  name.className = 'case-name';
+  name.textContent = item.name;
+
+  const rarity = document.createElement('p');
+  rarity.className = 'case-rarity';
+  rarity.textContent = item.label;
+
+  const remove = document.createElement('button');
+  remove.className = 'case-remove';
+  remove.type = 'button';
+  remove.textContent = 'Take out';
+  remove.setAttribute('aria-label', `Take ${item.name} out of the display case`);
+  remove.addEventListener('click', () => toggleDisplay(item.id));
+
+  slot.append(emoji, name, rarity, remove);
+  return slot;
+}
+
+function casePickerCard(item) {
+  const entry = state.backpack[item.id];
+  const shown = state.display.includes(item.id);
+
+  const row = document.createElement('div');
+  row.className = 'case-pick';
+
+  const emoji = document.createElement('span');
+  emoji.className = 'pack-emoji';
+  emoji.textContent = item.emoji;
+  emoji.setAttribute('aria-hidden', 'true');
+
+  const info = document.createElement('div');
+  info.className = 'case-pick-info';
+
+  const name = document.createElement('p');
+  name.className = 'case-pick-name';
+  name.textContent = item.name;
+
+  const meta = document.createElement('p');
+  meta.className = 'case-pick-meta';
+  meta.textContent = `${entry.count} × ${item.label}`;
+
+  info.append(name, meta);
+
+  const button = document.createElement('button');
+  button.className = 'case-toggle';
+  button.type = 'button';
+  button.textContent = shown ? 'Remove' : 'Show';
+  button.disabled = !shown && state.display.length >= displaySlots();
+  button.setAttribute('aria-label', `${shown ? 'Remove' : 'Show'} ${item.name}`);
+  button.addEventListener('click', () => toggleDisplay(item.id));
+
+  row.append(emoji, info, button);
+  return row;
+}
+
+function renderCase() {
+  const ownedIds = Object.keys(state.backpack).filter(
+    (id) => ITEM_BY_ID.has(id) && (state.backpack[id]?.count || 0) > 0
+  );
+  state.display = state.display.filter((id) => ownedIds.includes(id)).slice(0, displaySlots());
+
+  const shown = state.display.map((id) => ITEM_BY_ID.get(id));
+  const slots = [];
+  for (let i = 0; i < displaySlots(); i++) {
+    slots.push(caseSlot(shown[i] || null));
+  }
+  caseSlots.replaceChildren(...slots);
+
+  ownedIds.sort((a, b) => {
+    const entryA = state.backpack[a];
+    const entryB = state.backpack[b];
+    return entryB.total / entryB.count - entryA.total / entryA.count;
+  });
+
+  casePicker.replaceChildren(...ownedIds.map((id) => casePickerCard(ITEM_BY_ID.get(id))));
+  caseEmpty.hidden = ownedIds.length > 0;
+}
+
+function toggleDisplay(itemId) {
+  if (state.display.includes(itemId)) {
+    state.display = state.display.filter((id) => id !== itemId);
+    sound.click();
+  } else if (state.display.length >= displaySlots()) {
+    sound.error();
+    say('The display case is full — take something out first.');
+    return;
+  } else {
+    state.display.push(itemId);
+    sound.click();
+  }
+
+  saveProgress();
+  renderCase();
 }
 
 function upgradeCard(upgrade) {
@@ -1888,11 +2205,22 @@ function buyUpgrade(id) {
   }
 
   sound.buy();
+  showBanner(
+    'UPGRADED!',
+    `${upgrade.emoji} ${upgrade.name}`,
+    upgrade.effect(level + 1),
+    'unlock'
+  );
+  notifyModal(
+    `UNLOCKED! ${upgrade.name} is now level ${level + 1} — ${upgrade.effect(level + 1)}`,
+    'unlock'
+  );
   say(`${upgrade.name} is now level ${level + 1}!`);
 
   saveProgress();
   renderHud();
   renderShop();
+  renderCase();
 }
 
 function buyPrize(id) {
@@ -1911,11 +2239,14 @@ function buyPrize(id) {
 
   sound.buy();
   burstConfetti(player.position.x, player.position.z, 24);
+  showBanner('UNLOCKED!', `${prize.emoji} ${prize.name}`, 'added to your ball pit', 'unlock');
+  notifyModal(`UNLOCKED! ${prize.emoji} ${prize.name} added to your ball pit`, 'unlock');
   say(`You bought the ${prize.name}!`);
 
   saveProgress();
   renderHud();
   renderShop();
+  renderCase();
 }
 
 /* ------------------------------------------------------------------- save */
@@ -1969,6 +2300,12 @@ function loadProgress() {
       });
     }
 
+    if (Array.isArray(data.display)) {
+      state.display = data.display
+        .filter((id) => ITEM_BY_ID.has(id))
+        .slice(0, displaySlots());
+    }
+
     state.muted = data.muted === true;
   } catch {
     // A broken save should never stop the ball pit from opening.
@@ -1989,6 +2326,7 @@ function saveProgress() {
         backpack: state.backpack,
         upgrades: state.upgrades,
         prizes: [...state.prizes],
+        display: state.display,
         muted: sound.isMuted(),
       })
     );
@@ -2018,20 +2356,65 @@ function resize() {
 }
 
 /* -------------------------------------------------------------- interface */
-backpackButton.addEventListener('click', () => {
+const PANEL_TITLES = {
+  pack: '🎒 Backpack',
+  shop: '🛍️ Ball Pit Shop',
+  display: '🏆 Display Case',
+};
+
+function isModalOpen() {
+  return !pitModal.hidden;
+}
+
+function setTab(tab) {
+  tabButtons.forEach((button) => {
+    button.setAttribute('aria-selected', String(button.dataset.tab === tab));
+  });
+  panes.forEach((pane) => {
+    pane.hidden = pane.dataset.pane !== tab;
+  });
+  modalTitle.textContent = PANEL_TITLES[tab] || PANEL_TITLES.pack;
+
+  if (tab === 'pack') renderPack();
+  if (tab === 'shop') renderShop();
+  if (tab === 'display') renderCase();
+}
+
+function openModal(tab = 'pack') {
   sound.unlock();
   sound.click();
-  renderPack();
-  packPanel.open = true;
-  packPanel.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  keys.clear();
+  playerState.hasTarget = false;
+  pitModal.hidden = false;
+  modalToast.hidden = true;
+  setTab(tab);
+  modalClose.focus({ preventScroll: true });
+}
+
+function closeModal() {
+  pitModal.hidden = true;
+  keys.clear();
+  try {
+    container.focus({ preventScroll: true });
+  } catch {
+    container.focus();
+  }
+}
+
+backpackButton.addEventListener('click', () => openModal('pack'));
+shopButton.addEventListener('click', () => openModal('shop'));
+displayButton.addEventListener('click', () => openModal('display'));
+
+tabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    sound.click();
+    setTab(button.dataset.tab);
+  });
 });
 
-shopButton.addEventListener('click', () => {
-  sound.unlock();
-  sound.click();
-  renderShop();
-  shopPanel.open = true;
-  shopPanel.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+modalClose.addEventListener('click', closeModal);
+pitModal.addEventListener('pointerdown', (event) => {
+  if (event.target === pitModal) closeModal();
 });
 
 sellJunkButton.addEventListener('click', () => sellEverything(true));
@@ -2106,8 +2489,6 @@ function animate() {
   if (discoBall) {
     discoBall.rotation.y += dt * (discoParty ? 3.2 : 0.6);
   }
-
-  digButton.classList.toggle('cooling', nowSec - lastDigAt < DIG_COOLDOWN);
 
   renderer.render(scene, camera);
 }
