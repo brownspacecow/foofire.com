@@ -70,6 +70,16 @@ export const games = [
     progress: { total: 100, unit: 'plushies' },
   },
   {
+    id: 'christmas-trees-and-missals',
+    title: 'Christmas Trees and Missals',
+    description:
+      'Decorate the town tree with hundreds of ornaments from every holiday, then launch it like a rocket at a random landmark. Every ornament comes back, and fancier decorations pay better.',
+    image: './public/screenshots/christmas-trees-and-missals.webp',
+    path: './src/games/christmas-trees-and-missals/index.html',
+    /** Tracks the ornament album, so its board shows progress, not a best. */
+    progress: { total: 180, unit: 'ornaments' },
+  },
+  {
     id: 'zombie-deer',
     title: 'Zombie Deer: Christmas Edition',
     description:

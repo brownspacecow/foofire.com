@@ -1,0 +1,1757 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Christmas Trees and Missals | Foofire Games</title>
+    <meta
+      name="description"
+      content="Play Christmas Trees and Missals, a three.js holiday game for kids. Buy hundreds of ornaments from every holiday, decorate the town tree, then launch it like a rocket and earn your decorations back."
+    />
+    <meta property="og:title" content="Christmas Trees and Missals | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Decorate the town tree with ornaments from every holiday, then launch it like a rocket. All ornaments returned, no one hurt."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/christmas-trees-and-missals/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      .xm-game {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 1rem 3.5rem;
+      }
+
+      .xm-hud {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.7rem 1.3rem;
+        padding: 0.9rem 1rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        border-bottom: none;
+        box-shadow: 6px 0 0 var(--ink);
+      }
+
+      .hud-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 4.4rem;
+      }
+
+      .hud-stat .stat-label {
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .hud-stat strong {
+        font-family: var(--font-pixel);
+        font-size: 0.7rem;
+        line-height: 1.6;
+        color: var(--accent-soft);
+        white-space: nowrap;
+      }
+
+      .xm-message {
+        flex: 1 1 15rem;
+        min-height: 1.6rem;
+        margin: 0;
+        color: var(--text);
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .hud-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+      }
+
+      .ghost-button {
+        padding: 0.62rem 0.75rem;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.44rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .ghost-button:hover:not(:disabled) {
+        background: #46318c;
+      }
+
+      .ghost-button:active:not(:disabled) {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--ink);
+      }
+
+      .ghost-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .ghost-button.accent {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      .ghost-button.accent:hover:not(:disabled) {
+        background: #ffe95c;
+      }
+
+      .icon-button {
+        width: 2.7rem;
+        height: 2.7rem;
+        padding: 0;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .icon-button:hover {
+        background: #46318c;
+      }
+
+      .icon-button[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      #game-container {
+        position: relative;
+        width: 100%;
+        height: clamp(420px, 66vh, 690px);
+        overflow: hidden;
+        background: #080d24;
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+        touch-action: none;
+        cursor: grab;
+      }
+
+      #game-container:focus-visible {
+        outline: 4px dashed var(--accent-soft);
+        outline-offset: 3px;
+      }
+
+      #game-container canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .xm-fallback {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .launch-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.9rem;
+        padding: 1.4rem;
+        background: radial-gradient(circle, rgba(12, 8, 34, 0.35), rgba(6, 3, 18, 0.86));
+        text-align: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s steps(3);
+        z-index: 3;
+      }
+
+      .launch-overlay.show {
+        opacity: 1;
+      }
+
+      /* After liftoff the scrim clears so the flight stays visible. */
+      .launch-overlay.flying {
+        background: transparent;
+        justify-content: flex-start;
+        align-items: flex-end;
+        padding: 0.8rem;
+      }
+
+      .launch-overlay.flying .countdown-kicker,
+      .launch-overlay.flying .countdown-value,
+      .launch-overlay.flying .countdown-sub {
+        opacity: 0;
+      }
+
+      .launch-overlay.flying .skip-button {
+        position: absolute;
+        right: 0.9rem;
+        bottom: 0.9rem;
+        margin: 0;
+      }
+
+      .launch-overlay .countdown-kicker {
+        font-family: var(--font-pixel);
+        font-size: 0.52rem;
+        letter-spacing: 0.14em;
+        color: var(--accent-soft);
+      }
+
+      .launch-overlay .countdown-value {
+        font-family: var(--font-pixel);
+        font-size: clamp(2.4rem, 11vw, 5.2rem);
+        line-height: 1.2;
+        color: #fff;
+        text-shadow: 4px 4px 0 var(--accent), 8px 8px 0 var(--ink);
+      }
+
+      .launch-overlay .countdown-sub {
+        margin: 0;
+        max-width: 30rem;
+        color: var(--text);
+        font-weight: 800;
+        font-size: 0.95rem;
+      }
+
+      .skip-button {
+        margin-top: 0.4rem;
+        padding: 0.6rem 0.9rem;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.46rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+        pointer-events: auto;
+      }
+
+      .skip-button:hover {
+        background: #46318c;
+      }
+
+      .launch-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem 1.2rem;
+        padding: 0.9rem 1rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        border-top: none;
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .launch-summary {
+        flex: 1 1 16rem;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .launch-summary strong {
+        color: var(--accent-soft);
+      }
+
+      .launch-button {
+        flex: 0 1 auto;
+        min-height: 3.9rem;
+        padding: 0.9rem 1.3rem;
+        border: 4px solid var(--ink);
+        border-radius: 0;
+        background: linear-gradient(180deg, #ff5d8f, var(--accent));
+        color: #fff;
+        font-family: var(--font-pixel);
+        font-size: clamp(0.56rem, 1.9vw, 0.74rem);
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 5px 5px 0 var(--ink);
+        touch-action: manipulation;
+      }
+
+      .launch-button:hover:not(:disabled) {
+        filter: brightness(1.08);
+        transform: translate(-1px, -1px);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .launch-button:active:not(:disabled) {
+        transform: translate(3px, 3px);
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .launch-button.armed {
+        background: linear-gradient(180deg, #ffe95c, #ffd93d);
+        color: var(--ink);
+        animation: launch-pulse 0.7s steps(2) infinite;
+      }
+
+      .launch-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      @keyframes launch-pulse {
+        50% {
+          filter: brightness(1.18);
+        }
+      }
+
+      .tray-panel {
+        margin-top: 1.4rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .tray-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 1rem;
+        padding: 0.85rem 1rem;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-family: var(--font-pixel);
+        font-size: 0.62rem;
+        line-height: 1.6;
+        color: var(--accent-soft);
+      }
+
+      .tray-count {
+        font-family: var(--font-pixel);
+        font-size: 0.45rem;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .tray-head .ghost-button {
+        margin-left: auto;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.4rem;
+      }
+
+      .tray-hint {
+        margin: 0;
+        padding: 0 1rem 0.65rem;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+
+      .tray-list {
+        display: flex;
+        gap: 0.55rem;
+        padding: 0.15rem 1rem 1rem;
+        overflow-x: auto;
+        scrollbar-width: thin;
+      }
+
+      .tray-item {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.1rem;
+        width: 6.1rem;
+        min-height: 5.9rem;
+        padding: 0.45rem 0.35rem;
+        border: 3px solid var(--border);
+        border-radius: 0;
+        background: #1b1238;
+        color: var(--text);
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      .tray-item:hover {
+        border-color: var(--accent-soft);
+        transform: translateY(-2px);
+      }
+
+      .tray-item.is-selected {
+        border-color: var(--accent-soft);
+        background: linear-gradient(180deg, #4a3592, #2a1d57);
+        box-shadow: 0 0 0 3px rgba(255, 217, 61, 0.35);
+      }
+
+      .tray-item.rarity-rare {
+        border-color: #2a5c9e;
+      }
+
+      .tray-item.rarity-epic {
+        border-color: #7c3aed;
+      }
+
+      .tray-item.rarity-legendary {
+        border-color: #b8860b;
+        background: linear-gradient(180deg, #3c2f5e, #241a3f);
+      }
+
+      .tray-icon {
+        font-size: 1.7rem;
+        line-height: 1.15;
+      }
+
+      .tray-name {
+        font-size: 0.65rem;
+        font-weight: 800;
+        line-height: 1.25;
+        text-align: center;
+        overflow-wrap: break-word;
+      }
+
+      .tray-rarity {
+        margin-top: auto;
+        color: var(--muted);
+        font-size: 0.56rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .tray-empty {
+        margin: 0 1rem 1rem;
+        padding: 0.9rem;
+        border: 2px dashed var(--border);
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      .xm-panel {
+        margin-top: 1.4rem;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .xm-panel summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem 0.9rem;
+        padding: 0.9rem 1rem;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .xm-panel summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .xm-panel summary::before {
+        content: "▶";
+        margin-right: 0.2rem;
+        color: var(--accent);
+        font-size: 0.7rem;
+      }
+
+      .xm-panel[open] summary::before {
+        content: "▼";
+      }
+
+      .panel-count {
+        display: flex;
+        align-items: baseline;
+        gap: 0.3rem;
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 0.7rem;
+      }
+
+      .panel-count strong {
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        font-weight: 400;
+        color: var(--accent-soft);
+      }
+
+      .panel-body {
+        padding: 0 1rem 1rem;
+      }
+
+      .panel-hint {
+        margin: 0 0 0.75rem;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding: 0.1rem 0 0.85rem;
+      }
+
+      .filter-button {
+        flex: 0 0 auto;
+        padding: 0.45rem 0.55rem;
+        border: 2px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.4rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .filter-button:hover {
+        filter: brightness(1.15);
+      }
+
+      .filter-button[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      .album-progress {
+        height: 0.75rem;
+        margin-bottom: 0.85rem;
+        overflow: hidden;
+        border: 2px solid var(--ink);
+        background: #120a2a;
+      }
+
+      .album-progress span {
+        display: block;
+        width: 0;
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-soft), var(--green));
+        transition: width 0.3s steps(6);
+      }
+
+      .ornament-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+        gap: 0.55rem;
+      }
+
+      .ornament-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        padding: 0.55rem;
+        border: 3px solid var(--border);
+        background: #1b1238;
+        color: var(--muted);
+      }
+
+      .ornament-card.owned {
+        border-color: var(--green);
+        background: linear-gradient(180deg, #1d3b31, #16281f);
+        color: var(--text);
+      }
+
+      .ornament-card.rarity-rare {
+        border-color: #2a5c9e;
+      }
+
+      .ornament-card.rarity-epic {
+        border-color: #7c3aed;
+      }
+
+      .ornament-card.rarity-legendary {
+        border-color: #b8860b;
+      }
+
+      .ornament-card.rarity-legendary.owned {
+        box-shadow: 0 0 0 2px rgba(255, 217, 61, 0.4);
+      }
+
+      .ornament-card-head {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .ornament-icon {
+        font-size: 1.5rem;
+        line-height: 1;
+        filter: grayscale(0.8) brightness(0.7);
+      }
+
+      .ornament-card.owned .ornament-icon {
+        filter: none;
+      }
+
+      .ornament-name {
+        margin: 0;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.25;
+        overflow-wrap: break-word;
+      }
+
+      .ornament-meta {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.63rem;
+        line-height: 1.4;
+      }
+
+      .ornament-rarity {
+        color: var(--accent-soft);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .ornament-card-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: auto;
+        padding-top: 0.3rem;
+      }
+
+      .buy-button {
+        flex: 1;
+        padding: 0.45rem 0.5rem;
+        border: 2px solid var(--ink);
+        border-radius: 0;
+        background: var(--accent-soft);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.4rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .buy-button:hover:not(:disabled) {
+        filter: brightness(1.1);
+      }
+
+      .buy-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+        background: var(--panel-soft);
+        color: var(--text);
+      }
+
+      .owned-tag {
+        flex: 1;
+        color: var(--green);
+        font-family: var(--font-pixel);
+        font-size: 0.4rem;
+        line-height: 1.8;
+        text-align: center;
+      }
+
+      .ornament-card.album {
+        padding: 0.5rem;
+        min-height: 6.6rem;
+      }
+
+      .ornament-card.album .ornament-icon {
+        font-size: 1.9rem;
+      }
+
+      .album-empty {
+        margin: 0.6rem 0;
+        padding: 0.9rem;
+        border: 2px dashed var(--border);
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-align: center;
+      }
+
+      .how-list {
+        margin: 0;
+        padding-left: 1.2rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.65;
+      }
+
+      .how-list li {
+        margin-bottom: 0.45rem;
+      }
+
+      .how-list strong {
+        color: var(--text);
+      }
+
+      .back-link {
+        display: block;
+        width: fit-content;
+        margin: 1.5rem auto 0;
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      /* ------------------------------------------------------------ shop */
+      .xm-dialog {
+        width: min(94vw, 56rem);
+        max-height: 92vh;
+        margin: auto;
+        padding: 0;
+        overflow: hidden;
+        border: 4px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 10px 10px 0 var(--ink);
+      }
+
+      .xm-dialog::backdrop {
+        background: rgba(5, 2, 12, 0.82);
+        backdrop-filter: blur(3px);
+      }
+
+      .dialog-head {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.6rem 1rem;
+        padding: 0.85rem 1rem;
+        background: var(--panel);
+        border-bottom: 3px solid var(--ink);
+      }
+
+      .dialog-head h2 {
+        margin: 0;
+        font-family: var(--font-pixel);
+        font-size: 0.66rem;
+        line-height: 1.6;
+        color: var(--accent-soft);
+      }
+
+      .dialog-coins {
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        color: var(--text);
+      }
+
+      .dialog-close {
+        margin-left: auto;
+        padding: 0.5rem 0.65rem;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .dialog-close:hover {
+        background: #46318c;
+      }
+
+      .dialog-body {
+        max-height: calc(92vh - 4.7rem);
+        overflow-y: auto;
+        padding: 1rem;
+      }
+
+      .shop-note {
+        margin: 0 0 0.75rem;
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .shop-note-flash {
+        padding: 0.55rem 0.65rem;
+        border-left: 5px solid var(--accent-soft);
+        background: var(--panel-soft);
+        color: var(--text);
+      }
+
+      /* --------------------------------------------------------- results */
+      .results-dialog {
+        width: min(94vw, 42rem);
+        max-height: 94vh;
+        margin: auto;
+        padding: 0;
+        overflow: hidden;
+        border: 4px solid #1a1310;
+        border-radius: 0;
+        background: #f7eed6;
+        color: #241a12;
+        box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.55);
+      }
+
+      .results-dialog::backdrop {
+        background: rgba(5, 2, 12, 0.85);
+        backdrop-filter: blur(2px);
+      }
+
+      .paper {
+        max-height: 92vh;
+        overflow-y: auto;
+        padding: 1rem 1.1rem 1.2rem;
+        background-image: radial-gradient(rgba(120, 90, 50, 0.12) 1px, transparent 1px);
+        background-size: 5px 5px;
+      }
+
+      .paper-topline {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
+        border-bottom: 2px solid #241a12;
+        padding-bottom: 0.3rem;
+        font-family: var(--font-pixel);
+        font-size: 0.4rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .paper-masthead {
+        margin: 0.5rem 0 0.1rem;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(1.5rem, 6vw, 2.5rem);
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        text-align: center;
+      }
+
+      .paper-rule {
+        height: 4px;
+        margin: 0.3rem 0 0.55rem;
+        background: repeating-linear-gradient(90deg, #241a12 0 18px, transparent 18px 22px);
+      }
+
+      .paper-headline {
+        margin: 0.2rem 0 0.3rem;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(1.15rem, 4.6vw, 1.8rem);
+        font-weight: 900;
+        line-height: 1.15;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .paper-deck {
+        margin: 0 0 0.7rem;
+        font-family: Georgia, "Times New Roman", serif;
+        font-style: italic;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        text-align: center;
+      }
+
+      .paper-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 0.9rem;
+        align-items: start;
+      }
+
+      .paper-copy {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        column-count: 2;
+        column-gap: 0.8rem;
+      }
+
+      .paper-copy::first-letter {
+        float: left;
+        padding-right: 0.2rem;
+        font-size: 2.4rem;
+        font-weight: 900;
+        line-height: 0.8;
+      }
+
+      .payout-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+      }
+
+      .payout-table caption {
+        padding-bottom: 0.3rem;
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        letter-spacing: 0.06em;
+        text-align: left;
+        text-transform: uppercase;
+      }
+
+      .payout-table th,
+      .payout-table td {
+        padding: 0.3rem 0;
+        border-bottom: 1px dashed rgba(36, 26, 18, 0.4);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .payout-table th {
+        font-weight: 700;
+      }
+
+      .payout-table td {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .payout-total {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
+        margin-top: 0.55rem;
+        padding-top: 0.5rem;
+        border-top: 3px solid #241a12;
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        line-height: 1.6;
+      }
+
+      .payout-total strong {
+        font-size: 0.8rem;
+        color: #7a1f2b;
+      }
+
+      .paper-note {
+        margin: 0.8rem 0 0;
+        padding-top: 0.55rem;
+        border-top: 1px solid rgba(36, 26, 18, 0.35);
+        font-family: var(--font-pixel);
+        font-size: 0.4rem;
+        line-height: 1.7;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .results-button {
+        display: block;
+        width: 100%;
+        margin-top: 0.9rem;
+        padding: 0.85rem 1rem;
+        border: 3px solid #241a12;
+        background: #241a12;
+        color: #f7eed6;
+        font-family: var(--font-pixel);
+        font-size: clamp(0.5rem, 1.8vw, 0.64rem);
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 rgba(120, 90, 50, 0.45);
+      }
+
+      .results-button:hover {
+        background: #3a2a1c;
+      }
+
+      /* -------------------------------------------------------- fullscreen */
+      .xm-game:fullscreen {
+        max-width: none;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        background: #080d24;
+      }
+
+      .xm-game:fullscreen .xm-hud {
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        box-shadow: none;
+      }
+
+      .xm-game:fullscreen #game-container {
+        flex: 1 1 auto;
+        height: auto;
+        min-height: 0;
+        border-left: none;
+        border-right: none;
+        box-shadow: none;
+      }
+
+      .xm-game:fullscreen .tray-panel,
+      .xm-game:fullscreen .xm-panel,
+      .xm-game:fullscreen .back-link {
+        display: none;
+      }
+
+      .xm-game:fullscreen .launch-bar {
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        box-shadow: none;
+      }
+
+      @media (max-width: 700px) {
+        .xm-message {
+          order: 4;
+          flex-basis: 100%;
+        }
+
+        .hud-actions {
+          margin-left: 0;
+        }
+
+        .hud-actions .ghost-button {
+          flex: 1 1 auto;
+        }
+
+        #game-container {
+          height: clamp(360px, 58vh, 560px);
+        }
+
+        .launch-button {
+          flex: 1 1 100%;
+        }
+
+        .paper-body {
+          grid-template-columns: 1fr;
+        }
+
+        .paper-copy {
+          column-count: 1;
+        }
+
+        .ornament-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        }
+      }
+
+      @media (max-width: 420px) {
+        .xm-hud,
+        .launch-bar,
+        .tray-head,
+        .dialog-body {
+          padding-left: 0.7rem;
+          padding-right: 0.7rem;
+        }
+
+        .hud-stat {
+          min-width: 3.6rem;
+        }
+
+        .hud-stat strong {
+          font-size: 0.6rem;
+        }
+
+        .ornament-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .tray-item {
+          width: 5.4rem;
+        }
+
+        .paper {
+          padding: 0.8rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .launch-overlay,
+        .album-progress span {
+          transition-duration: 0.01ms;
+        }
+
+        .launch-button.armed {
+          animation: none;
+          background: var(--accent-soft);
+        }
+      }
+
+      /* ------------------------------------------------ one-frame cabinet */
+      body.xm-app {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      body.xm-app .site-header {
+        position: static;
+        flex: 0 0 auto;
+      }
+
+      body.xm-app main {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      body.xm-app .xm-game {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        margin: 0;
+        padding: 0.7rem 1rem 0.9rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+      }
+
+      body.xm-app .xm-hud {
+        flex: 0 0 auto;
+        gap: 0.55rem 1rem;
+        padding: 0.65rem 0.9rem;
+        box-shadow: 5px 0 0 var(--ink);
+      }
+
+      .xm-shop-toggle {
+        display: none;
+      }
+
+      .xm-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 380px);
+        gap: 0.75rem;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      .xm-stage {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        min-height: 0;
+      }
+
+      .xm-stage #game-container {
+        flex: 1 1 auto;
+        height: auto;
+        min-height: 0;
+      }
+
+      .xm-stage .launch-bar {
+        flex: 0 0 auto;
+        padding: 0.65rem 0.9rem;
+      }
+
+      .xm-stage .tray-panel {
+        flex: 0 0 auto;
+        margin-top: 0;
+      }
+
+      .xm-stage .tray-head {
+        padding: 0.55rem 0.9rem;
+      }
+
+      .xm-stage .tray-hint {
+        padding: 0 0.9rem 0.45rem;
+        font-size: 0.78rem;
+      }
+
+      .xm-stage .tray-list {
+        padding: 0.1rem 0.9rem 0.75rem;
+      }
+
+      .xm-stage .tray-item {
+        width: 5.6rem;
+        min-height: 5rem;
+        padding: 0.35rem 0.3rem;
+      }
+
+      .xm-stage .tray-icon {
+        font-size: 1.45rem;
+      }
+
+      /* ------------------------------------------------------- shop rail */
+      .xm-rail {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--panel);
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .rail-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem 0.5rem;
+        flex: 0 0 auto;
+        padding: 0.55rem 0.65rem;
+        border-bottom: 3px solid var(--ink);
+        background: var(--panel-soft);
+      }
+
+      .rail-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+      }
+
+      .rail-tab {
+        padding: 0.45rem 0.55rem;
+        border: 3px solid var(--ink);
+        border-radius: 0;
+        background: var(--panel);
+        color: var(--muted);
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        line-height: 1.5;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .rail-tab:hover {
+        filter: brightness(1.12);
+      }
+
+      .rail-tab[aria-selected="true"] {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      .rail-coins {
+        margin-left: auto;
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        line-height: 1.5;
+        white-space: nowrap;
+      }
+
+      .rail-close {
+        display: none;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 3px solid var(--ink);
+        background: var(--panel);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.6rem;
+        cursor: pointer;
+      }
+
+      .rail-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 0.65rem 0.7rem 0.75rem;
+      }
+
+      .rail-panel[hidden] {
+        display: none;
+      }
+
+      .rail-panel .shop-note {
+        margin: 0;
+        font-size: 0.74rem;
+        line-height: 1.4;
+      }
+
+      .rail-panel .shop-note-flash {
+        padding: 0.45rem 0.5rem;
+      }
+
+      .rail-panel .filter-row {
+        flex: 0 0 auto;
+        gap: 0.3rem;
+        padding: 0;
+      }
+
+      .rail-panel .filter-button {
+        padding: 0.38rem 0.45rem;
+        font-size: 0.36rem;
+        line-height: 1.5;
+      }
+
+      .rail-panel .ornament-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+      }
+
+      .rail-panel .ornament-card {
+        gap: 0.15rem;
+        padding: 0.45rem;
+      }
+
+      .rail-panel .ornament-icon {
+        font-size: 1.25rem;
+      }
+
+      .rail-panel .ornament-name {
+        font-size: 0.72rem;
+      }
+
+      .rail-panel .ornament-meta {
+        font-size: 0.58rem;
+        line-height: 1.3;
+      }
+
+      .rail-panel .ornament-card-actions {
+        gap: 0.25rem;
+        padding-top: 0.2rem;
+      }
+
+      .rail-panel .buy-button {
+        padding: 0.38rem 0.3rem;
+        font-size: 0.36rem;
+      }
+
+      .rail-panel .owned-tag {
+        font-size: 0.5rem;
+      }
+
+      .rail-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        padding-right: 0.2rem;
+      }
+
+      .rail-summary {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex: 0 0 auto;
+      }
+
+      .rail-summary .panel-count {
+        margin-left: 0;
+        font-size: 0.6rem;
+      }
+
+      .rail-panel .album-progress {
+        flex: 0 0 auto;
+        margin-bottom: 0;
+      }
+
+      .rail-help {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: var(--text);
+        font-size: 0.8rem;
+        line-height: 1.45;
+      }
+
+      .rail-help li {
+        margin-bottom: 0.55rem;
+      }
+
+      .rail-help li:last-child {
+        margin-bottom: 0;
+      }
+
+      @media (max-width: 1040px) {
+        .xm-shop-toggle {
+          display: inline-block;
+        }
+
+        .xm-body {
+          position: relative;
+          display: block;
+        }
+
+        .xm-stage {
+          height: 100%;
+        }
+
+        .xm-rail {
+          display: none;
+          position: absolute;
+          inset: 0;
+          z-index: 6;
+          box-shadow: none;
+        }
+
+        .xm-rail.is-open {
+          display: flex;
+        }
+
+        .rail-close {
+          display: block;
+        }
+
+        .rail-tab {
+          flex: 1 1 auto;
+        }
+      }
+
+      @media (max-width: 700px) {
+        body.xm-app .xm-game {
+          gap: 0.55rem;
+          padding: 0.55rem 0.65rem 0.7rem;
+        }
+
+        body.xm-app .xm-hud {
+          gap: 0.4rem 0.7rem;
+          padding: 0.55rem 0.65rem;
+        }
+
+        .xm-stage {
+          gap: 0.55rem;
+        }
+
+        .xm-stage .tray-hint {
+          display: none;
+        }
+
+        .xm-stage .tray-head {
+          padding: 0.45rem 0.7rem;
+        }
+
+        .xm-stage .tray-list {
+          padding: 0.1rem 0.7rem 0.55rem;
+        }
+
+        .xm-stage .tray-item {
+          width: 5.1rem;
+          min-height: 4.5rem;
+        }
+
+        .xm-stage .tray-icon {
+          font-size: 1.3rem;
+        }
+
+        .xm-stage .tray-rarity {
+          font-size: 0.5rem;
+        }
+
+        .xm-stage .launch-bar {
+          justify-content: stretch;
+          padding: 0.55rem 0.7rem;
+        }
+
+        .xm-stage .launch-summary {
+          display: none;
+        }
+
+        .xm-stage .launch-button {
+          min-height: 3.3rem;
+        }
+
+        .rail-head {
+          padding: 0.4rem 0.5rem;
+        }
+
+        .rail-panel {
+          padding: 0.55rem 0.55rem 0.65rem;
+        }
+
+        .rail-panel .ornament-grid {
+          gap: 0.4rem;
+        }
+      }
+
+      @media (max-height: 760px) {
+        .xm-stage .tray-hint {
+          display: none;
+        }
+
+        body.xm-app .xm-hud {
+          padding: 0.5rem 0.75rem;
+        }
+
+        .xm-stage .launch-summary {
+          font-size: 0.78rem;
+        }
+
+        .xm-stage .tray-item {
+          min-height: 4.4rem;
+        }
+      }
+
+      .xm-game:fullscreen .xm-body {
+        flex: 1 1 auto;
+      }
+
+      .xm-game:fullscreen .tray-panel {
+        display: flex;
+      }
+
+      .xm-game:fullscreen .xm-rail {
+        border-right: none;
+        border-bottom: none;
+        box-shadow: none;
+      }
+    </style>
+  </head>
+  <body class="xm-app">
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <h1 class="sr-only">Christmas Trees and Missals</h1>
+
+      <section class="xm-game" id="xm-game" aria-label="Christmas Trees and Missals">
+        <div class="xm-hud">
+          <div class="hud-stat">
+            <span class="stat-label">Coins</span>
+            <strong id="coin-count">120</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Ornaments</span>
+            <strong id="ornament-count">0 / 180</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Hanging</span>
+            <strong id="hung-count">0 / 40</strong>
+          </div>
+          <div class="hud-stat">
+            <span class="stat-label">Launches</span>
+            <strong id="launch-count">0</strong>
+          </div>
+          <p class="xm-message" id="message" role="status" aria-live="polite">
+            Buy an ornament, then tap the tree to hang it!
+          </p>
+          <div class="hud-actions">
+            <button
+              class="ghost-button xm-shop-toggle"
+              id="shop-button"
+              type="button"
+              aria-controls="shop-panel"
+              aria-expanded="false"
+            >
+              🛍️ Shop &amp; Album
+            </button>
+            <button
+              class="icon-button"
+              id="fullscreen-button"
+              type="button"
+              aria-label="Play in full screen"
+              aria-pressed="false"
+            >
+              ⛶
+            </button>
+            <button
+              class="icon-button"
+              id="mute-button"
+              type="button"
+              aria-label="Mute music and sounds"
+              aria-pressed="false"
+            >
+              🔊
+            </button>
+          </div>
+        </div>
+
+        <div class="xm-body">
+          <div class="xm-stage">
+            <div
+              id="game-container"
+          tabindex="0"
+          role="application"
+          aria-label="3D Christmas town. Drag to look around, tap a glowing branch spot to hang the selected ornament, or tap a hung ornament to take it down."
+        >
+          <div class="launch-overlay" id="launch-overlay" aria-hidden="true">
+            <span class="countdown-kicker">ROCKET TREE LAUNCH</span>
+            <strong class="countdown-value" id="countdown-value">3</strong>
+            <p class="countdown-sub" id="countdown-sub">Hold on to your baubles…</p>
+            <button class="skip-button" id="skip-button" type="button">Skip cutscene ⏭</button>
+          </div>
+        </div>
+
+        <div class="launch-bar">
+          <p class="launch-summary" id="launch-summary">
+            Nothing is hanging on the tree yet. Buy an ornament and tap a branch spot.
+          </p>
+          <button class="launch-button" id="launch-button" type="button" disabled>
+            🚀 LAUNCH THE TREE
+          </button>
+        </div>
+
+        <section class="tray-panel" aria-label="Your ornaments">
+          <div class="tray-head">
+            <h2 class="panel-title">Your Ornaments</h2>
+            <span class="tray-count" id="tray-count">0 ready to hang</span>
+            <button class="ghost-button" id="remove-all-button" type="button" disabled>
+              Take them all down
+            </button>
+          </div>
+          <p class="tray-hint" id="tray-hint">
+            Tap an ornament to pick it up, then tap a glowing spot on the tree. Tap a hung
+            ornament to put it back.
+          </p>
+          <div class="tray-list" id="tray-list" role="group" aria-label="Ornaments ready to hang"></div>
+          <p class="tray-empty" id="tray-empty">Every ornament you own is already on the tree!</p>
+        </section>
+          </div>
+
+          <aside class="xm-rail" id="shop-panel" aria-label="Ornament shop, album and help">
+            <div class="rail-head">
+              <div class="rail-tabs" role="tablist" aria-label="Ornament panels">
+                <button
+                  class="rail-tab"
+                  id="tab-shop"
+                  type="button"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="panel-shop"
+                >
+                  🛍️ Shop
+                </button>
+                <button
+                  class="rail-tab"
+                  id="tab-album"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="panel-album"
+                >
+                  🖼️ Album
+                </button>
+                <button
+                  class="rail-tab"
+                  id="tab-help"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="panel-help"
+                >
+                  ❓ Help
+                </button>
+              </div>
+              <span class="rail-coins" id="shop-coins">120 coins</span>
+              <button class="rail-close" id="shop-close" type="button" aria-label="Close the shop">✕</button>
+            </div>
+
+            <div class="rail-panel" id="panel-shop" role="tabpanel" aria-labelledby="tab-shop">
+              <p class="shop-note">
+                Buy once, own forever. Better ornaments make a more valuable tree — and bigger
+                launch payouts.
+              </p>
+              <div class="filter-row" id="shop-filters" role="group" aria-label="Filter shop by holiday"></div>
+              <div class="rail-scroll">
+                <div class="ornament-grid" id="shop-grid" role="list"></div>
+                <p class="album-empty" id="shop-empty" hidden>Nothing here yet.</p>
+              </div>
+            </div>
+
+            <div class="rail-panel" id="panel-album" role="tabpanel" aria-labelledby="tab-album" hidden>
+              <div class="rail-summary">
+                <span class="panel-title">🖼️ Ornament Album</span>
+                <span class="panel-count"><strong id="album-count">0 / 180</strong> collected</span>
+              </div>
+              <div class="album-progress" aria-hidden="true"><span id="album-progress-fill"></span></div>
+              <div class="filter-row" id="album-filters" role="group" aria-label="Filter ornament album"></div>
+              <div class="rail-scroll">
+                <div class="ornament-grid" id="album-grid" role="list"></div>
+                <p class="album-empty" id="album-empty" hidden>No ornaments in this holiday yet.</p>
+              </div>
+            </div>
+
+            <div class="rail-panel" id="panel-help" role="tabpanel" aria-labelledby="tab-help" hidden>
+              <div class="rail-scroll">
+                <p class="panel-hint">
+                  Decorate the town tree with ornaments from every holiday, then launch it for
+                  coins. Every ornament comes back, and nobody gets hurt.
+                </p>
+                <ol class="how-list rail-help">
+                  <li><strong>Buy ornaments</strong> in the shop. Every holiday has common, rare, epic and legendary pieces.</li>
+                  <li><strong>Hang them on the tree.</strong> Pick one from your tray, then tap a glowing spot. The tree has 40 spots.</li>
+                  <li><strong>Launch the tree.</strong> It blasts off, flattens a random town landmark and explodes into confetti. Nobody is inside.</li>
+                  <li><strong>Collect your pay.</strong> Better ornaments and more holidays on the tree pay more coins. Every single ornament comes back.</li>
+                  <li><strong>Do it again.</strong> Buy fancier ornaments, fill the album, and see how much chaos one tree can fund.</li>
+                </ol>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="results-dialog" id="results-dialog" aria-labelledby="paper-headline">
+      <div class="paper">
+        <div class="paper-topline">
+          <span>Extra! Extra!</span>
+          <span id="paper-date">The Christmas Missal</span>
+          <span>Free</span>
+        </div>
+        <h2 class="paper-masthead" id="paper-masthead">The Christmas Missal</h2>
+        <div class="paper-rule"></div>
+        <h3 class="paper-headline" id="paper-headline">Tree flattens gingerbread row</h3>
+        <p class="paper-deck" id="paper-deck">
+          Ornaments recovered. No one hurt. Baker offers free cookies.
+        </p>
+        <div class="paper-body">
+          <p class="paper-copy" id="paper-copy">
+            The town tree left its square this afternoon and landed with considerable enthusiasm
+            on a local landmark. Officials described the damage as “mostly crumbs.” All ornaments
+            were returned to their owner, who immediately began hanging them again.
+          </p>
+          <div>
+            <table class="payout-table" aria-label="Launch payout">
+              <caption>Launch earnings</caption>
+              <tbody id="payout-lines"></tbody>
+            </table>
+            <div class="payout-total">
+              <span>Total haul</span>
+              <strong id="payout-total">0 coins</strong>
+            </div>
+          </div>
+        </div>
+        <p class="paper-note" id="paper-note">
+          All 0 ornaments recovered • 0 roads blocked • 1 tree slightly singed
+        </p>
+        <button class="results-button" id="results-close" type="button">
+          Collect ornaments & keep decorating
+        </button>
+      </div>
+    </dialog>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

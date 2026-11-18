@@ -3,6 +3,12 @@ import { getLatest, getScores } from './utils/scores.js';
 
 const container = document.querySelector('#scoreboards');
 
+/** Empty-state hints for games that track a collection. */
+const COLLECTION_HINTS = {
+  plushies: 'Nothing caught yet — play to start filling your Plushie Dex.',
+  ornaments: 'Nothing collected yet — play to start filling your ornament album.',
+};
+
 const formatDate = (at) => {
   if (!at) return '';
   try {
@@ -48,7 +54,9 @@ const renderProgress = (game, collected) => {
   if (collected === 0) {
     const hint = document.createElement('p');
     hint.className = 'scoreboard-empty';
-    hint.textContent = `Nothing caught yet — play to start filling your Plushie Dex.`;
+    hint.textContent =
+      COLLECTION_HINTS[unit] ||
+      `Nothing collected yet — play to start filling your ${unit} collection.`;
     wrap.append(hint);
   }
 

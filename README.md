@@ -44,6 +44,14 @@ src/
     ball-pit/       # Ball Pit Bonanza three.js game
       index.html
       game.js
+    christmas-trees-and-missals/  # Christmas Trees and Missals three.js game
+      index.html
+      game.js
+      ornaments.js
+      ornament-models.js
+      town.js
+      cutscene.js
+      sound.js
   components/
   pages/
   data/
@@ -66,7 +74,7 @@ Then open `http://localhost:8080`.
 
 1. Create a folder under `src/games/<game-name>/`.
 2. Add an `index.html` that loads three.js (via the esm.sh import map) and your game script.
-3. Add an entry to the `games` array in `src/main.js` with the game's `id`, `title`, `description`, and `path`.
+3. Add an entry to the `games` array in `src/data/games.js` with the game's `id`, `title`, `description`, `image`, and `path`.
 4. Link to the game from `games.html` (handled automatically by `src/main.js`).
 
 ## GitHub Pages Deployment
