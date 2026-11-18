@@ -1966,7 +1966,11 @@ window.addEventListener('keydown', (event) => {
   }
 
   if (event.key === 'Escape') {
-    cancelPlacement();
+    if (state.selected) {
+      cancelPlacement();
+      return;
+    }
+    autoPause.toggle();
     return;
   }
 
@@ -2090,6 +2094,8 @@ const autoPause = createAutoPause({
   container,
   audio,
   muteButton,
+  button: document.querySelector('#pause-button'),
+  keys: ['KeyP'],
   shouldPause: () => state.phase === 'play',
   message: 'Show paused',
 });
@@ -2098,6 +2104,7 @@ function tick() {
   window.requestAnimationFrame(tick);
 
   const dt = Math.min(0.05, clock.getDelta());
+  autoPause.sync();
   if (autoPause.paused) return;
   elapsed += dt;
 

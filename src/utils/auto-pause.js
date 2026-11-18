@@ -1,8 +1,7 @@
 /* ------------------------------------------------------------------ *
- * Auto-pause for timed games
- * When the tab goes away, a race or a wave should not carry on without
- * the player. The game freezes, a small overlay explains why, and the
- * soundtrack is ducked (unless the player had already muted the game).
+ * Pause for timed games
+ * Freezes a round when the tab goes away, and gives players a pause
+ * button plus P / Escape while they are playing.
  * ------------------------------------------------------------------ */
 
 const STYLE_ID = 'foofire-auto-pause-style';
@@ -57,6 +56,11 @@ const CSS = `
   font-size: 0.82rem;
   color: #bcacf0;
 }
+
+.foofire-pause-btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
 `;
 
 function ensureStyle() {
@@ -68,13 +72,16 @@ function ensureStyle() {
 }
 
 /**
- * Watch page visibility and freeze a game while it is hidden.
+ * Watch page visibility and freeze a game while it is hidden, and let the
+ * player pause on demand with a button or the P / Escape keys.
  *
  * @param {object} options
  * @param {HTMLElement} options.container  What the overlay covers.
- * @param {() => boolean} [options.shouldPause]  Pause only while a round is live.
+ * @param {() => boolean} [options.shouldPause]  Only pause while a round is live.
  * @param {object} [options.audio]  Object with isMuted/setMuted, for ducking.
  * @param {HTMLElement} [options.muteButton]  Read to respect a mute clicked while paused.
+ * @param {HTMLElement} [options.button]  Pause/resume button to drive.
+ * @param {string[]} [options.keys]  KeyboardEvent.code values that toggle pause.
  * @param {string} [options.message]  Overlay headline.
  */
 export function createAutoPause({
@@ -82,13 +89,19 @@ export function createAutoPause({
   shouldPause,
   audio,
   muteButton,
+  button,
+  keys = ['KeyP', 'Escape'],
   onPause,
   onResume,
   message = 'Paused',
 } = {}) {
   let paused = false;
+  let manual = false;
   let overlay = null;
+  let titleEl = null;
+  let noteEl = null;
   let ducked = false;
+  let lastButtonKey = '';
 
   const ensureOverlay = () => {
     if (overlay || !container) return;
@@ -108,16 +121,46 @@ export function createAutoPause({
     badge.className = 'foofire-pause-badge';
     badge.textContent = '❚❚';
 
-    const title = document.createElement('strong');
-    title.textContent = message;
+    titleEl = document.createElement('strong');
+    titleEl.textContent = message;
 
-    const note = document.createElement('span');
-    note.className = 'foofire-pause-note';
-    note.textContent = 'Come back when you are ready — the game is waiting.';
+    noteEl = document.createElement('span');
+    noteEl.className = 'foofire-pause-note';
 
-    card.append(badge, title, note);
+    card.append(badge, titleEl, noteEl);
     overlay.append(card);
     container.append(overlay);
+  };
+
+  const updateCopy = () => {
+    if (!titleEl) return;
+    titleEl.textContent = message;
+    noteEl.textContent = manual
+      ? 'Press P or Escape, or the pause button, to keep playing.'
+      : 'Come back when you are ready — the game is waiting.';
+  };
+
+  /* A game can call this before its round state exists; treat that as not live. */
+  const isLive = () => {
+    if (!shouldPause) return true;
+    try {
+      return Boolean(shouldPause());
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const syncButton = () => {
+    if (!button) return;
+    const live = isLive();
+    const key = `${live}|${paused}`;
+    if (key === lastButtonKey) return;
+    lastButtonKey = key;
+
+    button.disabled = !live && !paused;
+    button.textContent = paused ? '▶' : '❚❚';
+    button.setAttribute('aria-pressed', String(paused));
+    button.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
   };
 
   const duck = (on) => {
@@ -133,23 +176,55 @@ export function createAutoPause({
     ducked = false;
   };
 
-  const setPaused = (next) => {
+  const setPaused = (next, byPlayer = false) => {
     if (next === paused) return;
-    if (next && shouldPause && !shouldPause()) return;
+    if (next && !isLive()) return;
 
     paused = next;
+    manual = next && byPlayer;
     ensureOverlay();
+    updateCopy();
     if (overlay) {
       overlay.classList.toggle('is-visible', paused);
       overlay.setAttribute('aria-hidden', String(!paused));
     }
     duck(paused);
+    syncButton();
     if (paused) onPause?.();
     else onResume?.();
   };
 
-  const onVisibility = () => setPaused(Boolean(document.hidden));
+  const toggle = () => {
+    if (paused) setPaused(false);
+    else setPaused(true, true);
+  };
+
+  /* Auto-pause only owns the state while the player has not paused manually. */
+  const onVisibility = () => {
+    if (manual) return;
+    setPaused(Boolean(document.hidden));
+  };
   document.addEventListener('visibilitychange', onVisibility);
+
+  if (button) {
+    button.addEventListener('click', toggle);
+    syncButton();
+  }
+
+  const onKeyDown = (event) => {
+    if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (!keys.includes(event.code)) return;
+
+    const target = event.target;
+    const tag = target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
+      return;
+    }
+
+    event.preventDefault();
+    toggle();
+  };
+  window.addEventListener('keydown', onKeyDown);
 
   return {
     get paused() {
@@ -157,5 +232,8 @@ export function createAutoPause({
     },
     /** Re-check after a round starts or ends while the tab is hidden. */
     refresh: onVisibility,
+    /** Keep the pause button in step with the round state. */
+    sync: syncButton,
+    toggle,
   };
 }

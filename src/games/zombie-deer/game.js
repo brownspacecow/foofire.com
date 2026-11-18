@@ -98,15 +98,6 @@ muteButton.addEventListener('click', () => {
   if (!audio.isMuted()) audio.uiClick();
 });
 
-/* Timed waves freeze when the tab goes away. */
-const autoPause = createAutoPause({
-  container,
-  audio,
-  muteButton,
-  shouldPause: () => state.phase === 'wave' || state.phase === 'break',
-  message: 'Snowball fight paused',
-});
-
 /* ------------------------------------------------------------------ *
  * Helpers
  * ------------------------------------------------------------------ */
@@ -4034,6 +4025,7 @@ function animate(now) {
   lastTime = now;
   const time = now / 1000;
 
+  autoPause.sync();
   if (autoPause.paused) {
     renderer.render(scene, camera);
     return;
@@ -4065,6 +4057,16 @@ if (gameTip && window.matchMedia && window.matchMedia('(pointer: coarse)').match
   gameTip.textContent =
     'Tap a reindeer to throw a snowball. Tap the front door for Bear, the chimney for Santa, or the moon for the little red motorcycles. Hit the tree star three times and Dad comes out with his disc golf bag.';
 }
+
+/* Timed waves freeze when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  button: document.querySelector('#pause-button'),
+  shouldPause: () => state.phase === 'wave' || state.phase === 'break',
+  message: 'Snowball fight paused',
+});
 
 window.addEventListener('resize', sizeScene);
 sizeScene();

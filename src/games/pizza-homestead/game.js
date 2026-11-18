@@ -2715,6 +2715,7 @@ const autoPause = createAutoPause({
   container,
   audio,
   muteButton,
+  button: document.querySelector('#pause-button'),
   shouldPause: () => state.phase === 'play',
   message: 'Buffet paused',
 });
@@ -2722,6 +2723,7 @@ const autoPause = createAutoPause({
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
+  autoPause.sync();
   if (autoPause.paused) return;
   state.time += dt;
   updateRound(dt);

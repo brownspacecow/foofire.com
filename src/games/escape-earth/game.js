@@ -115,15 +115,6 @@ muteButton.addEventListener('click', () => {
   if (!audio.isMuted()) audio.blip(660);
 });
 
-/* A level freezes when the tab goes away. */
-const autoPause = createAutoPause({
-  container,
-  audio,
-  muteButton,
-  shouldPause: () => state === 'playing',
-  message: 'Level paused',
-});
-
 /* ------------------------------------------------------------------ *
  * Full screen
  * ------------------------------------------------------------------ */
@@ -485,6 +476,7 @@ const frame = (now) => {
   const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000));
   lastTime = now;
 
+  autoPause.sync();
   if (autoPause.paused) {
     requestAnimationFrame(frame);
     return;
@@ -515,6 +507,16 @@ try {
 } catch (error) {
   bestEl.textContent = '0';
 }
+
+/* A level freezes when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  button: document.querySelector('#pause-button'),
+  shouldPause: () => state === 'playing',
+  message: 'Level paused',
+});
 
 showIntro();
 requestAnimationFrame(frame);

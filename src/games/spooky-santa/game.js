@@ -92,6 +92,7 @@ const autoPause = createAutoPause({
   container,
   audio,
   muteButton,
+  button: document.querySelector('#pause-button'),
   shouldPause: () => container.classList.contains('playing'),
   message: 'Delivery paused',
 });
@@ -2516,6 +2517,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
 
+  autoPause.sync();
   if (autoPause.paused) {
     requestAnimationFrame(frame);
     return;

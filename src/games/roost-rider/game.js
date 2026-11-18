@@ -1150,6 +1150,7 @@ const autoPause = createAutoPause({
   container,
   audio,
   muteButton: els.muteButton,
+  button: document.querySelector('#pause-button'),
   shouldPause: () => state.phase === 'racing' || state.phase === 'countdown',
   onPause: () => audio.update({ speed: 0, throttle: 0, boosting: false, active: false }),
   message: 'Race paused',
@@ -1159,6 +1160,7 @@ function animate() {
   requestAnimationFrame(animate);
 
   const dt = Math.min(clock.getDelta(), 0.05);
+  autoPause.sync();
   if (autoPause.paused) return;
   state.now += dt;
 
