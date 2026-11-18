@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
 import { createAudio } from './audio.js';
 import {
   TRACK_HALF,
@@ -1101,14 +1103,19 @@ function bindEvents() {
   });
 }
 
-let muted = false;
+let muted = readMuted();
+
+function refreshMuteButton() {
+  els.muteButton.textContent = muted ? '🔇' : '🔊';
+  els.muteButton.setAttribute('aria-pressed', String(muted));
+  els.muteButton.setAttribute('aria-label', muted ? 'Unmute sounds' : 'Mute sounds');
+}
 
 function toggleMute() {
   muted = !muted;
   audio.setMuted(muted);
-  els.muteButton.textContent = muted ? '🔇' : '🔊';
-  els.muteButton.setAttribute('aria-pressed', String(muted));
-  els.muteButton.setAttribute('aria-label', muted ? 'Unmute sounds' : 'Mute sounds');
+  writeMuted(muted);
+  refreshMuteButton();
   if (!muted) audio.unlock();
 }
 
@@ -1139,10 +1146,20 @@ function resize() {
 
 const clock = new THREE.Clock();
 
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton: els.muteButton,
+  shouldPause: () => state.phase === 'racing' || state.phase === 'countdown',
+  onPause: () => audio.update({ speed: 0, throttle: 0, boosting: false, active: false }),
+  message: 'Race paused',
+});
+
 function animate() {
   requestAnimationFrame(animate);
 
   const dt = Math.min(clock.getDelta(), 0.05);
+  if (autoPause.paused) return;
   state.now += dt;
 
   updateInput();
@@ -1173,6 +1190,9 @@ function animate() {
 }
 
 /* ---------------------------------------------------------------- boot */
+
+audio.setMuted(muted);
+refreshMuteButton();
 
 try {
   init();

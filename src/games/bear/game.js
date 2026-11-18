@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { getBest, submitScore } from '../../utils/scores.js';
+import bearAudio from './sound.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 /* ------------------------------------------------------------------ *
  * Bear the Puppy
@@ -16,6 +18,9 @@ const moodEmojiEl = document.querySelector('#mood-emoji');
 const moodLabelEl = document.querySelector('#mood-label');
 const scoreEl = document.querySelector('#care-score');
 const bestEl = document.querySelector('#care-best');
+const muteButton = document.querySelector('#mute-button');
+
+const MUTE_KEY = 'bearMuted';
 
 const needEls = {};
 document.querySelectorAll('.need').forEach((el) => {
@@ -56,6 +61,7 @@ const state = {
   best: getBest('bear'),
   mode: 'idle', // idle | walk | eat | drink | sleep
   modeTimer: 0,
+  chewTimer: 0,
   walk: null,
   walkAfter: null,
   targetYaw: 0,
@@ -971,20 +977,24 @@ function startWalk(x, z, after = null) {
 }
 
 function beginFeed() {
+  bearAudio.unlock();
   if (needs.fullness > 92) {
     say('I am too full for kibble! 🐾', 2.6);
+    bearAudio.play('squeak');
     return;
   }
   wakeUp();
   cancelFetch();
   startWalk(SPOTS.foodStand.x, SPOTS.foodStand.z, startEating);
   say('Here comes breakfast! 🍖', 1.8);
+  bearAudio.play('woof');
   state.targetYaw = Math.PI;
 }
 
 function startEating() {
   state.mode = 'eat';
   state.modeTimer = 0;
+  state.chewTimer = 0;
   state.targetYaw = Math.atan2(SPOTS.foodBowl.x - bear.position.x, SPOTS.foodBowl.z - bear.position.z);
   say('Nom nom nom… 🍖', 2.4);
 }
@@ -994,6 +1004,7 @@ function finishEating() {
   needs.happiness = clamp(needs.happiness + 5);
   state.score += 5;
   spawnBurst('sparkle', new THREE.Vector3(SPOTS.foodBowl.x, 0.45, SPOTS.foodBowl.z), 7);
+  bearAudio.play('happy');
   say('That was delicious! 🍖', 3);
   state.mode = 'idle';
   state.modeTimer = 0;
@@ -1002,20 +1013,24 @@ function finishEating() {
 }
 
 function beginDrink() {
+  bearAudio.unlock();
   if (needs.hydration > 92) {
     say('I have had plenty of water! 💧', 2.6);
+    bearAudio.play('squeak');
     return;
   }
   wakeUp();
   cancelFetch();
   startWalk(SPOTS.waterStand.x, SPOTS.waterStand.z, startDrinking);
   say('Fresh water time! 💧', 1.8);
+  bearAudio.play('slurp');
   state.targetYaw = Math.PI;
 }
 
 function startDrinking() {
   state.mode = 'drink';
   state.modeTimer = 0;
+  state.chewTimer = 0;
   state.targetYaw = Math.atan2(SPOTS.waterBowl.x - bear.position.x, SPOTS.waterBowl.z - bear.position.z);
   say('Slurp slurp… 💧', 2.4);
 }
@@ -1025,6 +1040,7 @@ function finishDrinking() {
   needs.happiness = clamp(needs.happiness + 3);
   state.score += 4;
   spawnBurst('sparkle', new THREE.Vector3(SPOTS.waterBowl.x, 0.45, SPOTS.waterBowl.z), 7);
+  bearAudio.play('happy');
   say('So refreshing! 💧', 3);
   state.mode = 'idle';
   state.modeTimer = 0;
@@ -1033,7 +1049,9 @@ function finishDrinking() {
 }
 
 function beginPet() {
+  bearAudio.unlock();
   wakeUp();
+  if (state.petting <= 0.2) bearAudio.play('happy');
   needs.happiness = clamp(needs.happiness + (state.petting > 0 ? 4 : 11));
   needs.energy = clamp(needs.energy + 1);
   state.score += state.petting > 0 ? 1 : 3;
@@ -1049,6 +1067,7 @@ function beginPet() {
 }
 
 function beginSleep() {
+  bearAudio.unlock();
   if (state.sleeping) {
     say('Zzz… 💤', 2);
     return;
@@ -1066,11 +1085,13 @@ function beginSleep() {
 function startSleeping() {
   state.mode = 'sleep';
   state.sleeping = true;
+  bearAudio.play('yawn');
   state.modeTimer = 0;
   say('Zzz… 💤', 5);
 }
 
 function beginFetch() {
+  bearAudio.unlock();
   if (!ball || state.fetchStage) return;
   if (state.ballFlight) return;
   if (needs.energy < 15) {
@@ -1089,6 +1110,8 @@ function beginFetch() {
     duration: 0.8,
   };
   spawnBurst('sparkle', ball.position.clone().setY(0.5), 4);
+  bearAudio.play('woof');
+  bearAudio.play('squeak');
   say('Fetch, Bear, fetch! 🎾', 2);
 }
 
@@ -1097,6 +1120,7 @@ function pickUpBall() {
   state.ballCarried = true;
   needs.happiness = clamp(needs.happiness + 5);
   spawnBurst('heart', headWorldPosition(), 3);
+  bearAudio.play('squeak');
   say('Got it! Bring it back! 🎾', 2);
   state.fetchStage = 'return';
   startWalk(SPOTS.home.x, SPOTS.home.z, finishFetch);
@@ -1111,6 +1135,7 @@ function finishFetch() {
   needs.energy = clamp(needs.energy - 8);
   state.score += 8;
   spawnBurst('heart', headWorldPosition(), 8);
+  bearAudio.play('happy');
   say('Good boy, Bear! 🎾', 3);
   state.mode = 'idle';
   state.idleAt = state.time + 3;
@@ -1226,6 +1251,11 @@ function updateBearMovement(dt) {
 function updateActionModes(dt) {
   if (state.mode === 'eat' || state.mode === 'drink') {
     state.modeTimer += dt;
+    state.chewTimer -= dt;
+    if (state.chewTimer <= 0) {
+      state.chewTimer = state.mode === 'eat' ? 0.34 : 0.3;
+      bearAudio.play(state.mode === 'eat' ? 'crunch' : 'slurp');
+    }
     if (state.modeTimer >= 2.4) {
       if (state.mode === 'eat') finishEating();
       else finishDrinking();
@@ -1461,6 +1491,7 @@ function maybeCelebrate() {
   bannerEl.classList.add('show');
   window.setTimeout(() => bannerEl.classList.remove('show'), 3200);
   spawnBurst('heart', headWorldPosition(), 14);
+  bearAudio.play('chime');
   say('You are the best puppy parent! 💕', 4);
 }
 
@@ -1540,6 +1571,7 @@ function bindEvents() {
   const canvas = renderer.domElement;
 
   canvas.addEventListener('pointerdown', (event) => {
+    bearAudio.unlock();
     state.pointerDown = { x: event.clientX, y: event.clientY, time: performance.now() };
   });
 
@@ -1630,6 +1662,28 @@ if (fullscreenButton) {
       resize();
     });
   }
+}
+
+/* Sound is remembered in this browser, like the other games. */
+const refreshMuteButton = () => {
+  if (!muteButton) return;
+  const muted = bearAudio.isMuted();
+  muteButton.textContent = muted ? '🔇' : '🔊';
+  muteButton.setAttribute('aria-pressed', String(muted));
+  muteButton.setAttribute('aria-label', muted ? 'Turn sounds on' : 'Mute sounds');
+};
+
+if (readMuted(MUTE_KEY)) bearAudio.setMuted(true);
+
+if (muteButton) {
+  refreshMuteButton();
+  muteButton.addEventListener('click', () => {
+    bearAudio.unlock();
+    bearAudio.setMuted(!bearAudio.isMuted());
+    writeMuted(bearAudio.isMuted());
+    refreshMuteButton();
+    if (!bearAudio.isMuted()) bearAudio.play('woof');
+  });
 }
 
 // ----------------------------------------------------------------- boot

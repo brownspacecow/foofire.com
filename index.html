@@ -18,8 +18,10 @@
     <meta property="og:site_name" content="Foofire Games" />
     <meta name="theme-color" content="#120a2a" />
     <link rel="stylesheet" href="./styles.css" />
+      <link rel="icon" href="public/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
         <a href="./index.html" class="logo">Foofire Games</a>
@@ -32,7 +34,7 @@
       </div>
     </header>
 
-    <main>
+    <main id="main">
       <section class="hero">
         <div class="hero-content">
           <p class="tagline">Games for kids</p>
@@ -48,6 +50,9 @@
       <section class="games-preview" aria-labelledby="preview-heading">
         <h2 id="preview-heading">Featured Games</h2>
         <div class="games-grid" id="games-grid"></div>
+        <p class="games-preview-more">
+          <a class="more-link" href="./games.html">See all games &rarr;</a>
+        </p>
       </section>
 
       <section class="dedication" aria-labelledby="dedication-heading">

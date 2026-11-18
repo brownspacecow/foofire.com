@@ -5,6 +5,7 @@ import { Arena, LAVA_Y, ZONE, PIECE_DEFS, makePieceVisual } from './arena.js';
 import { buildRandomFort } from './forts.js';
 import { Fighter, DASH } from './fighters.js';
 import { canRestartFromPhase, restartLockMessage } from './rules.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 const RAPIER = RAPIER_NS.default ?? RAPIER_NS;
 const TAU = Math.PI * 2;
@@ -423,11 +424,7 @@ const audio = (() => {
   };
 })();
 
-try {
-  if (window.localStorage.getItem('roughHousingMuted') === '1') audio.setMuted(true);
-} catch (error) {
-  /* storage can be blocked */
-}
+if (readMuted('roughHousingMuted')) audio.setMuted(true);
 
 function refreshMute() {
   const muted = audio.isMuted();
@@ -441,12 +438,8 @@ refreshShakeButton();
 ui.mute.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMute();
-  try {
-    window.localStorage.setItem('roughHousingMuted', audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   audio.ui();
 });
 

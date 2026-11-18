@@ -1,4 +1,5 @@
 import { PadSynth, PRESETS } from './synth.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 import { KEY_NAMES, SCALES, buildPadNotes, padIndex, midiName } from './scales.js';
 
 /* ---------------------------------------------------------------- elements */
@@ -49,7 +50,7 @@ const state = {
   gate: 0.55,
   volume: 0.75,
   bars: 4,
-  muted: false,
+  muted: readMuted('phrasePadMuted'),
   active: false,
   pointer: { x: 0.5, y: 0.35 },
   notes: [],
@@ -900,6 +901,7 @@ el.volume.addEventListener('input', () => {
 el.mute.addEventListener('click', () => {
   state.muted = !state.muted;
   synth.setMuted(state.muted);
+  writeMuted(state.muted);
   updateMuteButton();
 });
 

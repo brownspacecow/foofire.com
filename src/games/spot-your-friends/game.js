@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 import { createWorld } from './house.js';
 import { FRIENDS, createFriend } from './friends.js';
 
@@ -90,7 +91,7 @@ els.startBest.textContent = getBest(GAME_ID).toLocaleString('en-US');
 
 const audio = (() => {
   let ctx = null;
-  let muted = false;
+  let muted = readMuted('spotYourFriendsMuted');
 
   const ensure = () => {
     if (muted) return null;
@@ -709,13 +710,20 @@ function bindEvents() {
     else beginHunt();
   });
   els.tagButton.addEventListener('click', interact);
-  els.muteButton.addEventListener('click', () => {
-    const muted = !audio.isMuted();
-    audio.setMuted(muted);
+  const refreshMuteButton = () => {
+    const muted = audio.isMuted();
     els.muteButton.textContent = muted ? '🔇' : '🔊';
     els.muteButton.setAttribute('aria-pressed', String(muted));
     els.muteButton.setAttribute('aria-label', muted ? 'Unmute sounds' : 'Mute sounds');
+  };
+
+  els.muteButton.addEventListener('click', () => {
+    audio.setMuted(!audio.isMuted());
+    writeMuted(audio.isMuted());
+    refreshMuteButton();
   });
+
+  refreshMuteButton();
 
   /* Virtual joystick. */
   const knobRadius = 42;

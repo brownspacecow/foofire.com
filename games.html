@@ -18,8 +18,10 @@
     <meta property="og:site_name" content="Foofire Games" />
     <meta name="theme-color" content="#120a2a" />
     <link rel="stylesheet" href="./styles.css" />
+      <link rel="icon" href="public/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
         <a href="./index.html" class="logo">Foofire Games</a>
@@ -32,10 +34,11 @@
       </div>
     </header>
 
-    <main>
+    <main id="main">
       <section class="page-header">
         <h1>All Games</h1>
         <p>Pick a game to start playing.</p>
+        <p class="library-count" id="library-count"></p>
       </section>
 
       <section class="game-library" aria-labelledby="library-heading">

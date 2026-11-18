@@ -3,6 +3,7 @@ import { ITEM_BY_ID, rollFind } from './items.js';
 import { UPGRADES, PRIZES, UPGRADE_BY_ID, PRIZE_BY_ID, nextCost } from './upgrades.js';
 import { sound } from './sound.js';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 /* ------------------------------------------------------------------ DOM */
 const container = document.querySelector('#game-container');
@@ -2424,6 +2425,7 @@ muteButton.addEventListener('click', () => {
   sound.unlock();
   sound.setMuted(!sound.isMuted());
   state.muted = sound.isMuted();
+  writeMuted(state.muted);
   if (!state.muted) sound.click();
   updateMuteButton();
   saveProgress();
@@ -2449,6 +2451,8 @@ document.addEventListener('fullscreenchange', () => {
 
 /* ------------------------------------------------------------------ start */
 loadProgress();
+/* A mute chosen in any other game carries over here too. */
+if (readMuted()) state.muted = true;
 /* Surface a best find saved before the shared scoreboard existed. */
 if (state.bestFind > getBest('ball-pit')) submitScore('ball-pit', state.bestFind);
 sound.setMuted(state.muted);

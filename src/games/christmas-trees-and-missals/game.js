@@ -14,6 +14,7 @@ import { createTown } from './town.js';
 import { createCutscene } from './cutscene.js';
 import { sound } from './sound.js';
 import { submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 // ------------------------------------------------------------------ DOM
 const container = document.querySelector('#game-container');
@@ -132,6 +133,7 @@ function init() {
   renderShop();
   selectShopTab('shop');
   updateHud();
+  if (readMuted('christmasTreesMuted')) sound.setEnabled(false);
   updateMuteButton();
   updateFullscreenButton();
   setMessage(
@@ -916,6 +918,7 @@ if (town) {
 
   muteButton.addEventListener('click', () => {
     sound.setEnabled(!sound.isEnabled());
+    writeMuted(!sound.isEnabled());
     if (sound.isEnabled()) sound.click();
     updateMuteButton();
     saveProgress();

@@ -9,6 +9,8 @@ import { createAudio } from './audio.js';
 import { BossRenderer, STAGE_MORPHS } from './boss.js';
 import { createAttack, STAGE_ATTACKS } from './patterns.js';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { prefersReducedMotion } from '../../utils/motion.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 const GAME_ID = 'the-grin';
 
@@ -1846,7 +1848,7 @@ function render() {
   drawBackground();
 
   ctx.save();
-  if (shake > 0.1) ctx.translate(rand(-shake, shake), rand(-shake, shake));
+  if (shake > 0.1 && !prefersReducedMotion()) ctx.translate(rand(-shake, shake), rand(-shake, shake));
 
   drawBoss();
 
@@ -2019,14 +2021,19 @@ const muteButton = document.getElementById('grin-mute');
 const fullscreenButton = document.getElementById('grin-fullscreen');
 const shell = document.getElementById('grin-shell');
 
+function refreshMuteButton() {
+  if (!muteButton) return;
+  const muted = audio.isMuted();
+  muteButton.textContent = muted ? '🔇' : '🔊';
+  muteButton.setAttribute('aria-pressed', String(muted));
+  muteButton.setAttribute('aria-label', muted ? 'Unmute soundtrack' : 'Mute soundtrack');
+}
+
 function toggleMute() {
   const next = !audio.isMuted();
   audio.setMuted(next);
-  if (muteButton) {
-    muteButton.textContent = next ? '🔇' : '🔊';
-    muteButton.setAttribute('aria-pressed', String(next));
-    muteButton.setAttribute('aria-label', next ? 'Unmute soundtrack' : 'Mute soundtrack');
-  }
+  writeMuted(next);
+  refreshMuteButton();
 }
 
 muteButton?.addEventListener('click', toggleMute);
@@ -2055,5 +2062,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 resize();
+if (readMuted('theGrinMuted')) audio.setMuted(true);
+refreshMuteButton();
 lastFrame = performance.now();
 requestAnimationFrame(frame);

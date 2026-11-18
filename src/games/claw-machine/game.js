@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { PLUSHIES, FAMILY_ICONS, buildPlushie } from './plushies.js';
 import { sound } from './sound.js';
 import { clearScores, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 // ------------------------------------------------------------------ DOM
 const container = document.querySelector('#game-container');
@@ -1636,6 +1637,7 @@ function setupInput() {
   muteButton.addEventListener('click', () => {
     sound.unlock();
     sound.setEnabled(!sound.isEnabled());
+    writeMuted(!sound.isEnabled());
     if (sound.isEnabled()) sound.click();
     updateMuteButton();
     saveProgress();
@@ -2076,6 +2078,7 @@ recordCollection();
 setupInput();
 buildDex();
 resetMachine({ announce: false });
+if (readMuted('clawMachineMuted')) sound.setEnabled(false);
 updateMuteButton();
 updateSaveNote();
 

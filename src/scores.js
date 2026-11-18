@@ -126,6 +126,49 @@ const renderBoard = (game) => {
   return section;
 };
 
+const hasScores = (game) =>
+  game.progress ? getLatest(game.id) > 0 : getScores(game.id).length > 0;
+
+/** Games nobody has played yet get one compact card instead of a stack of empty boards. */
+const renderUnplayed = (list) => {
+  const section = document.createElement('section');
+  section.className = 'scoreboard scoreboard-quiet';
+
+  const head = document.createElement('div');
+  head.className = 'scoreboard-head';
+
+  const title = document.createElement('h2');
+  title.textContent = 'No scores yet';
+  head.append(title);
+  section.append(head);
+
+  const note = document.createElement('p');
+  note.className = 'scoreboard-empty';
+  note.textContent =
+    'These games are waiting for a first run. Play one and its best lands at the top of this page.';
+  section.append(note);
+
+  const chips = document.createElement('ul');
+  chips.className = 'score-empty-games';
+  chips.append(
+    ...list.map((game) => {
+      const item = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = game.path;
+      link.textContent = game.title;
+      item.append(link);
+      return item;
+    })
+  );
+  section.append(chips);
+
+  return section;
+};
+
 if (container) {
-  container.replaceChildren(...games.map(renderBoard));
+  const played = games.filter(hasScores);
+  const unplayed = games.filter((game) => !hasScores(game));
+  const sections = played.map(renderBoard);
+  if (unplayed.length) sections.push(renderUnplayed(unplayed));
+  container.replaceChildren(...sections);
 }

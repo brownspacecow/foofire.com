@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { createAudio } from './audio.js';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
 
 /* ------------------------------------------------------------------ *
  * DOM
@@ -30,11 +32,7 @@ const muteButton = document.querySelector('#mute-button');
 
 const audio = createAudio();
 
-try {
-  if (window.localStorage.getItem('zombieDeerMuted') === '1') audio.setMuted(true);
-} catch (error) {
-  /* Storage can be blocked; sound just defaults to on. */
-}
+if (readMuted('zombieDeerMuted')) audio.setMuted(true);
 
 const refreshMuteButton = () => {
   const muted = audio.isMuted();
@@ -95,13 +93,18 @@ if (fullscreenButton) {
 muteButton.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMuteButton();
-  try {
-    window.localStorage.setItem('zombieDeerMuted', audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   if (!audio.isMuted()) audio.uiClick();
+});
+
+/* Timed waves freeze when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  shouldPause: () => state.phase === 'wave' || state.phase === 'break',
+  message: 'Snowball fight paused',
 });
 
 /* ------------------------------------------------------------------ *
@@ -4030,6 +4033,11 @@ function animate(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   const time = now / 1000;
+
+  if (autoPause.paused) {
+    renderer.render(scene, camera);
+    return;
+  }
 
   updateCamera(time);
   updateFeedback(dt);

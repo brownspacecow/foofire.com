@@ -3,6 +3,9 @@ import { createAudio } from './audio.js';
 import { createCrowd } from './crowd.js';
 import { CHEAPEST_PRICE, FIREWORKS, FIREWORK_BY_ID } from './fireworks.js';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
+import { prefersReducedMotion } from '../../utils/motion.js';
 
 /* ------------------------------------------------------------------ *
  * DOM
@@ -88,11 +91,7 @@ const isNarrowScreen = window.matchMedia('(max-width: 760px)').matches;
 
 const audio = createAudio();
 
-try {
-  if (window.localStorage.getItem(MUTE_KEY) === '1') audio.setMuted(true);
-} catch (error) {
-  /* Storage can be blocked; sound just defaults to on. */
-}
+if (readMuted(MUTE_KEY)) audio.setMuted(true);
 
 function refreshMuteButton() {
   const muted = audio.isMuted();
@@ -106,12 +105,8 @@ refreshMuteButton();
 muteButton.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMuteButton();
-  try {
-    window.localStorage.setItem(MUTE_KEY, audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   if (!audio.isMuted()) audio.uiClick();
 });
 
@@ -2082,7 +2077,7 @@ function updateCamera(dt) {
   if (shakeTime > 0) {
     shakeTime = Math.max(0, shakeTime - dt);
     const fade = shakeDuration > 0 ? shakeTime / shakeDuration : 0;
-    const amount = shakeStrength * fade;
+    const amount = prefersReducedMotion() ? 0 : shakeStrength * fade;
     camera.position.x += (Math.random() - 0.5) * amount;
     camera.position.y += (Math.random() - 0.5) * amount;
   }
@@ -2090,10 +2085,20 @@ function updateCamera(dt) {
   camera.lookAt(CAMERA_TARGET);
 }
 
+/* Curfew freezes when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  shouldPause: () => state.phase === 'play',
+  message: 'Show paused',
+});
+
 function tick() {
   window.requestAnimationFrame(tick);
 
   const dt = Math.min(0.05, clock.getDelta());
+  if (autoPause.paused) return;
   elapsed += dt;
 
   updateSky(dt);

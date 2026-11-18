@@ -1,5 +1,6 @@
 import { TRACKS, buildSong, MusicEngine } from './music.js';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 /* ------------------------------------------------------------------ setup */
 
@@ -167,6 +168,12 @@ function roundRect(context, x, y, width, height, radius) {
 }
 
 function loadPrefs() {
+  if (readMuted('softResetPrefs')) {
+    state.muted = true;
+    music.setMuted(true);
+    updateMuteButton();
+  }
+
   try {
     const raw = window.localStorage.getItem(PREF_KEY);
     if (!raw) return;
@@ -183,6 +190,7 @@ function loadPrefs() {
 }
 
 function savePrefs() {
+  writeMuted(state.muted);
   try {
     window.localStorage.setItem(
       PREF_KEY,

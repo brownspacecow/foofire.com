@@ -55,6 +55,25 @@ main {
   min-height: 100vh;
 }
 
+.skip-link {
+  position: absolute;
+  top: -4rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--accent-soft);
+  border: 3px solid var(--ink);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 0.75rem;
+}
+
 h1,
 h2,
 h3,
@@ -193,6 +212,12 @@ h3,
   color: var(--muted);
 }
 
+.page-header .library-count {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--accent-soft);
+}
+
 .game-library,
 .games-preview {
   max-width: 1000px;
@@ -228,6 +253,29 @@ h3,
 /* The dedication card closes out the home page, so the grid before it needs less breathing room. */
 .games-preview .games-grid {
   padding-bottom: 1.5rem;
+}
+
+.games-preview-more {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding-bottom: 3.5rem;
+}
+
+.more-link {
+  padding-bottom: 0.3rem;
+  font-family: var(--font-pixel);
+  font-size: clamp(0.52rem, 1.7vw, 0.64rem);
+  line-height: 1.6;
+  color: var(--accent-soft);
+  text-decoration: none;
+  border-bottom: 3px solid var(--accent);
+}
+
+.more-link:hover,
+.more-link:focus-visible {
+  color: #fff;
+  border-bottom-color: var(--accent-soft);
 }
 
 .game-card {
@@ -427,6 +475,43 @@ h3,
 .scoreboard-empty {
   margin: 0;
   color: var(--muted);
+}
+
+.scoreboard-quiet {
+  background: rgba(10, 5, 24, 0.35);
+  border-style: dashed;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.scoreboard-quiet h2 {
+  font-size: clamp(0.6rem, 1.8vw, 0.75rem);
+  color: var(--muted);
+}
+
+.score-empty-games {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.score-empty-games a {
+  display: inline-block;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--panel-soft);
+  border: 2px solid var(--ink);
+}
+
+.score-empty-games a:hover,
+.score-empty-games a:focus-visible {
+  color: var(--ink);
+  background: var(--accent-soft);
 }
 
 .score-progress {

@@ -3,6 +3,8 @@ import { createDollsLevel } from './level-dolls.js';
 import { createRemoteLevel } from './level-remote.js';
 import { createAudio } from './sound.js';
 import { submitScore, getBest } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
 
 /* ------------------------------------------------------------------ *
  * Escape Earth: Survive Grandma's House
@@ -92,11 +94,7 @@ const audio = createAudio();
  * Sound preference
  * ------------------------------------------------------------------ */
 
-try {
-  if (window.localStorage.getItem(MUTE_KEY) === '1') audio.setMuted(true);
-} catch (error) {
-  /* Storage can be blocked; sound stays on. */
-}
+if (readMuted(MUTE_KEY)) audio.setMuted(true);
 
 const refreshMuteButton = () => {
   const muted = audio.isMuted();
@@ -112,13 +110,18 @@ refreshMuteButton();
 muteButton.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMuteButton();
-  try {
-    window.localStorage.setItem(MUTE_KEY, audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   if (!audio.isMuted()) audio.blip(660);
+});
+
+/* A level freezes when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  shouldPause: () => state === 'playing',
+  message: 'Level paused',
 });
 
 /* ------------------------------------------------------------------ *
@@ -481,6 +484,12 @@ let clock = 0;
 const frame = (now) => {
   const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000));
   lastTime = now;
+
+  if (autoPause.paused) {
+    requestAnimationFrame(frame);
+    return;
+  }
+
   clock += dt;
 
   if (bannerTimer > 0) {
