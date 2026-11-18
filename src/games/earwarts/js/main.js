@@ -81,6 +81,8 @@ if (root) {
     audioEngine.init().catch(() => undefined);
   };
   window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('touchend', unlockAudio, { passive: true });
+  window.addEventListener('click', unlockAudio);
   window.addEventListener('keydown', unlockAudio);
 
   window.addEventListener('keydown', (event) => {

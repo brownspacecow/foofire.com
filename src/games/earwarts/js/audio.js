@@ -24,26 +24,99 @@ export function shuffle(list) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function isIos() {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
+function silentWavDataUri() {
+  const header = new ArrayBuffer(10);
+  const view = new DataView(header);
+  view.setUint32(0, 44100, true);
+  view.setUint32(4, 44100, true);
+  view.setUint16(8, 1, true);
+  const missing = window.btoa(String.fromCharCode(...new Uint8Array(header))).slice(0, 13);
+  return `data:audio/wav;base64,UklGRisAAABXQVZFZm10IBAAAAABAAEA${missing}AgAZGF0YQcAAACAgICAgICAAAA=`;
+}
+
 class AudioEngine {
   constructor() {
     this.ctx = null;
     this.master = null;
+    this.limiter = null;
     this.started = false;
+    this.unlocked = false;
+    this.iosSilentAudio = null;
     this.volume = 0.7;
     this.muted = false;
     this.lastPlayback = null;
   }
 
+  promoteAudioSession() {
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch {
+      /* Older browsers use the silent media fallback below. */
+    }
+    if (!isIos()) return;
+    if (this.iosSilentAudio && !this.iosSilentAudio.paused) return;
+    if (!this.iosSilentAudio) {
+      const audio = document.createElement('audio');
+      audio.setAttribute('aria-hidden', 'true');
+      audio.setAttribute('playsinline', '');
+      audio.setAttribute('x-webkit-airplay', 'deny');
+      audio.loop = true;
+      audio.preload = 'auto';
+      audio.src = silentWavDataUri();
+      audio.style.position = 'fixed';
+      audio.style.width = '1px';
+      audio.style.height = '1px';
+      audio.style.opacity = '0';
+      audio.style.pointerEvents = 'none';
+      document.body.append(audio);
+      this.iosSilentAudio = audio;
+    }
+    const playback = this.iosSilentAudio.play();
+    if (playback && typeof playback.catch === 'function') playback.catch(() => undefined);
+  }
+
+  unlockOutput() {
+    if (this.unlocked || !this.ctx) return;
+    try {
+      // A silent buffer started during a user gesture unlocks Web Audio on iOS.
+      const buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.ctx.destination);
+      source.start(0);
+      this.unlocked = this.ctx.state === 'running';
+    } catch {
+      /* The UI still works without audio. */
+    }
+  }
+
   async init() {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
+    this.promoteAudioSession();
     if (!this.ctx) {
       this.ctx = new Ctx();
       this.master = this.ctx.createGain();
-      this.master.gain.value = this.muted ? 0 : this.volume * 0.42;
-      this.master.connect(this.ctx.destination);
+      this.limiter = this.ctx.createDynamicsCompressor();
+      this.limiter.threshold.value = -10;
+      this.limiter.knee.value = 6;
+      this.limiter.ratio.value = 8;
+      this.limiter.attack.value = 0.003;
+      this.limiter.release.value = 0.25;
+      this.master.gain.value = this.muted ? 0 : this.volume;
+      this.master.connect(this.limiter);
+      this.limiter.connect(this.ctx.destination);
+      this.unlockOutput();
     }
     if (this.ctx.state === 'running') {
+      this.unlockOutput();
       this.started = true;
       return;
     }
@@ -57,6 +130,7 @@ class AudioEngine {
     } catch {
       /* The UI still works without audio. */
     }
+    if (this.ctx.state === 'running') this.unlockOutput();
     this.started = this.ctx.state === 'running';
   }
 
@@ -65,7 +139,7 @@ class AudioEngine {
     this.muted = muted;
     if (this.master && this.ctx) {
       this.master.gain.setTargetAtTime(
-        this.muted ? 0 : this.volume * 0.42,
+        this.muted ? 0 : this.volume,
         this.ctx.currentTime,
         0.04
       );
@@ -78,7 +152,7 @@ class AudioEngine {
     const gain = this.ctx.createGain();
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(midiToHz(midi), at);
-    const peak = Math.max(0.0001, velocity * 0.24);
+    const peak = Math.max(0.0001, velocity * 0.5);
     gain.gain.setValueAtTime(0.0001, at);
     gain.gain.exponentialRampToValueAtTime(peak, at + 0.012);
     gain.gain.exponentialRampToValueAtTime(peak * 0.42, at + 0.16);
