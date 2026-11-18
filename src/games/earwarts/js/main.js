@@ -75,7 +75,19 @@ if (root) {
     startScene();
   }
 
+  function syncAmbience(state) {
+    const exploring = Boolean(
+      state.ready &&
+        state.save.playerName &&
+        !state.challenge &&
+        document.visibilityState !== 'hidden'
+    );
+    const ducked = Boolean(state.dialogue || state.panel !== 'none');
+    audioEngine.setExploring(exploring, ducked);
+  }
+
   subscribe(syncEntered);
+  subscribe(syncAmbience);
 
   const unlockAudio = () => {
     audioEngine.init().catch(() => undefined);
@@ -145,14 +157,20 @@ if (root) {
     if (state.ready && state.save.playerName) persist();
   };
   window.setInterval(saveQuietly, 30_000);
-  window.addEventListener('pagehide', saveQuietly);
+  window.addEventListener('pagehide', () => {
+    audioEngine.setExploring(false);
+    saveQuietly();
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveQuietly();
+    syncAmbience(getState());
   });
 
   loadGame()
     .then(() => {
-      syncEntered(getState());
+      const state = getState();
+      syncEntered(state);
+      syncAmbience(state);
     })
     .catch((error) => {
       console.error('Earwarts save load failed', error);

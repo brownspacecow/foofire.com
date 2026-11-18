@@ -4,6 +4,8 @@
  */
 
 const midiToHz = (midi) => 440 * 2 ** ((midi - 69) / 12);
+const AMBIENCE_LEVEL = 0.55;
+const AMBIENCE_DUCK = 0.14;
 
 export function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -52,6 +54,17 @@ class AudioEngine {
     this.volume = 0.7;
     this.muted = false;
     this.lastPlayback = null;
+    this.musicBus = null;
+    this.musicFilter = null;
+    this.musicDelay = null;
+    this.musicFeedback = null;
+    this.musicWet = null;
+    this.ambienceTimer = null;
+    this.ambienceActive = false;
+    this.ambienceWanted = false;
+    this.ambienceDucked = false;
+    this.ambienceCycle = 0;
+    this.ambienceOscillators = new Set();
   }
 
   promoteAudioSession() {
@@ -118,6 +131,7 @@ class AudioEngine {
     if (this.ctx.state === 'running') {
       this.unlockOutput();
       this.started = true;
+      if (this.ambienceWanted) this.startAmbience();
       return;
     }
     try {
@@ -132,6 +146,7 @@ class AudioEngine {
     }
     if (this.ctx.state === 'running') this.unlockOutput();
     this.started = this.ctx.state === 'running';
+    if (this.started && this.ambienceWanted) this.startAmbience();
   }
 
   applySettings(volume, muted) {
@@ -331,6 +346,246 @@ class AudioEngine {
       duration: 1.1,
       velocity: 0.4,
     });
+  }
+
+  /* --------------------------------------------------------------- ambience */
+
+  ensureMusicBus() {
+    if (this.musicBus) return true;
+    if (!this.ctx || !this.master) return false;
+    this.musicBus = this.ctx.createGain();
+    this.musicBus.gain.value = 0.0001;
+    this.musicBus.connect(this.master);
+
+    this.musicFilter = this.ctx.createBiquadFilter();
+    this.musicFilter.type = 'lowpass';
+    this.musicFilter.frequency.value = 1650;
+    this.musicFilter.Q.value = 0.2;
+    this.musicFilter.connect(this.musicBus);
+
+    // A short, quiet echo gives the psaltery and bell some stone-hall depth.
+    this.musicDelay = this.ctx.createDelay(1.4);
+    this.musicDelay.delayTime.value = 0.42;
+    this.musicFeedback = this.ctx.createGain();
+    this.musicFeedback.gain.value = 0.2;
+    this.musicWet = this.ctx.createGain();
+    this.musicWet.gain.value = 0.12;
+    this.musicFilter.connect(this.musicDelay);
+    this.musicDelay.connect(this.musicFeedback);
+    this.musicFeedback.connect(this.musicDelay);
+    this.musicDelay.connect(this.musicWet);
+    this.musicWet.connect(this.musicBus);
+    return true;
+  }
+
+  setExploring(active, ducked = false) {
+    this.ambienceWanted = Boolean(active);
+    this.ambienceDucked = Boolean(ducked);
+    if (!this.ambienceWanted) {
+      this.stopAmbience();
+      return;
+    }
+    if (this.ctx?.state === 'running') {
+      this.startAmbience();
+      this.setAmbienceDucked(this.ambienceDucked);
+    } else if (this.ctx) {
+      this.ctx
+        .resume()
+        .then(() => {
+          if (this.ambienceWanted) {
+            this.startAmbience();
+            this.setAmbienceDucked(this.ambienceDucked);
+          }
+        })
+        .catch(() => undefined);
+    }
+  }
+
+  setAmbienceDucked(ducked) {
+    this.ambienceDucked = Boolean(ducked);
+    if (!this.ambienceActive || !this.ctx || !this.musicBus) return;
+    const now = this.ctx.currentTime;
+    this.musicBus.gain.cancelScheduledValues(now);
+    this.musicBus.gain.setTargetAtTime(
+      this.ambienceDucked ? AMBIENCE_DUCK : AMBIENCE_LEVEL,
+      now,
+      0.8
+    );
+  }
+
+  startAmbience() {
+    if (!this.ctx || this.ctx.state !== 'running' || !this.ensureMusicBus()) return;
+    if (this.ambienceActive) return;
+    this.ambienceActive = true;
+    const now = this.ctx.currentTime;
+    this.musicBus.gain.cancelScheduledValues(now);
+    this.musicBus.gain.setValueAtTime(Math.max(0.0001, this.musicBus.gain.value), now);
+    this.musicBus.gain.setTargetAtTime(
+      this.ambienceDucked ? AMBIENCE_DUCK : AMBIENCE_LEVEL,
+      now,
+      1.1
+    );
+    this.ambienceCycle = 0;
+    this.scheduleAmbienceCycle();
+    this.ambienceTimer = window.setInterval(() => this.scheduleAmbienceCycle(), 16000);
+  }
+
+  stopAmbience() {
+    if (this.ambienceTimer) {
+      window.clearInterval(this.ambienceTimer);
+      this.ambienceTimer = null;
+    }
+    this.ambienceActive = false;
+    for (const oscillator of this.ambienceOscillators) {
+      try {
+        oscillator.stop();
+      } catch {
+        // The oscillator had already finished; nothing left to silence.
+      }
+    }
+    this.ambienceOscillators.clear();
+    if (!this.ctx || !this.musicBus) return;
+    const now = this.ctx.currentTime;
+    this.musicBus.gain.cancelScheduledValues(now);
+    this.musicBus.gain.setValueAtTime(Math.max(0.0001, this.musicBus.gain.value), now);
+    this.musicBus.gain.linearRampToValueAtTime(0.0001, now + 0.22);
+  }
+
+  trackAmbientOscillator(oscillator) {
+    this.ambienceOscillators.add(oscillator);
+    oscillator.onended = () => this.ambienceOscillators.delete(oscillator);
+  }
+
+  scheduleAmbientPad(midi, at, duration, level) {
+    if (!this.ctx || !this.musicFilter) return;
+    const oscillator = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    oscillator.type = midi < 45 ? 'sine' : 'triangle';
+    oscillator.frequency.setValueAtTime(midiToHz(midi), at);
+    oscillator.detune.setValueAtTime(midi % 2 === 0 ? -4 : 4, at);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.linearRampToValueAtTime(level, at + 1.4);
+    gain.gain.setValueAtTime(level, at + duration - 1.4);
+    gain.gain.linearRampToValueAtTime(0.0001, at + duration);
+    oscillator.connect(gain);
+    gain.connect(this.musicFilter);
+    oscillator.start(at);
+    oscillator.stop(at + duration + 0.08);
+    this.trackAmbientOscillator(oscillator);
+  }
+
+  scheduleAmbientPluck(midi, at, level = 0.075) {
+    if (!this.ctx || !this.musicFilter) return;
+    const oscillator = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(midiToHz(midi), at);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(level, at + 0.012);
+    gain.gain.exponentialRampToValueAtTime(level * 0.22, at + 0.35);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 2.8);
+    oscillator.connect(gain);
+    gain.connect(this.musicFilter);
+    oscillator.start(at);
+    oscillator.stop(at + 2.9);
+    this.trackAmbientOscillator(oscillator);
+
+    const shimmer = this.ctx.createOscillator();
+    const shimmerGain = this.ctx.createGain();
+    shimmer.type = 'sine';
+    shimmer.frequency.setValueAtTime(midiToHz(midi + 12), at);
+    shimmerGain.gain.setValueAtTime(0.0001, at);
+    shimmerGain.gain.exponentialRampToValueAtTime(level * 0.22, at + 0.01);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.0001, at + 1.5);
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(this.musicFilter);
+    shimmer.start(at);
+    shimmer.stop(at + 1.6);
+    this.trackAmbientOscillator(shimmer);
+  }
+
+  scheduleAmbientBell(at, midi) {
+    if (!this.ctx || !this.musicFilter) return;
+    const partials = [
+      [1, 0.05, 5.4],
+      [2.01, 0.025, 4.2],
+      [2.76, 0.014, 3.2],
+      [4.1, 0.008, 2.6],
+    ];
+    for (const [ratio, level, duration] of partials) {
+      const oscillator = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(midiToHz(midi) * ratio, at);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(level, at + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+      oscillator.connect(gain);
+      gain.connect(this.musicFilter);
+      oscillator.start(at);
+      oscillator.stop(at + duration + 0.06);
+      this.trackAmbientOscillator(oscillator);
+    }
+  }
+
+  scheduleAmbienceCycle() {
+    if (!this.ctx || !this.musicFilter || !this.ambienceActive) return;
+    const at = this.ctx.currentTime + 0.08;
+    const cycle = this.ambienceCycle;
+    this.ambienceCycle += 1;
+
+    // D minor / Dorian colours: Dm, Bb, Gm, A. The raised C# in the last
+    // chord keeps the loop unsettled without becoming a horror sting.
+    const chords = [
+      [38, 45, 50, 53],
+      [34, 41, 46, 50],
+      [31, 38, 43, 46],
+      [33, 40, 45, 49],
+    ];
+    chords.forEach((chord, index) => {
+      chord.forEach((midi) => this.scheduleAmbientPad(midi, at + index * 4, 5.2, 0.038));
+    });
+    [38, 34, 31, 33].forEach((midi, index) => {
+      this.scheduleAmbientPluck(midi, at + index * 4, 0.05);
+    });
+    [62, 65, 67, 61].forEach((midi, index) => {
+      this.scheduleAmbientPad(midi, at + index * 4 + 0.3, 3.8, 0.018);
+    });
+
+    const phraseA = [
+      [62, 0.2],
+      [65, 1.9],
+      [69, 3.4],
+      [62, 4.2],
+      [60, 5.8],
+      [58, 7.2],
+      [55, 8.2],
+      [58, 9.8],
+      [62, 11.2],
+      [61, 12.2],
+      [64, 13.7],
+      [57, 15.1],
+    ];
+    const phraseB = [
+      [69, 0.4],
+      [65, 2.1],
+      [62, 3.6],
+      [70, 4.2],
+      [67, 5.9],
+      [62, 7.4],
+      [58, 8.2],
+      [62, 10.0],
+      [65, 11.3],
+      [61, 12.4],
+      [69, 13.8],
+      [64, 15.0],
+    ];
+    const phrase = cycle % 2 === 0 ? phraseA : phraseB;
+    phrase.forEach(([midi, offset]) => {
+      this.scheduleAmbientPluck(midi, at + offset, 0.075);
+    });
+
+    this.scheduleAmbientBell(at + (cycle % 2 === 0 ? 0.2 : 8.2), cycle % 2 === 0 ? 38 : 45);
   }
 }
 
