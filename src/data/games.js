@@ -5,6 +5,14 @@
  */
 export const games = [
   {
+    id: 'earwarts',
+    title: 'Earwarts Academy',
+    description:
+      'Explore a moonlit 3D castle, learn spells by listening, and wake the sealed wings one note at a time. Touch humming crystals, echo the forest drum, hatch a friendship with a pocket owl, and collect Magic Resonance. A gentle ear-training adventure for kids — no accounts, no wrong answers.',
+    image: './public/screenshots/earwarts.svg',
+    path: './src/games/earwarts/index.html',
+  },
+  {
     id: 'phrase-pad',
     title: 'Phrase Pad',
     description:

@@ -17,6 +17,17 @@ Tagline: **Games for kids.**
 src/
   main.js          # Game portal navigation logic
   games/
+    earwarts/       # Earwarts Academy: direct Three.js listening adventure
+      index.html
+      styles.css
+      styles-ui.css
+      styles-challenge.css
+      vendor/       # vendored three.module.js (MIT)
+      js/
+        audio.js    # Web Audio synthesis and ear-training playback
+        challenges.js # Pitch, interval, rhythm, melody and chord challenges
+        world/      # 3D castle, rooms, NPCs, player and spells
+        ui/         # Spellbook, map, quests, satchel, challenges
     rough-housing/  # Rough Housing: local two-player couch-fort wrestling
       index.html
       game.js
@@ -69,6 +80,18 @@ python -m http.server 8080
 ```
 
 Then open `http://localhost:8080`.
+
+### Earwarts Academy
+
+Earwarts Academy is plain HTML, CSS and JavaScript with a vendored Three.js module.
+There is no install or build step. Serve the repository root as above and open:
+
+```text
+http://localhost:8080/src/games/earwarts/
+```
+
+The GitHub Pages workflow uploads the source directly, so the game is available at
+`/src/games/earwarts/index.html` alongside the other games.
 
 ## Adding a New Game
 
