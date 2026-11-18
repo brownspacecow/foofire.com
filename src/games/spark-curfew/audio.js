@@ -338,6 +338,53 @@ export function createAudio() {
       tone({ type: 'square', from: 1318, dur: 0.16, vol: 0.05, delay: 0.06 });
     },
 
+    finaleWarning() {
+      if (!ensure()) return;
+      [0, 0.35, 0.7].forEach((delay, index) => {
+        tone({
+          type: 'sawtooth',
+          from: 220 + index * 40,
+          to: 840 + index * 80,
+          dur: 0.3,
+          vol: 0.05,
+          delay,
+          filter: { type: 'bandpass', freq: 900, to: 1800, q: 1.5 },
+        });
+      });
+      noise({
+        dur: 1.1,
+        vol: 0.03,
+        filter: { type: 'bandpass', freq: 500, to: 1800, q: 1.4 },
+      });
+    },
+
+    doomsday() {
+      if (!ensure()) return;
+      noise({
+        dur: 3.2,
+        vol: 0.26,
+        filter: { type: 'lowpass', freq: 2200, to: 40, q: 1.2 },
+      });
+      tone({ type: 'sine', from: 95, to: 20, dur: 2.8, vol: 0.28 });
+      tone({
+        type: 'sawtooth',
+        from: 150,
+        to: 30,
+        dur: 1.6,
+        vol: 0.1,
+        filter: { type: 'lowpass', freq: 700, to: 80 },
+      });
+      for (let i = 0; i < 14; i += 1) {
+        noise({
+          dur: 0.07,
+          vol: 0.02 + Math.random() * 0.02,
+          delay: 0.2 + Math.random() * 1.8,
+          filter: { type: 'highpass', freq: 1800 + Math.random() * 4000 },
+        });
+      }
+      sparkle(2.5);
+    },
+
     curfew() {
       if (!ensure()) return;
       [0, 0.45, 0.9].forEach((delay, index) => {

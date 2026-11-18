@@ -6,12 +6,12 @@
     <title>Spark Curfew | Foofire Games</title>
     <meta
       name="description"
-      content="Spark Curfew is a three.js backyard fireworks game for kids. Buy fireworks, light them before curfew, use the little ones to bring the daylight, and save the big shells for night."
+      content="Spark Curfew is a three.js backyard fireworks game for kids. Buy fireworks, light them before curfew, use the little ones to bring the daylight, save the big shells for night, and finish with Big Bertha for a time bonus."
     />
     <meta property="og:title" content="Spark Curfew | Foofire Games" />
     <meta
       property="og:description"
-      content="Build a backyard fireworks show before curfew. Small fireworks bring the daylight, big ones only go up at night."
+      content="Build a backyard fireworks show before curfew. Small fireworks bring the daylight, big ones only go up at night, and Big Bertha ends the show with a time bonus."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com/src/games/spark-curfew/index.html" />
@@ -279,6 +279,28 @@
         pointer-events: none;
       }
 
+      .whiteout {
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        background: #fff;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 1.2s ease;
+      }
+
+      .whiteout.on {
+        opacity: 1;
+      }
+
+      .overlay.endgame {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #fff;
+        backdrop-filter: none;
+      }
+
       .overlay-card {
         position: relative;
         width: min(94%, 40rem);
@@ -509,6 +531,15 @@
         box-shadow: inset 0 0 0 1px var(--accent-soft);
       }
 
+      .stand-card.is-finale {
+        background: linear-gradient(180deg, #3a2050 0%, #1c1238 100%);
+        border-color: #ffd93d;
+      }
+
+      .stand-card.is-finale .stand-name {
+        color: #ffd93d;
+      }
+
       .stand-card.is-locked {
         opacity: 0.7;
       }
@@ -545,6 +576,11 @@
         font-size: 0.58rem;
         font-weight: 800;
         letter-spacing: 0.02em;
+      }
+
+      .stand-tag.finale {
+        background: #ffd93d;
+        color: #241640;
       }
 
       .stand-tag.day {
@@ -675,8 +711,12 @@
       }
 
       .sc-game:fullscreen .sc-stand {
+        display: flex;
         flex: 0 0 auto;
+        flex-direction: column;
+        min-height: 0;
         max-height: 36vh;
+        overflow: hidden;
         margin: 0;
         border-left: none;
         border-right: none;
@@ -684,8 +724,17 @@
         box-shadow: none;
       }
 
+      .sc-game:fullscreen .stand-head {
+        flex: 0 0 auto;
+      }
+
       .sc-game:fullscreen .stand-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
         overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
       }
 
       .sc-game:fullscreen .game-tip,
@@ -867,8 +916,8 @@
         <h1>Spark Curfew</h1>
         <p>
           The street is dark, the yard is yours, and the firework stand is open. Little fireworks
-          bring the sun up. The huge ones only go up after dark. Make as much noise as you can
-          before curfew.
+          bring the sun up. The huge ones only go up after dark. Save up for Big Bertha, the super
+          grand finale — light her before curfew and the faster you do it, the bigger your time bonus.
         </p>
       </section>
 
@@ -894,6 +943,7 @@
             <div class="hud-stat">
               <span class="hud-label">Curfew</span>
               <strong id="time">2:00</strong>
+              <em class="hud-sub" id="time-bonus" title="Time bonus for the seconds left">+$0</em>
             </div>
           </div>
           <div class="hud-right">
@@ -929,6 +979,7 @@
           <div class="placing-hint" id="placing-hint" hidden></div>
           <div class="banner" id="banner" aria-hidden="true"><span></span></div>
           <div class="floaters" id="floaters" aria-hidden="true"></div>
+          <div class="whiteout" id="whiteout" aria-hidden="true"></div>
 
           <div class="overlay intro" id="overlay">
             <div class="overlay-card">
@@ -936,8 +987,8 @@
               <h2 id="overlay-title">Spark Curfew</h2>
               <p class="overlay-sub" id="overlay-sub">One night. One yard. One very nosy street.</p>
               <p id="overlay-text">
-                The neighbours said keep it down. You heard "put on a show." Buy fireworks, light
-                them in the yard, and cash in before the street complains.
+                The neighbours said keep it down. You heard "put on a show." Buy fireworks, build a
+                crowd, and save up for Big Bertha. The sooner she goes up, the bigger the time bonus.
               </p>
               <ul class="rules" id="overlay-rules">
                 <li>
@@ -953,8 +1004,8 @@
                   <span>Little fireworks bring the daylight with them. The big shells only go up at night.</span>
                 </li>
                 <li>
-                  <span aria-hidden="true">👏</span>
-                  <span>The crowd grows with every show and multiplies every payout. Bigger firework, bigger payday.</span>
+                  <span aria-hidden="true">💥</span>
+                  <span>Big Bertha is the super grand finale. The faster you light her, the bigger the time bonus. The crowd multiplies every payout too.</span>
                 </li>
               </ul>
               <p class="controls-line" id="overlay-controls">
@@ -983,8 +1034,8 @@
         </section>
 
         <p class="game-tip">
-          Little fireworks = daylight, big fireworks = night. Pack the fence with neighbours using
-          the cheap daytime show, then spend the dark on the biggest shell you can afford.
+          Little fireworks = daylight, big fireworks = night. Build the crowd, save $900 for Big
+          Bertha, and light her fast — the seconds left become your time bonus.
         </p>
 
         <a href="../../../games.html" class="back-link">&larr; Back to games</a>

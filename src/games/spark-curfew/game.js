@@ -16,6 +16,7 @@ const bestEl = document.querySelector('#best');
 const crowdEl = document.querySelector('#crowd');
 const crowdBonusEl = document.querySelector('#crowd-bonus');
 const timeEl = document.querySelector('#time');
+const timeBonusEl = document.querySelector('#time-bonus');
 const skyIconEl = document.querySelector('#sky-icon');
 const skyLabelEl = document.querySelector('#sky-label');
 const skySubEl = document.querySelector('#sky-sub');
@@ -37,6 +38,7 @@ const startButton = document.querySelector('#start-button');
 const statusEl = document.querySelector('#status');
 const standList = document.querySelector('#stand-list');
 const standHint = document.querySelector('#stand-hint');
+const whiteout = document.querySelector('#whiteout');
 
 /* ------------------------------------------------------------------ *
  * Constants
@@ -45,6 +47,7 @@ const standHint = document.querySelector('#stand-hint');
 const GAME_ID = 'spark-curfew';
 const MUTE_KEY = 'sparkCurfewMuted';
 const SHOW_SECONDS = 120;
+const TIME_BONUS_PER_SECOND = 50;
 const DAY_SECONDS = 12;
 const START_CASH = 80;
 const CROWD_MAX = 40;
@@ -169,6 +172,9 @@ const state = {
   dayTimer: 0,
   selected: null,
   owned: {},
+  finale: false,
+  finaleTime: 0,
+  finaleBonus: 0,
 };
 
 /* ------------------------------------------------------------------ *
@@ -198,6 +204,15 @@ container.appendChild(renderer.domElement);
 const clock = new THREE.Clock();
 let elapsed = 0;
 let brokeCheck = 0;
+let shakeTime = 0;
+let shakeDuration = 0;
+let shakeStrength = 0;
+
+function shakeCamera(strength, duration = 0.5) {
+  shakeTime = duration;
+  shakeDuration = duration;
+  shakeStrength = strength;
+}
 
 function sizeScene() {
   const width = container.clientWidth || 1;
@@ -651,6 +666,7 @@ const placed = [];
 const placedHits = [];
 const flashes = [];
 const glows = [];
+const obliterated = [];
 
 for (let i = 0; i < 3; i += 1) {
   const light = new THREE.PointLight(0xffffff, 0, 26, 2);
@@ -724,7 +740,7 @@ function spawnBurst(definition, position, palette, kind) {
   }
 }
 
-function spawnGlow(position, color, size, kind) {
+function spawnGlow(position, color, size, kind, life = 0.6) {
   const material = new THREE.SpriteMaterial({
     map: sparkTexture,
     color,
@@ -737,7 +753,7 @@ function spawnGlow(position, color, size, kind) {
   sprite.position.copy(position);
   sprite.scale.setScalar(size);
   scene.add(sprite);
-  glows.push({ sprite, age: 0, life: 0.6, base: size, peak: material.opacity });
+  glows.push({ sprite, age: 0, life, base: size, peak: material.opacity });
 }
 
 function flash(position, color, strength) {
@@ -751,17 +767,37 @@ function flash(position, color, strength) {
   entry.life = 0.55;
 }
 
+function obliterateWorld() {
+  const keep = new Set();
+  bursts.forEach((burst) => keep.add(burst.points));
+  shots.forEach((shot) => keep.add(shot.group));
+  glows.forEach((glow) => keep.add(glow.sprite));
+  flashes.forEach((entry) => keep.add(entry.light));
+
+  scene.children.forEach((child) => {
+    if (keep.has(child)) return;
+    obliterated.push({ child, visible: child.visible });
+    child.visible = false;
+  });
+}
+
 function explode(firework, position, fromShot = false) {
   const burstPosition = position.clone();
   if (!fromShot) burstPosition.y = firework.height;
+  const isFinale = Boolean(firework.finale);
 
   spawnBurst(firework.particles, burstPosition, firework.palette, firework.kind);
   spawnGlow(
     burstPosition,
-    firework.palette[0],
-    firework.kind === 'night' ? 3 + Math.min(4, firework.price / 300) : 2.2,
-    firework.kind
+    isFinale ? 0xffffff : firework.palette[0],
+    isFinale ? 14 : firework.kind === 'night' ? 3 + Math.min(6, firework.price / 140) : 2.3,
+    firework.kind,
+    isFinale ? 1.8 : firework.kind === 'night' ? 0.8 : 0.6
   );
+
+  if (isFinale) {
+    spawnGlow(burstPosition, 0xffffff, 24, 'night', 2.1);
+  }
 
   if (firework.ring) {
     const ring = firework.ring;
@@ -786,8 +822,26 @@ function explode(firework, position, fromShot = false) {
     });
   }
 
-  flash(burstPosition, firework.palette[0], firework.kind === 'night' ? 1.2 : 0.5);
+  flash(
+    burstPosition,
+    isFinale ? 0xffffff : firework.palette[0],
+    isFinale ? 3.4 : firework.kind === 'night' ? 0.9 + Math.min(1.1, firework.price / 800) : 0.5
+  );
+  shakeCamera(isFinale ? 1.05 : Math.min(0.34, firework.price / 1600), isFinale ? 1.5 : 0.45);
   audio.burst(0.7 + Math.min(2.3, firework.price / 340));
+
+  if (isFinale) {
+    audio.doomsday();
+    state.lit += 1;
+    state.biggest = firework;
+    updateHud();
+    updateStand();
+    statusEl.textContent = 'Big Bertha is up. The yard is about to disappear.';
+    pendingBursts.push({ time: 0.55, run: obliterateWorld });
+    pendingBursts.push({ time: 1.05, run: () => whiteout.classList.add('on') });
+    pendingBursts.push({ time: 3.0, run: () => endShow('bertha') });
+    return;
+  }
 
   if (state.phase === 'play') award(firework, burstPosition);
 }
@@ -797,7 +851,7 @@ function launchShot(firework, position) {
   group.position.copy(position);
 
   const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.15, 8, 6),
+    new THREE.SphereGeometry(firework.finale ? 0.3 : 0.15, 8, 6),
     new THREE.MeshBasicMaterial({ color: 0xfff6d8 })
   );
   group.add(head);
@@ -812,10 +866,11 @@ function launchShot(firework, position) {
       blending: THREE.AdditiveBlending,
     })
   );
-  halo.scale.set(2.2, 2.2, 1);
+  const haloSize = firework.finale ? 4.6 : 2.2;
+  halo.scale.set(haloSize, haloSize, 1);
   group.add(halo);
 
-  const trailCount = 22;
+  const trailCount = firework.finale ? 56 : 22;
   const trailPositions = new Float32Array(trailCount * 3);
   const trailGeometry = new THREE.BufferGeometry();
   trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
@@ -824,7 +879,7 @@ function launchShot(firework, position) {
     new THREE.PointsMaterial({
       map: sparkTexture,
       color: 0xffd93d,
-      size: 0.16,
+      size: firework.finale ? 0.3 : 0.16,
       transparent: true,
       opacity: 0.75,
       depthWrite: false,
@@ -841,12 +896,12 @@ function launchShot(firework, position) {
     trailPositions,
     trailCount,
     firework,
-    speed: Math.max(7, firework.height / 0.8),
+    speed: Math.max(4, firework.height / (firework.flightSeconds || 0.8)),
     targetY: firework.height,
   });
 
   audio.launch();
-  showBanner('Away it goes!');
+  showBanner(firework.finale ? 'Big Bertha is away. Look up.' : 'Away it goes!');
 }
 
 /* ------------------------------------------------------------------ *
@@ -956,11 +1011,25 @@ function placeFirework(fireworkId, x, z) {
 }
 
 function lightPlaced(item) {
-  if (!item || item.userData.state !== 'ready') return;
+  if (!item || item.userData.state !== 'ready' || state.finale) return;
+  const firework = item.userData.firework;
   item.userData.state = 'fuse';
   item.userData.fuse = FUSE_SECONDS;
   item.userData.ring.material.color.setHex(0xff7b3d);
   audio.fuse();
+
+  if (firework.finale) {
+    state.finale = true;
+    state.finaleTime = state.timeLeft;
+    state.finaleBonus = Math.ceil(state.finaleTime) * TIME_BONUS_PER_SECOND;
+    cancelPlacement();
+    updateStand();
+    showBanner(`BIG BERTHA! Time bonus +${formatMoney(state.finaleBonus)}.`, 4400);
+    statusEl.textContent = `Big Bertha is lit. Time bonus ${formatMoney(state.finaleBonus)}.`;
+    audio.finaleWarning();
+    return;
+  }
+
   showBanner('Fuse lit!');
   statusEl.textContent = 'Fuse lit.';
 }
@@ -1236,14 +1305,23 @@ function startShow() {
   state.dayTimer = 0;
   state.owned = {};
   state.selected = null;
+  state.finale = false;
+  state.finaleTime = 0;
+  state.finaleBonus = 0;
 
   clearEffects();
+  obliterated.splice(0).forEach(({ child, visible }) => {
+    child.visible = visible;
+  });
+  whiteout.classList.remove('on');
+  shakeTime = 0;
   crowd.reset();
   audio.setDaylight(false);
   cancelPlacement();
 
   overlay.classList.add('hidden');
   overlay.classList.remove('intro');
+  overlay.classList.remove('endgame');
   overlay.setAttribute('aria-hidden', 'true');
   overlayStats.classList.remove('show');
 
@@ -1266,30 +1344,54 @@ function endShow(reason) {
   clearPlaced();
   cancelPlacement();
 
-  const result = submitScore(GAME_ID, state.score);
+  const isFinale = reason === 'bertha';
+  const earned = state.score;
+  const timeBonus = isFinale ? Math.max(0, Math.ceil(state.finaleTime) * TIME_BONUS_PER_SECOND) : 0;
+  const finalScore = earned + timeBonus;
+  const result = submitScore(GAME_ID, finalScore);
   state.best = result.best;
+  if (isFinale) state.score = finalScore;
 
-  overlayKicker.textContent = result.isBest ? 'A new personal best' : 'The street goes quiet';
-  overlayTitle.textContent = reason === 'curfew' ? 'CURFEW!' : 'ALL OUT!';
-  overlaySub.textContent =
-    reason === 'curfew'
+  overlayKicker.textContent = result.isBest
+    ? 'A new personal best'
+    : isFinale
+      ? 'No street left to complain'
+      : 'The street goes quiet';
+  overlayTitle.textContent = isFinale ? 'BIG BERTHA!' : reason === 'curfew' ? 'CURFEW!' : 'ALL OUT!';
+  overlaySub.textContent = isFinale
+    ? 'There goes the neighbourhood.'
+    : reason === 'curfew'
       ? 'The neighbours are pretending to be asleep.'
       : 'The crate is empty and the stand is closed.';
-  overlayText.textContent =
-    reason === 'curfew'
+  overlayText.textContent = isFinale
+    ? 'The sky turns white. The house, the fence, the trees and the crowd are gone. All that is left is a crater, a ringing in your ears, and your time bonus.'
+    : reason === 'curfew'
       ? 'The porch lights are off, the last shell has fallen, and somebody is definitely peeking through the blinds. Same time next week?'
       : 'You spent the last of the fireworks money. The yard is quiet, the grass is covered in paper, and the crowd wants an encore you cannot afford.';
 
   overlay.classList.remove('intro');
+  overlay.classList.toggle('endgame', isFinale);
+  if (isFinale) whiteout.classList.add('on');
   overlayRules.hidden = true;
   overlayControls.hidden = true;
   overlayStats.replaceChildren();
-  addStatCell('Earned', formatMoney(state.score));
-  addStatCell('Fireworks lit', String(state.lit));
-  addStatCell('Biggest firework', state.biggest ? state.biggest.name : '—');
-  addStatCell('Peak crowd', String(state.peakCrowd));
-  addStatCell('Best show', formatMoney(state.best));
-  addStatCell('Cash left', formatMoney(state.cash));
+
+  if (isFinale) {
+    addStatCell('Earned', formatMoney(earned));
+    addStatCell('Time bonus', `+${formatMoney(timeBonus)}`);
+    addStatCell('Final score', formatMoney(finalScore));
+    addStatCell('Fireworks lit', String(state.lit));
+    addStatCell('Peak crowd', String(state.peakCrowd));
+    addStatCell('Best show', formatMoney(state.best));
+  } else {
+    addStatCell('Earned', formatMoney(earned));
+    addStatCell('Fireworks lit', String(state.lit));
+    addStatCell('Biggest firework', state.biggest ? state.biggest.name : '—');
+    addStatCell('Peak crowd', String(state.peakCrowd));
+    addStatCell('Best show', formatMoney(state.best));
+    addStatCell('Cash left', formatMoney(state.cash));
+  }
+
   overlayStats.classList.add('show');
 
   startButton.textContent = 'One more show';
@@ -1298,14 +1400,18 @@ function endShow(reason) {
   overlay.scrollTop = 0;
 
   audio.stopAmbience();
-  audio.curfew();
+  if (!isFinale) audio.curfew();
 
   updateHud();
+  updateHudClock();
   updateStand();
 
-  statusEl.textContent = `Show over. You earned ${formatMoney(state.score)}. Best ${formatMoney(
-    state.best
-  )}.`;
+  statusEl.textContent = isFinale
+    ? `Big Bertha! Earned ${formatMoney(earned)}, time bonus ${formatMoney(
+        timeBonus
+      )}, final score ${formatMoney(finalScore)}, best ${formatMoney(state.best)}.`
+    : `Show over. You earned ${formatMoney(earned)}. Best ${formatMoney(state.best)}.`;
+
   window.setTimeout(() => startButton.focus({ preventScroll: true }), 80);
 }
 
@@ -1349,9 +1455,11 @@ function buildStand() {
     name.className = 'stand-name';
     name.textContent = firework.name;
     const tag = document.createElement('span');
-    tag.className = `stand-tag ${firework.kind}`;
-    tag.textContent = firework.kind === 'day' ? 'Day' : 'Night';
+    tag.className = firework.finale ? 'stand-tag finale' : `stand-tag ${firework.kind}`;
+    tag.textContent = firework.finale ? 'Finale' : firework.kind === 'day' ? 'Day' : 'Night';
     nameWrap.append(name, tag);
+
+    if (firework.finale) card.classList.add('is-finale');
 
     const owned = document.createElement('span');
     owned.className = 'stand-owned';
@@ -1366,9 +1474,11 @@ function buildStand() {
     const figures = document.createElement('div');
     figures.className = 'stand-figures';
     const payout = document.createElement('span');
-    payout.textContent = `Pays ${formatMoney(firework.payout)}`;
+    payout.textContent = firework.finale ? 'Ends the show' : `Pays ${formatMoney(firework.payout)}`;
     const crowdGain = document.createElement('span');
-    crowdGain.textContent = `Crowd +${firework.crowd}`;
+    crowdGain.textContent = firework.finale
+      ? `Time bonus ${formatMoney(TIME_BONUS_PER_SECOND)}/sec`
+      : `Crowd +${firework.crowd}`;
     figures.append(payout, crowdGain);
 
     const actions = document.createElement('div');
@@ -1405,6 +1515,7 @@ function updateStandHint() {
 
   if (state.phase === 'intro') text = 'Start the show to open the stand.';
   else if (state.phase === 'over') text = 'The stand is closed until the next show.';
+  else if (state.finale) text = 'Big Bertha is up. This is the last firework.';
   else if (state.sky !== 'night') text = 'Daytime: little ones only. Big fireworks wait for night.';
   else if (state.selected) text = 'Tap the yard to set it down, then tap it to light it.';
 
@@ -1419,7 +1530,7 @@ function updateStand() {
     if (!ref) continue;
 
     const owned = state.owned[firework.id] || 0;
-    const canBuy = state.phase === 'play' && state.cash >= firework.price;
+    const canBuy = state.phase === 'play' && !state.finale && state.cash >= firework.price;
     const nightLocked = firework.kind === 'night' && state.sky !== 'night';
     const selected = state.selected === firework.id;
 
@@ -1427,9 +1538,16 @@ function updateStand() {
     ref.buy.textContent =
       state.cash >= firework.price ? `Buy ${formatMoney(firework.price)}` : `Need ${formatMoney(firework.price)}`;
 
-    ref.light.disabled = state.phase !== 'play' || owned < 1 || nightLocked;
-    ref.light.textContent =
-      owned < 1 ? 'Light' : nightLocked ? 'Night only' : selected ? 'Placing…' : `Light ×${owned}`;
+    ref.light.disabled = state.phase !== 'play' || state.finale || owned < 1 || nightLocked;
+    ref.light.textContent = state.finale
+      ? 'Finale'
+      : owned < 1
+        ? 'Light'
+        : nightLocked
+          ? 'Night only'
+          : selected
+            ? 'Placing…'
+            : `Light ×${owned}`;
 
     ref.card.classList.toggle('is-selected', selected);
     ref.card.classList.toggle('is-locked', nightLocked);
@@ -1439,7 +1557,7 @@ function updateStand() {
 }
 
 function buyFirework(firework) {
-  if (state.phase !== 'play') return;
+  if (state.phase !== 'play' || state.finale) return;
 
   if (state.cash < firework.price) {
     showBanner(`You need ${formatMoney(firework.price - state.cash)} more for that one.`);
@@ -1460,7 +1578,7 @@ function buyFirework(firework) {
 }
 
 function chooseFirework(firework) {
-  if (state.phase !== 'play') return;
+  if (state.phase !== 'play' || state.finale) return;
   if ((state.owned[firework.id] || 0) < 1) return;
 
   if (firework.kind === 'night' && state.sky !== 'night') {
@@ -1571,7 +1689,7 @@ function updateGhostPosition() {
 }
 
 function handleTap() {
-  if (state.phase !== 'play') return;
+  if (state.phase !== 'play' || state.finale) return;
 
   raycaster.setFromCamera(pointer, camera);
 
@@ -1601,7 +1719,7 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
 });
 
 window.addEventListener('keydown', (event) => {
-  if (state.phase !== 'play') return;
+  if (state.phase !== 'play' || state.finale) return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
   if (event.target instanceof HTMLElement) {
     const tag = event.target.tagName;
@@ -1665,7 +1783,14 @@ function updateHudClock() {
     lastClockText = text;
     timeEl.textContent = text;
   }
-  timeEl.classList.toggle('low', state.phase === 'play' && state.timeLeft <= 12);
+
+  const bonus = state.finale
+    ? state.finaleBonus
+    : state.phase === 'play'
+      ? Math.ceil(state.timeLeft) * TIME_BONUS_PER_SECOND
+      : 0;
+  setText(timeBonusEl, `+${formatMoney(bonus)}`);
+  timeEl.classList.toggle('low', state.phase === 'play' && !state.finale && state.timeLeft <= 12);
 
   const key = `${state.sky}|${state.sky === 'day' ? Math.ceil(state.dayTimer) : ''}`;
   if (key !== lastSkyKey) {
@@ -1709,6 +1834,15 @@ function updateCamera(dt) {
 
   camera.position.x += (targetX - camera.position.x) * ease;
   camera.position.y += (targetY - camera.position.y) * ease;
+
+  if (shakeTime > 0) {
+    shakeTime = Math.max(0, shakeTime - dt);
+    const fade = shakeDuration > 0 ? shakeTime / shakeDuration : 0;
+    const amount = shakeStrength * fade;
+    camera.position.x += (Math.random() - 0.5) * amount;
+    camera.position.y += (Math.random() - 0.5) * amount;
+  }
+
   camera.lookAt(CAMERA_TARGET);
 }
 
@@ -1732,7 +1866,7 @@ function tick() {
 
   ghostRing.rotation.z += dt * 1.2;
 
-  if (state.phase === 'play') {
+  if (state.phase === 'play' && !state.finale) {
     state.timeLeft = Math.max(0, state.timeLeft - dt);
     if (state.timeLeft <= 0) endShow('curfew');
     else checkBroke(dt);
