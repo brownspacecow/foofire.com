@@ -29,23 +29,12 @@ class AudioEngine {
     this.ctx = null;
     this.master = null;
     this.started = false;
-    this.starting = null;
     this.volume = 0.7;
     this.muted = false;
     this.lastPlayback = null;
   }
 
   async init() {
-    if (this.started) return;
-    if (this.starting) return this.starting;
-    this.starting = this.startInternal().catch((error) => {
-      this.starting = null;
-      throw error;
-    });
-    return this.starting;
-  }
-
-  async startInternal() {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
     if (!this.ctx) {
@@ -54,14 +43,21 @@ class AudioEngine {
       this.master.gain.value = this.muted ? 0 : this.volume * 0.42;
       this.master.connect(this.ctx.destination);
     }
-    if (this.ctx.state === 'suspended') {
-      try {
-        await this.ctx.resume();
-      } catch {
-        /* The UI still works without audio. */
-      }
+    if (this.ctx.state === 'running') {
+      this.started = true;
+      return;
     }
-    this.started = true;
+    try {
+      // Some browsers keep resume() pending until a fresh user gesture. Do not
+      // let that freeze a listening challenge; a later tap can resume it.
+      await Promise.race([
+        this.ctx.resume().catch(() => undefined),
+        new Promise((resolve) => setTimeout(resolve, 150)),
+      ]);
+    } catch {
+      /* The UI still works without audio. */
+    }
+    this.started = this.ctx.state === 'running';
   }
 
   applySettings(volume, muted) {

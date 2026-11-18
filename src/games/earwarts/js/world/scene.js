@@ -580,7 +580,6 @@ function buildForest(scene) {
     [-8.5, 44],
     [5.5, 49],
     [-5.5, 49],
-    [0, 50],
   ];
   for (const [x, z] of trees) {
     const tree = new THREE.Group();
@@ -932,6 +931,7 @@ function addNpcs(scene) {
         transparent: true,
         opacity: 0.82,
       }),
+      [0, 0, 0],
       8
     )
   );
