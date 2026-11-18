@@ -4,6 +4,14 @@
  */
 export const games = [
   {
+    id: 'spot-your-friends',
+    title: 'Spot Your Friends',
+    description:
+      'Ten friends are hiding all over a three.js house and front yard. Walk around in first person, peek behind couches and inside bathtubs, and tag every one. Clues cost ten seconds, so keep your eyes open.',
+    image: './public/screenshots/spot-your-friends.webp',
+    path: './src/games/spot-your-friends/index.html',
+  },
+  {
     id: 'rough-housing',
     title: 'Rough Housing',
     description:

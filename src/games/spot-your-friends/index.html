@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spot Your Friends | Foofire Games</title>
+    <meta
+      name="description"
+      content="A first-person hide-and-seek scavenger hunt. Walk around a three.js house and front yard, peek behind furniture, and tag all ten friends."
+    />
+    <meta property="og:title" content="Spot Your Friends | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Ten friends are hiding around the house and yard. Walk, look, and tag them all."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/spot-your-friends/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      .sf-game {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 1rem 3.5rem;
+      }
+
+      #game-container {
+        position: relative;
+        width: 100%;
+        height: clamp(480px, 76vh, 800px);
+        overflow: hidden;
+        background: #9ed8f4;
+        border: 4px solid var(--ink);
+        box-shadow: var(--shadow-hard);
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      #game-container:focus,
+      #game-container:focus-visible {
+        outline: none;
+      }
+
+      #game-container:fullscreen {
+        height: 100vh;
+        border: none;
+        box-shadow: none;
+      }
+
+      #game-container:fullscreen .game-canvas {
+        cursor: crosshair;
+      }
+
+      .game-canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+      }
+
+      .game-canvas.is-looking {
+        cursor: grabbing;
+      }
+
+      /* ------------------------------------------------------------ HUD */
+
+      .hud {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        color: var(--text);
+        font-family: var(--font-body);
+        pointer-events: none;
+      }
+
+      .hud-top {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.75rem 0.8rem;
+      }
+
+      .hud-chips {
+        display: flex;
+        gap: 0.45rem;
+      }
+
+      .hud-chip {
+        min-width: 4.4rem;
+        padding: 0.34rem 0.55rem 0.4rem;
+        background: rgba(10, 5, 24, 0.7);
+        border: 2px solid rgba(255, 248, 231, 0.16);
+        border-left: 4px solid var(--accent-soft);
+        backdrop-filter: blur(4px);
+      }
+
+      .hud-chip span {
+        display: block;
+        color: var(--muted);
+        font-family: var(--font-pixel);
+        font-size: 0.38rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .hud-chip strong {
+        display: block;
+        font-size: 1.05rem;
+        font-style: italic;
+        font-weight: 900;
+        line-height: 1.2;
+        letter-spacing: 0.01em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .hud-chip-time strong {
+        color: var(--accent-soft);
+      }
+
+      .hud-buttons {
+        display: flex;
+        gap: 0.35rem;
+        pointer-events: auto;
+      }
+
+      .hud-buttons button {
+        width: 2.3rem;
+        height: 2.3rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 2px solid rgba(255, 248, 231, 0.22);
+        background: rgba(10, 5, 24, 0.72);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+      }
+
+      .hud-buttons button:hover {
+        background: rgba(51, 35, 107, 0.92);
+      }
+
+      .hud-buttons button:active {
+        transform: translateY(1px);
+      }
+
+      /* -------------------------------------------------- friend list */
+
+      .friend-panel {
+        position: absolute;
+        top: 4.3rem;
+        right: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        width: 212px;
+        max-height: calc(100% - 5.6rem);
+        padding: 0.5rem;
+        background: linear-gradient(170deg, rgba(36, 26, 77, 0.94), rgba(18, 10, 42, 0.9));
+        border: 2px solid rgba(255, 248, 231, 0.18);
+        border-left: 4px solid var(--accent);
+        box-shadow: 4px 4px 0 rgba(10, 5, 24, 0.45);
+        pointer-events: auto;
+      }
+
+      .friend-panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin: 0 0 0.35rem;
+        padding: 0 0.2rem;
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: 0.44rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .friend-panel-head span {
+        color: var(--muted);
+        font-size: 0.42rem;
+      }
+
+      .friend-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.12rem;
+        overflow-y: auto;
+      }
+
+      .friend-row {
+        display: grid;
+        grid-template-columns: 0.55rem 1fr auto;
+        align-items: center;
+        gap: 0.4rem;
+        width: 100%;
+        padding: 0.28rem 0.3rem;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .friend-row:hover {
+        background: rgba(255, 248, 231, 0.07);
+        border-color: rgba(255, 248, 231, 0.1);
+      }
+
+      .friend-dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(10, 5, 24, 0.7);
+      }
+
+      .friend-name {
+        font-weight: 700;
+        line-height: 1.3;
+      }
+
+      .friend-state {
+        color: var(--muted);
+        font-size: 0.62rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .friend-row.found {
+        background: rgba(61, 220, 132, 0.1);
+      }
+
+      .friend-row.found .friend-name {
+        color: var(--green);
+      }
+
+      .friend-row.found .friend-state {
+        color: var(--green);
+      }
+
+      .friend-row.found .friend-dot {
+        background: var(--green) !important;
+      }
+
+      .friend-row:disabled {
+        cursor: default;
+      }
+
+      .friend-panel-note {
+        margin: 0.4rem 0.2rem 0;
+        color: var(--muted);
+        font-size: 0.62rem;
+        line-height: 1.35;
+      }
+
+      /* --------------------------------------------------- centre bits */
+
+      .crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 7px;
+        height: 7px;
+        margin: -3px 0 0 -3px;
+        border: 2px solid rgba(255, 248, 231, 0.9);
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(10, 5, 24, 0.5);
+      }
+
+      .toast {
+        position: absolute;
+        top: 4.6rem;
+        left: 50%;
+        max-width: min(30rem, 74%);
+        margin: 0;
+        padding: 0.45rem 0.8rem;
+        transform: translate(-50%, -8px);
+        background: rgba(10, 5, 24, 0.85);
+        border: 2px solid var(--accent-soft);
+        color: var(--accent-soft);
+        font-size: clamp(0.78rem, 2vw, 0.95rem);
+        font-weight: 800;
+        font-style: italic;
+        line-height: 1.4;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.18s ease, transform 0.18s ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      .interact {
+        position: absolute;
+        left: 50%;
+        bottom: 5.6rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.42rem 0.75rem;
+        transform: translate(-50%, 8px);
+        background: rgba(10, 5, 24, 0.84);
+        border: 2px solid var(--accent-soft);
+        color: var(--text);
+        font-size: 0.92rem;
+        font-weight: 800;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+      }
+
+      .interact.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      .interact kbd {
+        display: inline-block;
+        padding: 0.05rem 0.35rem;
+        background: var(--accent-soft);
+        border: 2px solid var(--ink);
+        box-shadow: 0 2px 0 var(--ink);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        line-height: 1.7;
+      }
+
+      .look-hint {
+        position: absolute;
+        left: 50%;
+        bottom: 1rem;
+        margin: 0;
+        padding: 0.32rem 0.65rem;
+        transform: translateX(-50%);
+        background: rgba(10, 5, 24, 0.7);
+        border: 1px solid rgba(255, 248, 231, 0.25);
+        color: var(--muted);
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .look-hint.is-visible {
+        opacity: 1;
+      }
+
+      /* ------------------------------------------------------- touch */
+
+      .touch-ui {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: none;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 1rem;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      }
+
+      .has-touch .touch-ui,
+      .has-touch .tag-button {
+        display: flex;
+      }
+
+      .joystick {
+        position: relative;
+        width: 116px;
+        height: 116px;
+        border-radius: 50%;
+        background: rgba(10, 5, 24, 0.34);
+        border: 2px solid rgba(255, 248, 231, 0.4);
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      .joystick-knob {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 52px;
+        height: 52px;
+        margin: -26px 0 0 -26px;
+        border-radius: 50%;
+        background: rgba(255, 248, 231, 0.8);
+        border: 3px solid var(--ink);
+        box-shadow: 0 3px 0 rgba(10, 5, 24, 0.5);
+        will-change: transform;
+      }
+
+      .tag-button {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 82px;
+        height: 82px;
+        border-radius: 50%;
+        border: 3px solid var(--ink);
+        background: linear-gradient(180deg, var(--accent-soft), #ffb703);
+        box-shadow: 4px 4px 0 var(--ink);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.62rem;
+        cursor: pointer;
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      .tag-button:disabled {
+        filter: grayscale(0.7) brightness(0.8);
+        cursor: default;
+      }
+
+      .tag-button:active:not(:disabled) {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      /* ------------------------------------------------------ overlays */
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        overflow-y: auto;
+        background: radial-gradient(circle at 50% 36%, rgba(18, 10, 42, 0.55), rgba(10, 5, 24, 0.93));
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.22s ease, visibility 0.22s;
+      }
+
+      .overlay.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+
+      .overlay-card {
+        width: min(100%, 40rem);
+        margin: auto;
+        padding: clamp(1.05rem, 3vw, 1.8rem);
+        background: linear-gradient(170deg, rgba(42, 29, 88, 0.98), rgba(18, 10, 42, 0.98));
+        border: 3px solid var(--ink);
+        box-shadow: 7px 7px 0 var(--ink), inset 0 0 0 2px rgba(255, 248, 231, 0.08);
+        text-align: center;
+      }
+
+      .overlay-kicker {
+        margin: 0 0 0.4rem;
+        color: var(--accent);
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        letter-spacing: 0.14em;
+        line-height: 1.7;
+        text-transform: uppercase;
+      }
+
+      .overlay-card h2 {
+        margin: 0 0 0.45rem;
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: clamp(1.15rem, 4.6vw, 2rem);
+        line-height: 1.5;
+        text-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .overlay-lead {
+        max-width: 33rem;
+        margin: 0 auto 0.9rem;
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1.55;
+      }
+
+      .control-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+        margin: 0 0 1rem;
+        padding: 0;
+      }
+
+      .control-list > div {
+        padding: 0.42rem 0.4rem;
+        background: rgba(255, 248, 231, 0.06);
+        border: 1px solid rgba(255, 248, 231, 0.12);
+      }
+
+      .control-list dt {
+        color: var(--muted);
+        font-size: 0.62rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .control-list dd {
+        margin: 0.12rem 0 0;
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.46rem;
+        line-height: 1.8;
+      }
+
+      .touch-tip {
+        display: none;
+        margin: 0 0 1rem;
+        color: var(--text);
+        font-size: 0.88rem;
+        line-height: 1.55;
+      }
+
+      .touch-tip strong {
+        color: var(--accent-soft);
+      }
+
+      .has-touch .touch-tip {
+        display: block;
+      }
+
+      .has-touch .control-list {
+        display: none;
+      }
+
+      .play-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 3rem;
+        padding: 0.75rem 1.5rem;
+        border: 3px solid var(--ink);
+        background: linear-gradient(180deg, var(--accent-soft), #ffb703);
+        box-shadow: 4px 4px 0 var(--ink);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.64rem;
+        line-height: 1.7;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+      }
+
+      .play-button:hover {
+        filter: brightness(1.06);
+        transform: translate(-1px, -1px);
+        box-shadow: 5px 5px 0 var(--ink);
+      }
+
+      .play-button:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .overlay-best {
+        margin: 0.75rem 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .overlay-best strong {
+        color: var(--accent-soft);
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+        margin: 1rem 0;
+      }
+
+      .result-grid > div {
+        padding: 0.5rem;
+        background: rgba(255, 248, 231, 0.06);
+        border: 1px solid rgba(255, 248, 231, 0.12);
+      }
+
+      .result-grid dt {
+        color: var(--muted);
+        font-size: 0.66rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .result-grid dd {
+        margin: 0.12rem 0 0;
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: 0.7rem;
+        line-height: 1.7;
+      }
+
+      .finish-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem 1rem;
+      }
+
+      .text-link {
+        color: var(--text);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      .fallback {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: #120a2a;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .fallback[hidden] {
+        display: none;
+      }
+
+      .sf-sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      /* -------------------------------------------------------- footer */
+
+      .sf-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem 1.2rem;
+        padding: 0.9rem 0.2rem 0;
+      }
+
+      .sf-tip {
+        max-width: 46rem;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .sf-tip kbd {
+        padding: 0.1rem 0.3rem;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .back-link {
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      @media (max-width: 880px) {
+        .friend-panel {
+          display: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .sf-game {
+          padding: 0 0.55rem 2rem;
+        }
+
+        #game-container {
+          height: clamp(420px, 70vh, 620px);
+        }
+
+        .hud-top {
+          padding: 0.55rem;
+        }
+
+        .hud-chip {
+          min-width: 3.7rem;
+          padding: 0.26rem 0.4rem 0.32rem;
+        }
+
+        .hud-chip strong {
+          font-size: 0.9rem;
+        }
+
+        .hud-chip span {
+          font-size: 0.32rem;
+        }
+
+        .hud-buttons button {
+          width: 2.05rem;
+          height: 2.05rem;
+          font-size: 0.9rem;
+        }
+
+        .toast {
+          top: 3.9rem;
+          max-width: 86%;
+        }
+
+        .interact {
+          bottom: 5.4rem;
+          font-size: 0.82rem;
+        }
+
+        .crosshair {
+          display: none;
+        }
+
+        .overlay {
+          padding: 0.6rem;
+        }
+
+        .overlay-card {
+          padding: 0.9rem 0.8rem 1rem;
+        }
+
+        .overlay-lead {
+          font-size: 0.86rem;
+          margin-bottom: 0.65rem;
+        }
+
+        .touch-tip {
+          font-size: 0.8rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .play-button {
+          min-height: 2.7rem;
+          padding: 0.65rem 1rem;
+          font-size: 0.56rem;
+        }
+
+        .overlay-best {
+          margin-top: 0.55rem;
+          font-size: 0.76rem;
+        }
+
+        .result-grid dd {
+          font-size: 0.6rem;
+        }
+      }
+
+      @media (pointer: coarse) {
+        #game-container {
+          height: clamp(320px, 74vh, 700px);
+          height: clamp(320px, 74dvh, 700px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .overlay,
+        .toast,
+        .interact,
+        .look-hint {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Spot Your Friends</h1>
+        <p>
+          Ten friends are hiding around the house and the front yard. Walk around, peek behind the
+          couch and inside the bathtub, and tag every last one. Clues cost ten seconds, so look
+          sharp.
+        </p>
+      </section>
+
+      <section class="sf-game" aria-label="Spot Your Friends game">
+        <div
+          id="game-container"
+          tabindex="0"
+          role="application"
+          aria-label="First-person hide-and-seek game. Walk with W A S D or the arrow keys, look with the mouse, tag a friend with E, press H for a hint, and R to restart."
+        >
+          <div class="hud">
+            <div class="hud-top">
+              <div class="hud-chips">
+                <div class="hud-chip">
+                  <span>Friends</span>
+                  <strong id="found-value">0/10</strong>
+                </div>
+                <div class="hud-chip hud-chip-time">
+                  <span>Time</span>
+                  <strong id="time-value">0:00</strong>
+                </div>
+              </div>
+              <div class="hud-buttons">
+                <button id="hint-button" type="button" aria-label="Show a clue, costs ten seconds">
+                  💡
+                </button>
+                <button id="restart-button" type="button" aria-label="Restart the hunt">↺</button>
+                <button id="mute-button" type="button" aria-label="Mute sounds" aria-pressed="false">
+                  🔊
+                </button>
+                <button
+                  id="fullscreen-button"
+                  type="button"
+                  aria-label="Play in full screen"
+                  aria-pressed="false"
+                >
+                  ⛶
+                </button>
+              </div>
+            </div>
+
+            <aside class="friend-panel" aria-label="Friends to find">
+              <p class="friend-panel-head">Friends <span id="friend-total">0/10</span></p>
+              <div class="friend-list" id="friend-list"></div>
+              <p class="friend-panel-note">Pick a name for a clue. Each clue adds 10 seconds.</p>
+            </aside>
+
+            <div class="crosshair" aria-hidden="true"></div>
+            <p class="toast" id="toast" role="status" aria-live="polite"></p>
+            <p class="look-hint" id="look-hint">Click to look around</p>
+
+            <div class="interact" id="interact" aria-hidden="true">
+              <kbd>E</kbd><span id="interact-name">Tag</span>
+            </div>
+
+            <div class="touch-ui" aria-label="Touch controls">
+              <div class="joystick" id="joystick" aria-hidden="true">
+                <span class="joystick-knob" id="joystick-knob"></span>
+              </div>
+              <button class="tag-button" id="tag-button" type="button" aria-label="Tag the friend" disabled>
+                TAG
+              </button>
+            </div>
+          </div>
+
+          <div class="overlay is-open" id="start-overlay">
+            <div class="overlay-card">
+              <p class="overlay-kicker">Foofire hide &amp; seek</p>
+              <h2>SPOT YOUR FRIENDS</h2>
+              <p class="overlay-lead">
+                Your friends are hiding all over the house and front yard — behind the couch, in
+                the bathtub, even up the tree. Walk around and tag all ten of them.
+              </p>
+              <dl class="control-list">
+                <div><dt>Walk</dt><dd>WASD / arrows</dd></div>
+                <div><dt>Look</dt><dd>Mouse</dd></div>
+                <div><dt>Tag</dt><dd>E</dd></div>
+                <div><dt>Sprint</dt><dd>Shift</dd></div>
+                <div><dt>Clue</dt><dd>H</dd></div>
+                <div><dt>Restart</dt><dd>R</dd></div>
+              </dl>
+              <p class="touch-tip">
+                Touch: use the stick to walk, drag the screen to look, and tap
+                <strong>TAG</strong> when a friend is close.
+              </p>
+              <button class="play-button" id="start-button" type="button">Start hunting</button>
+              <p class="overlay-best">Best score <strong id="start-best">0</strong></p>
+            </div>
+          </div>
+
+          <div class="overlay" id="finish-overlay">
+            <div class="overlay-card">
+              <p class="overlay-kicker" id="result-kicker">Hunt complete</p>
+              <h2>ALL FRIENDS FOUND!</h2>
+              <p class="overlay-lead">
+                Every hiding spot checked, every friend tagged. Nobody is safe from you.
+              </p>
+              <dl class="result-grid">
+                <div><dt>Time</dt><dd id="result-time">0:00</dd></div>
+                <div><dt>Clues</dt><dd id="result-hints">0</dd></div>
+                <div><dt>Score</dt><dd id="result-score">0</dd></div>
+                <div><dt>Best</dt><dd id="result-best">0</dd></div>
+              </dl>
+              <p class="overlay-best" id="result-best-note"></p>
+              <div class="finish-actions">
+                <button class="play-button" id="again-button" type="button">Hunt again</button>
+                <a class="text-link" href="../../../games.html">All games</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="fallback" id="fallback" hidden>
+            <p>
+              This game needs WebGL. Try a newer browser, or turn on hardware acceleration and
+              reload.
+            </p>
+          </div>
+        </div>
+
+        <p class="sf-sr" id="status" role="status" aria-live="polite">
+          Spot Your Friends is ready. Press start to play.
+        </p>
+
+        <div class="sf-footer">
+          <p class="sf-tip">
+            Clues: <kbd>H</kbd> or the 💡 button. Tap a friend in the list for a specific clue.
+            Every clue adds 10 seconds to your time — the fastest hunt scores highest.
+          </p>
+          <a class="back-link" href="../../../games.html">&larr; Back to games</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
