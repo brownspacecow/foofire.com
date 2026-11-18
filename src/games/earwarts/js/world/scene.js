@@ -31,12 +31,12 @@ const LOW_WALLS = new Set([
 ]);
 
 const PALETTE = {
-  'great-hall': { floor: '#3c3357', wall: '#4c4068', accent: '#f2ce7b' },
-  'spellcasting-tower': { floor: '#302a55', wall: '#413a70', accent: '#a99bff' },
-  'creature-gardens': { floor: '#2b4834', wall: '#3b5b45', accent: '#8fe0a8' },
-  'potion-dungeon': { floor: '#2e2538', wall: '#403048', accent: '#7fd6c9' },
-  'rhythm-forest': { floor: '#203a2d', wall: '#2d4a39', accent: '#b9d87d' },
-  'piano-parlour': { floor: '#3a2a40', wall: '#4b3855', accent: '#f0a9c6' },
+  'great-hall': { floor: '#2a2340', wall: '#372e4e', accent: '#f2ce7b' },
+  'spellcasting-tower': { floor: '#211c3e', wall: '#2d2854', accent: '#a99bff' },
+  'creature-gardens': { floor: '#1b3125', wall: '#284031', accent: '#8fe0a8' },
+  'potion-dungeon': { floor: '#1e1929', wall: '#2c2337', accent: '#7fd6c9' },
+  'rhythm-forest': { floor: '#15271e', wall: '#20362a', accent: '#b9d87d' },
+  'piano-parlour': { floor: '#271b2c', wall: '#37283e', accent: '#f0a9c6' },
 };
 
 const PLAYER_RADIUS = 0.48;
@@ -74,8 +74,156 @@ function torus(radius, tube, material, position, rotation, segments = 32) {
   return mesh(new THREE.TorusGeometry(radius, tube, 6, segments), material, position, rotation);
 }
 
+let glowTexture = null;
+function getGlowTexture() {
+  if (glowTexture) return glowTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.3, 'rgba(255,255,255,0.6)');
+  gradient.addColorStop(0.7, 'rgba(255,255,255,0.12)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  glowTexture = new THREE.CanvasTexture(canvas);
+  glowTexture.colorSpace = THREE.SRGBColorSpace;
+  return glowTexture;
+}
+
+let stoneTexture = null;
+function getStoneTexture() {
+  if (stoneTexture) return stoneTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ece8f3';
+  ctx.fillRect(0, 0, 256, 256);
+  const tile = 64;
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      const shade = 236 + ((row * 17 + col * 29) % 16);
+      ctx.fillStyle = `rgb(${shade}, ${shade - 4}, ${shade + 2})`;
+      ctx.fillRect(col * tile + 2, row * tile + 2, tile - 4, tile - 4);
+      for (let speck = 0; speck < 6; speck += 1) {
+        const x = col * tile + 7 + Math.random() * (tile - 14);
+        const y = row * tile + 7 + Math.random() * (tile - 14);
+        ctx.fillStyle = `rgba(48, 39, 66, ${0.04 + Math.random() * 0.08})`;
+        ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 2);
+      }
+    }
+  }
+  ctx.strokeStyle = 'rgba(54, 43, 74, 0.4)';
+  ctx.lineWidth = 2;
+  for (let line = 0; line <= 4; line += 1) {
+    ctx.beginPath();
+    ctx.moveTo(line * tile, 0);
+    ctx.lineTo(line * tile, 256);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, line * tile);
+    ctx.lineTo(256, line * tile);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(48, 38, 66, 0.13)';
+  ctx.lineWidth = 1;
+  for (let crack = 0; crack < 9; crack += 1) {
+    const x = Math.random() * 256;
+    const y = Math.random() * 256;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 28, y + Math.random() * 24);
+    ctx.stroke();
+  }
+  stoneTexture = new THREE.CanvasTexture(canvas);
+  stoneTexture.wrapS = THREE.RepeatWrapping;
+  stoneTexture.wrapT = THREE.RepeatWrapping;
+  stoneTexture.colorSpace = THREE.SRGBColorSpace;
+  stoneTexture.anisotropy = 4;
+  return stoneTexture;
+}
+
+function glowPoints(positions, color, size, opacity, colors = null) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions.flat(), 3));
+  if (colors) {
+    const values = [];
+    for (const entry of colors) values.push(...new THREE.Color(entry).toArray());
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(values, 3));
+  }
+  const material = new THREE.PointsMaterial({
+    color: colors ? '#ffffff' : color,
+    map: getGlowTexture(),
+    size,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+    vertexColors: Boolean(colors),
+  });
+  return new THREE.Points(geometry, material);
+}
+
+function addCobweb(scene, position, rotationY = 0, scale = 1) {
+  const points = [];
+  const spokes = 9;
+  const radius = 1.35;
+  for (let spoke = 0; spoke < spokes; spoke += 1) {
+    const angle = (spoke / spokes) * Math.PI * 2;
+    points.push(0, 0, 0, Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+  }
+  for (let ring = 0.28; ring < 1; ring += 0.24) {
+    for (let spoke = 0; spoke < spokes; spoke += 1) {
+      const a = (spoke / spokes) * Math.PI * 2;
+      const b = ((spoke + 1) / spokes) * Math.PI * 2;
+      points.push(
+        Math.cos(a) * radius * ring,
+        Math.sin(a) * radius * ring,
+        0,
+        Math.cos(b) * radius * ring,
+        Math.sin(b) * radius * ring,
+        0
+      );
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+  const web = new THREE.LineSegments(
+    geometry,
+    new THREE.LineBasicMaterial({
+      color: '#b9b1c9',
+      transparent: true,
+      opacity: 0.2,
+      depthWrite: false,
+    })
+  );
+  web.position.set(...position);
+  web.rotation.y = rotationY;
+  web.scale.setScalar(scale);
+  scene.add(web);
+}
+
+function addDust(scene) {
+  const positions = [];
+  for (let index = 0; index < 480; index += 1) {
+    positions.push([
+      (Math.random() - 0.5) * 90,
+      0.6 + Math.random() * 7.4,
+      -55 + Math.random() * 160,
+    ]);
+  }
+  const dust = glowPoints(positions, '#b7a8d8', 0.13, 0.32);
+  dust.frustumCulled = false;
+  scene.add(dust);
+  return dust;
+}
+
 function addStars(scene) {
-  const count = 1500;
+  const count = 1200;
   const positions = new Float32Array(count * 3);
   for (let index = 0; index < count; index += 1) {
     const radius = 70 + Math.random() * 70;
@@ -90,50 +238,68 @@ function addStars(scene) {
   const stars = new THREE.Points(
     geometry,
     new THREE.PointsMaterial({
-      color: '#f7efdf',
-      size: 0.55,
+      color: '#ded7ee',
+      map: getGlowTexture(),
+      size: 0.42,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.65,
       sizeAttenuation: true,
       depthWrite: false,
     })
   );
   scene.add(stars);
 
-  const moon = sphere(7, basic('#f4e6c4', { toneMapped: false }), [34, 52, -82], 24);
+  const moon = sphere(6.4, basic('#cbd6c8', { toneMapped: false }), [34, 52, -82], 24);
   scene.add(moon);
   const halo = sphere(
     11,
-    basic('#f4e6c4', { transparent: true, opacity: 0.08, toneMapped: false }),
+    basic('#8ba58f', { transparent: true, opacity: 0.06, toneMapped: false }),
     [34, 52, -82],
     24
   );
   scene.add(halo);
+  const outerHalo = sphere(
+    17,
+    basic('#6f8f7a', { transparent: true, opacity: 0.022, toneMapped: false }),
+    [34, 52, -82],
+    24
+  );
+  scene.add(outerHalo);
   return stars;
 }
 
 function buildArchitecture(scene) {
   const group = new THREE.Group();
-  const floorMaterial = mat('#3c3357', { roughness: 0.92 });
-  const corridorMaterial = mat('#302a48', { roughness: 0.92 });
-  const wallMaterial = mat('#4b3e69', { roughness: 0.94 });
-  const capMaterial = mat('#6a5a91', { roughness: 0.7 });
+  const corridorMaterial = mat('#211d36', { roughness: 0.92 });
+  corridorMaterial.map = getStoneTexture().clone();
+  corridorMaterial.map.repeat.set(3, 3);
+  corridorMaterial.map.needsUpdate = true;
+  const wallMaterial = mat('#332b4c', { roughness: 0.94 });
+  const capMaterial = mat('#4c416e', { roughness: 0.7 });
   const railMaterial = basic('#d8b66b', { transparent: true, opacity: 0.65 });
 
   for (const zone of FLOOR_ZONES) {
     const material = zone.id.startsWith('corridor')
       ? corridorMaterial
       : new THREE.MeshStandardMaterial({
-          color: PALETTE[zone.id]?.floor ?? '#3c3357',
+          color: PALETTE[zone.id]?.floor ?? '#2a2340',
           roughness: 0.92,
           metalness: 0.02,
         });
+    if (!zone.id.startsWith('corridor')) {
+      material.map = getStoneTexture().clone();
+      material.map.repeat.set(
+        Math.max(2, Math.round(zone.halfW / 2)),
+        Math.max(2, Math.round(zone.halfD / 2))
+      );
+      material.map.needsUpdate = true;
+    }
     group.add(box([zone.halfW * 2, 0.36, zone.halfD * 2], material, [zone.x, -0.18, zone.z]));
     if (!zone.id.startsWith('corridor')) {
       const border = box(
         [zone.halfW * 2 + 0.06, 0.02, zone.halfD * 2 + 0.06],
         basic(PALETTE[zone.id]?.accent ?? '#f2ce7b', { transparent: true, opacity: 0.12 }),
-        [zone.x, 0.015, zone.z]
+        [zone.x, 0.005, zone.z]
       );
       group.add(border);
     }
@@ -296,7 +462,7 @@ function buildGreatHall(scene, house) {
     mesh(
       new THREE.RingGeometry(3.1, 3.18, 64),
       basic('#f2ce7b', { transparent: true, opacity: 0.45, side: THREE.DoubleSide }),
-      [0, 0.03, 0],
+      [0, 0.035, 0],
       [-Math.PI / 2, 0, 0]
     )
   );
@@ -339,15 +505,31 @@ function buildGreatHall(scene, house) {
   );
   group.add(table);
 
+  addCobweb(scene, [-11.8, 2.2, -9.55], 0, 0.9);
+  addCobweb(scene, [11.8, 2.2, -9.55], 0, 0.9);
+
   const candles = [];
   for (const [x, z] of [[-5, -3], [5, -3], [-5, 3], [5, 3]]) {
     const candle = new THREE.Group();
     candle.position.set(x, 3, z);
     candle.add(cylinder(0.1, 0.13, 0.45, mat('#f1e6d0'), [0, 0, 0], 8));
-    candle.add(sphere(0.07, basic('#ffd27d', { toneMapped: false }), [0, 0.3, 0], 8));
+    const flame = sphere(0.07, basic('#ffd27d', { toneMapped: false }), [0, 0.3, 0], 8);
+    candle.add(flame);
     group.add(candle);
-    candles.push(candle);
+    candles.push({ group: candle, flame });
   }
+  group.add(
+    glowPoints(
+      candles.map(({ group: candle }) => [
+        candle.position.x,
+        candle.position.y + 0.35,
+        candle.position.z,
+      ]),
+      '#ffb35e',
+      2.2,
+      0.38
+    )
+  );
 
   scene.add(group);
   return { group, bannerMaterials, candles };
@@ -660,12 +842,14 @@ function buildForest(scene) {
   const fireflies = new THREE.Points(
     fireflyGeometry,
     new THREE.PointsMaterial({
-      color: '#f3ffb8',
-      size: 0.13,
+      color: '#eaffb0',
+      map: getGlowTexture(),
+      size: 0.24,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
       sizeAttenuation: true,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
     })
   );
   group.add(fireflies);
@@ -889,6 +1073,19 @@ function makeWizard() {
   staff.rotation.z = -0.1;
   staff.add(cylinder(0.035, 0.05, 1.8, mat('#60452f', { roughness: 0.92 }), [0, 0.88, 0], 7));
   staff.add(sphere(0.12, glow, [0, 1.86, 0], 12));
+  const staffGlow = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: getGlowTexture(),
+      color: '#ffd9a0',
+      transparent: true,
+      opacity: 0.5,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  staffGlow.position.set(0, 1.86, 0);
+  staffGlow.scale.set(1.2, 1.2, 1);
+  staff.add(staffGlow);
   group.add(staff);
 
   for (const side of [-1, 1]) {
@@ -1132,8 +1329,8 @@ function buildSpellEffect(cast) {
 
 export function initScene({ container, labelsLayer }) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#0c0820');
-  scene.fog = new THREE.Fog('#0c0820', 38, 120);
+  scene.background = new THREE.Color('#05030b');
+  scene.fog = new THREE.Fog('#05030b', 24, 95);
 
   const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 160);
   camera.position.set(0, 8.8, 19);
@@ -1141,18 +1338,18 @@ export function initScene({ container, labelsLayer }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.18;
+  renderer.toneMappingExposure = 1.12;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.append(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight('#c3b5ff', 1.05));
-  const hemi = new THREE.HemisphereLight('#b7c6ff', '#2b1b40', 0.85);
+  scene.add(new THREE.AmbientLight('#8b7ec0', 0.72));
+  const hemi = new THREE.HemisphereLight('#7185c8', '#10091c', 0.55);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight('#ffe7c0', 1.5);
-  sun.position.set(18, 30, 12);
+  const sun = new THREE.DirectionalLight('#b7c8ff', 1.1);
+  sun.position.set(-22, 30, -18);
   scene.add(sun);
-  const hallLight = new THREE.PointLight('#ffcf87', 20, 28);
-  hallLight.position.set(0, 6, 0);
+  const hallLight = new THREE.PointLight('#ffb15c', 24, 28, 2);
+  hallLight.position.set(0, 4.8, 0);
   scene.add(hallLight);
 
   const stars = addStars(scene);
@@ -1170,10 +1367,14 @@ export function initScene({ container, labelsLayer }) {
   addNpcLabels(scene, labels);
 
   const focusPoints = [];
+  const focusGlowPositions = [];
+  const focusGlowColors = [];
   const focusFor = (skill, accent, shape, delay) => {
     const point = INTERACTIONS.find((entry) => entry.skill === skill);
     if (!point) return;
     focusPoints.push(buildFocusPedestal(scene, point, accent, shape, delay));
+    focusGlowPositions.push([point.x, 1.45, point.z]);
+    focusGlowColors.push(accent);
   };
   focusFor('pitch', '#a99bff', 'crystal', 0);
   focusFor('melody', '#f2ce7b', 'crystal', 1.4);
@@ -1181,6 +1382,8 @@ export function initScene({ container, labelsLayer }) {
   focusFor('harmony', '#7fd6c9', 'cauldron', 0.9);
   focusFor('rhythm', '#b9d87d', 'drum', 1.1);
   focusFor('perfect', '#f0a9c6', 'piano', 1.5);
+  scene.add(glowPoints(focusGlowPositions, '#ffffff', 2.3, 0.2, focusGlowColors));
+  const dust = addDust(scene);
 
   const npcs = addNpcs(scene);
 
@@ -1192,6 +1395,9 @@ export function initScene({ container, labelsLayer }) {
   scene.add(playerGroup);
   playerGroup.position.set(SPAWN.x, 0, SPAWN.z);
   playerGroup.rotation.y = Math.PI;
+  const playerLight = new THREE.PointLight('#ffd39a', 3.2, 7, 2);
+  playerLight.position.set(0.6, 1.9, 0.14);
+  playerGroup.add(playerLight);
 
   let houseId = getState().save.house || 'phoenix';
   let accessory = getState().save.petAccessory;
@@ -1426,9 +1632,13 @@ export function initScene({ container, labelsLayer }) {
       floater.floating.rotation.y = elapsed * 0.35 + floater.delay;
       floater.halo.rotation.z = elapsed * 0.2;
     }
+    hallLight.intensity = 24 + Math.sin(elapsed * 7.5) * 1.8 + Math.sin(elapsed * 18.1) * 0.7;
     for (const [index, candle] of hall.candles.entries()) {
-      candle.position.y = 3 + Math.sin(elapsed * 0.8 + index * 0.7) * 0.16;
-      candle.rotation.y = elapsed * 0.15 + index * 0.7;
+      candle.group.position.y = 3 + Math.sin(elapsed * 0.8 + index * 0.7) * 0.16;
+      candle.group.rotation.y = elapsed * 0.15 + index * 0.7;
+      candle.flame.scale.setScalar(
+        1 + Math.sin(elapsed * 12.7 + index * 2.4) * 0.16 + Math.sin(elapsed * 5.3 + index) * 0.07
+      );
     }
     for (const [index, creature] of creatures.entries()) {
       creature.position.y = Math.abs(Math.sin(elapsed * 1.4 + index)) * 0.22;
@@ -1463,6 +1673,8 @@ export function initScene({ container, labelsLayer }) {
 
     stars.rotation.y = elapsed * 0.003;
     fireflies.rotation.y = Math.sin(elapsed * 0.05) * 0.1;
+    dust.rotation.y = elapsed * 0.008;
+    dust.position.y = Math.sin(elapsed * 0.25) * 0.12;
     updateLabels();
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
