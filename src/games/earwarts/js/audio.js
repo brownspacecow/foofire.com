@@ -163,6 +163,40 @@ class AudioEngine {
     oscillator.stop(at + duration + 0.05);
   }
 
+  schedulePiano(midi, at, duration, velocity = 0.55) {
+    if (!this.ctx || !this.master) return;
+    const frequency = midiToHz(midi);
+    const partials = [
+      { ratio: 1, type: 'triangle', gain: 0.62 },
+      { ratio: 2, type: 'sine', gain: 0.2 },
+      { ratio: 3, type: 'sine', gain: 0.09 },
+    ];
+    for (const partial of partials) {
+      const oscillator = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      oscillator.type = partial.type;
+      oscillator.frequency.setValueAtTime(frequency * partial.ratio, at);
+      const peak = Math.max(0.0001, velocity * partial.gain);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(peak, at + 0.01);
+      gain.gain.exponentialRampToValueAtTime(peak * 0.3, at + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+      oscillator.connect(gain);
+      gain.connect(this.master);
+      oscillator.start(at);
+      oscillator.stop(at + duration + 0.05);
+    }
+  }
+
+  async playPianoNote(midi, duration = 1.9) {
+    await this.init().catch(() => undefined);
+    if (!this.ctx) return;
+    const start = this.ctx.currentTime + 0.06;
+    this.schedulePiano(midi, start, duration);
+    this.lastPlayback = () => this.playPianoNote(midi, duration);
+    await sleep((duration + 0.15) * 1000);
+  }
+
   scheduleDrum(at, pitch = 92, velocity = 0.8) {
     if (!this.ctx || !this.master) return;
     const oscillator = this.ctx.createOscillator();
@@ -325,6 +359,10 @@ export class EarTrainingEngine {
       duration: 0.9,
       velocity: 0.52,
     });
+  }
+
+  async playPianoNote(midi, duration) {
+    await this.audio.playPianoNote(midi, duration);
   }
 
   async playChord(root, semitones, duration = 2.1) {

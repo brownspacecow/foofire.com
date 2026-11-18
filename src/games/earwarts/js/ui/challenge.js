@@ -1,5 +1,10 @@
 import { audioEngine, earTraining } from '../audio.js';
-import { createChallenge, RhythmChallenge } from '../challenges.js';
+import {
+  createChallenge,
+  PerfectPitchChallenge,
+  PIANO_KEYS,
+  RhythmChallenge,
+} from '../challenges.js';
 import { SKILL_LABELS } from '../content.js';
 import {
   closeChallenge,
@@ -13,6 +18,7 @@ const SOUND_CAPTIONS = {
   pitch: 'Two chimes play, one after the other.',
   interval: 'Two notes play. The second one is a leap away from the first.',
   rhythm: 'Four count-in clicks, then the forest drum taps a pattern.',
+  perfect: 'One piano note rings out. Find the key that matches it.',
   melody: 'Five notes play in a row, drawing a shape.',
   harmony: 'A chord sounds. It blooms a second time, more softly.',
 };
@@ -44,10 +50,25 @@ function rhythmMarkup(challenge) {
   </div>`;
 }
 
+function pianoMarkup(challenge) {
+  const keys = PIANO_KEYS.map((key) => {
+    const classes = `piano-key ${key.black ? 'black' : 'white'}${key.letter === 'C' ? ' c-key' : ''}`;
+    return `<button type="button" class="${classes}" data-piano-key="${key.midi}" style="left:${key.left}%;width:${key.width}%" aria-label="${key.spoken}${key.black ? ', black key' : ''}" disabled>${
+      key.black ? '' : `<span class="piano-label">${key.name}</span>`
+    }</button>`;
+  }).join('');
+  return `<div class="piano-stage">
+    <p class="piano-range">${challenge.rangeLabel}</p>
+    <div class="piano" role="group" aria-label="Piano keyboard, C4 to B5">${keys}</div>
+    <p class="piano-hint">Tap the key that matches the note.</p>
+  </div>`;
+}
+
 function createView(session, root) {
   const challenge = createChallenge(session.skill, session.difficulty, earTraining);
   const skill = SKILL_LABELS[session.skill];
   const rhythm = challenge instanceof RhythmChallenge ? challenge : null;
+  const piano = challenge instanceof PerfectPitchChallenge ? challenge : null;
   const captions = getState().save.captions;
   let mounted = true;
   let heard = false;
@@ -62,6 +83,18 @@ function createView(session, root) {
   let recordStart = 0;
   let echoTimer = null;
   const timers = new Set();
+
+  const answersMarkup = rhythm
+    ? rhythmMarkup(rhythm)
+    : `${
+        piano
+          ? pianoMarkup(piano)
+          : `<div class="choice-grid" role="group" aria-label="Answers">${challenge.choices.map(choiceMarkup).join('')}</div>`
+      }
+       <p class="listen-first" id="listen-first" role="status">Listen once, then the ${
+         piano ? 'piano keys' : 'answers'
+       } will wake up.</p>
+       <div class="challenge-feedback soft" id="answer-feedback" role="status" aria-live="polite" hidden></div>`;
 
   root.innerHTML = `
     <div class="challenge-backdrop">
@@ -87,13 +120,7 @@ function createView(session, root) {
             }
           </div>
           ${captions ? `<p class="sound-caption" aria-live="polite"><span aria-hidden="true">☾</span> ${SOUND_CAPTIONS[session.skill]}</p>` : ''}
-          ${
-            rhythm
-              ? rhythmMarkup(rhythm)
-              : `<div class="choice-grid" role="group" aria-label="Answers">${challenge.choices.map(choiceMarkup).join('')}</div>
-                 <p class="listen-first" id="listen-first" role="status">Listen once, then the answers will wake up.</p>
-                 <div class="challenge-feedback soft" id="answer-feedback" role="status" aria-live="polite" hidden></div>`
-          }
+          ${answersMarkup}
         </div>
         <footer class="challenge-foot">
           <span>No failing here. Listen again as often as you need.</span>
@@ -141,7 +168,7 @@ function createView(session, root) {
       slowButton.setAttribute('aria-pressed', String(slow));
       slowButton.textContent = `Slow drums ${slow ? 'on' : 'off'}`;
     }
-    root.querySelectorAll('[data-choice]').forEach((button) => {
+    root.querySelectorAll('[data-choice], [data-piano-key]').forEach((button) => {
       button.disabled = !heard || playing;
     });
     if (listenFirst) listenFirst.hidden = heard;
@@ -279,6 +306,21 @@ function createView(session, root) {
   root.querySelectorAll('[data-choice]').forEach((button) => {
     button.addEventListener('click', () => answer(button.dataset.choice));
   });
+
+  if (piano) {
+    root.querySelectorAll('[data-piano-key]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!heard || playing || outcome) return;
+        hideFeedback();
+        const midi = Number(button.dataset.pianoKey);
+        earTraining.playPianoNote(midi, 0.9).catch(() => undefined);
+        const evaluation = challenge.evaluate(midi);
+        showFeedback(evaluation.message, evaluation.correct);
+        if (evaluation.correct) finish(evaluation);
+        else retries += 1;
+      });
+    });
+  }
 
   listenButton?.addEventListener('click', () => void play());
   slowButton?.addEventListener('click', () => {

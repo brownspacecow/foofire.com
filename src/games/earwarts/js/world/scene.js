@@ -15,6 +15,7 @@ import {
 } from '../layout.js';
 import { moveInput, worldState } from './state.js';
 
+// South walls stay low so the high follow camera can see over them from outside.
 const LOW_WALLS = new Set([
   '-8,10',
   '8,10',
@@ -22,7 +23,9 @@ const LOW_WALLS = new Set([
   '6,-33',
   '42,10',
   '-42,10',
-  '0,52',
+  '-7,52',
+  '7,52',
+  '0,94',
   '22,3',
   '-22,3',
 ]);
@@ -33,6 +36,7 @@ const PALETTE = {
   'creature-gardens': { floor: '#2b4834', wall: '#3b5b45', accent: '#8fe0a8' },
   'potion-dungeon': { floor: '#2e2538', wall: '#403048', accent: '#7fd6c9' },
   'rhythm-forest': { floor: '#203a2d', wall: '#2d4a39', accent: '#b9d87d' },
+  'piano-parlour': { floor: '#3a2a40', wall: '#4b3855', accent: '#f0a9c6' },
 };
 
 const PLAYER_RADIUS = 0.48;
@@ -196,6 +200,7 @@ function buildArchitecture(scene) {
 
   door(0, -10, 0, PALETTE['spellcasting-tower'].accent);
   door(0, 10, 0, PALETTE['rhythm-forest'].accent, true);
+  door(0, 74, 0, PALETTE['piano-parlour'].accent);
   door(13, 0, Math.PI / 2, PALETTE['creature-gardens'].accent);
   door(-13, 0, Math.PI / 2, PALETTE['potion-dungeon'].accent);
 
@@ -364,7 +369,7 @@ function buildFocusPedestal(scene, point, accent, shape, delay = 0) {
   );
 
   const floating = new THREE.Group();
-  const baseY = shape === 'crystal' ? 1.5 : 1.05;
+  const baseY = shape === 'crystal' ? 1.5 : shape === 'piano' ? 1.35 : 1.05;
   floating.position.y = baseY;
   if (shape === 'crystal') {
     floating.add(
@@ -394,6 +399,27 @@ function buildFocusPedestal(scene, point, accent, shape, delay = 0) {
         [-Math.PI / 2, 0, 0]
       )
     );
+  } else if (shape === 'piano') {
+    const lacquer = mat('#24152f', { roughness: 0.32, metalness: 0.28 });
+    const ivory = mat('#f7edd6', { roughness: 0.5 });
+    const piano = new THREE.Group();
+    piano.add(box([1.32, 0.24, 0.96], lacquer, [0, 0, -0.08]));
+    piano.add(box([1.26, 0.05, 0.86], lacquer, [0, 0.17, -0.18], [0.16, 0, 0]));
+    piano.add(box([1.38, 0.06, 0.26], ivory, [0, 0.14, 0.4]));
+    for (const keyX of [-0.42, -0.24, 0.02, 0.2, 0.44]) {
+      piano.add(box([0.09, 0.06, 0.14], lacquer, [keyX, 0.19, 0.37]));
+    }
+    for (const [legX, legZ] of [
+      [-0.55, -0.42],
+      [0.55, -0.42],
+      [0, 0.34],
+    ]) {
+      piano.add(cylinder(0.035, 0.045, 0.55, lacquer, [legX, -0.36, legZ], 6));
+    }
+    piano.add(
+      torus(0.9, 0.02, basic(accent, { transparent: true, opacity: 0.45 }), [0, -0.12, 0], [Math.PI / 2, 0, 0], 36)
+    );
+    floating.add(piano);
   } else {
     floating.add(cylinder(0.75, 0.7, 0.72, mat('#5b4030', { roughness: 0.9 }), [0, 0, 0], 16));
     floating.add(
@@ -647,6 +673,58 @@ function buildForest(scene) {
   return fireflies;
 }
 
+function buildParlour(scene) {
+  const group = new THREE.Group();
+  const accent = PALETTE['piano-parlour'].accent;
+  group.add(
+    mesh(
+      new THREE.CircleGeometry(4.4, 44),
+      mat('#4a3250', { roughness: 0.96 }),
+      [0, 0.03, 84],
+      [-Math.PI / 2, 0, 0]
+    )
+  );
+  group.add(
+    mesh(
+      new THREE.RingGeometry(4.4, 4.52, 48),
+      basic(accent, { transparent: true, opacity: 0.5, side: THREE.DoubleSide }),
+      [0, 0.04, 84],
+      [-Math.PI / 2, 0, 0]
+    )
+  );
+  for (const [x, z] of [
+    [-7.5, 90],
+    [7.5, 90],
+  ]) {
+    const stand = new THREE.Group();
+    stand.position.set(x, 0, z);
+    stand.add(cylinder(0.5, 0.62, 0.08, mat('#5a4058'), [0, 0.04, 0], 16));
+    stand.add(cylinder(0.07, 0.11, 2.5, mat('#5a4058'), [0, 1.25, 0], 8));
+    for (const offset of [-0.32, 0, 0.32]) {
+      stand.add(cylinder(0.03, 0.03, 0.3, mat('#e8d9b5'), [offset, 2.58, 0], 6));
+      stand.add(sphere(0.06, basic('#ffd9a1', { toneMapped: false }), [offset, 2.77, 0], 8));
+    }
+    group.add(stand);
+  }
+  for (let index = 0; index < 20; index += 1) {
+    const angle = (index / 20) * Math.PI * 2;
+    const radius = 2.4 + (index % 4) * 1.2;
+    group.add(
+      sphere(
+        0.035 + (index % 3) * 0.015,
+        basic(accent, { toneMapped: false, transparent: true, opacity: 0.7 }),
+        [
+          Math.cos(angle) * radius,
+          1.2 + (index % 6) * 0.55,
+          84 + Math.sin(angle) * radius * 0.75,
+        ],
+        6
+      )
+    );
+  }
+  scene.add(group);
+}
+
 function buildSeals(scene) {
   const seals = new Map();
   for (const barrier of BARRIERS) {
@@ -719,7 +797,7 @@ function addRoomSigns(scene, labelLayer) {
     labelLayer.anchor(
       inner,
       zone.x,
-      zone.z + (room.id === 'rhythm-forest' ? -4 : 4),
+      zone.z + (['rhythm-forest', 'piano-parlour'].includes(room.id) ? -4 : 4),
       4.6,
       14
     );
@@ -751,7 +829,14 @@ function addNpcLabels(scene, labelLayer) {
     inner.className = 'npc-tag';
     const sigil = document.createElement('span');
     sigil.className = 'npc-tag-sigil';
-    sigil.textContent = point.npcKey === 'headmistress' ? '♛' : point.npcKey === 'spirit' ? '♣' : '✦';
+    sigil.textContent =
+      point.npcKey === 'headmistress'
+        ? '♛'
+        : point.npcKey === 'spirit'
+          ? '♣'
+          : point.npcKey === 'maestro'
+            ? '♬'
+            : '✦';
     const name = document.createElement('span');
     name.textContent =
       point.npcKey === 'headmistress'
@@ -762,7 +847,9 @@ function addNpcLabels(scene, labelLayer) {
             ? 'Keeper Fern'
             : point.npcKey === 'potionmaster'
               ? 'Master Bramble'
-              : 'The Mosslight Spirit';
+              : point.npcKey === 'maestro'
+                ? 'Maestro Cadence'
+                : 'The Mosslight Spirit';
     inner.append(sigil, name);
     labelLayer.anchor(inner, point.x, point.z, point.npcKey === 'spirit' ? 2.6 : 2.6, 9);
   }
@@ -914,6 +1001,7 @@ function addNpcs(scene) {
     makeNpc({ name: 'Archmage Tilly', x: -6, z: -43, robe: '#5b6fbf', trim: '#c9bfff', skin: '#e6bd93', staff: true, rotation: 0.4 }),
     makeNpc({ name: 'Keeper Fern', x: 46, z: -4, robe: '#4d8a62', trim: '#d8e79a', skin: '#c9906a', antlers: true, rotation: -0.6, height: 0.98 }),
     makeNpc({ name: 'Master Bramble', x: -46, z: -4, robe: '#3f7f7b', trim: '#9ff0e2', skin: '#d7a680', goggles: true, height: 0.94, rotation: 0.7 }),
+    makeNpc({ name: 'Maestro Cadence', x: 5, z: 80.5, robe: '#7a4a63', trim: '#f5c1d5', skin: '#e6b58f', rotation: -0.9 }),
   ];
   for (const npc of npcs) scene.add(npc.group);
 
@@ -1074,6 +1162,7 @@ export function initScene({ container, labelsLayer }) {
   const creatures = buildGardens(scene);
   buildDungeon(scene);
   const fireflies = buildForest(scene);
+  buildParlour(scene);
   const seals = buildSeals(scene);
   const labels = buildLabelLayer(labelsLayer);
   addRoomSigns(scene, labels);
@@ -1091,6 +1180,7 @@ export function initScene({ container, labelsLayer }) {
   focusFor('interval', '#8fe0a8', 'crystal', 0.6);
   focusFor('harmony', '#7fd6c9', 'cauldron', 0.9);
   focusFor('rhythm', '#b9d87d', 'drum', 1.1);
+  focusFor('perfect', '#f0a9c6', 'piano', 1.5);
 
   const npcs = addNpcs(scene);
 

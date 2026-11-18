@@ -1,5 +1,47 @@
 import { randomInt, shuffle } from './audio.js';
 
+const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+const SPOKEN_NAMES = [
+  'C',
+  'C sharp',
+  'D',
+  'D sharp',
+  'E',
+  'F',
+  'F sharp',
+  'G',
+  'G sharp',
+  'A',
+  'A sharp',
+  'B',
+];
+const BLACK_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
+const PIANO_WHITE_COUNT = 14;
+const PIANO_WHITE_WIDTH = 100 / PIANO_WHITE_COUNT;
+const PIANO_BLACK_WIDTH = PIANO_WHITE_WIDTH * 0.62;
+
+export const PIANO_KEYS = [];
+{
+  let whiteIndex = 0;
+  for (let midi = 60; midi <= 83; midi += 1) {
+    const pitchClass = midi % 12;
+    const octave = Math.floor(midi / 12) - 1;
+    const black = BLACK_PITCH_CLASSES.has(pitchClass);
+    PIANO_KEYS.push({
+      midi,
+      black,
+      letter: NOTE_NAMES[pitchClass],
+      name: `${NOTE_NAMES[pitchClass]}${octave}`,
+      spoken: `${SPOKEN_NAMES[pitchClass]} ${octave}`,
+      left: black
+        ? whiteIndex * PIANO_WHITE_WIDTH - PIANO_BLACK_WIDTH / 2
+        : whiteIndex * PIANO_WHITE_WIDTH,
+      width: black ? PIANO_BLACK_WIDTH : PIANO_WHITE_WIDTH,
+    });
+    if (!black) whiteIndex += 1;
+  }
+}
+
 function makeOptions(pool, answer, count) {
   const rest = pool.filter((entry) => entry.id !== answer.id);
   const mixed = shuffle(rest);
@@ -128,6 +170,65 @@ class PitchChallenge extends BaseChallenge {
       message = 'The chimes are still deciding. Listen once more — the second note holds the clue.';
     }
     return { correct, message };
+  }
+}
+
+export class PerfectPitchChallenge extends BaseChallenge {
+  constructor(audio, difficulty) {
+    super('perfect', difficulty, audio);
+    this.targetMidi = 60;
+    this.targetName = 'C4';
+    this.rangeLabel = 'Active octave: 4 (C4–B4) · white keys only';
+    this.generate();
+  }
+
+  generate() {
+    const octave4 = Array.from({ length: 12 }, (_, index) => 60 + index);
+    const octave5 = Array.from({ length: 12 }, (_, index) => 72 + index);
+    const isNatural = (midi) => !BLACK_PITCH_CLASSES.has(midi % 12);
+    const natural4 = octave4.filter(isNatural);
+    const natural5 = octave5.filter(isNatural);
+
+    let pool;
+    if (this.difficulty <= 1) {
+      pool = natural4;
+      this.rangeLabel = 'Active octave: 4 (C4–B4) · white keys only';
+      this.prompt =
+        'The fourth octave, white keys only. Listen, then find the note on the piano.';
+    } else if (this.difficulty === 2) {
+      pool = [...natural4, ...natural5];
+      this.rangeLabel = 'Active octaves: 4–5 (C4–B5) · white keys only';
+      this.prompt =
+        'The fourth and fifth octaves, white keys only. The note may live in either one.';
+    } else if (this.difficulty === 3) {
+      pool = octave4;
+      this.rangeLabel = 'Active octave: 4 (C4–B4) · every key';
+      this.prompt = 'The fourth octave, every key — the black keys are listening too.';
+    } else {
+      pool = [...octave4, ...octave5];
+      this.rangeLabel = 'Active octaves: 4–5 (C4–B5) · every key';
+      this.prompt = 'The fourth and fifth octaves, every key. Name the exact note you hear.';
+    }
+
+    this.targetMidi = pool[randomInt(0, pool.length - 1)];
+    this.targetName = PIANO_KEYS.find((key) => key.midi === this.targetMidi)?.name ?? 'C4';
+    this.question = 'Which piano key just sang?';
+  }
+
+  async present() {
+    await this.audio.playPianoNote(this.targetMidi);
+  }
+
+  evaluate(midi) {
+    const value = Number(midi);
+    const correct = value === this.targetMidi;
+    const chosen = PIANO_KEYS.find((key) => key.midi === value);
+    return {
+      correct,
+      message: correct
+        ? `That's ${this.targetName}. You heard it exactly.`
+        : `That key sang ${chosen?.name ?? 'something else'}. The note you want is still ringing — listen once more and match it.`,
+    };
   }
 }
 
@@ -438,6 +539,8 @@ export function createChallenge(skill, difficulty, audio) {
   switch (skill) {
     case 'pitch':
       return new PitchChallenge(audio, difficulty);
+    case 'perfect':
+      return new PerfectPitchChallenge(audio, difficulty);
     case 'interval':
       return new IntervalChallenge(audio, difficulty);
     case 'rhythm':

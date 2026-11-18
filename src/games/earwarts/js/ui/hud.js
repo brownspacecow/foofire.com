@@ -162,7 +162,7 @@ export function mountHud(root) {
     skillsSignature = signature;
     skills.innerHTML = Object.entries(save.challengeStats)
       .filter(([, value]) => value > 0)
-      .slice(0, 5)
+      .slice(0, 6)
       .map(([key, value]) => {
         const skill = SKILL_LABELS[key];
         if (!skill) return '';

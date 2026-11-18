@@ -6,6 +6,7 @@ export const ROOM_ZONES = {
   'creature-gardens': { id: 'creature-gardens', x: 42, z: 0, halfW: 11, halfD: 10 },
   'potion-dungeon': { id: 'potion-dungeon', x: -42, z: 0, halfW: 11, halfD: 10 },
   'rhythm-forest': { id: 'rhythm-forest', x: 0, z: 42, halfW: 11, halfD: 10 },
+  'piano-parlour': { id: 'piano-parlour', x: 0, z: 84, halfW: 11, halfD: 10 },
 };
 
 export const CORRIDORS = [
@@ -13,6 +14,7 @@ export const CORRIDORS = [
   { id: 'corridor-south', x: 0, z: 21, halfW: 3, halfD: 11 },
   { id: 'corridor-east', x: 22, z: 0, halfW: 9, halfD: 3 },
   { id: 'corridor-west', x: -22, z: 0, halfW: 9, halfD: 3 },
+  { id: 'corridor-parlour', x: 0, z: 63, halfW: 3, halfD: 11 },
 ];
 
 export const SPAWN = { x: 0, z: 7.5 };
@@ -50,9 +52,18 @@ export const WALLS = [
 
   wall(-7, 32, 8, 1),
   wall(7, 32, 8, 1),
-  wall(0, 52, 22, 1),
+  wall(-7, 52, 8, 1),
+  wall(7, 52, 8, 1),
   wall(-11, 42, 1, 20),
   wall(11, 42, 1, 20),
+
+  wall(-3, 63, 1, 22),
+  wall(3, 63, 1, 22),
+  wall(-8, 74, 10, 1),
+  wall(8, 74, 10, 1),
+  wall(-11, 84, 1, 20),
+  wall(11, 84, 1, 20),
+  wall(0, 94, 22, 1),
 
   wall(-3, -21.5, 1, 23),
   wall(3, -21.5, 1, 23),
@@ -68,6 +79,7 @@ export const BARRIERS = [
   { room: 'creature-gardens', x: 30.5, z: 0, rotationY: Math.PI / 2 },
   { room: 'potion-dungeon', x: -30.5, z: 0, rotationY: Math.PI / 2 },
   { room: 'rhythm-forest', x: 0, z: 31.5, rotationY: 0 },
+  { room: 'piano-parlour', x: 0, z: 52, rotationY: 0 },
 ];
 
 export const INTERACTIONS = [
@@ -204,6 +216,27 @@ export const INTERACTIONS = [
     radius: 3,
     npcKey: 'spirit',
   },
+  {
+    id: 'piano-keys',
+    room: 'piano-parlour',
+    x: 0,
+    z: 84,
+    kind: 'challenge',
+    label: 'Sit at the Singing Piano',
+    radius: 3.2,
+    skill: 'perfect',
+    title: 'The Singing Piano',
+  },
+  {
+    id: 'maestro',
+    room: 'piano-parlour',
+    x: 5,
+    z: 80.5,
+    kind: 'npc',
+    label: 'Talk to Maestro Cadence',
+    radius: 3,
+    npcKey: 'maestro',
+  },
   ...BARRIERS.map((barrier) => ({
     id: `door-${barrier.room}`,
     room: 'great-hall',
@@ -250,4 +283,5 @@ export const ROOM_CENTERS = {
   'creature-gardens': { x: 42, z: 0 },
   'potion-dungeon': { x: -42, z: 0 },
   'rhythm-forest': { x: 0, z: 42 },
+  'piano-parlour': { x: 0, z: 84 },
 };

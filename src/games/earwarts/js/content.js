@@ -161,7 +161,19 @@ export const ROOMS = [
     skill: 'rhythm',
     studentLine: 'The trees keep time; the fireflies keep secrets.',
     description:
-      'Deep in the castle grounds, the forest drums a heartbeat. Echo it back and the trees will open the last gate.',
+      'Deep in the castle grounds, the forest drums a heartbeat. Echo it back and the trees will open the way deeper into the grounds.',
+  },
+  {
+    id: 'piano-parlour',
+    name: 'The Piano Parlour',
+    shortName: 'Parlour',
+    icon: '♬',
+    accent: '#f0a9c6',
+    threshold: 180,
+    skill: 'perfect',
+    studentLine: 'One note at a time, and the key that owns it.',
+    description:
+      'Beyond the rhythm forest, a hush of velvet and candlelight. The grand piano here remembers every note it has ever heard, and it is fond of showing off.',
   },
 ];
 
@@ -293,6 +305,18 @@ export const DIALOGUES = {
       face: '♣',
     },
   ],
+  maestro: [
+    {
+      speaker: 'Maestro Cadence',
+      text: 'Every note has a name. The piano knows all of them; the trick is hearing one and answering with the right key.',
+      face: '♬',
+    },
+    {
+      speaker: 'Maestro Cadence',
+      text: 'Begin with the white keys. When those feel like old friends, the black keys will introduce themselves.',
+      face: '♬',
+    },
+  ],
 };
 
 export const HOUSE_OF = (id) => HOUSES.find((house) => house.id === id);
@@ -305,6 +329,12 @@ export const SKILL_LABELS = {
     icon: '↑',
     colour: '#a99bff',
     line: 'Higher, lower, same, or leaping.',
+  },
+  perfect: {
+    name: 'Perfect Pitch',
+    icon: '♬',
+    colour: '#f0a9c6',
+    line: 'Name the note you hear.',
   },
   interval: {
     name: 'Intervals',

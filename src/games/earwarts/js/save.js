@@ -5,7 +5,7 @@ export const SAVE_VERSION = 2;
 const SAVE_ID = 'primary';
 const FALLBACK_KEY = 'earwarts.save.fallback';
 const BACKUP_PREFIX = 'earwarts.save.corrupt.';
-const ZERO_STATS = { pitch: 0, rhythm: 0, interval: 0, melody: 0, harmony: 0 };
+const ZERO_STATS = { pitch: 0, rhythm: 0, interval: 0, melody: 0, harmony: 0, perfect: 0 };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -67,6 +67,7 @@ function normalise(raw) {
     interval: Math.floor(safeNumber(statSource.interval ?? legacyWins.interval, 0, 0, 999)),
     melody: Math.floor(safeNumber(statSource.melody ?? legacyWins.melody, 0, 0, 999)),
     harmony: Math.floor(safeNumber(statSource.harmony ?? legacyWins.harmony, 0, 0, 999)),
+    perfect: Math.floor(safeNumber(statSource.perfect, 0, 0, 999)),
   };
 
   const resonance = safeNumber(raw.resonance, 0, 0, 1_000_000);

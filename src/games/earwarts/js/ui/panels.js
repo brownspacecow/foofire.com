@@ -25,11 +25,12 @@ import {
 import { escapeHtml } from './dom.js';
 
 const POSITIONS = {
-  'spellcasting-tower': { left: '50%', top: '16%' },
-  'potion-dungeon': { left: '17%', top: '50%' },
-  'great-hall': { left: '50%', top: '50%' },
-  'creature-gardens': { left: '83%', top: '50%' },
-  'rhythm-forest': { left: '50%', top: '84%' },
+  'spellcasting-tower': { left: '50%', top: '12%' },
+  'potion-dungeon': { left: '21%', top: '38%' },
+  'great-hall': { left: '50%', top: '38%' },
+  'creature-gardens': { left: '79%', top: '38%' },
+  'rhythm-forest': { left: '50%', top: '64%' },
+  'piano-parlour': { left: '50%', top: '88%' },
 };
 
 function shell(kicker, title, className, body) {
@@ -95,13 +96,14 @@ function mapMarkup(save, currentRoom) {
     'The castle knows every footstep',
     'Magical Map',
     'map-panel',
-    `<p class="panel-lede">Four wings and a hall, joined by torchlit corridors. Walk to a doorway and press <kbd>E</kbd> if the seal is being stubborn.</p>
+    `<p class="panel-lede">Five wings and a hall, joined by torchlit corridors. Walk to a doorway and press <kbd>E</kbd> if the seal is being stubborn.</p>
      <div class="map-canvas" role="list" aria-label="Castle rooms">
        <svg class="map-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-         <line x1="50" y1="30" x2="50" y2="42"></line>
-         <line x1="28" y1="50" x2="42" y2="50"></line>
-         <line x1="58" y1="50" x2="72" y2="50"></line>
-         <line x1="50" y1="58" x2="50" y2="70"></line>
+         <line x1="50" y1="24" x2="50" y2="30"></line>
+         <line x1="32" y1="38" x2="38" y2="38"></line>
+         <line x1="62" y1="38" x2="68" y2="38"></line>
+         <line x1="50" y1="46" x2="50" y2="56"></line>
+         <line x1="50" y1="72" x2="50" y2="80"></line>
        </svg>
        ${nodes}
      </div>

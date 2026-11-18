@@ -465,6 +465,113 @@
   font-style: italic;
 }
 
+/* ------------------------------------------------------------------- piano */
+
+.piano-stage {
+  margin-top: 18px;
+}
+
+.piano-range {
+  margin-bottom: 9px;
+  text-align: center;
+  color: #8a7a99;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.piano {
+  position: relative;
+  width: 100%;
+  height: clamp(118px, 21vw, 168px);
+  border-radius: 12px;
+  border: 1px solid rgba(58, 41, 99, 0.45);
+  background: linear-gradient(180deg, #3a2963, #1c1236);
+  box-shadow:
+    0 16px 32px rgba(28, 18, 54, 0.32),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.piano-key {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 90ms ease, transform 90ms ease;
+}
+
+.piano-key.white {
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 9px;
+  border: 1px solid rgba(74, 52, 36, 0.55);
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(180deg, #fffdf4 0%, #f6ecd7 72%, #e9dcc0 100%);
+  color: #6c5870;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.piano-key.black {
+  z-index: 2;
+  height: 61%;
+  border: 1px solid #120c1d;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(180deg, #46335a 0%, #2a1b3b 55%, #170f24 100%);
+  box-shadow:
+    0 4px 7px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.piano-key.white:hover:not(:disabled),
+.piano-key.white:focus-visible {
+  background: linear-gradient(180deg, #fffef8 0%, #fbf3df 70%, #f0e3c6 100%);
+}
+
+.piano-key.black:hover:not(:disabled),
+.piano-key.black:focus-visible {
+  background: linear-gradient(180deg, #5b4374 0%, #39244f 55%, #1d1330 100%);
+}
+
+.piano-key:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.piano-key:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.piano-key:focus-visible {
+  outline: 2px solid #b58a3f;
+  outline-offset: -2px;
+}
+
+.piano-key.c-key {
+  border-left: 2px solid rgba(138, 99, 43, 0.55);
+}
+
+.piano-label {
+  pointer-events: none;
+}
+
+.piano-hint {
+  margin-top: 8px;
+  text-align: center;
+  color: #8a7a99;
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
 /* ----------------------------------------------------------------- success */
 
 .challenge-success {
@@ -675,5 +782,14 @@
   .drum-pad {
     width: 136px;
     height: 136px;
+  }
+
+  .piano {
+    height: 116px;
+  }
+
+  .piano-key.white {
+    padding-bottom: 6px;
+    font-size: 0.48rem;
   }
 }
