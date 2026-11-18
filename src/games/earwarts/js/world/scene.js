@@ -74,6 +74,150 @@ function torus(radius, tube, material, position, rotation, segments = 32) {
   return mesh(new THREE.TorusGeometry(radius, tube, 6, segments), material, position, rotation);
 }
 
+function capsule(radius, length, material, position, rotation = [0, 0, 0], segments = 8) {
+  return mesh(
+    new THREE.CapsuleGeometry(radius, length, 4, segments),
+    material,
+    position,
+    rotation
+  );
+}
+
+function ellipsoid(radiusX, radiusY, radiusZ, material, position, rotation = [0, 0, 0], segments = 14) {
+  const object = mesh(
+    new THREE.SphereGeometry(1, segments, Math.max(8, segments - 4)),
+    material,
+    position,
+    rotation
+  );
+  object.scale.set(radiusX, radiusY, radiusZ);
+  return object;
+}
+
+function shadeColor(color, factor) {
+  return new THREE.Color(color).multiplyScalar(factor);
+}
+
+let fabricTexture = null;
+function getFabricTexture() {
+  if (fabricTexture) return fabricTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#f2eef8';
+  ctx.fillRect(0, 0, 128, 128);
+  for (let y = 0; y < 128; y += 2) {
+    ctx.fillStyle = y % 4 === 0 ? 'rgba(255,255,255,0.22)' : 'rgba(48,36,66,0.05)';
+    ctx.fillRect(0, y, 128, 1);
+  }
+  for (let x = 0; x < 128; x += 2) {
+    ctx.fillStyle = x % 6 === 0 ? 'rgba(255,255,255,0.14)' : 'rgba(48,36,66,0.035)';
+    ctx.fillRect(x, 0, 1, 128);
+  }
+  for (let fold = 0; fold < 11; fold += 1) {
+    const x = 6 + fold * 12 + Math.random() * 4;
+    const gradient = ctx.createLinearGradient(x - 4, 0, x + 5, 0);
+    gradient.addColorStop(0, 'rgba(35,25,50,0)');
+    gradient.addColorStop(0.45, `rgba(35,25,50,${0.13 + Math.random() * 0.08})`);
+    gradient.addColorStop(0.6, 'rgba(255,255,255,0.24)');
+    gradient.addColorStop(1, 'rgba(35,25,50,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - 5, 0, 12, 128);
+  }
+  for (let speck = 0; speck < 160; speck += 1) {
+    ctx.fillStyle = `rgba(35,25,50,${0.03 + Math.random() * 0.04})`;
+    ctx.fillRect(Math.random() * 128, Math.random() * 128, 1, 1 + Math.random() * 2);
+  }
+  fabricTexture = new THREE.CanvasTexture(canvas);
+  fabricTexture.wrapS = THREE.RepeatWrapping;
+  fabricTexture.wrapT = THREE.RepeatWrapping;
+  fabricTexture.repeat.set(2, 2);
+  fabricTexture.colorSpace = THREE.SRGBColorSpace;
+  fabricTexture.anisotropy = 2;
+  return fabricTexture;
+}
+
+function mergedGeometry(geometries) {
+  const first = geometries[0];
+  if (!first) return null;
+  const attributeNames = Object.keys(first.attributes);
+  let vertexCount = 0;
+  let indexCount = 0;
+  for (const geometry of geometries) {
+    vertexCount += geometry.attributes.position.count;
+    indexCount += geometry.index ? geometry.index.count : geometry.attributes.position.count;
+  }
+  const result = new THREE.BufferGeometry();
+  for (const name of attributeNames) {
+    const template = first.attributes[name];
+    const array = new Float32Array(vertexCount * template.itemSize);
+    let offset = 0;
+    for (const geometry of geometries) {
+      const attribute = geometry.attributes[name];
+      array.set(attribute.array, offset);
+      offset += attribute.count * template.itemSize;
+    }
+    result.setAttribute(name, new THREE.BufferAttribute(array, template.itemSize, template.normalized));
+  }
+  const indices = vertexCount > 65535 ? new Uint32Array(indexCount) : new Uint16Array(indexCount);
+  let indexOffset = 0;
+  let vertexOffset = 0;
+  for (const geometry of geometries) {
+    if (geometry.index) {
+      for (let index = 0; index < geometry.index.count; index += 1) {
+        indices[indexOffset] = geometry.index.getX(index) + vertexOffset;
+        indexOffset += 1;
+      }
+    } else {
+      const count = geometry.attributes.position.count;
+      for (let index = 0; index < count; index += 1) {
+        indices[indexOffset] = vertexOffset + index;
+        indexOffset += 1;
+      }
+    }
+    vertexOffset += geometry.attributes.position.count;
+  }
+  result.setIndex(new THREE.BufferAttribute(indices, 1));
+  result.computeBoundingSphere();
+  return result;
+}
+
+// Bake a character's static parts down to one mesh per material. Characters keep
+// their silhouette detail while staying cheap to draw on phones.
+function mergeStaticGroup(group) {
+  group.updateMatrixWorld(true);
+  const inverse = new THREE.Matrix4().copy(group.matrixWorld).invert();
+  const buckets = new Map();
+  const origins = [];
+  const skips = (object) => {
+    let current = object;
+    while (current && current !== group) {
+      if (current.userData.noMerge) return true;
+      current = current.parent;
+    }
+    return false;
+  };
+  group.traverse((child) => {
+    if (!child.isMesh || skips(child)) return;
+    const matrix = new THREE.Matrix4().multiplyMatrices(inverse, child.matrixWorld);
+    const geometry = child.geometry.clone().applyMatrix4(matrix);
+    if (!buckets.has(child.material)) buckets.set(child.material, []);
+    buckets.get(child.material).push(geometry);
+    origins.push(child);
+  });
+  for (const child of origins) {
+    child.parent?.remove(child);
+    child.geometry.dispose();
+  }
+  for (const [material, geometries] of buckets) {
+    const merged = mergedGeometry(geometries);
+    if (!merged) continue;
+    group.add(new THREE.Mesh(merged, material));
+    for (const geometry of geometries) geometry.dispose();
+  }
+}
+
 let glowTexture = null;
 function getGlowTexture() {
   if (glowTexture) return glowTexture;
@@ -722,21 +866,7 @@ function buildGardens(scene) {
     [49, -2],
   ];
   spots.forEach(([x, z], index) => {
-    const creature = new THREE.Group();
-    creature.position.set(x, 0, z);
-    const colour = ['#9be3b8', '#a7c8ff', '#f2b8d9', '#ffe09b'][index];
-    const bodyMat = mat(colour, { roughness: 0.6 });
-    creature.add(sphere(0.4, bodyMat, [0, 0.35, 0]));
-    creature.add(sphere(0.24, bodyMat, [0, 0.58, 0]));
-    for (const eyeX of [-0.1, 0.1]) {
-      creature.add(sphere(0.045, basic('#1c1530'), [eyeX, 0.64, 0.2], 8));
-    }
-    creature.add(cone(0.055, 0.12, basic('#f2ce7b'), [0, 0.5, 0.24], 6));
-    for (const earX of [-0.28, 0.28]) {
-      const ear = cone(0.08, 0.24, mat('#7fbf9b'), [earX, 0.8, 0], 6);
-      ear.rotation.z = earX > 0 ? -0.3 : 0.3;
-      creature.add(ear);
-    }
+    const creature = makeGardenCreature(index, x, z);
     group.add(creature);
     creatures.push(creature);
   });
@@ -1035,7 +1165,7 @@ function addNpcLabels(scene, labelLayer) {
                 ? 'Maestro Cadence'
                 : 'The Mosslight Spirit';
     inner.append(sigil, name);
-    labelLayer.anchor(inner, point.x, point.z, point.npcKey === 'spirit' ? 2.6 : 2.6, 9);
+    labelLayer.anchor(inner, point.x, point.z, point.npcKey === 'spirit' ? 2.6 : 3.1, 9);
   }
 }
 
@@ -1043,103 +1173,371 @@ function addNpcLabels(scene, labelLayer) {
 
 function makeWizard() {
   const group = new THREE.Group();
-  const robe = mat('#b6a3f5', { roughness: 0.78 });
-  const trim = mat('#f2ce7b', { roughness: 0.4, metalness: 0.35 });
+  const body = new THREE.Group();
+  group.add(body);
+
+  const fabric = getFabricTexture();
+  const robe = new THREE.MeshStandardMaterial({
+    color: '#b6a3f5',
+    map: fabric,
+    roughness: 0.82,
+    metalness: 0.02,
+    flatShading: true,
+  });
+  const robeDark = new THREE.MeshStandardMaterial({
+    color: '#4f3d6e',
+    map: fabric,
+    roughness: 0.88,
+    metalness: 0.02,
+    flatShading: true,
+  });
+  const capeMaterial = new THREE.MeshStandardMaterial({
+    color: '#332442',
+    map: fabric,
+    roughness: 0.9,
+    metalness: 0.02,
+    side: THREE.DoubleSide,
+    flatShading: true,
+  });
+  const trim = mat('#f2ce7b', { roughness: 0.38, metalness: 0.42 });
   const glow = basic('#ded2ff', { toneMapped: false });
   const skin = mat('#f0c6a1', { roughness: 0.72 });
-  const dark = mat('#241a3d', { roughness: 0.9 });
+  const skinShade = mat('#d8a47f', { roughness: 0.76 });
+  const hair = mat('#2a1c36', { roughness: 0.88 });
+  const leather = mat('#3b2733', { roughness: 0.92 });
+  const dark = mat('#1a1228', { roughness: 0.9 });
+  const eyeWhite = mat('#f7eedb', { roughness: 0.35 });
+  const eyeDark = basic('#171022');
+  const glint = basic('#fff8e8', { toneMapped: false });
+  const crystal = new THREE.MeshStandardMaterial({
+    color: '#ffe8b0',
+    emissive: '#ffb75c',
+    emissiveIntensity: 1.25,
+    roughness: 0.18,
+    metalness: 0.25,
+  });
 
   group.add(
     mesh(
-      new THREE.CircleGeometry(0.58, 20),
-      basic('#05030c', { transparent: true, opacity: 0.3 }),
+      new THREE.CircleGeometry(0.62, 24),
+      basic('#05030c', { transparent: true, opacity: 0.34 }),
       [0, 0.02, 0],
       [-Math.PI / 2, 0, 0]
     )
   );
-  group.add(cone(0.62, 1.42, robe, [0, 0.74, 0]));
-  group.add(torus(0.54, 0.05, trim, [0, 0.9, 0]));
-  group.add(cone(0.64, 0.28, dark, [0, 0.16, 0]));
-  group.add(sphere(0.3, skin, [0, 1.56, 0]));
-  for (const x of [-0.11, 0.11]) group.add(sphere(0.042, basic('#211a31'), [x, 1.6, 0.25], 8));
-  group.add(cone(0.045, 0.12, mat('#d6a477'), [0, 1.5, 0.29], 6));
-  group.add(torus(0.28, 0.06, glow, [0, 1.33, 0]));
-  group.add(cone(0.36, 0.82, robe, [0, 1.97, 0]));
-  group.add(cylinder(0.46, 0.48, 0.06, robe, [0, 1.62, 0], 18));
-  group.add(sphere(0.06, glow, [0, 2.01, 0.18], 8));
 
+  // Boots and layered robe.
+  for (const side of [-1, 1]) {
+    body.add(ellipsoid(0.12, 0.09, 0.2, leather, [side * 0.17, 0.11, 0.13], [0, 0, 0], 10));
+    body.add(cylinder(0.1, 0.12, 0.18, leather, [side * 0.17, 0.2, -0.02], 8));
+  }
+  body.add(cone(0.62, 0.98, robeDark, [0, 0.55, 0], 16));
+  body.add(cone(0.56, 1.02, robe, [0, 0.6, 0], 16));
+  body.add(torus(0.55, 0.028, trim, [0, 0.15, 0], [Math.PI / 2, 0, 0], 28));
+  body.add(torus(0.43, 0.018, trim, [0, 0.93, 0], [Math.PI / 2, 0, 0], 24));
+  for (let rune = 0; rune < 5; rune += 1) {
+    const angle = (rune / 5) * Math.PI * 2 + 0.3;
+    body.add(
+      mesh(new THREE.OctahedronGeometry(0.025, 0), glow, [
+        Math.cos(angle) * 0.54,
+        0.28,
+        Math.sin(angle) * 0.54,
+      ])
+    );
+  }
+  body.add(cylinder(0.36, 0.31, 0.52, robe, [0, 1.2, 0], 16));
+  body.add(torus(0.35, 0.055, trim, [0, 1.01, 0], [Math.PI / 2, 0, 0], 28));
+  body.add(sphere(0.055, trim, [0, 1.02, 0.37], 10));
+  body.add(box([0.07, 0.32, 0.03], trim, [0, 0.84, 0.38], [0.12, 0, 0]));
+  body.add(sphere(0.05, glow, [0, 1.28, 0.33], 8));
+  body.add(box([0.07, 0.07, 0.04], trim, [0, 1.28, 0.36], [0, 0, Math.PI / 4]));
+
+  const mantle = mesh(
+    new THREE.SphereGeometry(0.5, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.58),
+    robeDark
+  );
+  mantle.position.set(0, 1.34, 0);
+  mantle.scale.set(1.12, 0.62, 1.06);
+  body.add(mantle);
+  body.add(torus(0.46, 0.028, trim, [0, 1.3, 0], [Math.PI / 2, 0, 0], 28));
+  const cape = mesh(
+    new THREE.CylinderGeometry(0.4, 0.67, 1.02, 18, 1, true, Math.PI / 2, Math.PI),
+    capeMaterial,
+    [0, 0.92, -0.02]
+  );
+  body.add(cape);
+  body.add(
+    mesh(
+      new THREE.CylinderGeometry(0.66, 0.67, 0.035, 18, 1, true, Math.PI / 2, Math.PI),
+      trim,
+      [0, 0.4, -0.02]
+    )
+  );
+  body.add(mesh(new THREE.OctahedronGeometry(0.1, 0), glow, [0, 1.16, -0.53]));
+  body.add(torus(0.14, 0.012, trim, [0, 1.16, -0.53], [0, 0, 0], 20));
+  for (const x of [-0.24, 0, 0.24]) {
+    body.add(mesh(new THREE.OctahedronGeometry(0.024, 0), trim, [x, 0.44, -0.68]));
+  }
+  for (const side of [-1, 1]) {
+    body.add(ellipsoid(0.19, 0.12, 0.18, robe, [side * 0.42, 1.4, 0], [0, 0, 0], 12));
+    body.add(torus(0.16, 0.018, trim, [side * 0.42, 1.38, 0], [Math.PI / 2, 0, 0], 16));
+  }
+  body.add(box([0.16, 0.3, 0.05], robeDark, [-0.16, 1.59, -0.03], [0, 0.15, 0.3]));
+  body.add(box([0.16, 0.3, 0.05], robeDark, [0.16, 1.59, -0.03], [0, -0.15, -0.3]));
+
+  function addArm(side, holdingStaff) {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * 0.42, 1.38, 0);
+    pivot.rotation.z = side * 0.18;
+    pivot.rotation.x = holdingStaff ? 0.12 : 0.04;
+    pivot.add(capsule(0.09, 0.33, robe, [0, -0.17, 0], [0, 0, 0], 10));
+    const fore = new THREE.Group();
+    fore.position.set(0, -0.36, 0);
+    fore.rotation.x = holdingStaff ? -0.7 : 0.12;
+    fore.rotation.z = side * 0.12;
+    fore.add(capsule(0.075, 0.28, robe, [0, -0.13, 0], [0, 0, 0], 10));
+    fore.add(cylinder(0.09, 0.1, 0.07, trim, [0, -0.29, 0], 10));
+    fore.add(sphere(0.075, skin, [0, -0.36, 0.015], 12));
+    if (holdingStaff) {
+      fore.add(capsule(0.015, 0.05, skin, [-0.035, -0.37, 0.07], [Math.PI / 2, 0, 0], 6));
+      fore.add(capsule(0.015, 0.05, skin, [0.035, -0.37, 0.07], [Math.PI / 2, 0, 0], 6));
+    }
+    pivot.add(fore);
+    body.add(pivot);
+  }
+  addArm(-1, false);
+  addArm(1, true);
+
+  const headY = 1.68;
+  body.add(ellipsoid(0.275, 0.29, 0.26, skin, [0, headY, 0.01], [0, 0, 0], 20));
+  body.add(ellipsoid(0.21, 0.14, 0.2, skin, [0, headY - 0.12, 0.04], [0, 0, 0], 16));
+  for (const side of [-1, 1]) {
+    body.add(ellipsoid(0.045, 0.075, 0.035, skin, [side * 0.26, headY - 0.01, 0.02], [0, 0, 0], 10));
+    body.add(ellipsoid(0.062, 0.075, 0.035, eyeWhite, [side * 0.095, headY + 0.035, 0.245], [0, 0, 0], 12));
+    body.add(sphere(0.027, eyeDark, [side * 0.095, headY + 0.03, 0.278], 8));
+    body.add(sphere(0.009, glint, [side * 0.085, headY + 0.05, 0.3], 6));
+    body.add(box([0.11, 0.018, 0.022], hair, [side * 0.095, headY + 0.13, 0.255], [0, 0, side * 0.12]));
+    body.add(box([0.04, 0.16, 0.05], hair, [side * 0.25, headY - 0.12, 0.02]));
+  }
+  const nose = cone(0.035, 0.095, skinShade, [0, headY - 0.02, 0.29], 6);
+  nose.rotation.x = Math.PI / 2;
+  body.add(nose);
+  body.add(
+    mesh(
+      new THREE.TorusGeometry(0.06, 0.012, 4, 12, Math.PI),
+      dark,
+      [0, headY - 0.11, 0.265],
+      [0, 0, Math.PI]
+    )
+  );
+  body.add(
+    mesh(
+      new THREE.SphereGeometry(0.285, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.58),
+      hair,
+      [0, headY + 0.015, -0.01]
+    )
+  );
+  for (const [x, y, z, sx, sy, sz] of [
+    [-0.21, headY - 0.03, -0.16, 0.08, 0.16, 0.08],
+    [0.21, headY - 0.03, -0.16, 0.08, 0.16, 0.08],
+    [-0.11, headY + 0.08, -0.22, 0.1, 0.11, 0.08],
+    [0.11, headY + 0.08, -0.22, 0.1, 0.11, 0.08],
+    [-0.17, headY + 0.15, 0.225, 0.06, 0.08, 0.035],
+    [0.17, headY + 0.15, 0.225, 0.06, 0.08, 0.035],
+    [0, headY + 0.17, 0.24, 0.055, 0.07, 0.03],
+  ]) {
+    body.add(ellipsoid(sx, sy, sz, hair, [x, y, z], [0, 0, 0], 10));
+  }
+
+  const hat = new THREE.Group();
+  hat.position.set(0, 1.96, 0);
+  hat.rotation.z = -0.06;
+  hat.add(cylinder(0.48, 0.56, 0.045, robeDark, [0, 0, 0], 18));
+  hat.add(torus(0.5, 0.02, trim, [0, -0.012, 0], [Math.PI / 2, 0, 0], 28));
+  hat.add(cone(0.37, 0.55, robe, [0, 0.3, 0], 16));
+  hat.add(torus(0.36, 0.035, trim, [0, 0.06, 0], [Math.PI / 2, 0, 0], 24));
+  hat.add(mesh(new THREE.OctahedronGeometry(0.065, 0), glow, [0, 0.06, 0.37]));
+  const tip = cone(0.22, 0.38, robe, [0.075, 0.58, 0], 12);
+  tip.rotation.z = -0.45;
+  hat.add(tip);
+  hat.add(sphere(0.075, trim, [0.16, 0.75, 0], 10));
+  for (const [x, y, z] of [
+    [0.12, 0.34, 0.3],
+    [-0.16, 0.22, 0.26],
+    [0.03, 0.46, 0.25],
+  ]) {
+    hat.add(mesh(new THREE.OctahedronGeometry(0.028, 0), trim, [x, y, z]));
+  }
+  body.add(hat);
+
+  // Gnarled staff with a wrapped grip and caged crystal.
+  const wood = mat('#4b3323', { roughness: 0.95 });
   const staff = new THREE.Group();
-  staff.position.set(0.6, 0, 0.14);
-  staff.rotation.z = -0.1;
-  staff.add(cylinder(0.035, 0.05, 1.8, mat('#60452f', { roughness: 0.92 }), [0, 0.88, 0], 7));
-  staff.add(sphere(0.12, glow, [0, 1.86, 0], 12));
+  staff.position.set(0.55, 0, 0.2);
+  staff.rotation.z = -0.05;
+  staff.add(cylinder(0.032, 0.05, 1.75, wood, [0, 0.875, 0], 8));
+  staff.add(cylinder(0.045, 0.035, 0.16, wood, [0.035, 0.5, 0.01], 7));
+  staff.add(sphere(0.055, wood, [0.04, 0.95, 0.01], 8));
+  for (const y of [0.72, 0.8, 0.88]) {
+    staff.add(torus(0.045, 0.012, leather, [0, y, 0], [Math.PI / 2, 0, 0], 12));
+  }
+  for (const side of [-1, 1]) {
+    staff.add(cylinder(0.018, 0.028, 0.3, wood, [side * 0.065, 1.95, 0], 6));
+  }
+  staff.add(mesh(new THREE.OctahedronGeometry(0.13, 0), crystal, [0, 2.03, 0]));
+  staff.add(torus(0.19, 0.012, trim, [0, 2.03, 0], [0, 0, 0], 18));
+  staff.add(torus(0.19, 0.012, trim, [0, 2.03, 0], [Math.PI / 2, 0, 0], 18));
   const staffGlow = new THREE.Sprite(
     new THREE.SpriteMaterial({
       map: getGlowTexture(),
       color: '#ffd9a0',
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.35,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     })
   );
-  staffGlow.position.set(0, 1.86, 0);
-  staffGlow.scale.set(1.2, 1.2, 1);
+  staffGlow.position.set(0, 2.03, 0);
+  staffGlow.scale.set(0.95, 0.95, 1);
   staff.add(staffGlow);
-  group.add(staff);
+  body.add(staff);
 
-  for (const side of [-1, 1]) {
-    const arm = mesh(
-      new THREE.CapsuleGeometry(0.09, 0.42, 4, 8),
-      robe,
-      [side * 0.45, 1.1, 0.1],
-      [side * 0.2, 0, side * -0.35]
-    );
-    group.add(arm);
-  }
+  mergeStaticGroup(body);
 
   const owl = new THREE.Group();
-  owl.position.set(0.88, 1.58, 0.34);
+  owl.position.set(-0.88, 1.62, 0.28);
+  owl.rotation.y = Math.PI;
   const owlBody = new THREE.Group();
-  owlBody.add(sphere(0.24, mat('#b8a6d9', { roughness: 0.7 }), [0, 0, 0]));
-  owlBody.add(sphere(0.18, mat('#c7b7e6', { roughness: 0.65 }), [0, 0.2, 0.03]));
-  for (const x of [-0.07, 0.07]) {
-    owlBody.add(sphere(0.055, basic('#1c1530'), [x, 0.23, 0.16], 10));
+  const owlFeather = mat('#b8a6d9', { roughness: 0.72 });
+  const owlLight = mat('#d8c9f2', { roughness: 0.66 });
+  const owlDark = mat('#6f5a94', { roughness: 0.8 });
+  const owlBeak = mat('#e0a24e', { roughness: 0.58 });
+  const owlEyeWhite = mat('#f8f0dc', { roughness: 0.4 });
+  const owlEyeDark = basic('#1c1530');
+  owlBody.add(ellipsoid(0.24, 0.28, 0.22, owlFeather, [0, 0, 0], [0, 0, 0], 16));
+  owlBody.add(ellipsoid(0.18, 0.2, 0.16, owlLight, [0, -0.02, 0.08], [0, 0, 0], 14));
+  owlBody.add(ellipsoid(0.18, 0.17, 0.16, owlFeather, [0, 0.22, 0.02], [0, 0, 0], 14));
+  for (const side of [-1, 1]) {
+    owlBody.add(ellipsoid(0.11, 0.13, 0.03, owlLight, [side * 0.085, 0.23, 0.16], [0, 0, 0], 12));
+    owlBody.add(ellipsoid(0.055, 0.07, 0.015, owlEyeWhite, [side * 0.085, 0.24, 0.18], [0, 0, 0], 10));
+    owlBody.add(sphere(0.03, owlEyeDark, [side * 0.085, 0.24, 0.195], 8));
+    owlBody.add(sphere(0.009, glint, [side * 0.075, 0.255, 0.207], 6));
+    owlBody.add(cone(0.06, 0.18, owlFeather, [side * 0.1, 0.38, 0], [0, 0, side * -0.35], 6));
   }
-  owlBody.add(cone(0.04, 0.1, basic('#f0b35e'), [0, 0.18, 0.23], 5));
+  owlBody.add(cone(0.04, 0.09, owlBeak, [0, 0.18, 0.22], [Math.PI / 2, 0, 0], 6));
+  owlBody.add(ellipsoid(0.15, 0.12, 0.03, owlLight, [0, 0.12, -0.19], [0.2, 0, 0], 10));
+  owlBody.add(ellipsoid(0.12, 0.09, 0.025, owlFeather, [0, 0, -0.21], [0.1, 0, 0], 10));
+  for (const [x, tilt] of [
+    [-0.08, -0.25],
+    [0, 0],
+    [0.08, 0.25],
+  ]) {
+    owlBody.add(ellipsoid(0.07, 0.17, 0.018, owlDark, [x, -0.19, -0.2], [0.55, 0, tilt], 8));
+  }
+  for (const side of [-1, 1]) {
+    for (let toe = -1; toe <= 1; toe += 1) {
+      owlBody.add(
+        cylinder(
+          0.012,
+          0.012,
+          0.1,
+          owlBeak,
+          [side * 0.07 + toe * 0.018, -0.27, 0.06],
+          4
+        )
+      );
+    }
+  }
   const wings = [];
   for (const side of [-1, 1]) {
     const wing = new THREE.Group();
     wing.position.set(side * 0.21, 0.02, 0);
-    const feather = cone(0.13, 0.34, mat('#9a87c2', { roughness: 0.8 }), [0, 0, 0], 5);
-    feather.rotation.z = side * -0.6;
-    feather.scale.set(0.5, 1, 0.8);
-    wing.add(feather);
+    wing.userData.noMerge = true;
+    wing.add(
+      ellipsoid(0.12, 0.22, 0.03, owlFeather, [side * 0.04, -0.02, -0.035], [0.1, 0, side * 0.35], 9)
+    );
+    for (let feather = 0; feather < 3; feather += 1) {
+      wing.add(
+        ellipsoid(
+          0.085 - feather * 0.01,
+          0.18,
+          0.025,
+          owlDark,
+          [side * (0.04 + feather * 0.025), -0.05 - feather * 0.035, -0.05 - feather * 0.025],
+          [0.12, 0, side * (0.62 + feather * 0.2)],
+          8
+        )
+      );
+    }
+    mergeStaticGroup(wing);
     owlBody.add(wing);
     wings.push({ wing, side });
   }
-  for (const side of [-1, 1]) {
-    owlBody.add(cylinder(0.018, 0.018, 0.08, basic('#c9a25a'), [side * 0.08, -0.22, 0.02], 4));
+  mergeStaticGroup(owlBody);
+
+  const scarf = new THREE.Group();
+  scarf.add(
+    torus(
+      0.2,
+      0.04,
+      mat('#f2ce7b', { emissive: '#8a6b20', emissiveIntensity: 0.35 }),
+      [0, -0.08, 0.02],
+      [Math.PI / 2, 0, 0],
+      18
+    )
+  );
+  scarf.add(box([0.12, 0.28, 0.03], trim, [-0.1, -0.2, 0.02], [0, 0, 0.2]));
+  scarf.add(box([0.1, 0.2, 0.03], trim, [0.08, -0.16, 0.02], [0, 0, -0.15]));
+  scarf.add(mesh(new THREE.OctahedronGeometry(0.04, 0), glow, [0, -0.08, 0.22]));
+  scarf.visible = false;
+  owlBody.add(scarf);
+
+  const crown = new THREE.Group();
+  crown.add(torus(0.13, 0.025, trim, [0, 0.36, 0.03], [Math.PI / 2, 0, 0], 16));
+  for (let point = 0; point < 5; point += 1) {
+    const angle = (point / 5) * Math.PI * 2;
+    crown.add(
+      cone(
+        0.025,
+        0.11,
+        trim,
+        [Math.cos(angle) * 0.13, 0.43, 0.03 + Math.sin(angle) * 0.13],
+        5
+      )
+    );
   }
-  const scarf = torus(0.19, 0.035, mat('#f2ce7b', { emissive: '#8a6b20', emissiveIntensity: 0.35 }), [0, -0.08, 0.02], [Math.PI / 2, 0, 0], 16);
-  const crown = torus(0.12, 0.025, mat('#e8e2ff', { emissive: '#a99bff', emissiveIntensity: 0.4 }), [0, 0.38, 0.03], [Math.PI / 2, 0, 0], 12);
-  owlBody.add(scarf, crown);
+  crown.visible = false;
+  owlBody.add(crown);
   owl.add(owlBody);
   group.add(owl);
 
   return {
     group,
-    body: group,
+    body,
     owl,
     owlBody,
     wings,
     scarf,
     crown,
-    materials: { robe, trim, glow, skin },
+    staffCrystal: crystal,
+    materials: { robe, robeDark, cape: capeMaterial, trim, glow, skin },
   };
 }
 
-function makeNpc({ name, x, z, robe, trim, skin = '#f1c9a5', rotation = 0, height = 1, staff = false, goggles = false, antlers = false }) {
+function makeNpc({
+  name,
+  x,
+  z,
+  robe,
+  trim,
+  skin = '#f1c9a5',
+  rotation = 0,
+  height = 1,
+  staff = false,
+  antlers = false,
+  variant = 'archmage',
+  hair = '#2b1d33',
+}) {
   const group = new THREE.Group();
   group.position.set(x, 0, z);
   group.rotation.y = rotation;
@@ -1147,96 +1545,598 @@ function makeNpc({ name, x, z, robe, trim, skin = '#f1c9a5', rotation = 0, heigh
   group.add(
     mesh(
       new THREE.CircleGeometry(0.55, 20),
-      basic('#080512', { transparent: true, opacity: 0.28 }),
+      basic('#080512', { transparent: true, opacity: 0.3 }),
       [0, 0.015, 0],
       [-Math.PI / 2, 0, 0]
     )
   );
+
   const body = new THREE.Group();
-  const robeMat = mat(robe, { roughness: 0.8 });
-  const trimMat = mat(trim, { roughness: 0.5, metalness: 0.25 });
-  body.add(cone(0.62, 1.46, robeMat, [0, 0.78, 0]));
-  body.add(torus(0.55, 0.055, trimMat, [0, 0.94, 0]));
-  body.add(sphere(0.3, mat(skin, { roughness: 0.7 }), [0, 1.62, 0]));
-  for (const eyeX of [-0.11, 0.11]) body.add(sphere(0.045, basic('#1e1730'), [eyeX, 1.66, 0.25], 8));
-  body.add(cone(0.055, 0.16, mat('#d6a477'), [0, 1.56, 0.29], 6));
-  if (goggles) {
-    for (const offset of [-0.13, 0.13]) {
-      body.add(torus(0.09, 0.022, trimMat, [offset, 1.67, 0.27], [0, 0, 0], 16));
+  group.add(body);
+  const fabric = getFabricTexture();
+  const robeMat = new THREE.MeshStandardMaterial({
+    color: robe,
+    map: fabric,
+    roughness: 0.82,
+    metalness: 0.02,
+    flatShading: true,
+    emissive: shadeColor(robe, 0.24),
+    emissiveIntensity: 0.14,
+  });
+  const robeDark = new THREE.MeshStandardMaterial({
+    color: shadeColor(robe, 0.52),
+    map: fabric,
+    roughness: 0.9,
+    metalness: 0.02,
+    flatShading: true,
+    emissive: shadeColor(robe, 0.14),
+    emissiveIntensity: 0.08,
+  });
+  const trimMat = mat(trim, {
+    roughness: 0.4,
+    metalness: 0.38,
+    emissive: trim,
+    emissiveIntensity: 0.12,
+  });
+  const glowMat = basic(trim, { toneMapped: false });
+  const skinMat = mat(skin, { roughness: 0.72, emissive: skin, emissiveIntensity: 0.1 });
+  const skinShade = mat(shadeColor(skin, 0.78), { roughness: 0.76 });
+  const hairMat = mat(hair, { roughness: 0.88, emissive: hair, emissiveIntensity: 0.04 });
+  const leather = mat('#3b2733', { roughness: 0.92 });
+  const dark = mat('#171022', { roughness: 0.9 });
+  const eyeWhite = mat('#f7eedb', { roughness: 0.35 });
+  const eyeDark = basic('#171022');
+  const glint = basic('#fff8e8', { toneMapped: false });
+  const glass = basic('#bfe8ff', {
+    transparent: true,
+    opacity: 0.18,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const leaf = mat('#3e7a4c', {
+    roughness: 0.8,
+    emissive: '#17351f',
+    emissiveIntensity: 0.12,
+  });
+  const leafLight = mat('#7fbf8a', {
+    roughness: 0.7,
+    emissive: '#315c3a',
+    emissiveIntensity: 0.1,
+  });
+
+  // Boots, layered skirt, and tailored torso.
+  for (const side of [-1, 1]) {
+    body.add(ellipsoid(0.11, 0.08, 0.18, leather, [side * 0.16, 0.1, 0.12], [0, 0, 0], 9));
+    body.add(cylinder(0.09, 0.11, 0.16, leather, [side * 0.16, 0.18, -0.02], 8));
+  }
+  body.add(cone(0.58, 0.95, robeDark, [0, 0.54, 0], 16));
+  body.add(cone(0.53, 1, robeMat, [0, 0.59, 0], 16));
+  body.add(torus(0.52, 0.027, trimMat, [0, 0.15, 0], [Math.PI / 2, 0, 0], 26));
+  body.add(cylinder(0.34, 0.3, 0.52, robeMat, [0, 1.18, 0], 16));
+  body.add(torus(0.34, 0.05, trimMat, [0, 0.99, 0], [Math.PI / 2, 0, 0], 26));
+  body.add(sphere(0.05, glowMat, [0, 1.02, 0.35], 8));
+  body.add(box([0.06, 0.28, 0.03], trimMat, [0, 0.83, 0.36], [0.12, 0, 0]));
+  body.add(ellipsoid(0.1, 0.08, 0.06, leather, [0.28, 0.88, 0.27], [0, 0, 0], 8));
+
+  const mantle = mesh(
+    new THREE.SphereGeometry(0.48, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.58),
+    robeDark
+  );
+  mantle.position.set(0, 1.32, 0);
+  mantle.scale.set(1.1, 0.6, 1.04);
+  body.add(mantle);
+  body.add(torus(0.45, 0.026, trimMat, [0, 1.28, 0], [Math.PI / 2, 0, 0], 26));
+  for (const side of [-1, 1]) {
+    body.add(ellipsoid(0.17, 0.11, 0.17, robeMat, [side * 0.4, 1.38, 0], [0, 0, 0], 11));
+    body.add(torus(0.145, 0.016, trimMat, [side * 0.4, 1.36, 0], [Math.PI / 2, 0, 0], 16));
+  }
+  body.add(box([0.15, 0.28, 0.05], robeDark, [-0.15, 1.58, -0.03], [0, 0.15, 0.3]));
+  body.add(box([0.15, 0.28, 0.05], robeDark, [0.15, 1.58, -0.03], [0, -0.15, -0.3]));
+
+  function addArms(holding) {
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.4, 1.36, 0);
+      pivot.rotation.z = side * 0.17;
+      pivot.rotation.x = holding && side === 1 ? 0.1 : 0.04;
+      pivot.add(capsule(0.085, 0.32, robeMat, [0, -0.16, 0], [0, 0, 0], 9));
+      const fore = new THREE.Group();
+      fore.position.set(0, -0.35, 0);
+      fore.rotation.x = holding && side === 1 ? -0.65 : 0.1;
+      fore.rotation.z = side * 0.1;
+      fore.add(capsule(0.07, 0.26, robeMat, [0, -0.12, 0], [0, 0, 0], 9));
+      fore.add(cylinder(0.085, 0.095, 0.06, trimMat, [0, -0.27, 0], 9));
+      fore.add(sphere(0.07, variant === 'potionmaster' ? leather : skinMat, [0, -0.33, 0.015], 10));
+      pivot.add(fore);
+      body.add(pivot);
     }
   }
+  addArms(staff || variant === 'maestro');
+
+  const headY = 1.66;
+  body.add(ellipsoid(0.26, 0.28, 0.25, skinMat, [0, headY, 0.01], [0, 0, 0], 20));
+  body.add(ellipsoid(0.2, 0.13, 0.19, skinMat, [0, headY - 0.12, 0.04], [0, 0, 0], 16));
+  for (const side of [-1, 1]) {
+    body.add(ellipsoid(0.043, 0.07, 0.033, skinMat, [side * 0.25, headY - 0.01, 0.02], [0, 0, 0], 9));
+    body.add(ellipsoid(0.06, 0.072, 0.033, eyeWhite, [side * 0.09, headY + 0.035, 0.235], [0, 0, 0], 11));
+    body.add(sphere(0.025, eyeDark, [side * 0.09, headY + 0.03, 0.267], 8));
+    body.add(sphere(0.008, glint, [side * 0.08, headY + 0.05, 0.287], 6));
+    body.add(box([0.1, 0.016, 0.02], hairMat, [side * 0.09, headY + 0.125, 0.245], [0, 0, side * 0.12]));
+  }
+  const nose = cone(0.034, 0.09, skinShade, [0, headY - 0.02, 0.285], 6);
+  nose.rotation.x = Math.PI / 2;
+  body.add(nose);
+  body.add(
+    mesh(
+      new THREE.TorusGeometry(0.055, 0.012, 4, 10, Math.PI),
+      dark,
+      [0, headY - 0.1, 0.265],
+      [0, 0, Math.PI]
+    )
+  );
+  body.add(
+    mesh(
+      new THREE.SphereGeometry(0.27, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.58),
+      hairMat,
+      [0, headY + 0.015, -0.01]
+    )
+  );
+
+  // Hair silhouettes and variant features.
+  for (const [x, y, z, sx, sy, sz] of [
+    [-0.2, headY - 0.02, -0.16, 0.075, 0.15, 0.075],
+    [0.2, headY - 0.02, -0.16, 0.075, 0.15, 0.075],
+    [-0.1, headY + 0.08, -0.21, 0.09, 0.11, 0.075],
+    [0.1, headY + 0.08, -0.21, 0.09, 0.11, 0.075],
+    [-0.16, headY + 0.14, 0.22, 0.055, 0.075, 0.03],
+    [0.16, headY + 0.14, 0.22, 0.055, 0.075, 0.03],
+    [0, headY + 0.16, 0.235, 0.05, 0.065, 0.028],
+  ]) {
+    body.add(ellipsoid(sx, sy, sz, hairMat, [x, y, z], [0, 0, 0], 9));
+  }
+  for (const side of [-1, 1]) {
+    body.add(box([0.035, 0.15, 0.045], hairMat, [side * 0.24, headY - 0.11, 0.02]));
+  }
+
+  if (variant === 'headmistress') {
+    body.add(ellipsoid(0.14, 0.15, 0.13, hairMat, [0, headY - 0.05, -0.27], [0, 0, 0], 12));
+    body.add(torus(0.1, 0.018, trimMat, [0, headY - 0.05, -0.27], [Math.PI / 2, 0, 0], 16));
+    for (const side of [-1, 1]) {
+      body.add(torus(0.072, 0.009, trimMat, [side * 0.09, headY + 0.035, 0.26], [0, 0, 0], 16));
+    }
+    body.add(box([0.06, 0.012, 0.012], trimMat, [0, headY + 0.035, 0.26]));
+    for (const side of [-1, 1]) {
+      body.add(box([0.018, 0.012, 0.14], trimMat, [side * 0.16, headY + 0.035, 0.19]));
+    }
+  }
+
+  if (variant === 'archmage') {
+    body.add(ellipsoid(0.2, 0.22, 0.13, hairMat, [0, headY - 0.24, 0.12], [0, 0, 0], 14));
+    body.add(ellipsoid(0.14, 0.25, 0.1, hairMat, [0, headY - 0.44, 0.1], [0, 0, 0], 12));
+    body.add(ellipsoid(0.08, 0.18, 0.07, hairMat, [0, headY - 0.64, 0.08], [0, 0, 0], 10));
+    for (const side of [-1, 1]) {
+      body.add(ellipsoid(0.07, 0.03, 0.035, hairMat, [side * 0.07, headY - 0.1, 0.255], [0, 0, side * 0.2], 8));
+      body.add(box([0.13, 0.03, 0.03], hairMat, [side * 0.095, headY + 0.13, 0.25], [0, 0, side * 0.16]));
+    }
+  }
+
+  if (variant === 'keeper') {
+    for (const [x, y, z] of [
+      [-0.13, headY - 0.06, 0.235],
+      [-0.08, headY - 0.12, 0.245],
+      [0.13, headY - 0.06, 0.235],
+      [0.08, headY - 0.12, 0.245],
+      [0, headY - 0.015, 0.27],
+    ]) {
+      body.add(sphere(0.012, skinShade, [x, y, z], 6));
+    }
+    for (let flower = 0; flower < 5; flower += 1) {
+      const angle = (flower / 5) * Math.PI * 2;
+      body.add(
+        ellipsoid(
+          0.035,
+          0.012,
+          0.07,
+          mat('#f2b8d9', { roughness: 0.6 }),
+          [0.22 + Math.cos(angle) * 0.05, 1.76, 0.13 + Math.sin(angle) * 0.05],
+          [0, 0, angle],
+          7
+        )
+      );
+    }
+    body.add(sphere(0.025, glowMat, [0.22, 1.76, 0.13], 8));
+  }
+
+  if (variant === 'potionmaster') {
+    for (const side of [-1, 1]) {
+      body.add(torus(0.085, 0.016, trimMat, [side * 0.09, headY + 0.035, 0.265], [0, 0, 0], 16));
+      body.add(mesh(new THREE.CircleGeometry(0.068, 12), glass, [side * 0.09, headY + 0.035, 0.272]));
+    }
+    body.add(box([0.16, 0.035, 0.04], leather, [0, headY + 0.035, 0.25]));
+    body.add(box([0.035, 0.3, 0.035], leather, [0, headY + 0.18, 0.02]));
+    body.add(box([0.5, 0.8, 0.03], leather, [0, 0.8, 0.35], [0.03, 0, 0]));
+    body.add(box([0.56, 0.045, 0.04], trimMat, [0, 1.18, 0.36]));
+    body.add(box([0.055, 0.42, 0.035], leather, [0.14, 1.38, 0.3], [0, 0, 0.5]));
+    for (const [side, colour] of [
+      [-1, '#8fe0a8'],
+      [1, '#a99bff'],
+    ]) {
+      body.add(
+        cylinder(0.035, 0.035, 0.12, basic(colour, { transparent: true, opacity: 0.8 }), [side * 0.2, 0.9, 0.4], 8)
+      );
+      body.add(cylinder(0.025, 0.025, 0.05, leather, [side * 0.2, 0.98, 0.4], 6));
+    }
+  }
+
+  if (variant === 'maestro') {
+    for (const side of [-1, 1]) {
+      body.add(ellipsoid(0.055, 0.022, 0.03, hairMat, [side * 0.045, headY - 0.075, 0.255], [0, 0, side * 0.18], 7));
+    }
+    body.add(box([0.18, 0.1, 0.04], mat('#f2e3cc', { roughness: 0.8 }), [0, 1.47, 0.255], [0, 0, 0.05]));
+    const cravat = cone(0.09, 0.2, mat('#f2e3cc', { roughness: 0.8 }), [0, 1.38, 0.27], 8);
+    cravat.rotation.x = Math.PI;
+    body.add(cravat);
+    body.add(box([0.24, 0.7, 0.03], robeDark, [-0.16, 0.65, -0.35], [0.15, 0, 0.06]));
+    body.add(box([0.24, 0.7, 0.03], robeDark, [0.16, 0.65, -0.35], [0.15, 0, -0.06]));
+    const baton = new THREE.Group();
+    baton.position.set(0.52, 0.92, 0.3);
+    baton.rotation.z = -0.4;
+    baton.add(cylinder(0.012, 0.018, 0.5, mat('#e8d9b5', { roughness: 0.65 }), [0, 0.25, 0], 5));
+    baton.add(sphere(0.035, glowMat, [0, 0.5, 0], 8));
+    body.add(baton);
+  }
+
+  if (!['keeper', 'maestro'].includes(variant)) {
+    const brim = variant === 'potionmaster' ? 0.55 : variant === 'headmistress' ? 0.5 : 0.52;
+    const crownHeight = variant === 'potionmaster' ? 0.3 : variant === 'headmistress' ? 0.48 : 0.6;
+    const hat = new THREE.Group();
+    hat.position.set(0, 1.92, variant === 'potionmaster' ? -0.03 : 0);
+    hat.rotation.z = variant === 'potionmaster' ? -0.18 : variant === 'archmage' ? -0.08 : -0.04;
+    hat.add(cylinder(brim * 0.86, brim, 0.045, robeDark, [0, 0, 0], 18));
+    hat.add(torus(brim * 0.9, 0.018, trimMat, [0, -0.012, 0], [Math.PI / 2, 0, 0], 26));
+    hat.add(cone(brim * 0.62, crownHeight, robeMat, [0, crownHeight / 2, 0], 16));
+    hat.add(torus(brim * 0.6, 0.03, trimMat, [0, 0.055, 0], [Math.PI / 2, 0, 0], 24));
+    hat.add(mesh(new THREE.OctahedronGeometry(0.055, 0), glowMat, [0, 0.055, brim * 0.6]));
+    if (variant === 'archmage') {
+      const tip = cone(brim * 0.36, crownHeight * 0.55, robeMat, [brim * 0.12, crownHeight * 0.85, 0], 12);
+      tip.rotation.z = -0.55;
+      hat.add(tip);
+      hat.add(sphere(0.065, trimMat, [brim * 0.32, crownHeight * 1.12, 0], 8));
+      for (const [x, y, z] of [
+        [0.13, 0.32, 0.31],
+        [-0.15, 0.2, 0.26],
+      ]) {
+        hat.add(mesh(new THREE.OctahedronGeometry(0.026, 0), trimMat, [x, y, z]));
+      }
+    }
+    if (variant === 'headmistress') {
+      hat.add(torus(0.08, 0.012, trimMat, [0, 0.05, brim * 0.6], [0, 0, 0], 16));
+    }
+    body.add(hat);
+  }
+
+  if (variant === 'maestro') {
+    const cap = new THREE.Group();
+    cap.position.set(0, 1.9, 0);
+    cap.rotation.z = -0.03;
+    cap.add(cylinder(0.3, 0.34, 0.08, robeDark, [0, 0, 0], 16));
+    cap.add(cylinder(0.28, 0.3, 0.18, robeMat, [0, 0.12, 0], 16));
+    cap.add(ellipsoid(0.28, 0.06, 0.28, robeDark, [0, 0.22, 0], [0, 0, 0], 16));
+    cap.add(box([0.04, 0.22, 0.02], trimMat, [0.26, 0.2, 0.1], [0, 0, -0.5]));
+    body.add(cap);
+  }
+
   if (antlers) {
     for (const side of [-1, 1]) {
       const antler = new THREE.Group();
-      antler.position.set(side * 0.18, 1.9, 0);
-      antler.rotation.z = side * 0.4;
-      antler.add(cylinder(0.025, 0.04, 0.5, mat('#8a6f4d'), [0, 0.2, 0], 5));
-      const twig = cylinder(0.02, 0.03, 0.28, mat('#8a6f4d'), [side * 0.12, 0.4, 0], 5);
-      twig.rotation.z = side * 0.7;
-      antler.add(twig);
+      antler.position.set(side * 0.17, 1.86, 0);
+      antler.rotation.z = side * 0.2;
+      const antlerWood = mat('#a47f55', {
+        roughness: 0.9,
+        emissive: '#3a2a1b',
+        emissiveIntensity: 0.08,
+      });
+      antler.add(cylinder(0.022, 0.035, 0.5, antlerWood, [0, 0.25, 0], 5));
+      antler.add(cylinder(0.017, 0.027, 0.32, antlerWood, [side * 0.1, 0.45, 0], 5));
+      antler.add(cylinder(0.014, 0.022, 0.22, antlerWood, [0, 0.55, 0.08], [0.4, 0, 0], 5));
+      antler.add(cylinder(0.012, 0.018, 0.2, antlerWood, [side * -0.1, 0.6, 0], [0, 0, side * -0.7], 5));
+      antler.add(ellipsoid(0.05, 0.025, 0.08, leafLight, [side * 0.15, 0.58, 0.02], [0, 0, 0], 7));
+      antler.add(ellipsoid(0.04, 0.02, 0.07, leafLight, [side * -0.12, 0.7, 0.02], [0, 0, 0], 6));
+      antler.add(sphere(0.03, glowMat, [0, 0.63, 0.1], 6));
       body.add(antler);
     }
+    for (let leafIndex = 0; leafIndex < 7; leafIndex += 1) {
+      const angle = (leafIndex / 7) * Math.PI * 2;
+      body.add(
+        ellipsoid(
+          0.1,
+          0.025,
+          0.2,
+          leafIndex % 2 ? leaf : leafLight,
+          [Math.cos(angle) * 0.4, 1.34 + (leafIndex % 2) * 0.04, Math.sin(angle) * 0.4],
+          [0, -angle, 0],
+          8
+        )
+      );
+    }
   }
-  body.add(cone(0.34, 0.72, mat('#2c2148', { roughness: 0.8 }), [0, 1.94, 0]));
-  body.add(cylinder(0.44, 0.46, 0.055, mat('#2c2148', { roughness: 0.8 }), [0, 1.62, 0], 16));
-  body.add(sphere(0.055, basic(trim, { toneMapped: false }), [0, 1.95, 0.19], 8));
+
   if (staff) {
+    const wood = mat('#4b3323', { roughness: 0.95 });
     const staffGroup = new THREE.Group();
-    staffGroup.position.set(0.62, 0, 0.18);
-    staffGroup.rotation.z = -0.12;
-    staffGroup.add(cylinder(0.035, 0.05, 1.9, mat('#5c4531', { roughness: 0.9 }), [0, 0.95, 0], 7));
-    staffGroup.add(sphere(0.1, basic(trim, { toneMapped: false }), [0, 1.95, 0], 10));
+    staffGroup.position.set(0.55, 0, 0.2);
+    staffGroup.rotation.z = -0.06;
+    staffGroup.add(cylinder(0.03, 0.045, 1.9, wood, [0, 0.95, 0], 8));
+    staffGroup.add(sphere(0.05, wood, [0.035, 1.05, 0.01], 8));
+    for (const y of [0.78, 0.86, 0.94]) {
+      staffGroup.add(torus(0.04, 0.011, leather, [0, y, 0], [Math.PI / 2, 0, 0], 10));
+    }
+    staffGroup.add(mesh(new THREE.OctahedronGeometry(0.11, 0), glowMat, [0, 2, 0]));
+    staffGroup.add(torus(0.17, 0.011, trimMat, [0, 2, 0], [0, 0, 0], 16));
+    const staffGlow = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: getGlowTexture(),
+        color: trim,
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      })
+    );
+    staffGlow.position.set(0, 2, 0);
+    staffGlow.scale.set(0.9, 0.9, 1);
+    staffGroup.add(staffGlow);
     body.add(staffGroup);
   }
-  group.add(body);
+
+  mergeStaticGroup(body);
   return { group, body, name, x, z, baseY: 0 };
 }
 
 function addNpcs(scene) {
   const npcs = [
-    makeNpc({ name: 'Headmistress Morrow', x: 0, z: -5.5, robe: '#7c5ba6', trim: '#f2ce7b', staff: true, height: 1.06 }),
-    makeNpc({ name: 'Archmage Tilly', x: -6, z: -43, robe: '#5b6fbf', trim: '#c9bfff', skin: '#e6bd93', staff: true, rotation: 0.4 }),
-    makeNpc({ name: 'Keeper Fern', x: 46, z: -4, robe: '#4d8a62', trim: '#d8e79a', skin: '#c9906a', antlers: true, rotation: -0.6, height: 0.98 }),
-    makeNpc({ name: 'Master Bramble', x: -46, z: -4, robe: '#3f7f7b', trim: '#9ff0e2', skin: '#d7a680', goggles: true, height: 0.94, rotation: 0.7 }),
-    makeNpc({ name: 'Maestro Cadence', x: 5, z: 80.5, robe: '#7a4a63', trim: '#f5c1d5', skin: '#e6b58f', rotation: -0.9 }),
+    makeNpc({
+      name: 'Headmistress Morrow',
+      x: 0,
+      z: -5.5,
+      robe: '#7c5ba6',
+      trim: '#f2ce7b',
+      staff: true,
+      height: 1.06,
+      variant: 'headmistress',
+      hair: '#cfc5d8',
+    }),
+    makeNpc({
+      name: 'Archmage Tilly',
+      x: -6,
+      z: -43,
+      robe: '#5b6fbf',
+      trim: '#c9bfff',
+      skin: '#e6bd93',
+      staff: true,
+      rotation: 0.4,
+      variant: 'archmage',
+      hair: '#ddd5e8',
+    }),
+    makeNpc({
+      name: 'Keeper Fern',
+      x: 46,
+      z: -4,
+      robe: '#4d8a62',
+      trim: '#d8e79a',
+      skin: '#c9906a',
+      antlers: true,
+      rotation: -0.6,
+      height: 0.98,
+      variant: 'keeper',
+      hair: '#6b3f2b',
+    }),
+    makeNpc({
+      name: 'Master Bramble',
+      x: -46,
+      z: -4,
+      robe: '#3f7f7b',
+      trim: '#9ff0e2',
+      skin: '#d7a680',
+      height: 0.94,
+      rotation: 0.7,
+      variant: 'potionmaster',
+      hair: '#5a3b2a',
+    }),
+    makeNpc({
+      name: 'Maestro Cadence',
+      x: 5,
+      z: 80.5,
+      robe: '#7a4a63',
+      trim: '#f5c1d5',
+      skin: '#e6b58f',
+      rotation: -0.9,
+      variant: 'maestro',
+      hair: '#2a1824',
+    }),
   ];
   for (const npc of npcs) scene.add(npc.group);
 
+  const spiritPoint = INTERACTIONS.find((point) => point.npcKey === 'spirit');
+  const spiritX = spiritPoint?.x ?? -3;
+  const spiritZ = spiritPoint?.z ?? 46;
   const spirit = new THREE.Group();
-  spirit.position.set(5, 0, 45);
-  const floating = new THREE.Group();
-  floating.position.y = 1.25;
-  floating.add(
-    sphere(
-      0.5,
-      mat('#9fe8b5', {
-        emissive: '#4ecc86',
-        emissiveIntensity: 0.55,
-        roughness: 0.4,
-        transparent: true,
-        opacity: 0.82,
-      }),
-      [0, 0, 0],
-      8
+  spirit.position.set(spiritX, 0, spiritZ);
+  spirit.add(
+    mesh(
+      new THREE.CircleGeometry(0.85, 24),
+      basic('#7fd6a2', { transparent: true, opacity: 0.12, side: THREE.DoubleSide }),
+      [0, 0.02, 0],
+      [-Math.PI / 2, 0, 0]
     )
   );
-  floating.add(cone(0.3, 0.55, mat('#7fd6a2', { emissive: '#4ecc86', emissiveIntensity: 0.4 }), [0, 0.5, 0], 7));
-  for (const x of [-0.16, 0.16]) floating.add(sphere(0.055, basic('#18291f'), [x, 0.08, 0.44], 8));
+  const floating = new THREE.Group();
+  floating.position.y = 1.25;
+  const wisp = mat('#9fe8b5', {
+    emissive: '#4ecc86',
+    emissiveIntensity: 0.5,
+    roughness: 0.4,
+    transparent: true,
+    opacity: 0.82,
+  });
+  const wispCore = mat('#d8ffb7', {
+    emissive: '#8aff9f',
+    emissiveIntensity: 1.1,
+    roughness: 0.35,
+  });
+  const wispTail = mat('#7fd6a2', {
+    emissive: '#4ecc86',
+    emissiveIntensity: 0.4,
+    transparent: true,
+    opacity: 0.68,
+  });
+  const spiritLeaf = mat('#3e7a4c', { roughness: 0.8 });
+  const spiritLeafLight = mat('#7fbf8a', { roughness: 0.7 });
+  floating.add(ellipsoid(0.46, 0.55, 0.38, wisp, [0, 0, 0], [0, 0, 0], 16));
+  floating.add(ellipsoid(0.24, 0.32, 0.2, wispCore, [0, 0.05, 0.08], [0, 0, 0], 14));
+  for (const [x, z, tilt] of [
+    [-0.2, -0.05, 0.35],
+    [0.2, -0.02, -0.35],
+    [0, -0.16, 0],
+  ]) {
+    const tendril = cone(0.12, 0.55, wispTail, [x, -0.46, z], [Math.PI, 0, tilt], 7);
+    floating.add(tendril);
+  }
+  for (const side of [-1, 1]) {
+    floating.add(ellipsoid(0.16, 0.06, 0.08, wispTail, [side * 0.38, -0.06, 0.02], [0, 0, side * 0.35], 8));
+    floating.add(ellipsoid(0.07, 0.09, 0.035, basic('#18291f'), [side * 0.15, 0.13, 0.34], [0, 0, 0], 9));
+    floating.add(sphere(0.028, basic('#eaffcf', { toneMapped: false }), [side * 0.15, 0.15, 0.37], 7));
+    floating.add(ellipsoid(0.055, 0.02, 0.025, wispTail, [side * 0.18, 0.32, 0.28], [0, 0, side * 0.25], 7));
+  }
+  floating.add(
+    mesh(
+      new THREE.TorusGeometry(0.1, 0.014, 4, 12, Math.PI),
+      basic('#315f42'),
+      [0, 0.02, 0.34],
+      [0, 0, Math.PI]
+    )
+  );
+  for (let leafIndex = 0; leafIndex < 5; leafIndex += 1) {
+    const angle = (leafIndex / 5) * Math.PI * 2;
+    floating.add(
+      ellipsoid(
+        0.08,
+        0.025,
+        0.14,
+        leafIndex % 2 ? spiritLeaf : spiritLeafLight,
+        [Math.cos(angle) * 0.24, 0.5, Math.sin(angle) * 0.2],
+        [0, -angle, 0],
+        7
+      )
+    );
+  }
+  mergeStaticGroup(floating);
+  const halo = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: getGlowTexture(),
+      color: '#8aff9f',
+      transparent: true,
+      opacity: 0.24,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  halo.scale.set(3.4, 3.4, 1);
+  halo.position.set(0, 0.1, -0.12);
+  floating.add(halo);
   spirit.add(floating);
-  for (let index = 0; index < 4; index += 1) {
-    const angle = (index / 4) * Math.PI * 2;
-    spirit.add(
+
+  const motes = new THREE.Group();
+  for (let index = 0; index < 6; index += 1) {
+    const angle = (index / 6) * Math.PI * 2;
+    motes.add(
       sphere(
-        0.05,
-        basic('#dcffa8', { toneMapped: false }),
-        [Math.cos(angle) * 0.8, 0.9 + index * 0.12, Math.sin(angle) * 0.8],
+        0.055,
+        basic(index % 2 ? '#dcffa8' : '#8aff9f', { toneMapped: false }),
+        [Math.cos(angle) * 0.9, 0.9 + index * 0.09, Math.sin(angle) * 0.9],
         6
       )
     );
   }
+  spirit.add(motes);
   scene.add(spirit);
-  npcs.push({ group: spirit, body: floating, name: 'Mosslight Spirit', x: 5, z: 45, spirit: true });
+  npcs.push({
+    group: spirit,
+    body: floating,
+    motes,
+    name: 'Mosslight Spirit',
+    x: spiritX,
+    z: spiritZ,
+    spirit: true,
+  });
   return npcs;
+}
+
+function makeGardenCreature(index, x, z) {
+  const palettes = [
+    ['#9be3b8', '#d4f5d9', '#4f8f6b'],
+    ['#a7c8ff', '#dbe7ff', '#5876a8'],
+    ['#f2b8d9', '#ffe0ee', '#a46183'],
+    ['#ffe09b', '#fff0c8', '#a47a3f'],
+  ];
+  const [baseColor, bellyColor, accentColor] = palettes[index % palettes.length];
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  const base = mat(baseColor, {
+    roughness: 0.62,
+    emissive: baseColor,
+    emissiveIntensity: 0.06,
+  });
+  const belly = mat(bellyColor, {
+    roughness: 0.6,
+    emissive: bellyColor,
+    emissiveIntensity: 0.05,
+  });
+  const accent = mat(accentColor, {
+    roughness: 0.68,
+    emissive: accentColor,
+    emissiveIntensity: 0.05,
+  });
+  const eyeWhite = mat('#fff8e8', { roughness: 0.35 });
+  const eyeDark = basic('#1c1530');
+  const glint = basic('#fffdf4', { toneMapped: false });
+  const green = mat('#5d8f57', { roughness: 0.8 });
+  group.add(ellipsoid(0.34, 0.3, 0.46, base, [0, 0.35, 0], [0, 0, 0], 16));
+  group.add(ellipsoid(0.23, 0.2, 0.25, base, [0, 0.6, 0.25], [0, 0, 0], 14));
+  group.add(ellipsoid(0.14, 0.11, 0.16, belly, [0, 0.52, 0.42], [0, 0, 0], 12));
+  group.add(ellipsoid(0.1, 0.07, 0.12, belly, [0, 0.55, 0.48], [0, 0, 0], 10));
+  group.add(sphere(0.035, accent, [0, 0.57, 0.58], 8));
+  for (const side of [-1, 1]) {
+    group.add(ellipsoid(0.06, 0.07, 0.03, eyeWhite, [side * 0.1, 0.66, 0.42], [0, 0, 0], 10));
+    group.add(sphere(0.03, eyeDark, [side * 0.1, 0.66, 0.455], 8));
+    group.add(sphere(0.009, glint, [side * 0.09, 0.675, 0.472], 6));
+    group.add(cone(0.09, 0.26, base, [side * 0.16, 0.82, 0.12], [0, 0, side * 0.25], 6));
+    group.add(cone(0.045, 0.17, belly, [side * 0.16, 0.84, 0.12], [0, 0, side * 0.25], 6));
+    group.add(ellipsoid(0.08, 0.06, 0.12, belly, [side * 0.16, 0.09, 0.2], [0, 0, 0], 9));
+    group.add(box([0.1, 0.025, 0.08], accent, [side * 0.16, 0.04, 0.24]));
+  }
+  for (let tail = 0; tail < 3; tail += 1) {
+    group.add(
+      ellipsoid(
+        0.12 - tail * 0.022,
+        0.13,
+        0.14,
+        base,
+        [0.02 + tail * 0.035, 0.43 - tail * 0.05, -0.42 - tail * 0.1],
+        [0.2, -0.25, 0],
+        10
+      )
+    );
+  }
+  for (let spot = 0; spot < 3; spot += 1) {
+    group.add(
+      ellipsoid(0.055, 0.02, 0.045, accent, [-0.15 + spot * 0.14, 0.58 - spot * 0.07, 0.12], [0, 0, 0], 7)
+    );
+  }
+  group.add(cylinder(0.012, 0.018, 0.17, green, [0.12, 0.91, 0.1], 5));
+  group.add(ellipsoid(0.06, 0.018, 0.1, green, [0.18, 0.98, 0.1], [0, 0.3, 0.3], 7));
+  mergeStaticGroup(group);
+  return group;
 }
 
 /* ------------------------------------------------------------ spell casts */
@@ -1395,7 +2295,7 @@ export function initScene({ container, labelsLayer }) {
   scene.add(playerGroup);
   playerGroup.position.set(SPAWN.x, 0, SPAWN.z);
   playerGroup.rotation.y = Math.PI;
-  const playerLight = new THREE.PointLight('#ffd39a', 3.2, 7, 2);
+  const playerLight = new THREE.PointLight('#ffd39a', 2.6, 7, 2);
   playerLight.position.set(0.6, 1.9, 0.14);
   playerGroup.add(playerLight);
 
@@ -1405,8 +2305,12 @@ export function initScene({ container, labelsLayer }) {
     houseId = nextHouse || 'phoenix';
     const house = HOUSE_OF(houseId) ?? HOUSE_OF('phoenix');
     wizard.materials.robe.color.set(house.color);
+    wizard.materials.robeDark.color.copy(shadeColor(house.color, 0.52));
+    wizard.materials.cape.color.copy(shadeColor(house.color, 0.36));
     wizard.materials.trim.color.set('#f2ce7b');
     wizard.materials.glow.color.set(house.glow);
+    wizard.staffCrystal.color.set(house.glow);
+    wizard.staffCrystal.emissive.set(house.glow);
     for (const material of hall.bannerMaterials) {
       if (material.userData?.sigil) material.color.set(house.glow);
       else material.color.set(house.color);
@@ -1594,10 +2498,11 @@ export function initScene({ container, labelsLayer }) {
     bodyGroup.position.y = moving ? Math.abs(Math.sin(walkTime)) * 0.07 : 0;
     bodyGroup.rotation.z = moving ? Math.sin(walkTime * 0.5) * 0.035 : 0;
 
-    wizard.owl.position.x = 0.88 + Math.sin(elapsed * 0.7) * 0.04;
-    wizard.owl.position.z = 0.34 + Math.cos(elapsed * 0.7) * 0.04;
-    wizard.owl.position.y = 1.58 + Math.sin(elapsed * 2.2) * 0.07;
+    wizard.owl.position.x = -0.88 + Math.sin(elapsed * 0.7) * 0.04;
+    wizard.owl.position.z = 0.28 + Math.cos(elapsed * 0.7) * 0.04;
+    wizard.owl.position.y = 1.62 + Math.sin(elapsed * 2.2) * 0.07;
     wizard.owlBody.rotation.z = Math.sin(elapsed * 1.6) * 0.06;
+    wizard.staffCrystal.emissiveIntensity = 1.15 + Math.sin(elapsed * 2.8) * 0.2;
     for (const { wing, side } of wizard.wings) {
       wing.rotation.z = side * (0.45 + Math.sin(elapsed * 5) * 0.18);
     }
@@ -1647,7 +2552,8 @@ export function initScene({ container, labelsLayer }) {
     for (const [index, npc] of npcs.entries()) {
       if (npc.spirit) {
         npc.body.position.y = 1.25 + Math.sin(elapsed * 0.9) * 0.16;
-        npc.body.rotation.y = elapsed * 0.3;
+        npc.body.rotation.y = Math.PI + elapsed * 0.3;
+        if (npc.motes) npc.motes.rotation.y = -elapsed * 0.45;
       } else if (npc.body) {
         npc.body.position.y = Math.sin(elapsed * 0.9 + index) * 0.025;
         npc.body.rotation.y = Math.sin(elapsed * 0.35 + npc.z) * 0.05;

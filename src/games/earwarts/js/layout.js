@@ -209,8 +209,8 @@ export const INTERACTIONS = [
   {
     id: 'spirit',
     room: 'rhythm-forest',
-    x: 5,
-    z: 45,
+    x: -3,
+    z: 46,
     kind: 'npc',
     label: 'Speak with the Mosslight Spirit',
     radius: 3,
