@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Roof Rider | Foofire Games</title>
+    <meta
+      name="description"
+      content="Roof Rider is a free 2D rooftop motocross rhythm racer. Preload the suspension, scrub the gables, land on the backside of the next roof and carry speed through three long rooflines."
+    />
+    <meta property="og:title" content="Roof Rider | Foofire Games" />
+    <meta
+      property="og:description"
+      content="A 2D rooftop motocross rhythm racer: preload the suspension, scrub the gable, land on the backside of the next roof and keep your flow."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/roof-rider/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#2a1633" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-header">
+        <h1>Roof Rider</h1>
+        <p>
+          A 2D rooftop motocross rhythm racer. Load the suspension into the gable, pop off the
+          ridge, scrub the jump flat in the air, and touch down on the backside of the next roof.
+          Three rooflines, long rhythm sections, and one green line that shows you where the fast
+          line is.
+        </p>
+      </section>
+
+      <section class="scrub-game" aria-label="Roof Rider game">
+        <div
+          id="game-container"
+          tabindex="0"
+          role="application"
+          aria-label="Roof Rider, a 2D rooftop motocross rhythm race. Hold space to preload the suspension before a gable, release at the ridge to pop, hold space in the air to scrub, and land on the backside of the next roof. W or up arrow accelerates, S or down arrow brakes, A and D or the arrow keys lean, R resets to the last checkpoint, P pauses."
+        >
+          <canvas
+            id="game-canvas"
+            role="img"
+            aria-label="Side view of a dirt bike racing across a row of house rooftops at dusk. The rider is approaching a rhythm section of gabled roofs."
+          ></canvas>
+
+          <div class="hud">
+            <div class="hud-top">
+              <div class="score-cluster">
+                <div class="hud-chip">
+                  <span>Style</span>
+                  <strong id="score-value">0</strong>
+                </div>
+                <div class="flow-chip is-idle" id="flow-chip" aria-live="polite">FLOW ×1</div>
+              </div>
+
+              <div class="section-ribbon">
+                <span class="section-kicker" id="section-kicker">Track</span>
+                <strong id="section-name">SUNSET STREET</strong>
+                <em id="section-step"></em>
+              </div>
+
+              <div class="hud-right">
+                <div class="hud-tools">
+                  <button id="restart-button" type="button" aria-label="Restart this run">↺</button>
+                  <button id="pause-button" type="button" aria-label="Pause game" aria-pressed="false">
+                    ❚❚
+                  </button>
+                  <button id="mute-button" type="button" aria-label="Mute sound" aria-pressed="false">
+                    🔊
+                  </button>
+                  <button
+                    id="fullscreen-button"
+                    type="button"
+                    aria-label="Play in full screen"
+                    aria-pressed="false"
+                  >
+                    ⛶
+                  </button>
+                </div>
+                <div class="hud-times">
+                  <div class="time-chip">
+                    <span>Time</span>
+                    <strong id="time-value">0:00.0</strong>
+                  </div>
+                  <div class="speed-chip" aria-label="Speed">
+                    <strong id="speed-value">0</strong>
+                    <span>km/h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="load-gauge" id="load-gauge" aria-label="Suspension load and scrub">
+              <div class="load-head">
+                <span id="load-label">PRELOAD</span>
+                <span>Space</span>
+              </div>
+              <div class="load-track"><i class="load-fill" id="load-fill"></i></div>
+            </div>
+
+            <div class="race-progress" aria-hidden="true">
+              <span class="race-progress-fill" id="progress-fill"></span>
+              <span class="race-progress-marker" id="progress-marker"></span>
+            </div>
+
+            <p class="toast" id="toast" role="status" aria-live="polite"></p>
+            <div class="countdown" id="countdown" aria-hidden="true"></div>
+
+            <div class="overlay is-open" id="start-overlay">
+              <div class="overlay-card">
+                <p class="overlay-kicker">Foofire MX presents</p>
+                <h2>ROOF RIDER</h2>
+                <p class="overlay-lead">
+                  Three streets of rooftop rhythm sections. The fast line is never the flat ground:
+                  it is the backside of the next roof.
+                </p>
+
+                <div class="method" aria-label="How the rhythm works">
+                  <div>
+                    <strong>1 · LOAD</strong>
+                    <span>Hold Space before the gable. The suspension squats and stores energy.</span>
+                  </div>
+                  <div>
+                    <strong>2 · POP</strong>
+                    <span>Let go just before the ridge for a bigger, longer jump.</span>
+                  </div>
+                  <div>
+                    <strong>3 · SCRUB</strong>
+                    <span>Hold Space in the air with the bike level to flatten the arc.</span>
+                  </div>
+                  <div>
+                    <strong>4 · LAND</strong>
+                    <span>Touch down on the green backside line and keep your flow.</span>
+                  </div>
+                </div>
+
+                <div class="track-picker">
+                  <p class="picker-title">Pick a track</p>
+                  <div class="track-options" id="track-options" role="group" aria-label="Tracks"></div>
+                </div>
+
+                <dl class="control-list">
+                  <div><dt>Throttle</dt><dd>W / ↑</dd></div>
+                  <div><dt>Brake</dt><dd>S / ↓</dd></div>
+                  <div><dt>Lean</dt><dd>A D / ← →</dd></div>
+                  <div><dt>Preload / scrub</dt><dd>Space</dd></div>
+                  <div><dt>Reset</dt><dd>R</dd></div>
+                </dl>
+
+                <p class="touch-tip">
+                  On a phone: hold <strong>GAS</strong>, hold <strong>LOAD</strong> into the gable and
+                  let go at the ridge, then hold <strong>LOAD</strong> again in the air to scrub. Lean
+                  with <strong>◀ ▶</strong> or leave the bike level and let the suspension work.
+                </p>
+
+                <button class="race-button" id="start-button" type="button">Drop the gate</button>
+                <p class="overlay-best">
+                  Best score <strong id="start-best">0</strong> · Track best
+                  <strong id="start-best-time">—</strong><span class="ghost-note" id="start-ghost"></span>
+                </p>
+              </div>
+            </div>
+
+            <div class="overlay" id="result-overlay">
+              <div class="overlay-card result-card">
+                <p class="overlay-kicker" id="result-kicker">Chequered flag</p>
+                <span class="result-badge" id="result-badge">CLEAN RUN</span>
+                <h2 id="result-track">Sunset Street</h2>
+                <div class="result-score-hero">
+                  <strong id="result-score">0</strong>
+                  <span>points</span>
+                </div>
+                <dl class="result-grid">
+                  <div><dt>Time</dt><dd id="result-time">0:00.0</dd></div>
+                  <div><dt>Track best</dt><dd id="result-best-time">0:00.0</dd></div>
+                  <div><dt>Style points</dt><dd id="result-style">0</dd></div>
+                  <div><dt>Best flow</dt><dd id="result-flow">×1</dd></div>
+                  <div><dt>Backside landings</dt><dd id="result-clean">0</dd></div>
+                  <div><dt>Scrubbed landings</dt><dd id="result-scrubs">0</dd></div>
+                </dl>
+                <p class="overlay-best" id="result-best"></p>
+                <p class="result-ghost" id="result-ghost" hidden></p>
+                <div class="result-actions">
+                  <button class="race-button" id="again-button" type="button">Ride again</button>
+                  <button class="race-button ghost" id="next-button" type="button">Next track</button>
+                </div>
+                <p class="result-small">
+                  <a href="../../../scores.html">All scores</a> ·
+                  <a href="../../../games.html">All games</a>
+                </p>
+              </div>
+            </div>
+
+            <div class="touch-controls" aria-label="Touch controls">
+              <div class="touch-lean">
+                <button type="button" data-control="left" aria-label="Lean back">◀</button>
+                <button type="button" data-control="right" aria-label="Lean forward">▶</button>
+              </div>
+              <div class="touch-pedals">
+                <button type="button" data-control="load" class="touch-load" aria-label="Preload suspension or scrub">
+                  LOAD
+                  <small>scrub</small>
+                </button>
+                <div class="touch-pedals-row">
+                  <button type="button" data-control="brake" class="touch-brake" aria-label="Brake">
+                    BRAKE
+                  </button>
+                  <button type="button" data-control="gas" class="touch-gas" aria-label="Throttle">
+                    GAS
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="fallback" id="fallback" hidden>
+              <p>This game needs a browser with canvas support. Try a newer browser and reload.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="scrub-footer">
+          <div class="how-to">
+            <h2>How to ride a roofline</h2>
+            <ul>
+              <li>
+                <strong>Preload early.</strong> Holding <kbd>Space</kbd> compresses the suspension.
+                Release it just before the gable and the bike pops.
+              </li>
+              <li>
+                <strong>Scrub when you are hot.</strong> Holding <kbd>Space</kbd> in the air flattens
+                the arc. That is how you stop over-jumping the next roof.
+              </li>
+              <li>
+                <strong>Find the green.</strong> The dashed line on each landing roof is the backside.
+                A backside landing adds flow points; flat or cased landings break the chain.
+              </li>
+              <li>
+                <strong>Keep the wheels under you.</strong> Lean with <kbd>A</kbd> and <kbd>D</kbd>
+                in the air, and press <kbd>R</kbd> to go back to the last checkpoint.
+              </li>
+              <li>
+                <strong>Race your ghost.</strong> Finish a track to save your fastest run. On the
+                next run your best line rides with you as a faded bike marked <strong>BEST</strong>.
+              </li>
+            </ul>
+          </div>
+          <a class="back-link" href="../../../games.html">&larr; Back to games</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>

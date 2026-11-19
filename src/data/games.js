@@ -40,6 +40,14 @@ export const games = [
     featured: true,
   },
   {
+    id: 'roof-rider',
+    title: 'Roof Rider',
+    description:
+      'A 2D rooftop motocross rhythm racer. Preload the suspension into the gable, pop the ridge, scrub the jump flat and land on the backside of the next roof to carry speed through three long rooflines.',
+    image: './public/screenshots/roof-rider.svg',
+    path: './src/games/roof-rider/index.html',
+  },
+  {
     id: 'rhythm-break',
     title: 'Soft Reset',
     description:

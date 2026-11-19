@@ -29,6 +29,14 @@ src/
       track.js
       riders.js
       audio.js
+    roof-rider/     # Roof Rider 2D rooftop motocross rhythm racer
+      index.html
+      styles.css
+      game.js
+      terrain.js
+      physics.js
+      audio.js
+      ghost.js
     escape-earth/   # Escape Earth: Survive Grandma's House three-level game
       index.html
       game.js
