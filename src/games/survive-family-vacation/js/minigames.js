@@ -710,9 +710,50 @@ const minecart = {
  * ------------------------------------------------------------------ */
 const CHIMES = ['🌙', '☀️', '⭐'];
 
+const clockHandRadius = 210;
+
+/* Selection chips drawn under the clock, in canvas coordinates. */
+function clockChipAt(x, y) {
+  for (let index = 0; index < 3; index += 1) {
+    const left = 200 + index * 190;
+    if (x >= left - 8 && x <= left + 178 && y >= 466 && y <= 528) return index;
+  }
+  return -1;
+}
+
+function turnClock(s, direction) {
+  if (s.selected === 0) s.hour = ((s.hour - 1 + direction + 12) % 12) + 1;
+  if (s.selected === 1) s.minute = (s.minute + direction + 12) % 12;
+  if (s.selected === 2) s.chime = (s.chime + direction + CHIMES.length) % CHIMES.length;
+}
+
+/* Phones have no arrow keys, so a tap picks the hand under the finger (or a
+ * chip, or the chime dial) and a swipe up or down turns whatever is selected. */
+function selectClockHand(g, s, pointer) {
+  const centerX = g.w / 2;
+  const centerY = 250;
+  const chip = clockChipAt(pointer.x, pointer.y);
+  if (chip !== -1) {
+    s.selected = chip;
+    return;
+  }
+  if (Math.abs(pointer.x - centerX) <= 58 && pointer.y >= 424 && pointer.y <= 472) {
+    s.selected = 2;
+    return;
+  }
+  if (distance(pointer.x, pointer.y, centerX, centerY) > clockHandRadius) return;
+
+  const minutes = s.minute * 5;
+  const hourAngle = ((s.hour % 12) + minutes / 60) / 12 * TAU - Math.PI / 2;
+  const minuteAngle = (minutes / 60) * TAU - Math.PI / 2;
+  const angle = Math.atan2(pointer.y - centerY, pointer.x - centerX);
+  const spread = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  s.selected = spread(angle, minuteAngle) < spread(angle, hourAngle) ? 1 : 0;
+}
+
 const clockwork = {
   name: 'The Storybook Clock',
-  hint: 'Pick a hand with left and right, turn it with up and down. Match the card.',
+  hint: 'Tap a hand, chip or chime to pick it, then drag up and down to turn it. Arrow keys work too.',
   init(g) {
     const rounds = Array.isArray(g.config.rounds) ? g.config.rounds : [{ hour: 7, minute: 6, chime: '🌙' }];
     return {
@@ -725,6 +766,7 @@ const clockwork = {
       solved: 0,
       celebrate: 0,
       message: '',
+      drag: null,
     };
   },
   update(g, dt, s) {
@@ -755,10 +797,26 @@ const clockwork = {
 
     const direction = g.input.pressed.up ? 1 : g.input.pressed.down ? -1 : 0;
     if (direction) {
-      if (s.selected === 0) s.hour = ((s.hour - 1 + direction + 12) % 12) + 1;
-      if (s.selected === 1) s.minute = (s.minute + direction + 12) % 12;
-      if (s.selected === 2) s.chime = (s.chime + direction + CHIMES.length) % CHIMES.length;
+      turnClock(s, direction);
       g.sfx('click');
+    }
+
+    // Touch and mouse: tap to pick a hand, then swipe to turn it.
+    const pointer = g.input.pointer;
+    if (!pointer.down) s.drag = null;
+    if (pointer.justDown && pointer.inside) {
+      selectClockHand(g, s, pointer);
+      s.drag = { lastY: pointer.y };
+      g.sfx('click');
+    }
+    if (s.drag && pointer.down && pointer.inside) {
+      const step = 46;
+      while (Math.abs(pointer.y - s.drag.lastY) >= step) {
+        const turn = pointer.y < s.drag.lastY ? 1 : -1;
+        turnClock(s, turn);
+        s.drag.lastY += turn === 1 ? -step : step;
+        g.sfx('click');
+      }
     }
 
     const target = s.rounds[s.index];
