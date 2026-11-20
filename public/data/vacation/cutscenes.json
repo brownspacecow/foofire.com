@@ -1,0 +1,125 @@
+{
+  "intro": {
+    "kicker": "A scrapbook in seven parts",
+    "title": "The Summer Everything Got Weird",
+    "lines": [
+      {
+        "who": "Jira",
+        "emoji": "🧭",
+        "text": "My name is Jira. I'm nine. I keep a notebook of every strange thing my family has ever done, and until this summer it was a very boring notebook."
+      },
+      {
+        "who": "Joel",
+        "emoji": "🦖",
+        "text": "I'm Joel. I'm seven. One time I sneezed into a pond and the pond respected me after that."
+      },
+      {
+        "who": "Dad",
+        "emoji": "🧢",
+        "text": "This year we are visiting Grandma, the mountains, the caves, a storybook, a science museum, a light dome, and a museum. In one trip. Because I am an optimist."
+      },
+      {
+        "who": "Mom",
+        "emoji": "🧣",
+        "text": "We are visiting Grandma. The rest is negotiable. Nobody is asking the children for directions."
+      },
+      {
+        "who": "Jira",
+        "emoji": "📓",
+        "text": "But the scrapbook was already full. Seven pages, every single one our vacation, dated before we left. And every page had a little empty corner, like someone had been standing just outside the photo."
+      },
+      {
+        "who": "Joel",
+        "emoji": "🗃️",
+        "text": "And when I looked at the corner, something little looked back. Then it moved the tornado."
+      },
+      {
+        "who": "Jira",
+        "emoji": "🧭",
+        "text": "So now the vacations are bigger, and stranger, and there are clues everywhere. All we have to do is survive them. And find whoever keeps taking the pictures."
+      }
+    ]
+  },
+  "ending": {
+    "kicker": "The last page of the scrapbook",
+    "title": "One Small Shadow",
+    "lines": [
+      {
+        "who": "The Vacation Collector",
+        "emoji": "🗃️",
+        "text": "You came back. Every year you come back, and every year I keep the day safe, and every year you forget it a little faster."
+      },
+      {
+        "who": "Jira",
+        "emoji": "🧭",
+        "text": "You weren't stealing them. You were keeping them. That's not the same thing at all."
+      },
+      {
+        "who": "Joel",
+        "emoji": "🦖",
+        "text": "You can come with us, you know. There's a cupholder. I've measured it."
+      },
+      {
+        "who": "The Vacation Collector",
+        "emoji": "📷",
+        "text": "I do not fit in a cupholder. I have never been in a photograph. I am mostly made of the corners."
+      },
+      {
+        "who": "Mom",
+        "emoji": "🧣",
+        "text": "Then stand in the middle for once. One photo. All of us. Jira, move your brother. Joel, stop licking the camera."
+      },
+      {
+        "who": "Dad",
+        "emoji": "🧢",
+        "text": "Everybody say 'this was the weirdest vacation ever'."
+      },
+      {
+        "who": "Everyone",
+        "emoji": "✨",
+        "text": "THIS WAS THE WEIRDEST VACATION EVER."
+      },
+      {
+        "who": "Jira",
+        "emoji": "📓",
+        "text": "The photo developed with five of us in it. Four in the front, one very small shadow in the corner, smiling so hard it was practically glowing."
+      },
+      {
+        "who": "Jira",
+        "emoji": "🧭",
+        "text": "The scrapbook has a new page now. It's blank. Dad already wrote the dates on it. Next summer, apparently."
+      }
+    ]
+  },
+  "credits": {
+    "kicker": "Thanks for coming along",
+    "title": "Survive Family Vacation",
+    "lines": [
+      {
+        "who": "Mom",
+        "emoji": "🧣",
+        "text": "Jacquelyn — practical, smart, quick-witted, usually correct, always the one holding the map upside down on purpose."
+      },
+      {
+        "who": "Dad",
+        "emoji": "🧢",
+        "text": "Jordan — optimistic, enthusiastic, and responsible for escalating every single one of these vacations."
+      },
+      {
+        "who": "Jira",
+        "emoji": "🧭",
+        "text": "Nine. Brave, curious, dramatic storyteller, and the only one who writes any of this down."
+      },
+      {
+        "who": "Joel",
+        "emoji": "🦖",
+        "text": "Seven. Funny, impulsive, accident-prone, endless enthusiasm. Fits in ducts."
+      },
+      {
+        "who": "The Vacation Collector",
+        "emoji": "🗃️",
+        "text": "Keeps the afternoons. Would like to be in the photo. Has been asked now."
+      }
+    ]
+  }
+}

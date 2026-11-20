@@ -1,0 +1,419 @@
+{
+  "bounds": { "minX": -21, "maxX": 21, "minZ": -19, "maxZ": 19 },
+  "levels": [
+    {
+      "id": "chicken-nado",
+      "number": 1,
+      "title": "The Chicken-Nado",
+      "place": "Somewhere in Missouri",
+      "subtitle": "The sky is clucking and Dad says this is normal.",
+      "inspired": "The road trip to Grandma's house, the semi truck, and the buffet we sheltered in.",
+      "palette": {
+        "sky": "#e8a063",
+        "ground": "#8a9a4e",
+        "groundAlt": "#76883f",
+        "fog": "#e9b47a",
+        "fogDensity": 0.018,
+        "sun": "#ffd9a0",
+        "night": false,
+        "accent": "#ff9f43"
+      },
+      "landmark": "gasstation",
+      "decor": { "count": 30, "types": ["pine", "rock", "fence", "crate", "barrel", "chicken", "stump"], "seed": 11 },
+      "gate": { "x": 0, "z": -4.2, "radius": 3.1 },
+      "objects": [
+        { "kind": "memory", "id": "cn-spoon", "x": -12, "z": 4 },
+        { "kind": "memory", "id": "cn-postcard", "x": 13, "z": -2 },
+        { "kind": "memory", "id": "cn-snack", "x": 2, "z": 12 },
+        { "kind": "clue", "id": "cn-clue-a", "x": -9, "z": -13, "hidden": true },
+        { "kind": "clue", "id": "cn-clue-b", "x": 7, "z": 8, "hidden": true },
+        { "kind": "clue", "id": "cn-clue-c", "x": 16, "z": 10 },
+        { "kind": "secret", "id": "cn-secret", "x": -16, "z": -6 },
+        { "kind": "sign", "id": "cn-sign-a", "x": -5, "z": 7 },
+        { "kind": "sign", "id": "cn-sign-b", "x": 9, "z": -14 },
+        { "kind": "sign", "id": "cn-sign-c", "x": -15, "z": 12 },
+        { "kind": "sign", "id": "cn-sign-d", "x": 15, "z": 3 },
+        { "kind": "person", "id": "cn-dad", "x": 4, "z": 3 },
+        { "kind": "person", "id": "cn-mom", "x": -4, "z": 2 }
+      ],
+      "goal": "Find your three memories, poke at the mystery, then face whatever is stirring the mashed potatoes.",
+      "minigame": {
+        "type": "chickenNado",
+        "config": { "goal": 8, "chickens": 4, "lives": 3, "speed": 1 }
+      },
+      "boss": {
+        "name": "The Barefoot Buffet Keeper",
+        "emoji": "🥔",
+        "taunt": "You want the buffet? You gotta get past the mashed potatoes. And me. Mostly me.",
+        "win": "He hands over a crate of chickens and one very buttery spoon."
+      },
+      "intro": [
+        { "who": "Jira", "text": "Mile two hundred and twelve. Dad has been singing the same nine words for an hour." },
+        { "who": "Joel", "text": "I counted them. It is nine words. It's a very good song." },
+        { "who": "Dad", "text": "Kids, look! A tornado! And it is carrying chickens! This is the best road trip of our lives!" },
+        { "who": "Mom", "text": "Everyone out. We are sheltering in that gas station buffet and we are not discussing it further." }
+      ],
+      "outro": [
+        { "who": "Joel", "text": "The chickens flew the crate all the way to the interstate. That is teamwork." },
+        { "who": "Jira", "text": "The Keeper left something behind. A postcard with no picture on it, just the words 'keep this one'." },
+        { "who": "Mom", "text": "Buckle up. Grandma's house is only six hours away, which means nine hours." }
+      ]
+    },
+    {
+      "id": "bear-cabin-ridge",
+      "number": 2,
+      "title": "Terror at Bear Cabin Ridge",
+      "place": "Great Smoky Mountains",
+      "subtitle": "A three-story cabin, a mountain coaster, and something in the basement theater.",
+      "inspired": "The cabin with the pool table, the shuffleboard, and every noise the woods make at 2 a.m.",
+      "palette": {
+        "sky": "#1b2447",
+        "ground": "#2c3a3f",
+        "groundAlt": "#243033",
+        "fog": "#1a2a46",
+        "fogDensity": 0.024,
+        "sun": "#9fc0ff",
+        "night": true,
+        "accent": "#6fb1ff"
+      },
+      "landmark": "cabin",
+      "decor": { "count": 34, "types": ["pine", "pine", "rock", "fence", "stump", "lamp"], "seed": 27 },
+      "gate": { "x": 0, "z": -4.2, "radius": 3.1 },
+      "objects": [
+        { "kind": "memory", "id": "bc-puck", "x": -11, "z": -3 },
+        { "kind": "memory", "id": "bc-keychain", "x": 12, "z": 5 },
+        { "kind": "memory", "id": "bc-postcard", "x": 0, "z": 14 },
+        { "kind": "clue", "id": "bc-clue-a", "x": -14, "z": -10, "hidden": true },
+        { "kind": "clue", "id": "bc-clue-b", "x": 8, "z": -14, "hidden": true },
+        { "kind": "clue", "id": "bc-clue-c", "x": 13, "z": 12 },
+        { "kind": "secret", "id": "bc-secret", "x": -17, "z": 7 },
+        { "kind": "tunnel", "id": "bc-tunnel", "x": -8, "z": -6, "to": { "x": -16, "z": 5 } },
+        { "kind": "sign", "id": "bc-sign-a", "x": -5, "z": 6 },
+        { "kind": "sign", "id": "bc-sign-b", "x": 10, "z": -11 },
+        { "kind": "sign", "id": "bc-sign-c", "x": -13, "z": 12 },
+        { "kind": "sign", "id": "bc-sign-d", "x": 16, "z": -4 },
+        { "kind": "person", "id": "bc-mom", "x": -4, "z": 2 },
+        { "kind": "person", "id": "bc-joel", "x": 5, "z": 8 }
+      ],
+      "goal": "Memories are hiding around the cabin. Something is making bird calls that are not birds.",
+      "minigame": {
+        "type": "shuffleboard",
+        "config": { "rounds": 4, "target": 6 }
+      },
+      "boss": {
+        "name": "The Whoopin' Stick Grandma",
+        "emoji": "🪵",
+        "taunt": "I heard you kids been whoopin' on my stick. Let's see how you slide, sugar.",
+        "win": "She whoops once, respects it, and leaves a puck on the table for you."
+      },
+      "intro": [
+        { "who": "Jira", "text": "The cabin has three floors, a pool table, and a theater in the basement. Dad has already claimed all of it." },
+        { "who": "Joel", "text": "A bear looked in the window and waved. I waved back. We're friends now." },
+        { "who": "Mom", "text": "That was a decoration. The decorations do not wave. Please stop saying the decorations wave." },
+        { "who": "Jira", "text": "Somebody left the shuffleboard set up. And there's a whoopin' stick. That is not a normal cabin item." }
+      ],
+      "outro": [
+        { "who": "Joel", "text": "The bear took the last puck and did not say thank you, which is rude." },
+        { "who": "Jira", "text": "Another card. This one says 'bear with me'. It has a tiny photo of our cabin stapled to it." },
+        { "who": "Dad", "text": "Who wants to ride the mountain coaster at night? Nobody? Great, everyone's coming!" }
+      ]
+    },
+    {
+      "id": "prairie-dog-ferret-war",
+      "number": 3,
+      "title": "The Prairie Dog-Ferret War",
+      "place": "The Black Hills",
+      "subtitle": "Beneath the hills, two tiny nations are one bad rumor from war.",
+      "inspired": "Wind Cave, the prairie dog towns, and the black-footed ferrets nobody ever actually sees.",
+      "palette": {
+        "sky": "#7ec8e3",
+        "ground": "#b3a55f",
+        "groundAlt": "#9d9152",
+        "fog": "#d3e8f0",
+        "fogDensity": 0.014,
+        "sun": "#fff2c9",
+        "night": false,
+        "accent": "#e8c34a"
+      },
+      "landmark": "prairie",
+      "decor": { "count": 26, "types": ["mound", "mound", "rock", "crystal", "fence", "crate", "mushroom"], "seed": 43 },
+      "gate": { "x": 0, "z": -4.2, "radius": 3.1 },
+      "objects": [
+        { "kind": "memory", "id": "pd-button", "x": -13, "z": 2 },
+        { "kind": "memory", "id": "pd-crystal", "x": 12, "z": -6 },
+        { "kind": "memory", "id": "pd-crown", "x": 3, "z": 15 },
+        { "kind": "clue", "id": "pd-clue-a", "x": -15, "z": -12, "hidden": true },
+        { "kind": "clue", "id": "pd-clue-b", "x": 9, "z": 9, "hidden": true },
+        { "kind": "clue", "id": "pd-clue-c", "x": -6, "z": 16 },
+        { "kind": "secret", "id": "pd-secret", "x": 18, "z": -14 },
+        { "kind": "tunnel", "id": "pd-tunnel", "x": 6, "z": 2, "to": { "x": 16, "z": -12 } },
+        { "kind": "sign", "id": "pd-sign-a", "x": -5, "z": 7 },
+        { "kind": "sign", "id": "pd-sign-b", "x": 10, "z": 4 },
+        { "kind": "sign", "id": "pd-sign-c", "x": -14, "z": 11 },
+        { "kind": "sign", "id": "pd-sign-d", "x": 15, "z": 8 },
+        { "kind": "person", "id": "pd-dad", "x": 3, "z": 4 },
+        { "kind": "person", "id": "pd-mayor", "x": -7, "z": 12 }
+      ],
+      "goal": "The towns suspect you are spies. Find your memories and get down into the caves before the parade starts.",
+      "minigame": {
+        "type": "minecart",
+        "config": { "goal": 10, "lives": 3, "speed": 1 }
+      },
+      "boss": {
+        "name": "The Ferret King",
+        "emoji": "👑",
+        "taunt": "You have entered the Ferret Kingdom without a form. Nobody enters without a form!",
+        "win": "The King stamps your form, gives you a crown, and immediately requests it back."
+      },
+      "intro": [
+        { "who": "Joel", "text": "The prairie dogs have a mayor. He has a tiny hat. I would follow him anywhere." },
+        { "who": "Jira", "text": "They think we're ferret spies. The ferrets think we're prairie dog spies. We are nine and seven." },
+        { "who": "Dad", "text": "I once lost a staring contest to a prairie dog. Not my proudest moment. Anyway, let's go underground!" },
+        { "who": "Mom", "text": "Wind Cave has sixty-five miles of passages. We are not exploring sixty-five miles. We are exploring four." }
+      ],
+      "outro": [
+        { "who": "Joel", "text": "The parade was mostly one guy and a very confident sign. Ten out of ten." },
+        { "who": "Jira", "text": "The King's crown had a note in it. 'Every family forgets a little. It's what I'm for.' The handwriting is tiny and sad." },
+        { "who": "Mom", "text": "Next stop: a town called Storybook Land. I want to be very clear that I did not choose it." }
+      ]
+    },
+    {
+      "id": "storybook-land",
+      "number": 4,
+      "title": "Storybook Land After Dark",
+      "place": "Somewhere past the Black Hills",
+      "subtitle": "After closing time, the nursery rhymes get up and stretch.",
+      "inspired": "The storybook park where the characters were way more alive than advertised.",
+      "palette": {
+        "sky": "#241a45",
+        "ground": "#4a3c6b",
+        "groundAlt": "#3d3160",
+        "fog": "#2a2050",
+        "fogDensity": 0.022,
+        "sun": "#c9b6ff",
+        "night": true,
+        "accent": "#ffb3e0"
+      },
+      "landmark": "storybook",
+      "decor": { "count": 30, "types": ["mushroom", "bookstack", "pumpkin", "sheep", "lamp", "oak", "banner"], "seed": 61 },
+      "gate": { "x": 0, "z": -4.2, "radius": 3.1 },
+      "objects": [
+        { "kind": "memory", "id": "sb-bell", "x": -12, "z": 6 },
+        { "kind": "memory", "id": "sb-pumpkin", "x": 11, "z": 4 },
+        { "kind": "memory", "id": "sb-ticket", "x": -3, "z": 14 },
+        { "kind": "clue", "id": "sb-clue-a", "x": 14, "z": -10, "hidden": true },
+        { "kind": "clue", "id": "sb-clue-b", "x": -14, "z": -9, "hidden": true },
+        { "kind": "clue", "id": "sb-clue-c", "x": 0, "z": 17 },
+        { "kind": "secret", "id": "sb-secret", "x": -18, "z": 12 },
+        { "kind": "sign", "id": "sb-sign-a", "x": -5, "z": 6 },
+        { "kind": "sign", "id": "sb-sign-b", "x": 9, "z": 10 },
+        { "kind": "sign", "id": "sb-sign-c", "x": -15, "z": 2 },
+        { "kind": "sign", "id": "sb-sign-d", "x": 15, "z": 12 },
+        { "kind": "person", "id": "sb-sheep", "x": 7, "z": 13 },
+        { "kind": "person", "id": "sb-pumpkin", "x": -9, "z": 9 }
+      ],
+      "goal": "The Storybook Clock has stopped, and every character is stuck mid-rhyme. Three memories are loose in the park.",
+      "minigame": {
+        "type": "clockwork",
+        "config": {
+          "rounds": [
+            { "hour": 7, "minute": 6, "chime": "🌙" },
+            { "hour": 9, "minute": 3, "chime": "☀️" }
+          ]
+        }
+      },
+      "boss": {
+        "name": "The Keeper's Hour Hand",
+        "emoji": "🕰️",
+        "taunt": "Tick. Tock. You are late for a bedtime that happened forty years ago.",
+        "win": "The clock chimes seven, the rhymes finish themselves, and the whole park exhales."
+      },
+      "intro": [
+        { "who": "Joel", "text": "The giant sheep let me pet it. Then it followed me. Then it followed me into the gift shop." },
+        { "who": "Jira", "text": "The characters are all frozen in the middle of their rhymes. The clock stopped at seven. It's not seven." },
+        { "who": "Dad", "text": "I have always wanted to fix a giant clock at night with zero qualifications. Dream big, kids." },
+        { "who": "Mom", "text": "There is a pumpkin looking at us. I am going to need everyone to be calm and nobody to scream." }
+      ],
+      "outro": [
+        { "who": "Joel", "text": "The sheep said goodbye. It sounded like a truck." },
+        { "who": "Jira", "text": "There was a page tucked in the clock. It's from our scrapbook. It's a picture of this exact night, taken before we got here." },
+        { "who": "Dad", "text": "Kansas City! Union Station! Science City! The Rabbit Hole! I have made a schedule and it is already wrong!" }
+      ]
+    },
+    {
+      "id": "kansas-city-conspiracy",
+      "number": 5,
+      "title": "The Kansas City Conspiracy",
+      "place": "Kansas City",
+      "subtitle": "A machine is mixing science experiments with fairy tales, and the rabbit is not sorry.",
+      "inspired": "Union Station, Science City, and the Rabbit Hole where nothing made sense on purpose.",
+      "palette": {
+        "sky": "#3b2a5e",
+        "ground": "#4c4666",
+        "groundAlt": "#3f3a58",
+        "fog": "#40306b",
+        "fogDensity": 0.018,
+        "sun": "#ffd3a8",
+        "night": true,
+        "accent": "#7ce7ff"
+      },
+      "landmark": "station",
+      "decor": { "count": 30, "types": ["lamp", "bench", "planter", "crate", "mirror", "bookstack", "banner"], "seed": 79 },
+      "gate": { "x": 0, "z": -4.2, "radius": 3.1 },
+      "objects": [
+        { "kind": "memory", "id": "kc-ticket", "x": -13, "z": 3 },
+        { "kind": "memory", "id": "kc-key", "x": 12, "z": 6 },
+        { "kind": "memory", "id": "kc-badge", "x": 2, "z": 15 },
+        { "kind": "clue", "id": "kc-clue-a", "x": -16, "z": -8, "hidden": true },
+        { "kind": "clue", "id": "kc-clue-b", "x": 15, "z": -8, "hidden": true },
+        { "kind": "clue", "id": "kc-clue-c", "x": -4, "z": 13 },
+        { "kind": "secret", "id": "kc-secret", "x": 18, "z": 13 },
+        { "kind": "sign", "id": "kc-sign-a", "x": -5, "z": 7 },
+        { "kind": "sign", "id": "kc-sign-b", "x": 10, "z": -12 },
+        { "kind": "sign", "id": "kc-sign-c", "x": -14, "z": 12 },
+        { "kind": "sign", "id": "kc-sign-d", "x": 15, "z": -2 },
+        { "kind": "person", "id": "kc-dad", "x": 4, "z": 4 },
+        { "kind": "person", "id": "kc-mom", "x": -6, "z": 3 }
+      ],
+      "goal": "The Mad Inventor Rabbit has wired the exhibits into something impossible. Find the memories and untangle it.",
+      "minigame": {
+        "type": "mirrorLab",
+        "config": { "rounds": 2, "mirrors": 4 }
+      },
+      "boss": {
+        "name": "The Mad Inventor Rabbit",
+        "emoji": "🐇",
+        "taunt": "You are standing in my laboratory! Which is also a train station! Which is also a fairy tale! Keep up!",
+        "win": "He admits the machine only ever made one thing: a very complicated apology."
+      },
+      "intro": [
+        { "who": "Jira", "text": "The Rabbit Hole has a room where the ceiling is the floor. Mom said 'absolutely not' and then went in first." },
+        { "who": "Joel", "text": "I put my hand in the science machine and now my hand is ten minutes in the future." },
+        { "who": "Dad", "text": "That's my boy. Science City, everybody. Where the experiments are also a personality test." },
+        { "who": "Jira", "text": "Every exhibit is glowing in a pattern. It's not random. It's a beam. Somebody is routing something through this whole building." }
+      ],
+      "outro": [
+        { "who": "Joel", "text": "The rabbit gave me a carrot. It is also a key. It tastes like a key." },
+        { "who": "Jira", "text": "The blueprint was signed 'for the family that always comes back'. The ink is the exact color of our scrapbook." },
+        { "who": "Mom", "text": "Omaha. The Luminarium. A building full of light and fog. What could possibly go wrong." }
+      ]
+    },
+    {
+      "id": "luminarium-dimension",
+      "number": 6,
+      "title": "The Luminarium Dimension",
+      "place": "Omaha",
+      "subtitle": "A dome made of light, a room made of fog, and a sculpture that has opinions.",
+      "inspired": "The Luminarium, where light behaves like weather and the fog room eats your family one at a time.",
+      "palette": {
+        "sky": "#101a3a",
+        "ground": "#1d2a4a",
+        "groundAlt": "#182440",
+        "fog": "#16204a",
+        "fogDensity": 0.02,
+        "sun": "#9be7ff",
+        "night": true,
+        "accent": "#66ffd4"
+      },
+      "landmark": "luminarium",
+      "decor": { "count": 26, "types": ["lamp", "crystal", "mirror", "bench", "banner", "planter", "mushroom"], "seed": 97 },
+      "gate": { "x": 0, "z": -4.2, "radius": 3.1 },
+      "objects": [
+        { "kind": "memory", "id": "lu-prism", "x": -12, "z": 7 },
+        { "kind": "memory", "id": "lu-photo", "x": 12, "z": 3 },
+        { "kind": "memory", "id": "lu-bracelet", "x": 0, "z": 15 },
+        { "kind": "clue", "id": "lu-clue-a", "x": -15, "z": -6, "hidden": true },
+        { "kind": "clue", "id": "lu-clue-b", "x": 16, "z": -5, "hidden": true },
+        { "kind": "clue", "id": "lu-clue-c", "x": 7, "z": 14 },
+        { "kind": "secret", "id": "lu-secret", "x": -18, "z": -13 },
+        { "kind": "sign", "id": "lu-sign-a", "x": -5, "z": 6 },
+        { "kind": "sign", "id": "lu-sign-b", "x": 10, "z": 9 },
+        { "kind": "sign", "id": "lu-sign-c", "x": -13, "z": 13 },
+        { "kind": "sign", "id": "lu-sign-d", "x": 15, "z": -12 },
+        { "kind": "person", "id": "lu-joel", "x": 3, "z": 5 },
+        { "kind": "person", "id": "lu-dad", "x": -4, "z": 9 }
+      ],
+      "goal": "The Living Light Sculpture swallowed the colors. Find your memories and put them back in order.",
+      "minigame": {
+        "type": "prism",
+        "config": { "rounds": 2 }
+      },
+      "boss": {
+        "name": "The Living Light Sculpture",
+        "emoji": "💡",
+        "taunt": "I contain every color your family has ever argued about. Sort them out, if you can.",
+        "win": "It turns a soft, embarrassed shade of pink and hands over a very small rainbow."
+      },
+      "intro": [
+        { "who": "Joel", "text": "I went into the fog room and came out in a different room and possibly a different year." },
+        { "who": "Jira", "text": "The lights are all wrong. Not broken. Wrong. Somebody mixed our memories into the color wheel." },
+        { "who": "Dad", "text": "This is the most beautiful place I have ever been and I have no idea where your mother is." },
+        { "who": "Mom", "text": "I am right here. I have been right here. You are standing on my foot." }
+      ],
+      "outro": [
+        { "who": "Jira", "text": "The sculpture's light landed on a photo. Not ours. A vacation with nobody in it. Empty chairs, set for a family that never came." },
+        { "who": "Joel", "text": "That's the saddest picnic I've ever seen." },
+        { "who": "Mom", "text": "Last stop. The Pavilion. And then we are going home and nobody is allowed to say the word 'vacation' for a year." }
+      ]
+    },
+    {
+      "id": "attack-of-the-pavilion",
+      "number": 7,
+      "title": "Attack of the Pavilion",
+      "place": "Sioux Falls",
+      "subtitle": "The museum woke up, and it has been waiting for your family.",
+      "inspired": "The Washington Pavilion, where every exhibit is one closing-time away from a mutiny.",
+      "palette": {
+        "sky": "#221b3c",
+        "ground": "#3b3550",
+        "groundAlt": "#322c46",
+        "fog": "#241d40",
+        "fogDensity": 0.02,
+        "sun": "#ffd9b0",
+        "night": true,
+        "accent": "#ff2e63"
+      },
+      "landmark": "pavilion",
+      "decor": { "count": 28, "types": ["banner", "lamp", "bench", "planter", "mirror", "bookstack", "crystal"], "seed": 113 },
+      "gate": { "x": 0, "z": -4.2, "radius": 3.1 },
+      "objects": [
+        { "kind": "memory", "id": "pv-photo", "x": -11, "z": 8 },
+        { "kind": "memory", "id": "pv-notebook", "x": 11, "z": 7 },
+        { "kind": "memory", "id": "pv-rock", "x": 0, "z": 16 },
+        { "kind": "clue", "id": "pv-clue-a", "x": -16, "z": -6, "hidden": true },
+        { "kind": "clue", "id": "pv-clue-b", "x": 16, "z": -9, "hidden": true },
+        { "kind": "clue", "id": "pv-clue-c", "x": -9, "z": 15 },
+        { "kind": "secret", "id": "pv-secret", "x": 0, "z": -18 },
+        { "kind": "sign", "id": "pv-sign-a", "x": -5, "z": 6 },
+        { "kind": "sign", "id": "pv-sign-b", "x": 10, "z": 11 },
+        { "kind": "sign", "id": "pv-sign-c", "x": -14, "z": 13 },
+        { "kind": "sign", "id": "pv-sign-d", "x": 15, "z": 2 },
+        { "kind": "person", "id": "pv-mom", "x": -4, "z": 3 },
+        { "kind": "person", "id": "pv-dad", "x": 4, "z": 3 }
+      ],
+      "goal": "Every exhibit in the building is awake. Find the last three memories and end this.",
+      "minigame": {
+        "type": "finale",
+        "config": { "stages": 3 }
+      },
+      "boss": {
+        "name": "The Vacation Collector",
+        "emoji": "🗃️",
+        "taunt": "You always leave. You take one photo and you leave, and the day sits here in the dark getting smaller.",
+        "win": "It puts down the box. It has never been asked to stay."
+      },
+      "intro": [
+        { "who": "Joel", "text": "The dinosaur is awake. The dinosaur is awake and it is doing a little dance." },
+        { "who": "Jira", "text": "This is where all the clues were pointing. Somebody has been taking pieces of every vacation we ever took." },
+        { "who": "Dad", "text": "Buddy, if a museum wants to fight this family, it should know we have survived nine hours in a minivan." },
+        { "who": "Mom", "text": "Jira. Joel. Stay together. Whatever is in there has been alone for a very long time." }
+      ],
+      "outro": [
+        { "who": "Jira", "text": "It wasn't stealing the vacations. It was keeping them. It thought nobody else would." },
+        { "who": "Joel", "text": "We told it it could come next time. It fit in the cupholder. Don't ask." },
+        { "who": "Mom", "text": "One photo. All four of us. And one very small shadow in the corner, if that's all right." },
+        { "who": "Dad", "text": "Best vacation ever. I'm putting it on a mug." }
+      ]
+    }
+  ]
+}

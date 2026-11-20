@@ -1,0 +1,151 @@
+{
+  "achievements": [
+    {
+      "id": "checking-in",
+      "name": "Checking In",
+      "emoji": "🧳",
+      "text": "Find your first Vacation Memory.",
+      "goal": { "type": "memories", "value": 1 }
+    },
+    {
+      "id": "souvenir-hunter",
+      "name": "Souvenir Hunter",
+      "emoji": "🛍️",
+      "text": "Collect five Vacation Memories.",
+      "goal": { "type": "memories", "value": 5 }
+    },
+    {
+      "id": "packed-light",
+      "name": "Packed Light",
+      "emoji": "🎒",
+      "text": "Collect ten Vacation Memories.",
+      "goal": { "type": "memories", "value": 10 }
+    },
+    {
+      "id": "scrapbook-full",
+      "name": "Scrapbook Complete",
+      "emoji": "📚",
+      "text": "Collect every Vacation Memory in the game.",
+      "goal": { "type": "allMemories", "value": 1 }
+    },
+    {
+      "id": "junior-detective",
+      "name": "Junior Detective",
+      "emoji": "🔎",
+      "text": "Find three of the Collector's clues.",
+      "goal": { "type": "clues", "value": 3 }
+    },
+    {
+      "id": "big-sister-knows",
+      "name": "Big Sister Knows",
+      "emoji": "🧠",
+      "text": "Find eight clues. Jira was right about everything.",
+      "goal": { "type": "clues", "value": 8 }
+    },
+    {
+      "id": "keeper-of-lore",
+      "name": "Keeper of the Lore",
+      "emoji": "📖",
+      "text": "Find every clue the Collector left behind.",
+      "goal": { "type": "allClues", "value": 1 }
+    },
+    {
+      "id": "unnaturally-lucky",
+      "name": "Unnaturally Lucky",
+      "emoji": "🍀",
+      "text": "Raise the Family Luck Meter to 14.",
+      "goal": { "type": "luck", "value": 14 }
+    },
+    {
+      "id": "cartoon-proof",
+      "name": "Cartoon-Proof",
+      "emoji": "💥",
+      "text": "Raise the Family Luck Meter to 24. Nothing can hurt this family.",
+      "goal": { "type": "luck", "value": 24 }
+    },
+    {
+      "id": "first-stop",
+      "name": "First Stop: Missouri",
+      "emoji": "🌪️",
+      "text": "Survive your first vacation.",
+      "goal": { "type": "levels", "value": 1 }
+    },
+    {
+      "id": "halfway",
+      "name": "Halfway Through the Scrapbook",
+      "emoji": "📔",
+      "text": "Survive four vacations.",
+      "goal": { "type": "levels", "value": 4 }
+    },
+    {
+      "id": "survivor",
+      "name": "Survivor",
+      "emoji": "🏆",
+      "text": "Survive all seven vacations.",
+      "goal": { "type": "levels", "value": 7 }
+    },
+    {
+      "id": "joel-sized",
+      "name": "Joel-Sized",
+      "emoji": "🕳️",
+      "text": "Crawl through a tunnel only Joel fits in.",
+      "goal": { "type": "crawls", "value": 1 }
+    },
+    {
+      "id": "tiny-tourist",
+      "name": "Tiny Tourist",
+      "emoji": "🐾",
+      "text": "Crawl through three tunnels.",
+      "goal": { "type": "crawls", "value": 3 }
+    },
+    {
+      "id": "sign-reader",
+      "name": "Sign Reader",
+      "emoji": "🪧",
+      "text": "Read five signs. Somebody has to.",
+      "goal": { "type": "signs", "value": 5 }
+    },
+    {
+      "id": "interstate-historian",
+      "name": "Interstate Historian",
+      "emoji": "🗺️",
+      "text": "Read sixteen signs.",
+      "goal": { "type": "signs", "value": 16 }
+    },
+    {
+      "id": "secret-stash",
+      "name": "Secret Stash",
+      "emoji": "✨",
+      "text": "Find a golden secret.",
+      "goal": { "type": "secrets", "value": 1 }
+    },
+    {
+      "id": "postcards-nowhere",
+      "name": "Postcards From Nowhere",
+      "emoji": "📮",
+      "text": "Find all seven golden secrets.",
+      "goal": { "type": "allSecrets", "value": 1 }
+    },
+    {
+      "id": "say-cheese",
+      "name": "Say Cheese",
+      "emoji": "📸",
+      "text": "Investigate ten times as Jira.",
+      "goal": { "type": "investigations", "value": 10 }
+    },
+    {
+      "id": "collector-collected",
+      "name": "The Collector, Collected",
+      "emoji": "🗃️",
+      "text": "Finish the story.",
+      "goal": { "type": "ending", "value": 1 }
+    },
+    {
+      "id": "perfect-vacation",
+      "name": "The Perfect Vacation",
+      "emoji": "🌟",
+      "text": "Find every memory, every clue and every secret, then finish the story.",
+      "goal": { "type": "perfect", "value": 1 }
+    }
+  ]
+}

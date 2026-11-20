@@ -1,0 +1,385 @@
+{
+  "memories": [
+    {
+      "id": "cn-spoon",
+      "level": "chicken-nado",
+      "name": "Souvenir Spoon",
+      "emoji": "🥄",
+      "blurb": "A spoon from the gas station buffet, stamped MISSOURI. It bends if you look at it too hard."
+    },
+    {
+      "id": "cn-postcard",
+      "level": "chicken-nado",
+      "name": "Highway Postcard",
+      "emoji": "📮",
+      "blurb": "The card shows a tornado. The tornado is holding a chicken. Nobody at the gas station would admit to printing it."
+    },
+    {
+      "id": "cn-snack",
+      "level": "chicken-nado",
+      "name": "Grandma's Snack Bag",
+      "emoji": "🍪",
+      "blurb": "Mom packed it at 5 a.m. It contains eleven cookies and one (1) extremely hopeful napkin."
+    },
+    {
+      "id": "bc-puck",
+      "level": "bear-cabin-ridge",
+      "name": "Shuffleboard Puck",
+      "emoji": "🥏",
+      "blurb": "Won from a bear. Technically the bear won. The bear says it was a tie."
+    },
+    {
+      "id": "bc-keychain",
+      "level": "bear-cabin-ridge",
+      "name": "Carved Bear Keychain",
+      "emoji": "🐾",
+      "blurb": "Bought from a vending machine that only accepted quarters and compliments."
+    },
+    {
+      "id": "bc-postcard",
+      "level": "bear-cabin-ridge",
+      "name": "Cabin Postcard",
+      "emoji": "🏕️",
+      "blurb": "The cabin on the card has four floors. The cabin we stayed in has three. Dad calls this 'marketing'."
+    },
+    {
+      "id": "pd-button",
+      "level": "prairie-dog-ferret-war",
+      "name": "Tiny Mayor's Button",
+      "emoji": "🎖️",
+      "blurb": "It says VOTE BARKINGTON. It is the size of a thumbtack and weighs as much as a promise."
+    },
+    {
+      "id": "pd-crystal",
+      "level": "prairie-dog-ferret-war",
+      "name": "Wind Cave Crystal",
+      "emoji": "💎",
+      "blurb": "A crystal from a passage with no name, given to Jira by a prairie dog engineer with a very small hard hat."
+    },
+    {
+      "id": "pd-crown",
+      "level": "prairie-dog-ferret-war",
+      "name": "Ferret King's Crown",
+      "emoji": "👑",
+      "blurb": "Cardboard. Glitter. A sticker on the inside that says PROPERTY OF THE KINGDOM, DO NOT WEAR SIDEWAYS."
+    },
+    {
+      "id": "sb-bell",
+      "level": "storybook-land",
+      "name": "Giant Sheep's Bell",
+      "emoji": "🔔",
+      "blurb": "The sheep rang it every time Joel said 'look'. That was a lot of ringing."
+    },
+    {
+      "id": "sb-pumpkin",
+      "level": "storybook-land",
+      "name": "Pumpkin Lantern",
+      "emoji": "🎃",
+      "blurb": "It was a living pumpkin. It is now a lantern. It seems fine about the whole thing."
+    },
+    {
+      "id": "sb-ticket",
+      "level": "storybook-land",
+      "name": "Storybook Ticket",
+      "emoji": "🎫",
+      "blurb": "Admits one family. Expires never. Smells faintly of someone else's popcorn."
+    },
+    {
+      "id": "kc-ticket",
+      "level": "kansas-city-conspiracy",
+      "name": "Union Station Ticket",
+      "emoji": "🚂",
+      "blurb": "Kansas City to Anywhere, one way. The conductor punched a shape that does not exist on trains."
+    },
+    {
+      "id": "kc-key",
+      "level": "kansas-city-conspiracy",
+      "name": "Rabbit Hole Key",
+      "emoji": "🗝️",
+      "blurb": "Opens a door that is only there when you are not looking directly at it."
+    },
+    {
+      "id": "kc-badge",
+      "level": "kansas-city-conspiracy",
+      "name": "Science City Badge",
+      "emoji": "🧪",
+      "blurb": "JOEL, JUNIOR SCIENTIST. Handwritten. Laminated by a machine that was also an experiment."
+    },
+    {
+      "id": "lu-prism",
+      "level": "luminarium-dimension",
+      "name": "Prism Keychain",
+      "emoji": "🔷",
+      "blurb": "Hold it up and the whole room splits into colors that were not in the room a second ago."
+    },
+    {
+      "id": "lu-photo",
+      "level": "luminarium-dimension",
+      "name": "Fog Room Photo",
+      "emoji": "📷",
+      "blurb": "Four silhouettes in fog. Dad's hair is doing something the fog cannot explain."
+    },
+    {
+      "id": "lu-bracelet",
+      "level": "luminarium-dimension",
+      "name": "Glow Bracelet",
+      "emoji": "🌟",
+      "blurb": "It glows for exactly as long as you believe it will. Joel still believes. Joel is why it works."
+    },
+    {
+      "id": "pv-photo",
+      "level": "attack-of-the-pavilion",
+      "name": "The Family Photo",
+      "emoji": "🖼️",
+      "blurb": "All four of them, plus a small shadow in the corner, at the top of the Pavilion steps."
+    },
+    {
+      "id": "pv-notebook",
+      "level": "attack-of-the-pavilion",
+      "name": "Jira's Notebook",
+      "emoji": "📓",
+      "blurb": "Every clue, every vacation, every strange little thing. Page one says: 'Somebody is taking our trips.'"
+    },
+    {
+      "id": "pv-rock",
+      "level": "attack-of-the-pavilion",
+      "name": "Joel's Pocket Rock",
+      "emoji": "🪨",
+      "blurb": "It is a rock. It has been to seven states. It has a name. The name is Rock."
+    }
+  ],
+  "clues": [
+    {
+      "id": "cn-clue-a",
+      "level": "chicken-nado",
+      "name": "Postcard From Nowhere",
+      "emoji": "✉️",
+      "text": "A postcard with no picture, no stamp, and no return address. On the back, in tiny careful letters: 'Keep this one. Please.'"
+    },
+    {
+      "id": "cn-clue-b",
+      "level": "chicken-nado",
+      "name": "A Receipt For One Memory",
+      "emoji": "🧾",
+      "text": "A buffet receipt. Item: ONE (1) AFTERNOON, SLIGHTLY USED. Total: $0.00. Paid with: a photograph of a family that is not yours."
+    },
+    {
+      "id": "cn-clue-c",
+      "level": "chicken-nado",
+      "name": "Tornado Tag",
+      "emoji": "🌪️",
+      "text": "A luggage tag blown off some other family's suitcase. The address has been scratched out and rewritten so many times the paper has gone soft."
+    },
+    {
+      "id": "bc-clue-a",
+      "level": "bear-cabin-ridge",
+      "name": "Whittled Warning",
+      "emoji": "🪵",
+      "text": "Somebody carved a message into the porch rail: 'THE WOODS REMEMBER YOUR TRIP. DO YOU?' Underneath, much smaller: 'sorry, that was meant to be friendly.'"
+    },
+    {
+      "id": "bc-clue-b",
+      "level": "bear-cabin-ridge",
+      "name": "Bird Call Chart",
+      "emoji": "🐦",
+      "text": "A laminated chart of local bird calls. One entry is circled: 'NOT A BIRD (probably a collector)'. The drawing is a little box with eyes."
+    },
+    {
+      "id": "bc-clue-c",
+      "level": "bear-cabin-ridge",
+      "name": "A Bear's Grocery List",
+      "emoji": "📝",
+      "text": "HONEY. BERRIES. ONE (1) FAMILY VACATION, UNOPENED. The last item has three question marks after it, like the bear was not sure it was allowed."
+    },
+    {
+      "id": "pd-clue-a",
+      "level": "prairie-dog-ferret-war",
+      "name": "Espionage Pamphlet",
+      "emoji": "📡",
+      "text": "A tiny pamphlet titled 'HOW TO SPOT A SPY'. Every page is blank except the last, which says 'they look like a family on vacation'."
+    },
+    {
+      "id": "pd-clue-b",
+      "level": "prairie-dog-ferret-war",
+      "name": "The Prairie Dog Times",
+      "emoji": "📰",
+      "text": "Front page: FAMILY SPOTTED. THEY HAVE A COOLER. ARE THEY STEALING OUR SUMMER? The crossword answers are all 'unclear'."
+    },
+    {
+      "id": "pd-clue-c",
+      "level": "prairie-dog-ferret-war",
+      "name": "Cave Survey, Amended",
+      "emoji": "🗺️",
+      "text": "A Wind Cave survey map with one tunnel drawn in red pencil and labeled 'NOT A TUNNEL. DO NOT GO. IT IS A DRAWER.'"
+    },
+    {
+      "id": "sb-clue-a",
+      "level": "storybook-land",
+      "name": "Clockmaker's Note",
+      "emoji": "⏱️",
+      "text": "'The clock does not keep time. It keeps afternoons. Wind it kindly.' Signed with a squiggle that could be a name or a small box with eyes."
+    },
+    {
+      "id": "sb-clue-b",
+      "level": "storybook-land",
+      "name": "A Torn Page",
+      "emoji": "📄",
+      "text": "A page from a scrapbook that is definitely yours. It shows tonight. It was printed before tonight. The glue is still wet."
+    },
+    {
+      "id": "sb-clue-c",
+      "level": "storybook-land",
+      "name": "Giant's Shopping List",
+      "emoji": "🛒",
+      "text": "BREAD. MILK. ONE SMALL FAMILY TO REMEMBER HIM BY. The giant has written 'no rush' beside the last one, which is somehow worse."
+    },
+    {
+      "id": "kc-clue-a",
+      "level": "kansas-city-conspiracy",
+      "name": "Blueprint, Unsigned",
+      "emoji": "📐",
+      "text": "A blueprint for a machine labeled MEMORY ENGINE. One component is drawn as a photo album. Another is drawn as a child's hand, holding the first one."
+    },
+    {
+      "id": "kc-clue-b",
+      "level": "kansas-city-conspiracy",
+      "name": "Fairy Tale Patent",
+      "emoji": "⚙️",
+      "text": "Patent #7 for 'a device that makes a story remember itself'. The examiner's note: 'emotionally sound, structurally unclear'."
+    },
+    {
+      "id": "kc-clue-c",
+      "level": "kansas-city-conspiracy",
+      "name": "A Note, Neatly Filed",
+      "emoji": "🗂️",
+      "text": "A card in a filing drawer labeled FAMILIES WHO ALMOST FORGOT. Your family name is there. There is a small checkmark. There is also a small eraser mark."
+    },
+    {
+      "id": "lu-clue-a",
+      "level": "luminarium-dimension",
+      "name": "Light Mixing Chart",
+      "emoji": "🌈",
+      "text": "A chart of colors and the feelings they belong to. RED: the argument in the car. BLUE: the quiet after. YELLOW: Joel, laughing at nothing."
+    },
+    {
+      "id": "lu-clue-b",
+      "level": "luminarium-dimension",
+      "name": "A Lantern With No Bulb",
+      "emoji": "🏮",
+      "text": "An empty lantern, still warm. On the bottom: 'This one held the drive home. It was my favorite.'"
+    },
+    {
+      "id": "lu-clue-c",
+      "level": "luminarium-dimension",
+      "name": "A Very Bright Apology",
+      "emoji": "💡",
+      "text": "Written in light on the wall, fading: 'I did not mean to make it strange. I only wanted to be in the picture.'"
+    },
+    {
+      "id": "pv-clue-a",
+      "level": "attack-of-the-pavilion",
+      "name": "The Collector's Ledger",
+      "emoji": "📒",
+      "text": "Every vacation your family ever took, dated and filed. In the margin beside each one, the same three words: 'they came back'."
+    },
+    {
+      "id": "pv-clue-b",
+      "level": "attack-of-the-pavilion",
+      "name": "Itinerary, Faded",
+      "emoji": "🧭",
+      "text": "An itinerary in Mom's handwriting for a trip that never happened. Seven days, six stops, four names. At the bottom: 'maybe next year'."
+    },
+    {
+      "id": "pv-clue-c",
+      "level": "attack-of-the-pavilion",
+      "name": "A Photo With No Faces",
+      "emoji": "🖼️",
+      "text": "A family photo where everyone is a soft blur, like the camera was crying. On the back: 'I kept it anyway. It was still a Tuesday with them.'"
+    }
+  ],
+  "secrets": [
+    {
+      "id": "cn-secret",
+      "level": "chicken-nado",
+      "name": "The Golden Receipt",
+      "emoji": "✨",
+      "luck": 4,
+      "blurb": "A receipt for 'one perfect afternoon, no refunds'. The Keeper kept it in a napkin dispenser."
+    },
+    {
+      "id": "bc-secret",
+      "level": "bear-cabin-ridge",
+      "name": "Golden Thimble",
+      "emoji": "✨",
+      "luck": 8,
+      "blurb": "Tiny, brass, and warm. Someone has been mending the same photograph for years."
+    },
+    {
+      "id": "pd-secret",
+      "level": "prairie-dog-ferret-war",
+      "name": "Golden Acorn",
+      "emoji": "✨",
+      "luck": 12,
+      "blurb": "A tiny nation's highest honor, awarded to Joel for 'being approximately the right size'."
+    },
+    {
+      "id": "sb-secret",
+      "level": "storybook-land",
+      "name": "Golden Bookmark",
+      "emoji": "✨",
+      "luck": 16,
+      "blurb": "It marks the page of a story that has no ending yet. The next page is blank and waiting."
+    },
+    {
+      "id": "kc-secret",
+      "level": "kansas-city-conspiracy",
+      "name": "Golden Ticket",
+      "emoji": "✨",
+      "luck": 20,
+      "blurb": "Admit one to a vacation that has not happened. It is dated next summer. It is already slightly creased from being carried."
+    },
+    {
+      "id": "lu-secret",
+      "level": "luminarium-dimension",
+      "name": "Golden Prism",
+      "emoji": "✨",
+      "luck": 24,
+      "blurb": "Hold it to the light and you can see a family that is yours, in a room you have not been in yet."
+    },
+    {
+      "id": "pv-secret",
+      "level": "attack-of-the-pavilion",
+      "name": "Golden Photo",
+      "emoji": "✨",
+      "luck": 28,
+      "blurb": "The only picture the Collector ever took of itself. It is standing just outside the frame, hoping to be asked in."
+    }
+  ],
+  "lore": [
+    {
+      "luck": 0,
+      "title": "The Scrapbook",
+      "text": "A scrapbook with seven stiff pages. Somebody has already written the dates on them in pencil."
+    },
+    {
+      "luck": 6,
+      "title": "The Small Box",
+      "text": "Every level has a drawer, and every drawer has a box, and every box has one photograph in it. None of the photographs have people in them."
+    },
+    {
+      "luck": 14,
+      "title": "What It Eats",
+      "text": "The Collector does not eat memories. It borrows them, holds them up to the light, and puts them back slightly warmer."
+    },
+    {
+      "luck": 24,
+      "title": "Why The Vacations Change",
+      "text": "A remembered vacation gets bigger every year. The Collector just helps. A gas station becomes a fortress. A cabin becomes a kingdom."
+    },
+    {
+      "luck": 36,
+      "title": "The Invitation",
+      "text": "At the very back of the scrapbook there is a blank page with a cupholder-sized circle drawn on it, and the words 'reserved' in tiny careful letters."
+    }
+  ]
+}

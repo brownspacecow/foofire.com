@@ -55,6 +55,10 @@ src/
       level-dolls.js
       level-remote.js
       level-papa.js
+    survive-family-vacation/  # Seven-chapter supernatural road-trip mystery
+      index.html
+      styles.css
+      js/           # engine, world, mini-games, UI and local saves
     bear/          # Bear the Puppy three.js game
       index.html
       game.js
@@ -101,6 +105,14 @@ http://localhost:8080/src/games/earwarts/
 
 The GitHub Pages workflow uploads the source directly, so the game is available at
 `/src/games/earwarts/index.html` alongside the other games.
+
+### Survive Family Vacation
+
+A seven-chapter mystery-comedy adventure: explore a 3D vacation, collect Vacation
+Memories, investigate clues about the Vacation Collector, then survive a themed boss
+encounter. Levels, dialogue, collectibles, achievements and cutscenes live in
+`public/data/vacation/*.json`, so new vacations are a data change rather than engine
+code. Progress, the scrapbook, achievements and settings are stored in localStorage.
 
 ## Adding a New Game
 

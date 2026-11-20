@@ -1,0 +1,197 @@
+{
+  "signs": {
+    "cn-sign-a": "BUFFET: ALL YOU CAN SURVIVE",
+    "cn-sign-b": "RESTROOM KEY: ASK THE KEEPER. DO NOT ASK THE KEEPER TWICE.",
+    "cn-sign-c": "MISSOURI WELCOMES YOU (CONDITIONS APPLY)",
+    "cn-sign-d": "CHICKEN CROSSING — NEXT 400 FEET OF THEM",
+
+    "bc-sign-a": "CABIN RULES: 1. NO RUNNING. 2. NO WHISPERING. 3. SEE RULE 1.",
+    "bc-sign-b": "MOUNTAIN COASTER: PLEASE SCREAM IN ALPHABETICAL ORDER",
+    "bc-sign-c": "BEARS DO NOT READ SIGNS (ALLEGEDLY)",
+    "bc-sign-d": "BASEMENT THEATER: NOW SHOWING 'THE FUSE BOX'",
+
+    "pd-sign-a": "WIND CAVE: 1.2 MILES OF NOTHING, THEN MORE NOTHING",
+    "pd-sign-b": "PRAIRIE DOG TOWN — POP. 4,000 (ALL COUSINS)",
+    "pd-sign-c": "FERRET KINGDOM: NO PRAIRIE DOGS. NO EXCEPTIONS. EXCEPT GARY.",
+    "pd-sign-d": "SEISMOGRAPH: PLEASE DO NOT JUMP",
+
+    "sb-sign-a": "PLEASE DO NOT FEED THE NURSERY RHYMES",
+    "sb-sign-b": "GIANT: OUT OF ORDER",
+    "sb-sign-c": "CLOCK TOWER: BACK AT SEVEN. IT IS ALWAYS BACK AT SEVEN.",
+    "sb-sign-d": "LOST: ONE COW. ANSWERS TO 'THE COW'.",
+
+    "kc-sign-a": "UNION STATION: DEPARTURES 6:00, 6:15, AND EVENTUALLY",
+    "kc-sign-b": "SCIENCE CITY: PLEASE DO NOT EXPLAIN THE EXPERIMENT TO THE EXPERIMENT",
+    "kc-sign-c": "THE RABBIT HOLE: CURIOUS? YES. LATE? VERY.",
+    "kc-sign-d": "LOST & FOUND: ONE (1) SENSE OF WONDER",
+
+    "lu-sign-a": "LUMINARIUM: TOUCH EVERYTHING. WE INSIST.",
+    "lu-sign-b": "FOG ROOM: VISIBILITY 3 FEET. FRIENDS 2 FEET.",
+    "lu-sign-c": "MIRROR MAZE: YOU ARE HERE (PROBABLY)",
+    "lu-sign-d": "LIGHTS OUT AT 9. LIGHTS PERMANENTLY ON AT 9:01.",
+
+    "pv-sign-a": "PAVILION: ART, SCIENCE, AND ONE (1) HAUNTED ELEVATOR",
+    "pv-sign-b": "PLEASE DO NOT WAKE THE EXHIBITS",
+    "pv-sign-c": "THE VACATION COLLECTOR: ON LOAN FROM YOUR MEMORY",
+    "pv-sign-d": "EXIT: OVER THERE. ALLEGEDLY."
+  },
+  "people": {
+    "cn-dad": {
+      "who": "Dad",
+      "emoji": "🧢",
+      "lines": [
+        "A tornado plus chickens! That's two of my favorite things in one weather event.",
+        "I'm not lost. I'm taking the scenic route to the same gas station.",
+        "Kids, when life gives you chickens, you make... a memory. See, I'm good at this."
+      ]
+    },
+    "cn-mom": {
+      "who": "Mom",
+      "emoji": "🧣",
+      "lines": [
+        "Your father has been in that buffet for twenty minutes and has not noticed the weather.",
+        "If the power goes out, we are not panicking. We are eating the mashed potatoes in the dark.",
+        "Jira, keep hold of your brother. Joel, keep hold of your sandwich."
+      ]
+    },
+    "bc-mom": {
+      "who": "Mom",
+      "emoji": "🧣",
+      "lines": [
+        "This cabin has three floors and I have found the fuse box on none of them.",
+        "Those decorations are not moving. Please stop telling me the decorations are moving.",
+        "The basement theater has a VCR. Your father is going to be down there until Tuesday."
+      ]
+    },
+    "bc-joel": {
+      "who": "Joel",
+      "emoji": "🦖",
+      "lines": [
+        "I'm not scared of the woods. The woods are scared of me. We talked about it.",
+        "There's a tunnel under the porch. It's Joel-sized. Everything good is Joel-sized.",
+        "I saw the bear again. He was wearing my hat. I'm choosing to be flattered."
+      ]
+    },
+    "pd-dad": {
+      "who": "Dad",
+      "emoji": "🧢",
+      "lines": [
+        "Prairie dogs, ferrets, an underground government. This is why we travel.",
+        "I have been elected an honorary cousin. I'd like to thank the town of four thousand.",
+        "Don't look at the ferrets too long. It's a whole thing down there."
+      ]
+    },
+    "pd-mayor": {
+      "who": "Mayor Barkington",
+      "emoji": "🎩",
+      "lines": [
+        "Welcome to the town. Please fill out form 7-B. And 7-C. And, for reasons, 7-B again.",
+        "We are a peaceful town. We have never had a war. We have had several very loud disagreements.",
+        "The parade is tomorrow. It has been tomorrow for six weeks."
+      ]
+    },
+    "sb-sheep": {
+      "who": "Giant Sheep",
+      "emoji": "🐑",
+      "lines": [
+        "Baa. (Translation: the clock is wrong and I have been stuck mid-hop for an hour.)",
+        "Baa. (Translation: you are standing on my shadow. It's fine. Stay a while.)",
+        "Baa. (Translation: the small one can ride on my back if the clock gets fixed.)"
+      ]
+    },
+    "sb-pumpkin": {
+      "who": "Living Pumpkin",
+      "emoji": "🎃",
+      "lines": [
+        "I was a prop for six years. Now I have opinions and a night job.",
+        "The giant took the clock's small hand. He thought it was a snack. He is very sorry.",
+        "If you fix the clock, I'll be a lantern again. That's the dream, honestly."
+      ]
+    },
+    "kc-dad": {
+      "who": "Dad",
+      "emoji": "🧢",
+      "lines": [
+        "I have purchased four tickets to a train that does not exist. Worth it.",
+        "The rabbit says he's not mad, he's 'mid-experiment'. Big difference, apparently.",
+        "This place merges science with fairy tales. Your mother says that's just our family."
+      ]
+    },
+    "kc-mom": {
+      "who": "Mom",
+      "emoji": "🧣",
+      "lines": [
+        "The beam comes from the west wall, hits a mirror, and goes somewhere it should not.",
+        "I fixed a clock and a mine cart today. I am going to need a very quiet car ride.",
+        "Whatever built that machine understands families better than it understands physics."
+      ]
+    },
+    "lu-joel": {
+      "who": "Joel",
+      "emoji": "🦖",
+      "lines": [
+        "I went in the fog room and came out wearing someone else's scarf. It's very soft.",
+        "All the colors are wrong. Red tastes like the car argument now.",
+        "The sculpture said it swallowed the sunset. By accident. It said it was sorry."
+      ]
+    },
+    "lu-dad": {
+      "who": "Dad",
+      "emoji": "🧢",
+      "lines": [
+        "I have been staring at this light for nine minutes and I feel like a new man.",
+        "Kids, the fog room is the closest I've ever come to being a cloud. Ten out of ten.",
+        "Whatever's glowing, it's got your mother's handwriting in it. That's a weird feeling."
+      ]
+    },
+    "pv-mom": {
+      "who": "Mom",
+      "emoji": "🧣",
+      "lines": [
+        "The exhibits are all facing the front doors, like they were waiting for someone.",
+        "Jira, whatever we find, we are not leaving it alone in the dark. Understood?",
+        "I know that box. It was in my mother's attic. I thought it was a lunchbox."
+      ]
+    },
+    "pv-dad": {
+      "who": "Dad",
+      "emoji": "🧢",
+      "lines": [
+        "This is the part of the vacation where I usually say something optimistic. I'm working on it.",
+        "You know what the Collector's never had? A dad who makes terrible jokes in a museum. Let's go.",
+        "I've taken four hundred photos of this trip. Not one of them has a single empty chair in it."
+      ]
+    }
+  },
+  "barks": {
+    "jira": [
+      "I should write this down. I should write all of this down.",
+      "There's a pattern. There's always a pattern. Find the pattern.",
+      "This is not a normal family vacation. I've been on nine. I'd know."
+    ],
+    "joel": [
+      "I found a rock. It is my best friend now.",
+      "If I fit, I go. That's the rule I live by.",
+      "Do you think the museum knows we're related to it?",
+      "I'm not tired. I'm just resting my whole face."
+    ],
+    "swapJira": "Jira takes point. Investigation mode is on — hold it to spot what's hidden.",
+    "swapJoel": "Joel takes over. He fits in small places and he is very fast.",
+    "swapHint": "Tab switches between Jira and Joel.",
+    "investigateHint": "Hold Shift or the magnifier button to investigate. Jira only.",
+    "joelCantInvestigate": "Joel is seven. He investigates by touching it immediately.",
+    "tunnelJira": "That hole is Joel-sized. I am nine. My bones are long.",
+    "tunnelJoel": "Joel-sized! Finally, a door that respects me.",
+    "nothingHere": "Nothing hidden here. Jira would know.",
+    "allFound": "Every memory and clue in this place is already in the scrapbook.",
+    "gateLocked": "The way is blocked until the memories are safe. {n} still out there.",
+    "secretLocked": "There's something here, but it doesn't trust you yet. The family needs more luck.",
+    "secretFound": "The family luck just went up. Something that was hidden trusts you now."
+  },
+  "idle": [
+    "Somewhere, a gas station is playing the same nine words.",
+    "You can still hear the tornado if you listen with your imagination.",
+    "The scrapbook is heavier than it was this morning.",
+    "A vacation is just a memory that hasn't finished deciding what it was."
+  ]
+}

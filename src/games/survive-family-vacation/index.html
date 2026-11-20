@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Survive Family Vacation | Foofire Games</title>
+    <meta
+      name="description"
+      content="Play Survive Family Vacation: a cozy supernatural road-trip mystery with Jira, Joel, Mom and Dad. Explore seven vacations, collect memories, and find whoever keeps taking the photos."
+    />
+    <meta property="og:title" content="Survive Family Vacation | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Seven vacations, one very small mystery. Explore, investigate and survive the weirdest family vacation ever."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/survive-family-vacation/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=4" />
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-header">
+        <h1>Survive Family Vacation</h1>
+        <p>
+          Seven vacations, one very small mystery. Explore the weird version of every trip, collect
+          the memories, and find whoever keeps standing in the corner of the photo.
+        </p>
+      </section>
+
+      <section class="sfv-wrap" aria-label="Survive Family Vacation game">
+        <div class="sfv" id="sfv-app">
+          <div class="sfv-topbar">
+            <div class="sfv-chapter">
+              <span class="sfv-kicker" id="hud-stop">Stop 1 of 7</span>
+              <strong id="hud-chapter">The Chicken-Nado</strong>
+            </div>
+
+            <div class="sfv-counters" aria-label="Level collectibles">
+              <span class="sfv-counter" title="Vacation Memories found">
+                <span aria-hidden="true">🧳</span>
+                <b id="hud-mem">0</b><span class="sfv-counter-max" id="hud-mem-max">/3</span>
+                <span class="sr-only">memories found</span>
+              </span>
+              <span class="sfv-counter" title="Clues found">
+                <span aria-hidden="true">🔎</span>
+                <b id="hud-clue">0</b><span class="sfv-counter-max" id="hud-clue-max">/3</span>
+                <span class="sr-only">clues found</span>
+              </span>
+            </div>
+
+            <div class="sfv-luck" title="Family Luck">
+              <div class="sfv-luck-head">
+                <span>Family Luck</span>
+                <b id="hud-luck-value">0</b>
+              </div>
+              <div class="sfv-luck-track" role="progressbar" aria-label="Family Luck" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="hud-luck-bar">
+                <span id="hud-luck-fill"></span>
+              </div>
+              <span class="sfv-luck-tier" id="hud-luck-tier">A Normal Family</span>
+            </div>
+
+            <div class="sfv-actions">
+              <button id="hud-swap" class="sfv-btn sfv-btn-char" type="button" aria-label="Switch between Jira and Joel">
+                <span id="hud-char-emoji" aria-hidden="true">🔎</span>
+                <span id="hud-char-name">Jira</span>
+                <kbd>Tab</kbd>
+              </button>
+              <button id="hud-investigate" class="sfv-btn sfv-investigate" type="button" aria-pressed="false">
+                <span aria-hidden="true">🔍</span><span class="sfv-btn-text">Investigate</span>
+              </button>
+              <button id="hud-pause" class="sfv-btn sfv-icon-btn" type="button" aria-label="Pause game">❚❚</button>
+              <button id="hud-mute" class="sfv-btn sfv-icon-btn" type="button" aria-label="Mute sound" aria-pressed="false">🔊</button>
+              <button id="hud-fullscreen" class="sfv-btn sfv-icon-btn" type="button" aria-label="Play in full screen" aria-pressed="false">⛶</button>
+            </div>
+          </div>
+
+          <div class="sfv-stage" id="sfv-stage">
+            <div class="sfv-canvas" id="sfv-canvas" aria-hidden="true"></div>
+            <div class="sfv-vignette" id="sfv-vignette" aria-hidden="true"></div>
+            <p class="sfv-goal" id="sfv-goal" aria-live="polite"></p>
+
+            <div class="sfv-prompt" id="sfv-prompt" aria-live="polite" hidden>
+              <span class="sfv-prompt-key" id="sfv-prompt-key">E</span>
+              <span id="sfv-prompt-text"></span>
+            </div>
+
+            <div class="sfv-subtitle" id="sfv-subtitle" hidden>
+              <span class="sfv-speaker" id="sfv-speaker">Jira</span>
+              <p id="sfv-line"></p>
+              <button id="sfv-next" class="sfv-btn sfv-btn-small" type="button">Next ▸</button>
+            </div>
+
+            <div class="sfv-toasts" id="sfv-toasts" aria-live="polite"></div>
+            <div class="sfv-letterbox" id="sfv-letterbox" hidden aria-hidden="true"></div>
+
+            <div class="sfv-mg" id="sfv-mg" hidden>
+              <header class="sfv-mg-head">
+                <div class="sfv-mg-boss">
+                  <span class="sfv-boss-emoji" id="sfv-mg-emoji" aria-hidden="true">🗃️</span>
+                  <div>
+                    <span class="sfv-kicker" id="sfv-mg-boss">Boss encounter</span>
+                    <h3 id="sfv-mg-title">The encounter</h3>
+                  </div>
+                </div>
+                <p id="sfv-mg-hint"></p>
+              </header>
+
+              <div class="sfv-mg-stage">
+                <canvas
+                  id="sfv-mg-canvas"
+                  width="960"
+                  height="540"
+                  role="application"
+                  aria-label="Boss encounter. Use the arrow keys or drag, and press E or tap to act."
+                ></canvas>
+
+                <div class="sfv-mg-result" id="sfv-mg-result" hidden>
+                  <div class="sfv-mg-result-card">
+                    <p class="sfv-kicker" id="sfv-mg-result-kicker">Round over</p>
+                    <h4 id="sfv-mg-result-title">The boss wins this one</h4>
+                    <p id="sfv-mg-result-text"></p>
+                    <div class="sfv-mg-result-actions">
+                      <button id="sfv-mg-retry" class="sfv-btn sfv-btn-primary" type="button">Try again</button>
+                      <button id="sfv-mg-leave" class="sfv-btn" type="button">Back to exploring</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="sfv-mg-foot">
+                <span class="sfv-mg-progress" id="sfv-mg-progress"></span>
+                <button id="sfv-mg-quit" class="sfv-btn sfv-btn-small" type="button">Give up this try</button>
+              </footer>
+            </div>
+
+            <section class="sfv-screen sfv-screen-title" id="screen-title" aria-label="Main menu">
+              <div class="sfv-title-card">
+                <p class="sfv-kicker">A supernatural family road trip</p>
+                <h2 class="sfv-logo">
+                  <span>SURVIVE</span>
+                  <span class="sfv-logo-mid">FAMILY</span>
+                  <span>VACATION</span>
+                </h2>
+                <p class="sfv-title-sub">
+                  Something is keeping the afternoons. Jira has a notebook, Joel has a rock, and the
+                  family has seven vacations to survive.
+                </p>
+                <div class="sfv-menu">
+                  <button id="btn-continue" class="sfv-btn sfv-btn-primary sfv-continue" type="button" hidden>
+                    Continue <small id="btn-continue-note"></small>
+                  </button>
+                  <button id="btn-new" class="sfv-btn sfv-btn-primary" type="button">New vacation</button>
+                  <button id="btn-chapters" class="sfv-btn" type="button">Chapters</button>
+                  <button id="btn-scrapbook" class="sfv-btn" type="button">Scrapbook</button>
+                  <button id="btn-settings" class="sfv-btn" type="button">Settings</button>
+                  <button id="btn-credits" class="sfv-btn" type="button">Credits</button>
+                </div>
+                <p class="sfv-controls-note">
+                  WASD or arrows to walk · E to look closer · Tab swaps kids · hold Shift to
+                  investigate · gamepad supported
+                </p>
+              </div>
+            </section>
+
+            <section class="sfv-screen" id="screen-chapters" aria-label="Chapters" hidden>
+              <div class="sfv-panel sfv-panel-wide">
+                <div class="sfv-panel-head">
+                  <div>
+                    <p class="sfv-kicker">The scrapbook so far</p>
+                    <h2>Chapters</h2>
+                  </div>
+                  <button class="sfv-btn sfv-btn-small" id="btn-chapters-back" type="button">Back</button>
+                </div>
+                <p class="sfv-panel-note" id="chapters-note"></p>
+                <div class="sfv-chapter-grid" id="chapter-grid"></div>
+              </div>
+            </section>
+
+            <section class="sfv-screen" id="screen-scrapbook" aria-label="Vacation scrapbook" hidden>
+              <div class="sfv-panel sfv-panel-wide sfv-scrapbook">
+                <div class="sfv-panel-head">
+                  <div>
+                    <p class="sfv-kicker">Everything worth remembering</p>
+                    <h2>The Vacation Scrapbook</h2>
+                  </div>
+                  <button class="sfv-btn sfv-btn-small" id="btn-scrapbook-back" type="button">Back</button>
+                </div>
+                <p class="sfv-panel-note" id="sb-summary"></p>
+                <div class="sfv-scrap-section">
+                  <h3>Vacation Memories</h3>
+                  <div class="sfv-memory-grid" id="sb-memories"></div>
+                </div>
+                <div class="sfv-scrap-section">
+                  <h3>Clues about the Collector</h3>
+                  <ul class="sfv-clue-list" id="sb-clues"></ul>
+                </div>
+                <div class="sfv-scrap-section">
+                  <h3>Family Luck &amp; hidden lore</h3>
+                  <ul class="sfv-lore-list" id="sb-lore"></ul>
+                </div>
+                <div class="sfv-scrap-section">
+                  <h3>Achievements</h3>
+                  <div class="sfv-achievement-grid" id="sb-achievements"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="sfv-screen" id="screen-settings" aria-label="Settings" hidden>
+              <div class="sfv-panel">
+                <div class="sfv-panel-head">
+                  <div>
+                    <p class="sfv-kicker">Make it yours</p>
+                    <h2>Settings</h2>
+                  </div>
+                  <button class="sfv-btn sfv-btn-small" id="btn-settings-back" type="button">Back</button>
+                </div>
+
+                <div class="sfv-setting-row">
+                  <label for="set-music">Music volume</label>
+                  <input id="set-music" type="range" min="0" max="100" step="1" value="45" />
+                  <output id="set-music-out" for="set-music">45%</output>
+                </div>
+                <div class="sfv-setting-row">
+                  <label for="set-sfx">Sound effects</label>
+                  <input id="set-sfx" type="range" min="0" max="100" step="1" value="70" />
+                  <output id="set-sfx-out" for="set-sfx">70%</output>
+                </div>
+                <div class="sfv-setting-row sfv-setting-check">
+                  <label for="set-muted">Mute everything</label>
+                  <input id="set-muted" type="checkbox" />
+                </div>
+                <h3 class="sfv-settings-heading">Accessibility</h3>
+                <div class="sfv-setting-row sfv-setting-check">
+                  <label for="set-reduced">Reduce motion (no camera drift, less shake)</label>
+                  <input id="set-reduced" type="checkbox" />
+                </div>
+                <div class="sfv-setting-row sfv-setting-check">
+                  <label for="set-shake">Screen shake in boss fights</label>
+                  <input id="set-shake" type="checkbox" />
+                </div>
+                <div class="sfv-setting-row sfv-setting-check">
+                  <label for="set-contrast">Higher contrast text and borders</label>
+                  <input id="set-contrast" type="checkbox" />
+                </div>
+                <div class="sfv-setting-row sfv-setting-check">
+                  <label for="set-large">Larger text</label>
+                  <input id="set-large" type="checkbox" />
+                </div>
+
+                <div class="sfv-settings-footer">
+                  <button class="sfv-btn sfv-btn-danger" id="btn-reset-save" type="button">
+                    Reset all progress
+                  </button>
+                  <span class="sfv-setting-note">Progress is saved on this device only.</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="sfv-screen" id="screen-credits" aria-label="Credits" hidden>
+              <div class="sfv-panel">
+                <div class="sfv-panel-head">
+                  <div>
+                    <p class="sfv-kicker">Thanks for coming along</p>
+                    <h2>Credits</h2>
+                  </div>
+                  <button class="sfv-btn sfv-btn-small" id="btn-credits-back" type="button">Back</button>
+                </div>
+                <ul class="sfv-credit-list" id="credits-list"></ul>
+                <p class="sfv-setting-note">
+                  Built with three.js, plain ES modules, CSS and JSON. No accounts, no servers, no
+                  downloads. All music and sound is synthesised in your browser.
+                </p>
+              </div>
+            </section>
+
+            <section class="sfv-screen" id="screen-pause" aria-label="Paused" hidden>
+              <div class="sfv-panel sfv-panel-narrow">
+                <p class="sfv-kicker">Take a breath</p>
+                <h2>Paused</h2>
+                <p class="sfv-panel-note" id="pause-note">The vacation will wait. It is very patient.</p>
+                <div class="sfv-menu sfv-menu-stack">
+                  <button id="btn-resume" class="sfv-btn sfv-btn-primary" type="button">Resume</button>
+                  <button id="btn-restart" class="sfv-btn" type="button">Restart this vacation</button>
+                  <button id="btn-pause-chapters" class="sfv-btn" type="button">Chapter select</button>
+                  <button id="btn-pause-settings" class="sfv-btn" type="button">Settings</button>
+                  <button id="btn-pause-menu" class="sfv-btn" type="button">Save &amp; quit to menu</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="sfv-screen" id="screen-complete" aria-label="Vacation complete" hidden>
+              <div class="sfv-panel sfv-victory-card">
+                <p class="sfv-kicker" id="lc-kicker">Vacation survived</p>
+                <h2 id="lc-title">The Chicken-Nado</h2>
+                <p id="lc-body">You survived. The family luck went up. Somewhere, a chicken is
+                  telling this story to other chickens.</p>
+                <div class="sfv-victory-stats" id="lc-stats"></div>
+                <div class="sfv-menu sfv-menu-stack">
+                  <button id="lc-next" class="sfv-btn sfv-btn-primary" type="button">Next vacation</button>
+                  <button id="lc-replay" class="sfv-btn" type="button">Explore again</button>
+                  <button id="lc-menu" class="sfv-btn" type="button">Back to menu</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="sfv-screen sfv-screen-cutscene" id="sfv-cutscene" aria-label="Story" hidden>
+              <div class="sfv-panel sfv-cutscene-card">
+                <p class="sfv-kicker" id="cut-kicker">A scrapbook in seven parts</p>
+                <h2 id="cut-title">The summer everything got weird</h2>
+                <div class="sfv-cutscene-body">
+                  <span class="sfv-cutscene-emoji" id="cut-emoji" aria-hidden="true">🧭</span>
+                  <div>
+                    <strong class="sfv-cutscene-speaker" id="cut-speaker">Jira</strong>
+                    <p id="cut-text"></p>
+                  </div>
+                </div>
+                <div class="sfv-menu sfv-menu-row">
+                  <button id="cut-next" class="sfv-btn sfv-btn-primary" type="button">Next ▸</button>
+                  <button id="cut-skip" class="sfv-btn sfv-btn-small" type="button">Skip</button>
+                </div>
+              </div>
+            </section>
+
+            <div class="sfv-loading" id="sfv-loading">
+              <span class="sfv-loading-stamp" aria-hidden="true">🧳</span>
+              <p id="sfv-loading-text">Packing the car…</p>
+            </div>
+
+            <div class="sfv-error" id="sfv-error" hidden>
+              <div class="sfv-panel sfv-panel-narrow">
+                <h2>Could not start the car</h2>
+                <p id="sfv-error-text">
+                  The game data did not load. If you opened this file directly, serve the site over
+                  HTTP instead.
+                </p>
+                <button class="sfv-btn sfv-btn-primary" id="btn-error-reload" type="button">Try again</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="sfv-tip" id="sfv-tip">
+          Walk up to a glowing souvenir and press E, or tap it. Jira can investigate hidden clues;
+          Joel fits through small tunnels. The gate in front of each landmark opens once you have
+          all three memories.
+        </p>
+
+        <a href="../../../games.html" class="back-link">&larr; Back to games</a>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
+    <script type="module" src="./js/game.js?v=10"></script>
+  </body>
+</html>

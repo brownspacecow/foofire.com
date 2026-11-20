@@ -5,6 +5,15 @@
  */
 export const games = [
   {
+    id: 'survive-family-vacation',
+    title: 'Survive Family Vacation',
+    description:
+      'Seven vacations, one very small mystery. Explore the weird version of every family trip with Jira and Joel, collect Vacation Memories, investigate the clues, and face the thing that keeps standing just outside the photo.',
+    image: './public/screenshots/survive-family-vacation.svg',
+    path: './src/games/survive-family-vacation/index.html',
+    featured: true,
+  },
+  {
     id: 'earwarts',
     title: 'Earwarts Academy',
     description:
