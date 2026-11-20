@@ -7,7 +7,7 @@ export const games = [
     id: 'escape-earth',
     title: "Escape Earth: Survive Grandma's House",
     description:
-      'Three levels of bad decisions: survive the drive to Grandma\'s, escape Raggedy Ann and Andy in the dark, and hold the remote against your head without getting caught.',
+      'Four levels of bad decisions: survive the drive to Grandma\'s, escape Raggedy Ann and Andy in the dark, hold the remote against your head, then wrestle Papa.',
     path: './src/games/escape-earth/index.html',
   },
   {

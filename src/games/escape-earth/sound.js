@@ -94,6 +94,11 @@ export function createAudio() {
       tone({ freq: 300, to: 150, dur: 0.5, type: 'sawtooth', gain: 0.13 });
     },
     tick: () => tone({ freq: 340, dur: 0.05, type: 'square', gain: 0.07 }),
+    fart: () => {
+      tone({ freq: 96, to: 44, dur: 0.5, type: 'sawtooth', gain: 0.22 });
+      tone({ freq: 70, to: 52, dur: 0.36, type: 'square', gain: 0.12, delay: 0.16 });
+      noise({ dur: 0.55, gain: 0.16, from: 520, to: 100 });
+    },
     whoosh: () => noise({ dur: 0.3, gain: 0.14, from: 320, to: 1200 }),
     powerup: () => {
       [523, 659, 784, 1047].forEach((freq, i) =>

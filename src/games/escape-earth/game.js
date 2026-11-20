@@ -1,6 +1,7 @@
 import { createDriveLevel } from './level-drive.js';
 import { createDollsLevel } from './level-dolls.js';
 import { createRemoteLevel } from './level-remote.js';
+import { createPapaLevel } from './level-papa.js';
 import { createAudio } from './sound.js';
 import { submitScore, getBest } from '../../utils/scores.js';
 
@@ -17,7 +18,7 @@ const LEVELS = [
     name: 'The Drive',
     create: createDriveLevel,
     intro: {
-      kicker: 'Level 1 of 3',
+      kicker: 'Level 1 of 4',
       title: 'Survive the drive',
       text: "You are eleven minutes into a two hour drive to Grandma's house, and the car is going much faster than the car should. Farm animals are involved now.",
       rules: [
@@ -34,7 +35,7 @@ const LEVELS = [
     name: 'Lights out',
     create: createDollsLevel,
     intro: {
-      kicker: 'Level 2 of 3',
+      kicker: 'Level 2 of 4',
       title: 'The dark is full of dolls',
       text: "The power went out. Grandma said she would be back in a minute. Something in the dark giggled. Raggedy Ann and Andy are awake, and they are not sitting on the shelf any more.",
       rules: [
@@ -51,7 +52,7 @@ const LEVELS = [
     name: 'Remote to head',
     create: createRemoteLevel,
     intro: {
-      kicker: 'Level 3 of 3',
+      kicker: 'Level 3 of 4',
       title: 'Grandma says the remote is radioactive',
       text: 'Grandma is watching her shows. You are holding the remote against your head, because that is what you do. She says the remote gives off radiation. If she turns around and sees you, you are in big trouble.',
       rules: [
@@ -63,6 +64,24 @@ const LEVELS = [
       button: "I'm ready",
     },
     hint: 'Hold SPACE or press and hold to raise the remote. Let go the moment she turns.',
+  },
+  {
+    name: 'Wrestle Papa',
+    create: createPapaLevel,
+    intro: {
+      kicker: 'Level 4 of 4',
+      title: 'Wrestle Papa',
+      text: 'Grandma has summoned Papa. He does not want to hurt you. He does want to prove a point about posture. The rug is the ring, the laundry basket is out of bounds, and the couch is a long way away.',
+      rules: [
+        'Mash ← and → to push. Alternate sides — the same side twice is half as strong.',
+        'Hold SPACE to brace when Papa winds up.',
+        'Papa may offer a finger. Do not pull it. (You are going to pull it.)',
+        'A good brace makes him wobble. Shove him while he is wobbling.',
+        'Push him out twice to win. He only needs twice to win too.',
+      ],
+      button: 'Wrestle Papa',
+    },
+    hint: 'Alternate ← and → to push Papa. Hold SPACE when he winds up to brace.',
   },
 ];
 
@@ -440,7 +459,7 @@ const finishGame = () => {
   showOverlay({
     kicker: saved.isBest ? 'New personal best!' : 'Grandma is asleep',
     title: 'You escaped Grandma’s house',
-    text: 'Three levels. One car. Two dolls. One very radioactive remote. You are standing in the driveway, slightly on fire, completely free.',
+    text: 'Four levels. One car. Two dolls. One radioactive remote. One grandfather who has been waiting for this. You are standing in the driveway, slightly on fire, completely free.',
     stats: [
       ['Total score', totalScore.toLocaleString('en-US')],
       ['Best score', best.toLocaleString('en-US')],
@@ -464,7 +483,7 @@ const showIntro = () => {
   showOverlay({
     kicker: 'A game in three terrible decisions',
     title: 'Escape Earth: Survive Grandma’s House',
-    text: 'Level one: drive to Grandma’s house without destroying the car. Level two: the power is out and the dolls are awake. Level three: hold the remote against your head and do not get caught, because Grandma is certain it is radioactive.',
+    text: 'Level one: drive to Grandma’s house without destroying the car. Level two: the power is out and the dolls are awake. Level three: hold the remote against your head and do not get caught, because Grandma is certain it is radioactive. Level four: Papa would like a word about your posture.',
     rules: LEVELS.map((entry, index) => `Level ${index + 1}: ${entry.intro.title}`),
     button: 'Buckle up',
     onStart: () => beginLevel(0),
