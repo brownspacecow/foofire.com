@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#120a2a" />
+    <title>Muddle Keep | Foofire Games</title>
+    <meta
+      name="description"
+      content="Dig a cosy dungeon, fill it with grumpy little monsters, and politely discourage the tidying knights. A cheerful lair-management game for kids."
+    />
+    <meta property="og:title" content="Muddle Keep | Foofire Games" />
+    <meta
+      property="og:description"
+      content="A cheerful monster-lair tycoon: dig, claim, build rooms, recruit grumpy creatures and defend the Dungeon Heart."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/muddle-keep/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=1" />
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="mk-page">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-header mk-page-head">
+        <h1>Muddle Keep</h1>
+        <p>
+          Dig a cosy dungeon under the hill, fill it with grumpy little monsters, and politely
+          discourage the knights who keep trying to sweep it clean.
+        </p>
+      </section>
+
+      <section class="mk-frame" aria-label="Muddle Keep game">
+        <div class="mk-app" id="mk-app">
+          <div class="mk-stage" id="mk-stage" aria-hidden="true"></div>
+          <div class="mk-hud-root" id="mk-hud"></div>
+          <div class="mk-menu-root" id="mk-menu" hidden></div>
+
+          <div class="mk-loading" id="mk-loading">
+            <span aria-hidden="true">⛏️</span>
+            <p>Digging in…</p>
+          </div>
+
+          <div class="mk-error" id="mk-error" hidden>
+            <h2>Could not open the dungeon</h2>
+            <p>
+              The game data did not load. Serve the repository root over HTTP
+              (<code>python -m http.server 8080</code>) and try again.
+            </p>
+            <button type="button" onclick="location.reload()">Try again</button>
+          </div>
+        </div>
+
+        <p class="mk-page-tip">
+          Drag to dig and claim, tap a room from the tool belt, and keep the Dungeon Heart safe.
+          Two fingers pan and pinch on a phone. Mouse, touch and keyboard all work.
+        </p>
+
+        <a href="../../../games.html" class="back-link">&larr; Back to games</a>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./js/main.js?v=1"></script>
+  </body>
+</html>

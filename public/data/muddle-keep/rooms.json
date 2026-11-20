@@ -1,0 +1,88 @@
+{
+  "rooms": [
+    {
+      "id": "treasury",
+      "name": "Treasury",
+      "icon": "💰",
+      "color": "#e0b257",
+      "cost": 12,
+      "minTiles": 3,
+      "capacityPerTile": 250,
+      "desc": "Gold piles up here. Each tile holds 250 gold."
+    },
+    {
+      "id": "lair",
+      "name": "Lair",
+      "icon": "🛏️",
+      "color": "#a98be0",
+      "cost": 14,
+      "minTiles": 4,
+      "desc": "Cosy blanket heaps. Creatures sleep here, and more of them turn up."
+    },
+    {
+      "id": "hatchery",
+      "name": "Hatchery",
+      "icon": "🍄",
+      "color": "#8fd08a",
+      "cost": 16,
+      "minTiles": 4,
+      "desc": "Mushrooms and snacks. Keeps hungry creatures fed."
+    },
+    {
+      "id": "training",
+      "name": "Training Room",
+      "icon": "🎯",
+      "color": "#e08a6a",
+      "cost": 22,
+      "minTiles": 4,
+      "desc": "Creatures practise here, spending gold to gain levels."
+    },
+    {
+      "id": "library",
+      "name": "Library",
+      "icon": "📚",
+      "color": "#7fb8e0",
+      "cost": 26,
+      "minTiles": 4,
+      "desc": "Dusty books that slowly unlock new spells and traps."
+    },
+    {
+      "id": "workshop",
+      "name": "Workshop",
+      "icon": "🔨",
+      "color": "#b7b7c8",
+      "cost": 28,
+      "minTiles": 4,
+      "desc": "Needed before you can build traps and doors."
+    },
+    {
+      "id": "portal",
+      "name": "Portal",
+      "icon": "🌀",
+      "color": "#d46ae0",
+      "cost": 50,
+      "minTiles": 4,
+      "desc": "A swirling doorway. New creatures wander out of it."
+    }
+  ],
+  "research": [
+    {
+      "id": "door",
+      "name": "Sturdy Doors",
+      "cost": 35,
+      "desc": "Doors your creatures stroll through, but tidy knights must knock down."
+    },
+    {
+      "id": "zap",
+      "name": "Zap Spell",
+      "cost": 60,
+      "desc": "Calls down a fizzy cartoon lightning bolt."
+    },
+    {
+      "id": "dart",
+      "name": "Dart Trap",
+      "cost": 80,
+      "desc": "A trap that pings intruders from a distance."
+    }
+  ]
+}

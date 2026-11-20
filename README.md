@@ -28,6 +28,11 @@ src/
         challenges.js # Pitch, interval, rhythm, melody and chord challenges
         world/      # 3D castle, rooms, NPCs, player and spells
         ui/         # Spellbook, map, quests, satchel, challenges
+    muddle-keep/   # Muddle Keep: cheerful Dungeon Keeper-inspired lair tycoon
+      index.html
+      styles.css
+      vendor/       # vendored three.module.js (MIT)
+      js/           # world, imps, creatures, invaders, spells, render, UI, save
     rough-housing/  # Rough Housing: local two-player couch-fort wrestling
       index.html
       game.js
@@ -113,6 +118,66 @@ Memories, investigate clues about the Vacation Collector, then survive a themed 
 encounter. Levels, dialogue, collectibles, achievements and cutscenes live in
 `public/data/vacation/*.json`, so new vacations are a data change rather than engine
 code. Progress, the scrapbook, achievements and settings are stored in localStorage.
+
+### Muddle Keep
+
+A cheerful monster-lair management game inspired by the classic dungeon-keeper
+genre (original title, creatures and maps). You play a disembodied hand: mark
+dirt to dig, claim floor, paint rooms, then let imps, creatures and traps handle
+the tidying knights who keep marching on your Dungeon Heart.
+
+Plain HTML, CSS and ES modules with a vendored three.js — no build step. Serve
+the repo root as above and open:
+
+```text
+http://localhost:8080/src/games/muddle-keep/
+```
+
+Folder layout:
+
+```text
+src/games/muddle-keep/
+  index.html
+  styles.css
+  vendor/three.module.js
+  js/
+    main.js        # boot, fixed-timestep loop, level flow, saves
+    content.js     # loads the JSON and parses ASCII maps
+    tiles.js       # tile constants
+    world.js       # grid, claiming, rooms, walls, traps, serialisation
+    path.js        # budgeted A* and visibility
+    movement.js    # shared walk-the-path helpers
+    tasks.js       # imp task queue, digging, hauling
+    creatures.js   # creature stats, combat and manager
+    needs.js       # eating, sleeping, training and wandering
+    heroes.js      # invader waves and their AI
+    spells.js      # Keeper spells
+    economy.js     # gold, mana, food, research, wages
+    game.js        # one level: actions, traps, win/lose, snapshots
+    render.js      # three.js scene, instanced terrain, Heart and portal
+    actors.js      # entity sync and pooled particle effects
+    models.js      # procedural creature, imp and knight models
+    camera.js      # angled top-down camera rig
+    input.js       # mouse, touch and keyboard
+    ui.js          # HUD, tool belt and live counters
+    sheets.js      # room, trap and creature sheets
+    tutorial.js    # level tips that advance on player actions
+    menus.js       # title, levels, settings, pause, results
+    save.js        # localStorage profile
+    audio.js       # synthesised Web Audio sound and ambience
+public/data/muddle-keep/
+  rooms.json       # room types and research list
+  creatures.json   # creature stats and requirements
+  spells.json      # Keeper spells
+  traps.json       # traps and doors
+  heroes.json      # invader types
+  levels.json      # five ASCII maps, waves and tutorial steps
+```
+
+Rooms, creatures, spells, traps and all five levels are data changes rather than
+engine code. Progress, the current level snapshot and settings live in
+`localStorage`; settings include volume, mute and a low-quality mode for slower
+phones.
 
 ## Adding a New Game
 

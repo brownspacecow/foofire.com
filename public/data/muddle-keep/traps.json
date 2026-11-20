@@ -1,0 +1,36 @@
+{
+  "traps": [
+    {
+      "id": "spike",
+      "name": "Bounce Trap",
+      "icon": "🔺",
+      "cost": 12,
+      "cooldown": 4,
+      "damage": 24,
+      "kind": "step",
+      "desc": "Boings the first knight who steps on it."
+    },
+    {
+      "id": "dart",
+      "name": "Dart Trap",
+      "icon": "➰",
+      "cost": 18,
+      "cooldown": 2.5,
+      "damage": 10,
+      "range": 3.2,
+      "kind": "auto",
+      "research": "dart",
+      "desc": "Fires a soft dart at nearby intruders."
+    },
+    {
+      "id": "door",
+      "name": "Sturdy Door",
+      "icon": "🚪",
+      "cost": 10,
+      "hp": 130,
+      "kind": "door",
+      "research": "door",
+      "desc": "Creatures stroll through. Knights have to knock."
+    }
+  ]
+}

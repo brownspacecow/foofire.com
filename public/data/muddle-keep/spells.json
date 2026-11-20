@@ -1,0 +1,41 @@
+{
+  "spells": [
+    {
+      "id": "haste",
+      "name": "Zoomies",
+      "icon": "⚡",
+      "cost": 18,
+      "cooldown": 14,
+      "radius": 6,
+      "desc": "Your creatures zip about twice as fast for a while."
+    },
+    {
+      "id": "heal",
+      "name": "Soup of Health",
+      "icon": "🍲",
+      "cost": 24,
+      "cooldown": 18,
+      "radius": 4,
+      "desc": "Warm soup heals every creature nearby."
+    },
+    {
+      "id": "rally",
+      "name": "Rally Yell",
+      "icon": "📣",
+      "cost": 12,
+      "cooldown": 20,
+      "radius": 40,
+      "desc": "Every creature charges the nearest intruder."
+    },
+    {
+      "id": "zap",
+      "name": "Zap",
+      "icon": "🌩️",
+      "cost": 30,
+      "cooldown": 12,
+      "radius": 2.6,
+      "research": "zap",
+      "desc": "A fizzy lightning bolt. Stuns and singes intruders."
+    }
+  ]
+}
