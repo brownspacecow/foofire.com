@@ -2,12 +2,23 @@ import { TAU, clamp, lerp, rand, drawText, ellipse, roundRect } from './util.js'
 
 /* ------------------------------------------------------------------ *
  * Level 4 — Wrestle Papa
- * The rug is the ring, the couch is out of bounds, and Papa has been
- * waiting his whole life for this. Mash left and right to shove him
- * back; brace when he winds up.
+ * The rug is the ring and the couch is where Papa is going. Tap or press
+ * anything to shove; bracing is a bonus, never something you must time.
  * ------------------------------------------------------------------ */
 
-const WINS_NEEDED = 2;
+const SHOVE_AMOUNT = 0.055;
+const SHOVE_KEYS = new Set([
+  'Space',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'KeyA',
+  'KeyD',
+  'KeyW',
+  'KeyS',
+  'KeyE',
+]);
 
 /* Phones have no Space bar, so the brace gets a pad a thumb can hold. */
 const bracePad = (view) => {
@@ -38,27 +49,21 @@ const GOOD_BRACE = [
   'He missed! Get him!',
 ];
 
-const BAD_SHOVE = ['OOF!', 'The rug took the hit.', 'You saw stars. Papa saw victory.'];
-
 export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
   let S;
 
   const reset = () => {
     S = {
       pos: 0,
-      youFalls: 0,
-      papaFalls: 0,
+      shoves: 0,
       time: 0,
       ended: false,
       brace: false,
-      lastSide: null,
-      prevLeft: false,
-      prevRight: false,
+      prevKeys: [],
       prevPointer: false,
       braceHold: false,
-      papa: { state: 'push', timer: 2.6, lean: 0 },
-      fingerCooldown: rand(7, 11),
-      prevAction: false,
+      papa: { state: 'push', timer: rand(2.6, 3.4), lean: 0 },
+      fingerCooldown: rand(6, 9),
       pressCooldown: 0,
       puffs: [],
       flash: 0,
@@ -68,8 +73,6 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
   };
 
   reset();
-
-  const difficulty = () => 1 + S.papaFalls * 0.16 + S.youFalls * 0.08;
 
   const puff = (x, y, count = 4) => {
     for (let i = 0; i < count; i += 1) {
@@ -85,64 +88,43 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
     if (S.puffs.length > 90) S.puffs.splice(0, S.puffs.length - 90);
   };
 
-  const push = (side, x, y) => {
+  const shove = (x, y) => {
     if (S.pressCooldown > 0) return;
-    S.pressCooldown = 0.12;
-    const switching = S.lastSide !== null && S.lastSide !== side;
-    const amount = switching ? 0.05 : 0.015;
-    S.lastSide = side;
-    S.pos = clamp(S.pos + amount, -1, 1);
-    sound.blip(switching ? 780 : 520);
-    puff(x, y, switching ? 4 : 2);
+    S.pressCooldown = 0.09;
+    S.shoves += 1;
+    S.pos = clamp(S.pos + SHOVE_AMOUNT, -1, 1);
+    sound.blip(700);
+    puff(x, y, 3);
   };
 
-  const awardFall = (toPlayer) => {
-    if (toPlayer) {
-      S.youFalls += 1;
-      S.pos = 0;
-      sound.powerup();
-      S.papa.state = 'push';
-      S.papa.timer = 2.4;
-      if (S.youFalls >= WINS_NEEDED && !S.ended) {
-        S.ended = true;
-        sound.win();
-        onWin({
-          title: 'You wrestled Papa',
-          text: 'Papa is flat on the rug, laughing too hard to get up. "Best two out of three," he says, and then immediately falls asleep. The front door is yours.',
-          stats: [
-            ['Falls', `${S.youFalls} – ${S.papaFalls}`],
-            ['Match time', `${Math.floor(S.time)} s`],
-          ],
-          points: 600 + (WINS_NEEDED * 2 - S.papaFalls) * 200 + Math.max(0, 120 - Math.floor(S.time)) * 3,
-        });
-      } else {
-        say('Papa is down! One more fall and the door is yours.', 2.2);
-      }
-      return;
-    }
+  const win = () => {
+    if (S.ended) return;
+    S.ended = true;
+    sound.win();
+    onWin({
+      title: 'You wrestled Papa',
+      text: 'Papa flops onto the rug, laughing too hard to get up. "You win," he says, and immediately falls asleep. The front door is yours.',
+      stats: [
+        ['Shoves', `${S.shoves}`],
+        ['Match time', `${Math.floor(S.time)} s`],
+      ],
+      points: 600 + Math.max(0, 120 - Math.floor(S.time)) * 4,
+    });
+  };
 
-    S.papaFalls += 1;
-    S.pos = 0;
-    S.papa.state = 'push';
-    S.papa.timer = 2.2;
-    S.flash = 0.45;
-    S.shake = 0.5;
-    sound.yell();
-    if (S.papaFalls >= WINS_NEEDED && !S.ended) {
-      S.ended = true;
-      sound.lose();
-      onLose({
-        title: 'Papa wins',
-        text: 'You land in the laundry basket. Papa helps you out, pats your head, and puts the remote on top of the fridge. Grandma is thrilled.',
-        stats: [
-          ['Falls', `${S.youFalls} – ${S.papaFalls}`],
-          ['Match time', `${Math.floor(S.time)} s`],
-        ],
-        points: S.youFalls * 150,
-      });
-    } else {
-      say('Papa got a fall. You are in the laundry basket.', 2.2);
-    }
+  const lose = () => {
+    if (S.ended) return;
+    S.ended = true;
+    sound.lose();
+    onLose({
+      title: 'Papa wins',
+      text: 'You land in the laundry basket. Papa helps you out, pats your head, and puts the remote on top of the fridge. Grandma is thrilled.',
+      stats: [
+        ['Shoves', `${S.shoves}`],
+        ['Match time', `${Math.floor(S.time)} s`],
+      ],
+      points: 150,
+    });
   };
 
   const update = (dt, input, view) => {
@@ -151,10 +133,11 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
     S.flash = Math.max(0, S.flash - dt);
     S.shake = Math.max(0, S.shake - dt);
     S.pressCooldown = Math.max(0, S.pressCooldown - dt);
+    S.fingerCooldown = Math.max(0, S.fingerCooldown - dt);
     S.tauntTimer -= dt;
 
     if (S.tauntTimer <= 0) {
-      S.tauntTimer = rand(6, 10);
+      S.tauntTimer = rand(8, 13);
       say(TAUNTS[Math.floor(Math.random() * TAUNTS.length)], 2);
     }
 
@@ -177,94 +160,82 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
     const brace = braceKey || S.braceHold;
     S.brace = brace;
 
-    /* one fresh press is all it takes to pull the finger. Naturally, you will. */
-    const action = brace || Boolean(keys && keys.has('KeyE')) || pointer.down;
-    const actionEdge = action && !S.prevAction;
-    S.prevAction = action;
-    S.fingerCooldown = Math.max(0, S.fingerCooldown - dt);
-
-    const leftDown = Boolean(keys && (keys.has('ArrowLeft') || keys.has('KeyA')));
-    const rightDown = Boolean(keys && (keys.has('ArrowRight') || keys.has('KeyD')));
-    const pointerPush = pointer.down && !padTouch && !S.braceHold;
-    const pointerLeft = pointerPush && pointer.x < view.w * 0.5;
-    const pointerRight = pointerPush && pointer.x >= view.w * 0.5;
-
-    const leftEdge = (leftDown && !S.prevLeft) || (pointerLeft && !S.prevPointer);
-    const rightEdge = (rightDown && !S.prevRight) || (pointerRight && !S.prevPointer);
-
-    S.prevLeft = leftDown || pointerLeft;
-    S.prevRight = rightDown || pointerRight;
+    /* every fresh press is a shove; tapping is the whole game */
+    const freshKeys = [...keys].filter((code) => SHOVE_KEYS.has(code) && !S.prevKeys.includes(code));
+    S.prevKeys = [...keys];
+    const pointerEdge = pointer.down && !S.prevPointer;
     S.prevPointer = pointer.down;
+    const tapEdge = pointerEdge && !padTouch;
+    const actionEdge = tapEdge || freshKeys.length > 0;
 
-    if (!brace) {
-      const floorY = view.h * 0.86;
-      if (leftEdge) push('left', view.w * 0.4, floorY - 60);
-      if (rightEdge) push('right', view.w * 0.5, floorY - 60);
+    const floorY = view.h * 0.86;
+
+    if (actionEdge && S.papa.state === 'finger') {
+      S.papa.state = 'fart';
+      S.papa.timer = 2.2;
+      S.pos = clamp(S.pos + 0.06, -1, 1);
+      S.shake = 0.6;
+      S.flash = 0.3;
+      S.fingerCooldown = rand(10, 15);
+      sound.fart();
+      say('PFFFT. Papa is laughing too hard to push.', 2);
+    } else if (actionEdge) {
+      shove(pointer.down ? pointer.x : view.w * 0.42, floorY - 60);
     }
 
-    const diff = difficulty();
     S.papa.timer -= dt;
 
     if (S.papa.state === 'push') {
-      S.pos = clamp(S.pos - dt * 0.16 * diff * (brace ? 0.25 : 1), -1, 1);
+      /* Papa leans on you slowly; nothing here is a reaction test. */
+      S.pos = clamp(S.pos - dt * 0.015, -1, 1);
       if (S.papa.timer <= 0) {
         S.papa.state = 'windup';
-        S.papa.timer = 0.9 / diff;
+        S.papa.timer = 1.1;
         sound.tick();
       } else if (S.fingerCooldown <= 0) {
         S.papa.state = 'finger';
-        S.papa.timer = 1.7;
+        S.papa.timer = 2.2;
         sound.boing();
         say('Papa is offering a finger. He says it is a family tradition.', 2);
       }
     } else if (S.papa.state === 'finger') {
-      if (actionEdge) {
-        S.papa.state = 'fart';
-        S.papa.timer = 1.3;
-        S.pos = clamp(S.pos - 0.38, -1, 1);
-        S.shake = 0.7;
-        S.flash = 0.35;
-        S.fingerCooldown = rand(12, 18);
-        sound.fart();
-        say('PFFFT. You were warned. Sort of.', 2);
-      } else if (S.papa.timer <= 0) {
+      if (S.papa.timer <= 0) {
         S.papa.state = 'letdown';
-        S.papa.timer = 0.9;
-        S.pos = clamp(S.pos + 0.08, -1, 1);
-        S.fingerCooldown = rand(12, 18);
-        say('Papa is disappointed. His grip loosens a little.', 1.8);
+        S.papa.timer = 0.8;
+        S.fingerCooldown = rand(10, 15);
+        say('Papa is disappointed. His hands go back to your shoulders.', 1.8);
       }
     } else if (S.papa.state === 'fart') {
       if (S.papa.timer <= 0) {
         S.papa.state = 'push';
-        S.papa.timer = rand(1.8, 2.6) / diff;
+        S.papa.timer = rand(2.8, 3.8);
       }
     } else if (S.papa.state === 'letdown') {
       if (S.papa.timer <= 0) {
         S.papa.state = 'push';
-        S.papa.timer = rand(2, 3) / diff;
+        S.papa.timer = rand(2.4, 3.2);
       }
     } else if (S.papa.state === 'windup') {
       if (S.papa.timer <= 0) {
         if (brace) {
           S.papa.state = 'stumble';
-          S.papa.timer = 0.95;
-          S.pos = clamp(S.pos + 0.18, -1, 1);
+          S.papa.timer = 1.2;
+          S.pos = clamp(S.pos + 0.1, -1, 1);
           sound.boing();
           say(GOOD_BRACE[Math.floor(Math.random() * GOOD_BRACE.length)], 1.6);
         } else {
-          S.pos = clamp(S.pos - 0.34 * diff, -1, 1);
+          S.pos = clamp(S.pos - 0.06, -1, 1);
           S.papa.state = 'push';
-          S.papa.timer = rand(2.2, 3.2) / diff;
-          S.flash = 0.4;
-          S.shake = 0.45;
+          S.papa.timer = rand(2.8, 3.6);
+          S.flash = 0.25;
+          S.shake = 0.35;
           sound.yell();
-          say(BAD_SHOVE[Math.floor(Math.random() * BAD_SHOVE.length)], 1.4);
+          say('Papa pushes back! Keep tapping!', 1.4);
         }
       }
     } else if (S.papa.timer <= 0) {
       S.papa.state = 'push';
-      S.papa.timer = rand(2.1, 3.1) / diff;
+      S.papa.timer = rand(2.8, 3.8);
     }
 
     const leanTarget =
@@ -279,13 +250,12 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
               : 0.05 - S.pos * 0.05;
     S.papa.lean = lerp(S.papa.lean, leanTarget, Math.min(1, dt * 8));
 
-    if (S.pos >= 1) awardFall(true);
-    if (S.pos <= -1) awardFall(false);
+    if (S.pos >= 1) win();
+    if (S.pos <= -1) lose();
   };
 
   const hud = () => ({
     stats: [
-      ['Falls', `You ${S.youFalls} – ${S.papaFalls} Papa`],
       ['Push', `${Math.round(clamp((S.pos + 1) / 2, 0, 1) * 100)}%`],
       [
         'Papa',
@@ -731,8 +701,8 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
       shadow: '#0a0518',
     });
 
-    /* falls and hint */
-    drawText(ctx, `Falls: you ${S.youFalls} — papa ${S.papaFalls}`, w / 2, h * 0.15, {
+    /* keep tapping */
+    drawText(ctx, 'Keep tapping to push Papa!', w / 2, h * 0.15, {
       size: clamp(w * 0.018, 8, 13),
       pixel: true,
       color: '#fff8e7',

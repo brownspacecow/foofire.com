@@ -73,17 +73,16 @@ const LEVELS = [
     intro: {
       kicker: 'Level 4 of 4',
       title: 'Wrestle Papa',
-      text: 'Grandma has summoned Papa. He does not want to hurt you. He does want to prove a point about posture. The rug is the ring, the laundry basket is out of bounds, and the couch is a long way away.',
+      text: 'Grandma has summoned Papa. He does not want to hurt you. He does want to prove a point about posture. It is a friendly wrestle on the rug: tap away, and if he gets loud, brace.',
       rules: [
-        'Mash ← and → (or tap the left and right sides) to push. Alternate sides — the same side twice is half as strong.',
-        'Hold SPACE — or the BRACE pad on a phone — when Papa winds up.',
-        'Papa may offer a finger. Do not pull it. (You are going to pull it.)',
-        'A good brace makes him wobble. Shove him while he is wobbling.',
-        'Push him out twice to win. He only needs twice to win too.',
+        'Tap the screen or press any key to shove Papa toward the couch.',
+        'When Papa shouts HNNNNGH, hold the BRACE pad (or Space) to stop him — or just keep tapping.',
+        'Papa may offer a finger. Pull it and he laughs too hard to push.',
+        'Fill the push bar once and the match is yours.',
       ],
       button: 'Wrestle Papa',
     },
-    hint: 'Alternate ← and →, or tap the left and right sides. Hold SPACE or the BRACE pad to brace.',
+    hint: 'Tap or press anything to shove Papa. Hold SPACE or the BRACE pad when he shouts HNNNNGH.',
   },
 ];
 
