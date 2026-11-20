@@ -9,6 +9,8 @@ import { findPath, invaderCost, hasLineOfSight } from './path.js';
 import { followPath, moveToward, tileDistance } from './movement.js';
 import { T } from './tiles.js';
 
+const DIRT_HP = 100;
+
 export class Hero {
   constructor(game, def, x, y) {
     this.game = game;
@@ -261,7 +263,7 @@ export class HeroManager {
     }
 
     if (tile === T.DIRT || tile === T.GOLD) {
-      let hp = this.tileHp.get(index) ?? 32;
+      let hp = this.tileHp.get(index) ?? DIRT_HP;
       hp -= hero.def.attack * 2.2;
       if (hp <= 0) {
         this.tileHp.delete(index);

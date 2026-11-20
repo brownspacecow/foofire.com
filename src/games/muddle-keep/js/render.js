@@ -297,9 +297,10 @@ export class Renderer {
     const color = new THREE.Color();
     tasks.forEach((task, index) => {
       position.set(task.x + 0.5, 0.6, task.y + 0.5);
+      scale.setScalar(task.blocked ? 0.78 : 1);
       matrix.compose(position, quaternion, scale);
       mesh.setMatrixAt(index, matrix);
-      color.set(task.unreachable ? '#ff5a6e' : TASK_COLORS[task.kind] ?? '#ffffff');
+      color.set(task.blocked ? '#b6a273' : TASK_COLORS[task.kind] ?? '#ffffff');
       mesh.setColorAt(index, color);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -439,7 +440,7 @@ export class Renderer {
       this.rebuildTimer = 0;
     }
 
-    const taskKey = `${world.version}:${game.tasks.size}`;
+    const taskKey = `${world.version}:${game.tasks.revision}:${game.tasks.size}`;
     if (taskKey !== this.lastTaskKey) {
       this.lastTaskKey = taskKey;
       this.rebuildMarkers(game);

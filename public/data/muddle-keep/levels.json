@@ -45,7 +45,7 @@
       "tutorial": [
         {
           "when": "start",
-          "text": "Welcome, Keeper! You are the floating hand. Your imps do the digging. Pick Dig and drag across the brown dirt to mark it."
+          "text": "Welcome, Keeper! You are the floating hand. Pick Dig and drag over brown dirt to plan a tunnel — it can reach into the dark, and imps start as soon as a path gets there. Drag over planned tiles again to un-plan."
         },
         {
           "when": "dug",

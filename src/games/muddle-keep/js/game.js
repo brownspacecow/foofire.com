@@ -84,6 +84,7 @@ export class Game {
     this.time += dt;
     this.world.tickTraps(dt);
     this.tasks.prune();
+    this.tasks.refresh();
     this.economy.update(dt, this);
     this.imps.update(dt);
     this.creatures.update(dt);
@@ -165,7 +166,7 @@ export class Game {
     return { ok: false, message: text };
   }
 
-  applyTool(x, y) {
+  applyTool(x, y, options = {}) {
     if (this.status !== 'playing') return { ok: false };
     const world = this.world;
     if (!world.inBounds(x, y)) return { ok: false };
@@ -173,6 +174,14 @@ export class Game {
     const tool = this.tool;
 
     if (tool.type === 'dig') {
+      const existing = this.tasks.tasks.get(index);
+      if (options.digMode === 'remove') {
+        if (!existing || existing.kind !== 'dig') return { ok: false };
+        this.tasks.remove(x, y);
+        this.emit('undesignate', { x, y, kind: 'dig' });
+        return { ok: true, removed: true };
+      }
+      if (existing?.kind === 'dig') return { ok: true };
       if (!world.diggable(x, y)) return { ok: false, message: 'Only dirt and gold can be dug.' };
       const added = this.tasks.add('dig', x, y);
       if (added) this.emit('designate', { x, y, kind: 'dig' });

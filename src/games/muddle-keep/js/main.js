@@ -19,6 +19,7 @@ const STEP = 1 / 60;
 
 const SOUND_ALIAS = {
   designate: 'click',
+  undesignate: 'click',
   sell: 'click',
   hungry: 'error',
   'creature-left': 'creature-died',

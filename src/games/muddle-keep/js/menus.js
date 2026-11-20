@@ -175,7 +175,7 @@ export class Menus {
       <div class="mk-help">
         <p><strong>You are the hand.</strong> Your imps dig, claim and haul. Mark work and they will do it.</p>
         <ol>
-          <li><strong>Dig</strong> dirt and gold seams to open up space. Gold pays for everything.</li>
+          <li><strong>Dig</strong> dirt and gold seams to plan tunnels. Plans can reach into the dark — imps start as soon as a tunnel reaches them, and tapping a planned tile again un-plans it. Gold pays for everything.</li>
           <li><strong>Claim</strong> dug floor so it becomes part of your dungeon.</li>
           <li><strong>Rooms</strong> go on claimed floor. Treasury holds gold, Lair invites creatures, Hatchery feeds them, Training levels them up, Library researches, Workshop unlocks traps.</li>
           <li><strong>Creatures</strong> fight on their own. Pick them up with the Hand or Slap them for a burst of energy.</li>

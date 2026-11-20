@@ -9,14 +9,57 @@ import { findPath, floorCost } from './path.js';
 import { followPath, tileDistance } from './movement.js';
 import { T } from './tiles.js';
 
-const WORK_TIME = { dig: 1.7, gold: 2.6, claim: 0.8, wall: 2.2 };
+const WORK_TIME = { dig: 6, gold: 9, claim: 0.8, wall: 2.2 };
 const IMP_SPEED = 2.5;
-const MAX_FAILURES = 3;
+const NEIGHBOURS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+/**
+ * Walkable tiles joined to the Heart. A dig job is only ready when an imp
+ * can stand next to it inside this region; planned tunnels deeper in the
+ * dark wait until the tiles before them are dug.
+ */
+function connectedTiles(world) {
+  const seen = new Uint8Array(world.tiles.length);
+  let startX = world.heart.x;
+  let startY = world.heart.y;
+  if (!world.walkable(startX, startY)) {
+    const spot = world.nearestWalkable(startX, startY, 4);
+    if (!spot) return seen;
+    startX = spot.x;
+    startY = spot.y;
+  }
+  const start = world.idx(startX, startY);
+  const queue = [start];
+  seen[start] = 1;
+  for (let head = 0; head < queue.length; head += 1) {
+    const current = queue[head];
+    const cx = world.xOf(current);
+    const cy = world.yOf(current);
+    for (const [dx, dy] of NEIGHBOURS) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      if (!world.inBounds(nx, ny)) continue;
+      const next = world.idx(nx, ny);
+      if (seen[next] || !world.walkable(nx, ny)) continue;
+      seen[next] = 1;
+      queue.push(next);
+    }
+  }
+  return seen;
+}
 
 export class TaskQueue {
   constructor(world) {
     this.world = world;
     this.tasks = new Map();
+    this.revision = 0;
+    this.blockedCount = 0;
+    this.availabilityVersion = -1;
   }
 
   get size() {
@@ -34,10 +77,12 @@ export class TaskQueue {
   add(kind, x, y) {
     const index = this.world.idx(x, y);
     if (this.tasks.has(index)) return false;
-    const task = { index, x, y, kind, claimedBy: null, failures: 0, unreachable: false };
+    const task = { index, x, y, kind, claimedBy: null, blocked: false };
     if (!this.valid(task)) return false;
     this.tasks.set(index, task);
     this.world.designations.set(index, kind);
+    this.revision += 1;
+    this.availabilityVersion = -1;
     return true;
   }
 
@@ -47,7 +92,18 @@ export class TaskQueue {
     if (!task) return null;
     this.tasks.delete(index);
     this.world.designations.delete(index);
-    if (task.claimedBy) task.claimedBy.task = null;
+    const imp = task.claimedBy;
+    task.claimedBy = null;
+    if (imp && imp.task === task) {
+      imp.task = null;
+      imp.path = null;
+      imp.state = 'idle';
+      imp.idleTime = 0;
+      imp.stuck = 0;
+      imp.timer = 0;
+    }
+    this.revision += 1;
+    this.availabilityVersion = -1;
     return task;
   }
 
@@ -57,22 +113,81 @@ export class TaskQueue {
     }
     this.tasks.clear();
     this.world.designations.clear();
+    this.blockedCount = 0;
+    this.availabilityVersion = -1;
+    this.revision += 1;
   }
 
   /** Drop tasks whose tile changed under them (dug by a knight, etc). */
   prune() {
+    let changed = false;
     for (const task of this.tasks.values()) {
       if (!this.valid(task)) {
         this.tasks.delete(task.index);
         this.world.designations.delete(task.index);
-        if (task.claimedBy) task.claimedBy.task = null;
+        const imp = task.claimedBy;
+        task.claimedBy = null;
+        if (imp && imp.task === task) {
+          imp.task = null;
+          imp.path = null;
+          imp.state = 'idle';
+          imp.idleTime = 0;
+          imp.stuck = 0;
+          imp.timer = 0;
+        }
+        changed = true;
       }
     }
+    if (changed) {
+      this.revision += 1;
+      this.availabilityVersion = -1;
+    }
+  }
+
+  /**
+   * Work out which jobs have a walkable route from the Heart. Dig jobs need
+   * a reachable tile beside them; claim and wall jobs need their own tile.
+   * Blocked jobs stay queued and light up as the tunnel reaches them.
+   */
+  refresh() {
+    const version = this.world.version;
+    if (version === this.availabilityVersion) return;
+    this.availabilityVersion = version;
+    const world = this.world;
+    const connected = connectedTiles(world);
+    let blocked = 0;
+    let changed = false;
+    for (const task of this.tasks.values()) {
+      let ready;
+      if (task.kind === 'dig') {
+        ready = world
+          .neighbours(task.x, task.y)
+          .some((cell) => world.walkable(cell.x, cell.y) && connected[world.idx(cell.x, cell.y)]);
+      } else {
+        ready = Boolean(connected[world.idx(task.x, task.y)]);
+      }
+      const shouldBlock = !ready;
+      if (task.blocked !== shouldBlock) {
+        task.blocked = shouldBlock;
+        changed = true;
+      }
+      if (shouldBlock) blocked += 1;
+    }
+    this.blockedCount = blocked;
+    if (changed) this.revision += 1;
+  }
+
+  /** A job that failed a path attempt waits for the map to change again. */
+  markBlocked(task) {
+    if (task.blocked) return;
+    task.blocked = true;
+    this.blockedCount += 1;
+    this.revision += 1;
   }
 
   sortedByDistance(x, y) {
     return [...this.tasks.values()]
-      .filter((task) => !task.claimedBy && task.failures < MAX_FAILURES)
+      .filter((task) => !task.claimedBy && !task.blocked)
       .sort(
         (a, b) =>
           Math.abs(a.x - x) + Math.abs(a.y - y) - (Math.abs(b.x - x) + Math.abs(b.y - y))
@@ -131,7 +246,6 @@ export class ImpManager {
     const world = this.game.world;
     const tasks = this.game.tasks.sortedByDistance(imp.x, imp.y).slice(0, 6);
     for (const task of tasks) {
-      task.unreachable = false;
       if (task.kind === 'dig') {
         const approaches = world
           .neighbours(task.x, task.y)
@@ -154,6 +268,7 @@ export class ImpManager {
             return true;
           }
         }
+        this.game.tasks.markBlocked(task);
       } else {
         const path = this.pathFor(imp, task.x, task.y);
         if (path) {
@@ -165,9 +280,8 @@ export class ImpManager {
           imp.stuck = 0;
           return true;
         }
+        this.game.tasks.markBlocked(task);
       }
-      task.failures += 1;
-      task.unreachable = task.failures >= MAX_FAILURES;
     }
     return false;
   }
@@ -256,35 +370,13 @@ export class ImpManager {
         }
       }
     }
-
-    this.dropUnreachable();
-  }
-
-  /**
-   * A tile nobody can walk next to never gets dug, so leaving it queued makes
-   * the job counter stick. Clear it and tell the player why it vanished.
-   */
-  dropUnreachable() {
-    let dropped = 0;
-    for (const task of this.game.tasks.tasks.values()) {
-      if (task.failures < MAX_FAILURES) continue;
-      this.game.tasks.tasks.delete(task.index);
-      this.game.world.designations.delete(task.index);
-      if (task.claimedBy) task.claimedBy.task = null;
-      dropped += 1;
-    }
-    if (dropped > 0) {
-      this.game.emit('error', {
-        text: 'No tunnel reaches that spot. Dig outwards from your dungeon instead.',
-      });
-    }
   }
 
   release(imp) {
-    if (imp.task) {
-      imp.task.claimedBy = null;
-      imp.task.failures += 1;
-      if (imp.task.failures >= MAX_FAILURES) imp.task.unreachable = true;
+    const task = imp.task;
+    if (task) {
+      task.claimedBy = null;
+      this.game.tasks.markBlocked(task);
     }
     imp.task = null;
     imp.path = null;
@@ -301,6 +393,7 @@ export class ImpManager {
     if (!task) return;
     this.game.tasks.tasks.delete(task.index);
     this.game.world.designations.delete(task.index);
+    this.game.tasks.revision += 1;
 
     if (task.kind === 'dig') {
       const result = this.game.world.dig(task.index);

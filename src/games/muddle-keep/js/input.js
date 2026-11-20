@@ -16,18 +16,21 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
   let moved = false;
   let lastPinch = null;
   let lastMid = null;
+  let digMode = 'add';
 
-  const apply = (clientX, clientY, game) => {
+  const apply = (clientX, clientY, game, options) => {
     const tile = renderer.tileAt(clientX, clientY);
     if (!tile) return;
-    const result = game.applyTool(tile.x, tile.y);
+    const result = game.applyTool(tile.x, tile.y, options);
     if (result?.message) ui.toast(result.message, 'warn');
   };
 
   const beginPaint = (clientX, clientY, game) => {
     const tile = renderer.tileAt(clientX, clientY);
     if (!tile) return;
-    apply(clientX, clientY, game);
+    const existing = game.tasks.tasks.get(game.world.idx(tile.x, tile.y));
+    digMode = game.tool?.type === 'dig' && existing?.kind === 'dig' ? 'remove' : 'add';
+    apply(clientX, clientY, game, { digMode });
     start = { x: clientX, y: clientY, tile };
     mode = 'paint';
     moved = false;
@@ -36,6 +39,7 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
   canvas.addEventListener('pointerdown', (event) => {
     renderer.domElement.setPointerCapture?.(event.pointerId);
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    digMode = 'add';
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       lastPinch = Math.hypot(a.x - b.x, a.y - b.y);
@@ -99,7 +103,7 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     if (Math.hypot(dx, dy) > 7) moved = true;
 
     if (mode === 'paint' && moved && game) {
-      apply(event.clientX, event.clientY, game);
+      apply(event.clientX, event.clientY, game, { digMode });
       return;
     }
     if (mode === 'carry' && game) {
@@ -129,6 +133,7 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     }
     if (pointers.size === 0) {
       mode = 'idle';
+      digMode = 'add';
       start = null;
       if (wasMode === 'tap' && !moved && downStart) {
         const game = getGame();

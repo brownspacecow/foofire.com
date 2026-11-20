@@ -9,7 +9,7 @@ import { closeSheet, openCreatureSheet, openRoomSheet, openSheet, openTrapSheet 
 import { Tutorial } from './tutorial.js';
 
 const TOOLS = [
-  { id: 'dig', label: 'Dig', icon: '⛏️', hint: 'Drag across dirt and gold to mark it for digging.' },
+  { id: 'dig', label: 'Dig', icon: '⛏️', hint: 'Drag to plan a tunnel. Tap or drag over planned tiles again to un-plan.' },
   { id: 'claim', label: 'Claim', icon: '🚩', hint: 'Drag over dug floor to make it yours.' },
   { id: 'room', label: 'Rooms', icon: '🏠', hint: 'Pick a room, then paint claimed floor.' },
   { id: 'wall', label: 'Wall', icon: '🧱', hint: 'Drag on claimed floor to raise a wall (4 gold).' },
@@ -251,7 +251,10 @@ export class GameUI {
       hint = `Carrying ${this.game.handCreature.def.name}. Tap floor to drop.`;
     }
     if (this.game?.tasks.size) {
-      hint += `  ·  ${this.game.tasks.size} jobs queued`;
+      const size = this.game.tasks.size;
+      const blocked = this.game.tasks.blockedCount;
+      hint += `  ·  ${size} job${size === 1 ? '' : 's'} queued`;
+      if (blocked > 0) hint += `  ·  ${blocked} waiting for a tunnel`;
     }
     this.el.hint.textContent = hint;
   }
