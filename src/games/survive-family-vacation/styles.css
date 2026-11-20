@@ -1454,6 +1454,35 @@
   }
 }
 
+/* Touch and narrow screens: the victory card stacked "Explore again" right
+   under "Next vacation" (7px apart, 40px tall), so a thumb aiming low on Next
+   restarted the vacation instead of moving on. Give Next a full-width row of
+   its own, put the two secondary actions below it with a wider gap, and use
+   full-size tap targets. */
+@media (pointer: coarse), (max-width: 860px) {
+  .sfv-victory-card .sfv-menu {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.7rem;
+    margin-top: 1rem;
+  }
+
+  .sfv-victory-card .sfv-menu .sfv-btn {
+    min-height: 3rem;
+    padding: 0.7rem 0.55rem;
+    line-height: 1.3;
+  }
+
+  .sfv-victory-card .sfv-menu .sfv-btn-primary {
+    grid-column: 1 / -1;
+    font-size: 0.92rem;
+  }
+
+  .sfv-victory-card .sfv-menu .sfv-btn:not(.sfv-btn-primary) {
+    margin-top: 0.3rem;
+    font-size: 0.76rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sfv-loading-stamp {
     animation: none;
