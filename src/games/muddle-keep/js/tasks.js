@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------ *
  * Imps and the task queue
  * The player marks tiles; imps pick the nearest sensible job, walk to
- * it, and do it. They dig, claim, wall, and haul gold to the treasury.
+ * it, and do it. They dig, mine endless gold, wall, and haul loot.
  * Pathing is budgeted: a few attempts per idle imp, never per frame.
  * ------------------------------------------------------------------ */
 
@@ -9,7 +9,7 @@ import { findPath, floorCost } from './path.js';
 import { followPath, tileDistance } from './movement.js';
 import { T } from './tiles.js';
 
-const WORK_TIME = { dig: 6, gold: 9, claim: 0.8, wall: 2.2 };
+const WORK_TIME = { dig: 6, gold: 9, wall: 2.2 };
 const IMP_SPEED = 2.5;
 const NEIGHBOURS = [
   [1, 0],
@@ -17,6 +17,7 @@ const NEIGHBOURS = [
   [0, 1],
   [0, -1],
 ];
+const SIDES = NEIGHBOURS;
 
 /**
  * Walkable tiles joined to the Heart. A dig job is only ready when an imp
@@ -68,8 +69,8 @@ export class TaskQueue {
 
   valid(task) {
     const tile = this.world.tile(task.x, task.y);
-    if (task.kind === 'dig') return tile === T.DIRT || tile === T.GOLD;
-    if (task.kind === 'claim') return tile === T.DUG;
+    if (task.kind === 'dig') return tile === T.DIRT;
+    if (task.kind === 'mine') return tile === T.GOLD;
     if (task.kind === 'wall') return tile === T.FLOOR;
     return false;
   }
@@ -77,40 +78,75 @@ export class TaskQueue {
   add(kind, x, y) {
     const index = this.world.idx(x, y);
     if (this.tasks.has(index)) return false;
-    const task = { index, x, y, kind, claimedBy: null, blocked: false };
+    // Old saves used 'dig' for a gold tile; those become endless mines.
+    const taskKind = kind === 'dig' && this.world.tile(x, y) === T.GOLD ? 'mine' : kind;
+    const task = {
+      index,
+      x,
+      y,
+      kind: taskKind,
+      claimedBy: null,
+      blocked: false,
+      sides: taskKind === 'mine' ? [null, null, null, null] : null,
+    };
     if (!this.valid(task)) return false;
     this.tasks.set(index, task);
-    this.world.designations.set(index, kind);
+    this.world.designations.set(index, taskKind);
     this.revision += 1;
     this.availabilityVersion = -1;
     return true;
+  }
+
+  /** Stop an imp on a job and free its side or single claim. */
+  detachImp(imp) {
+    const task = imp.task;
+    if (task) {
+      if (task.sides) {
+        const side = imp.taskSide;
+        if (side != null && task.sides[side] === imp) task.sides[side] = null;
+      } else if (task.claimedBy === imp) {
+        task.claimedBy = null;
+      }
+    }
+    imp.task = null;
+    imp.taskSide = null;
+    imp.taskStand = null;
+    imp.path = null;
+    imp.state = 'idle';
+    imp.idleTime = 0;
+    imp.stuck = 0;
+    imp.timer = 0;
+  }
+
+  releaseTask(task) {
+    if (task.claimedBy) {
+      const imp = task.claimedBy;
+      task.claimedBy = null;
+      this.detachImp(imp);
+    }
+    if (task.sides) {
+      for (let side = 0; side < task.sides.length; side += 1) {
+        const imp = task.sides[side];
+        task.sides[side] = null;
+        if (imp) this.detachImp(imp);
+      }
+    }
   }
 
   remove(x, y) {
     const index = this.world.idx(x, y);
     const task = this.tasks.get(index);
     if (!task) return null;
+    this.releaseTask(task);
     this.tasks.delete(index);
     this.world.designations.delete(index);
-    const imp = task.claimedBy;
-    task.claimedBy = null;
-    if (imp && imp.task === task) {
-      imp.task = null;
-      imp.path = null;
-      imp.state = 'idle';
-      imp.idleTime = 0;
-      imp.stuck = 0;
-      imp.timer = 0;
-    }
     this.revision += 1;
     this.availabilityVersion = -1;
     return task;
   }
 
   clear() {
-    for (const task of this.tasks.values()) {
-      if (task.claimedBy) task.claimedBy.task = null;
-    }
+    for (const task of this.tasks.values()) this.releaseTask(task);
     this.tasks.clear();
     this.world.designations.clear();
     this.blockedCount = 0;
@@ -123,18 +159,9 @@ export class TaskQueue {
     let changed = false;
     for (const task of this.tasks.values()) {
       if (!this.valid(task)) {
+        this.releaseTask(task);
         this.tasks.delete(task.index);
         this.world.designations.delete(task.index);
-        const imp = task.claimedBy;
-        task.claimedBy = null;
-        if (imp && imp.task === task) {
-          imp.task = null;
-          imp.path = null;
-          imp.state = 'idle';
-          imp.idleTime = 0;
-          imp.stuck = 0;
-          imp.timer = 0;
-        }
         changed = true;
       }
     }
@@ -146,7 +173,7 @@ export class TaskQueue {
 
   /**
    * Work out which jobs have a walkable route from the Heart. Dig jobs need
-   * a reachable tile beside them; claim and wall jobs need their own tile.
+   * a reachable tile beside them; wall jobs need their own tile.
    * Blocked jobs stay queued and light up as the tunnel reaches them.
    */
   refresh() {
@@ -159,7 +186,7 @@ export class TaskQueue {
     let changed = false;
     for (const task of this.tasks.values()) {
       let ready;
-      if (task.kind === 'dig') {
+      if (task.kind === 'dig' || task.kind === 'mine') {
         ready = world
           .neighbours(task.x, task.y)
           .some((cell) => world.walkable(cell.x, cell.y) && connected[world.idx(cell.x, cell.y)]);
@@ -187,7 +214,11 @@ export class TaskQueue {
 
   sortedByDistance(x, y) {
     return [...this.tasks.values()]
-      .filter((task) => !task.claimedBy && !task.blocked)
+      .filter((task) => {
+        if (task.blocked) return false;
+        if (task.kind === 'mine') return task.sides.some((imp) => !imp);
+        return !task.claimedBy;
+      })
       .sort(
         (a, b) =>
           Math.abs(a.x - x) + Math.abs(a.y - y) - (Math.abs(b.x - x) + Math.abs(b.y - y))
@@ -204,6 +235,8 @@ class Imp {
     this.pathIndex = 0;
     this.state = 'idle';
     this.task = null;
+    this.taskSide = null;
+    this.taskStand = null;
     this.timer = 0;
     this.carry = 0;
     this.boost = 0;
@@ -246,6 +279,35 @@ export class ImpManager {
     const world = this.game.world;
     const tasks = this.game.tasks.sortedByDistance(imp.x, imp.y).slice(0, 6);
     for (const task of tasks) {
+      if (task.kind === 'mine') {
+        const free = [];
+        for (let side = 0; side < SIDES.length; side += 1) {
+          if (task.sides[side]) continue;
+          const cell = { x: task.x + SIDES[side][0], y: task.y + SIDES[side][1] };
+          if (!world.walkable(cell.x, cell.y) || this.sideOccupied(cell.x, cell.y)) continue;
+          free.push({
+            side,
+            cell,
+            distance: Math.abs(cell.x + 0.5 - imp.x) + Math.abs(cell.y + 0.5 - imp.y),
+          });
+        }
+        free.sort((a, b) => a.distance - b.distance);
+        for (const { side, cell } of free) {
+          const path = this.pathFor(imp, cell.x, cell.y);
+          if (path) {
+            imp.task = task;
+            imp.taskSide = side;
+            imp.taskStand = cell;
+            task.sides[side] = imp;
+            imp.path = path;
+            imp.pathIndex = 0;
+            imp.state = 'to-task';
+            imp.stuck = 0;
+            return true;
+          }
+        }
+        continue;
+      }
       if (task.kind === 'dig') {
         const approaches = world
           .neighbours(task.x, task.y)
@@ -284,6 +346,10 @@ export class ImpManager {
       }
     }
     return false;
+  }
+
+  sideOccupied(x, y) {
+    return this.imps.some((imp) => imp.taskStand?.x === x && imp.taskStand?.y === y);
   }
 
   update(dt) {
@@ -336,9 +402,8 @@ export class ImpManager {
             continue;
           }
           imp.state = 'work';
-          const tile = this.game.world.tile(task.x, task.y);
-          const base = task.kind === 'dig' ? (tile === T.GOLD ? WORK_TIME.gold : WORK_TIME.dig) : WORK_TIME[task.kind];
-          imp.timer = base;
+          // Endless seams use the old gold-mining time under their own kind.
+          imp.timer = WORK_TIME[task.kind === 'mine' ? 'gold' : task.kind];
           imp.workPulse = 0;
         }
         continue;
@@ -374,60 +439,48 @@ export class ImpManager {
 
   release(imp) {
     const task = imp.task;
-    if (task) {
-      task.claimedBy = null;
-      this.game.tasks.markBlocked(task);
-    }
-    imp.task = null;
-    imp.path = null;
-    imp.state = 'idle';
-    imp.idleTime = 0;
-    imp.stuck = 0;
+    if (task && task.kind !== 'mine') this.game.tasks.markBlocked(task);
+    this.game.tasks.detachImp(imp);
   }
 
   finishTask(imp) {
     const task = imp.task;
+    if (!task) {
+      imp.state = 'idle';
+      imp.idleTime = 0;
+      return;
+    }
+
+    if (task.kind === 'mine') {
+      const amount = this.game.world.mineGold(task.index);
+      this.game.tasks.detachImp(imp);
+      if (!amount) return;
+      const treasury = this.game.world.nearestRoomTile('treasury', task.x, task.y);
+      if (treasury && this.game.world.hasRoom('treasury')) {
+        const path = this.pathFor(imp, treasury.x, treasury.y);
+        if (path) {
+          imp.carry = amount;
+          imp.path = path;
+          imp.pathIndex = 0;
+          imp.state = 'haul';
+          return;
+        }
+      }
+      const kept = this.game.economy.addGold(amount, this.game.world);
+      this.game.emit('gold', { x: task.x, y: task.y, amount: kept });
+      return;
+    }
+
     imp.task = null;
     imp.state = 'idle';
     imp.idleTime = 0;
-    if (!task) return;
     this.game.tasks.tasks.delete(task.index);
     this.game.world.designations.delete(task.index);
     this.game.tasks.revision += 1;
 
     if (task.kind === 'dig') {
       const result = this.game.world.dig(task.index);
-      if (result.ok) {
-        this.game.emit('dig', { x: task.x, y: task.y, gold: result.gold });
-        if (result.gold > 0) {
-          const treasury = this.game.world.nearestRoomTile('treasury', task.x, task.y);
-          if (treasury && this.game.world.hasRoom('treasury')) {
-            imp.carry = result.gold;
-            const path = this.pathFor(imp, treasury.x, treasury.y);
-            if (path) {
-              imp.path = path;
-              imp.pathIndex = 0;
-              imp.state = 'haul';
-              imp.task = task;
-              task.claimedBy = imp;
-              return;
-            }
-            const kept = this.game.economy.addGold(imp.carry, this.game.world);
-            imp.carry = 0;
-            this.game.emit('deposit', { x: task.x, y: task.y, amount: kept });
-          } else {
-            const kept = this.game.economy.addGold(result.gold, this.game.world);
-            this.game.emit('gold', { x: task.x, y: task.y, amount: kept });
-          }
-        }
-      }
-      return;
-    }
-
-    if (task.kind === 'claim') {
-      if (this.game.world.claim(task.index)) {
-        this.game.emit('claim', { x: task.x, y: task.y });
-      }
+      if (result.ok) this.game.emit('dig', { x: task.x, y: task.y, gold: result.gold });
       return;
     }
 

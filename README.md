@@ -123,8 +123,8 @@ code. Progress, the scrapbook, achievements and settings are stored in localStor
 
 A cheerful monster-lair management game inspired by the classic dungeon-keeper
 genre (original title, creatures and maps). You play a disembodied hand: mark
-dirt to dig, claim floor, paint rooms, then let imps, creatures and traps handle
-the tidying knights who keep marching on your Dungeon Heart.
+dirt to dig, paint rooms, then let imps, creatures and traps handle the tidying
+knights who keep marching on your Dungeon Heart.
 
 Plain HTML, CSS and ES modules with a vendored three.js — no build step. Serve
 the repo root as above and open:
@@ -144,7 +144,7 @@ src/games/muddle-keep/
     main.js        # boot, fixed-timestep loop, level flow, saves
     content.js     # loads the JSON and parses ASCII maps
     tiles.js       # tile constants
-    world.js       # grid, claiming, rooms, walls, traps, serialisation
+    world.js       # grid, floors, rooms, walls, traps, serialisation
     path.js        # budgeted A* and visibility
     movement.js    # shared walk-the-path helpers
     tasks.js       # imp task queue, digging, hauling

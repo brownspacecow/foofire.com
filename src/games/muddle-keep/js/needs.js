@@ -99,7 +99,7 @@ export function useRoom(manager, creature, state, dt) {
     }
     const spend = Math.min(TRAIN_GOLD_PER_SECOND * dt, game.economy.gold);
     game.economy.gold -= spend;
-    creature.xp += 7 * dt;
+    creature.xp += 7 * creature.workRate * dt;
     creature.mood = Math.min(100, creature.mood + 0.5 * dt);
     creature.workPulse += dt;
     if (creature.workPulse > 0.8) {

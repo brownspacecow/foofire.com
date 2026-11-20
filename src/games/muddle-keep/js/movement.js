@@ -52,16 +52,31 @@ export function moveToward(entity, targetX, targetY, dt, speed) {
 }
 
 /** Physics-lite knock-back, kept on the tiles when possible. */
-export function knockBack(world, entity, fromX, fromY, strength) {
-  const dx = entity.x - fromX;
-  const dy = entity.y - fromY;
-  const length = Math.hypot(dx, dy) || 1;
-  const nx = entity.x + (dx / length) * strength;
-  const ny = entity.y + (dy / length) * strength;
-  if (world.walkable(Math.floor(nx), Math.floor(ny))) {
+export function knockBack(world, entity, fromX, fromY, strength, steps = 5) {
+  if (!(strength > 0)) return 0;
+  let dx = entity.x - fromX;
+  let dy = entity.y - fromY;
+  let length = Math.hypot(dx, dy);
+  if (length < 0.001) {
+    // Slapped dead-centre: shove backwards so the hit still has direction.
+    const angle = entity.facing ?? 0;
+    dx = -Math.sin(angle);
+    dy = -Math.cos(angle);
+    length = 1;
+  }
+  const dirX = dx / length;
+  const dirY = dy / length;
+  const step = strength / Math.max(1, steps);
+  const startX = entity.x;
+  const startY = entity.y;
+  for (let index = 0; index < steps; index += 1) {
+    const nx = entity.x + dirX * step;
+    const ny = entity.y + dirY * step;
+    if (!world.walkable(Math.floor(nx), Math.floor(ny))) break;
     entity.x = nx;
     entity.y = ny;
   }
+  return Math.hypot(entity.x - startX, entity.y - startY);
 }
 
 export function tileDistance(entity, x, y) {

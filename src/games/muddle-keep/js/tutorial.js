@@ -27,7 +27,6 @@ export class Tutorial {
 
   triggerFor(event) {
     if (event.type === 'dig') return 'dug';
-    if (event.type === 'claim') return 'claimed';
     if (event.type === 'wave') return 'wave';
     if (event.type === 'trap-built') return 'trap';
     if (event.type === 'research') return 'research';

@@ -13,9 +13,13 @@ import { HeroManager } from './heroes.js';
 import { SpellBook } from './spells.js';
 import { T } from './tiles.js';
 import { hasLineOfSight } from './path.js';
+import { knockBack } from './movement.js';
 
 const WALL_COST = 4;
 const TRAP_REFUND = 0.5;
+const SLAP_RADIUS = 2.4;
+const SLAP_BOOST_TIME = 6;
+const SLAP_KNOCKBACK = 0.8;
 
 export class Game {
   constructor(content, level, profile = null) {
@@ -31,12 +35,13 @@ export class Game {
     this.spells = new SpellBook(this);
     this.time = 0;
     this.status = 'playing';
+    this.timeStopped = false;
     this.tool = { type: 'dig' };
     this.handCreature = null;
     this.events = [];
     this.readyRooms = new Set();
     this.cameraFocus = { x: this.world.heart.x, y: this.world.heart.y };
-    this.stats = { dug: 0, claimed: 0, mined: 0, heroes: 0, spells: 0, built: 0 };
+    this.stats = { dug: 0, mined: 0, heroes: 0, spells: 0, built: 0 };
     this.spawnStartingCast();
   }
 
@@ -81,17 +86,20 @@ export class Game {
 
   update(dt) {
     if (this.status !== 'playing') return;
-    this.time += dt;
-    this.world.tickTraps(dt);
+    // Planning still works while the clock is stopped: jobs re-evaluate and
+    // rooms can become ready, but nothing moves, spends or counts down.
     this.tasks.prune();
     this.tasks.refresh();
+    this.checkRooms();
+    if (this.timeStopped) return;
+    this.time += dt;
+    this.world.tickTraps(dt);
     this.economy.update(dt, this);
     this.imps.update(dt);
     this.creatures.update(dt);
     this.heroes.update(dt);
     this.updateTraps();
     this.spells.update(dt);
-    this.checkRooms();
   }
 
   checkRooms() {
@@ -161,6 +169,15 @@ export class Game {
     this.emit('tool', tool);
   }
 
+  setTimeStopped(stopped) {
+    if (this.status !== 'playing') return false;
+    const next = Boolean(stopped);
+    if (this.timeStopped === next) return false;
+    this.timeStopped = next;
+    this.emit('time-stop', { stopped: next });
+    return true;
+  }
+
   error(text) {
     this.emit('error', { text });
     return { ok: false, message: text };
@@ -176,27 +193,20 @@ export class Game {
     if (tool.type === 'dig') {
       const existing = this.tasks.tasks.get(index);
       if (options.digMode === 'remove') {
-        if (!existing || existing.kind !== 'dig') return { ok: false };
+        if (!existing || (existing.kind !== 'dig' && existing.kind !== 'mine')) return { ok: false };
         this.tasks.remove(x, y);
         this.emit('undesignate', { x, y, kind: 'dig' });
         return { ok: true, removed: true };
       }
-      if (existing?.kind === 'dig') return { ok: true };
+      if (existing?.kind === 'dig' || existing?.kind === 'mine') return { ok: true };
       if (!world.diggable(x, y)) return { ok: false, message: 'Only dirt and gold can be dug.' };
-      const added = this.tasks.add('dig', x, y);
+      const added = this.tasks.add(world.tile(x, y) === T.GOLD ? 'mine' : 'dig', x, y);
       if (added) this.emit('designate', { x, y, kind: 'dig' });
       return { ok: added };
     }
 
-    if (tool.type === 'claim') {
-      if (world.tile(x, y) !== T.DUG) return { ok: false, message: 'Dig the tile first.' };
-      const added = this.tasks.add('claim', x, y);
-      if (added) this.emit('designate', { x, y, kind: 'claim' });
-      return { ok: added };
-    }
-
     if (tool.type === 'wall') {
-      if (world.tile(x, y) !== T.FLOOR) return { ok: false, message: 'Walls need claimed floor.' };
+      if (world.tile(x, y) !== T.FLOOR) return { ok: false, message: 'Walls need floor.' };
       if (world.rooms[index]) return { ok: false, message: 'That tile is part of a room.' };
       if (x === world.heart.x && y === world.heart.y) return { ok: false };
       if (!this.economy.spend(WALL_COST)) return this.error('Not enough gold for a wall.');
@@ -238,7 +248,7 @@ export class Game {
     const def = this.content.roomById.get(roomId);
     if (!def) return { ok: false };
     if (!this.economy.rooms.has(roomId)) return this.error('That room is not available yet.');
-    if (world.tile(x, y) !== T.FLOOR) return this.error('Rooms need claimed floor.');
+    if (world.tile(x, y) !== T.FLOOR) return this.error('Rooms need floor.');
     if (x === world.heart.x && y === world.heart.y) return this.error('Not on the Heart.');
     if (world.rooms[index] === roomId) return { ok: true };
     if (!this.economy.spend(def.cost)) return this.error(`The ${def.name} needs ${def.cost} gold a tile.`);
@@ -261,7 +271,7 @@ export class Game {
     if (!def) return { ok: false };
     if (!world.hasRoom('workshop')) return this.error('Build a Workshop first.');
     if (!this.economy.traps.has(trapId)) return this.error('That trap has not been researched.');
-    if (world.tile(x, y) !== T.FLOOR) return this.error('Traps need claimed floor.');
+    if (world.tile(x, y) !== T.FLOOR) return this.error('Traps need floor.');
     if (world.trapAt(index) || world.tile(x, y) === T.DOOR) return this.error('There is already something there.');
     if (!this.economy.spend(def.cost)) return this.error(`That needs ${def.cost} gold.`);
     if (def.kind === 'door') world.placeDoor(index);
@@ -292,7 +302,7 @@ export class Game {
     const tile = world.tile(x, y);
     if (tile === T.WALL || tile === T.DOOR) {
       world.walls.delete(index);
-      world.setTile(x, y, T.DUG);
+      world.setTile(x, y, T.FLOOR);
       this.economy.addGold(2, world);
       this.emit('sell', { x, y });
       return { ok: true };
@@ -346,19 +356,27 @@ export class Game {
 
   slapAt(x, y) {
     let hit = 0;
-    this.creatures.forEachNear(x, y, 2.4, (creature) => {
+    const slapX = x + 0.5;
+    const slapY = y + 0.5;
+    this.creatures.forEachNear(x, y, SLAP_RADIUS, (creature) => {
+      if (creature.carried) return;
       creature.mood = Math.min(100, creature.mood + 10);
-      creature.haste = Math.max(creature.haste, 4);
+      creature.slapBoost = Math.max(creature.slapBoost, SLAP_BOOST_TIME);
+      creature.slapHop = 1;
+      knockBack(this.world, creature, slapX, slapY, SLAP_KNOCKBACK);
       creature.path = null;
+      creature.destination = null;
       creature.repath = 0;
       hit += 1;
+      this.emit('slap-hit', { x: creature.x, y: creature.y, name: creature.def.name });
     });
     if (this.imps.slap(x, y)) hit += 1;
-    this.emit('slap', { x, y });
+    this.emit('slap', { x, y, hit });
     return { ok: true, hit };
   }
 
   castAt(x, y, spellId) {
+    if (this.timeStopped) return this.error('Time is stopped — resume to cast spells.');
     const result = this.spells.cast(spellId, x, y);
     if (result.ok) return result;
     if (result.reason === 'mana') return this.error('Not enough mana.');

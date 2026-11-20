@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ *
  * World
- * The grid: tiles, claimed floor, rooms, walls, doors and traps. This
+ * The grid: tiles, floor, rooms, walls, doors and traps. This
  * module owns every rule about what a cell is and what can happen to
  * it. Nothing here knows about three.js or the DOM.
  * ------------------------------------------------------------------ */
@@ -10,6 +10,7 @@ import { T, diggableTile, walkableTile } from './tiles.js';
 const WALL_BASE_HP = 160;
 const DOOR_BASE_HP = 130;
 const GOLD_PER_SEAM = 130;
+const GOLD_PER_MINE = 10;
 const NEIGHBOURS = [
   [1, 0],
   [-1, 0],
@@ -25,6 +26,10 @@ export class World {
     this.w = map.w;
     this.h = map.h;
     this.tiles = Uint8Array.from(map.tiles);
+    // Claiming is gone: any legacy dug tile is already part of the dungeon.
+    for (let index = 0; index < this.tiles.length; index += 1) {
+      if (this.tiles[index] === T.DUG) this.tiles[index] = T.FLOOR;
+    }
     this.rooms = new Array(this.w * this.h).fill(null);
     this.walls = new Map();
     this.traps = new Map();
@@ -41,7 +46,6 @@ export class World {
     this.wallHpBonus = 0;
     this.roomGroups = [];
     this.roomTotals = new Map();
-    this.claimed = 0;
     this.version = 0;
     this.rebuildRooms();
   }
@@ -82,10 +86,6 @@ export class World {
     return diggableTile(this.tile(x, y));
   }
 
-  claimedAt(x, y) {
-    return this.tile(x, y) === T.FLOOR;
-  }
-
   neighbours(x, y) {
     return NEIGHBOURS.map(([dx, dy]) => ({ x: x + dx, y: y + dy })).filter((cell) =>
       this.inBounds(cell.x, cell.y)
@@ -99,7 +99,7 @@ export class World {
     const y = this.yOf(index);
     const tile = this.tiles[index];
     if (!diggableTile(tile)) return { ok: false };
-    this.tiles[index] = T.DUG;
+    this.tiles[index] = T.FLOOR;
     this.walls.delete(index);
     this.designations.delete(index);
     this.version += 1;
@@ -107,13 +107,9 @@ export class World {
     return { ok: true, gold, x, y, wasGold: tile === T.GOLD };
   }
 
-  claim(index) {
-    if (this.tiles[index] !== T.DUG) return false;
-    this.tiles[index] = T.FLOOR;
-    this.designations.delete(index);
-    this.version += 1;
-    this.claimed += 1;
-    return true;
+  /** Endless gold seams: mining pays out without changing the tile. */
+  mineGold(index) {
+    return this.tiles[index] === T.GOLD ? GOLD_PER_MINE : 0;
   }
 
   /* ------------------------------------------------------------- rooms */
@@ -166,15 +162,6 @@ export class World {
       const cy = tiles.reduce((sum, cell) => sum + cell.y, 0) / tiles.length;
       this.roomGroups.push({ type: roomId, tiles, cx, cy });
     }
-    this.rebuildClaimed();
-  }
-
-  rebuildClaimed() {
-    let count = 0;
-    for (let index = 0; index < this.tiles.length; index += 1) {
-      if (this.tiles[index] === T.FLOOR) count += 1;
-    }
-    this.claimed = count;
   }
 
   roomTiles(roomId) {
@@ -266,7 +253,7 @@ export class World {
       return { destroyed: false, left };
     }
     this.walls.delete(index);
-    this.tiles[index] = T.DUG;
+    this.tiles[index] = T.FLOOR;
     this.designations.delete(index);
     this.version += 1;
     return { destroyed: true };
@@ -343,6 +330,10 @@ export class World {
     if (!data || data.w !== this.w || data.h !== this.h) return false;
     if (!Array.isArray(data.tiles) || data.tiles.length !== this.tiles.length) return false;
     this.tiles = Uint8Array.from(data.tiles);
+    // Older saves may still contain legacy dug tiles; adopt them.
+    for (let index = 0; index < this.tiles.length; index += 1) {
+      if (this.tiles[index] === T.DUG) this.tiles[index] = T.FLOOR;
+    }
     this.rooms = Array.from({ length: this.w * this.h }, (_, i) => data.rooms?.[i] || null);
     this.walls = new Map(data.walls ?? []);
     this.traps = new Map(data.traps ?? []);

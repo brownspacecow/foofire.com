@@ -9,14 +9,13 @@ import { closeSheet, openCreatureSheet, openRoomSheet, openSheet, openTrapSheet 
 import { Tutorial } from './tutorial.js';
 
 const TOOLS = [
-  { id: 'dig', label: 'Dig', icon: '⛏️', hint: 'Drag to plan a tunnel. Tap or drag over planned tiles again to un-plan.' },
-  { id: 'claim', label: 'Claim', icon: '🚩', hint: 'Drag over dug floor to make it yours.' },
-  { id: 'room', label: 'Rooms', icon: '🏠', hint: 'Pick a room, then paint claimed floor.' },
-  { id: 'wall', label: 'Wall', icon: '🧱', hint: 'Drag on claimed floor to raise a wall (4 gold).' },
-  { id: 'trap', label: 'Traps', icon: '🪤', hint: 'Pick a trap, then tap a claimed tile.' },
+  { id: 'dig', label: 'Dig', icon: '⛏️', hint: 'Drag to plan a tunnel. Gold seams never run out. Tap planned tiles again to un-plan.' },
+  { id: 'room', label: 'Rooms', icon: '🏠', hint: 'Pick a room, then paint floor.' },
+  { id: 'wall', label: 'Wall', icon: '🧱', hint: 'Drag on floor to raise a wall (4 gold).' },
+  { id: 'trap', label: 'Traps', icon: '🪤', hint: 'Pick a trap, then tap a floor tile.' },
   { id: 'sell', label: 'Sell', icon: '🧹', hint: 'Tap a room, wall, trap or marked tile to undo it.' },
   { id: 'hand', label: 'Hand', icon: '🖐️', hint: 'Tap a creature to pick it up; tap floor to drop it.' },
-  { id: 'slap', label: 'Slap', icon: '👋', hint: 'Tap near creatures or imps to cheer them into action.' },
+  { id: 'slap', label: 'Slap', icon: '👋', hint: 'Tap near creatures to shove them back and speed up their work.' },
 ];
 
 const SPELL_KEYS = ['Q', 'W', 'E', 'R'];
@@ -51,6 +50,7 @@ export class GameUI {
           </div>
           <div class="mk-top-actions">
             <button type="button" data-act="creatures" aria-label="Creature list">👾<span>Creatures</span></button>
+            <button type="button" data-act="time" data-el="time" aria-label="Stop time" aria-pressed="false"><i data-el="time-icon" aria-hidden="true">⏳</i><span data-el="time-label">Time</span></button>
             <button type="button" data-act="help" aria-label="How to play">?</button>
             <button type="button" data-act="pause" aria-label="Pause">❚❚</button>
           </div>
@@ -65,6 +65,10 @@ export class GameUI {
         </div>
 
         <div class="mk-wave" data-el="wave" aria-live="polite"></div>
+
+        <div class="mk-time-banner" data-el="time-banner" role="status" aria-live="polite" hidden>
+          <span aria-hidden="true">⏳</span> Time stopped — plan and build freely.
+        </div>
 
         <div class="mk-research" data-el="research" hidden>
           <span data-el="research-label">Research</span>
@@ -143,6 +147,7 @@ export class GameUI {
     if (action === 'pause') this.options.onPause();
     else if (action === 'help') this.options.onHelp();
     else if (action === 'creatures') this.openCreatureSheet();
+    else if (action === 'time') this.toggleTimeStop();
     else if (action === 'tip-next') this.tutorial.advance();
     else if (action === 'sheet-close') this.closeSheet();
   }
@@ -154,6 +159,7 @@ export class GameUI {
 
   setGame(game) {
     this.game = game;
+    this.updateTimeState();
     this.activeTool = 'dig';
     this.selection = { room: null, trap: null };
     this.closeSheet();
@@ -181,6 +187,23 @@ export class GameUI {
       : null;
     trapButton.querySelector('.mk-tool-icon').textContent = trapDef?.icon ?? '🪤';
     trapButton.querySelector('.mk-tool-label').textContent = trapDef?.name ?? 'Traps';
+  }
+
+  toggleTimeStop() {
+    if (!this.game) return;
+    this.game.setTimeStopped(!this.game.timeStopped);
+    this.updateTimeState();
+  }
+
+  updateTimeState() {
+    const stopped = Boolean(this.game?.timeStopped);
+    if (!this.el.time) return;
+    this.el.time.classList.toggle('active', stopped);
+    this.el.time.setAttribute('aria-pressed', stopped ? 'true' : 'false');
+    this.el.time.setAttribute('aria-label', stopped ? 'Resume time' : 'Stop time');
+    this.el['time-icon'].textContent = stopped ? '▶' : '⏳';
+    this.el['time-label'].textContent = stopped ? 'Resume' : 'Time';
+    this.el['time-banner'].hidden = !stopped;
   }
 
   setActiveTool(toolId) {
@@ -242,10 +265,10 @@ export class GameUI {
     const tool = TOOLS.find((entry) => entry.id === this.activeTool);
     let hint = tool?.hint ?? '';
     if (this.activeTool === 'room' && this.selection.room) {
-      hint = 'Paint claimed floor to build the room.';
+      hint = 'Paint floor to build the room.';
     }
     if (this.activeTool === 'trap' && this.selection.trap) {
-      hint = 'Tap claimed floor to place it.';
+      hint = 'Tap floor to place it.';
     }
     if (this.game?.handCreature) {
       hint = `Carrying ${this.game.handCreature.def.name}. Tap floor to drop.`;
@@ -310,6 +333,7 @@ export class GameUI {
   update(dt, game) {
     if (!game) return;
     this.game = game;
+    this.updateTimeState();
     this.tutorial.update(dt);
 
     this.last += dt;

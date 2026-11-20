@@ -5,7 +5,7 @@
  * ------------------------------------------------------------------ */
 
 const LEVEL_TIPS = [
-  'Dig and claim a few tiles, then paint a Treasury so your gold has a home.',
+  'Dig a few tiles, then paint a Treasury so your gold has a home.',
   'A Lair attracts more creatures. A Hatchery keeps them from grumbling.',
   'Lava is a wall. Build a Library and research something fizzy.',
   'Build a Workshop, then line a corridor with traps and doors.',
@@ -173,16 +173,17 @@ export class Menus {
         <button class="mk-btn small" data-action="back-title">Back</button>
       </div>
       <div class="mk-help">
-        <p><strong>You are the hand.</strong> Your imps dig, claim and haul. Mark work and they will do it.</p>
+        <p><strong>You are the hand.</strong> Your imps dig and haul. Mark work and they will do it.</p>
         <ol>
-          <li><strong>Dig</strong> dirt and gold seams to plan tunnels. Plans can reach into the dark — imps start as soon as a tunnel reaches them, and tapping a planned tile again un-plans it. Gold pays for everything.</li>
-          <li><strong>Claim</strong> dug floor so it becomes part of your dungeon.</li>
-          <li><strong>Rooms</strong> go on claimed floor. Treasury holds gold, Lair invites creatures, Hatchery feeds them, Training levels them up, Library researches, Workshop unlocks traps.</li>
-          <li><strong>Creatures</strong> fight on their own. Pick them up with the Hand or Slap them for a burst of energy.</li>
+          <li><strong>Dig</strong> dirt to plan tunnels. New floor is yours straight away. Plans can reach into the dark — imps start as soon as a tunnel reaches them, and tapping a planned tile again un-plans it.</li>
+          <li><strong>Gold seams never run out.</strong> Mark one with Dig and up to four imps will mine it, one from each open side.</li>
+          <li><strong>Stop time</strong> with the ⏳ button or T to queue digs, rooms and traps while the dungeon holds still. Press Resume when you are ready.</li>
+          <li><strong>Rooms</strong> go on floor. Treasury holds gold, Lair invites creatures, Hatchery feeds them, Training levels them up (veterans grow bigger and tougher), Library researches, Workshop unlocks traps.</li>
+          <li><strong>Creatures</strong> fight on their own. Pick them up with the Hand or Slap them to send them flying and speed up their work.</li>
           <li><strong>Spells</strong> cost mana: Zoomies, Soup of Health, Rally Yell and, later, Zap.</li>
           <li>Knights march on the <strong>Dungeon Heart</strong>. Lose the Heart and the level is over.</li>
         </ol>
-        <p class="mk-small">Controls: drag to paint · two fingers to pan and pinch · wheel to zoom · right-drag or Shift-drag to pan · 1-8 tools · Q/W/E/R spells · P or Esc pause · arrows pan · H help.</p>
+        <p class="mk-small">Controls: drag to paint · two fingers to pan and pinch · wheel to zoom · right-drag or Shift-drag to pan · 1-7 tools · Q/W/E/R spells · T stop time · P or Esc pause · arrows pan · H help.</p>
       </div>
       `,
       'help'

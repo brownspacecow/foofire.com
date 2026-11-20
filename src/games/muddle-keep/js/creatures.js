@@ -36,6 +36,8 @@ export class Creature {
     this.target = null;
     this.carried = false;
     this.haste = 0;
+    this.slapBoost = 0;
+    this.slapHop = 0;
     this.rally = 0;
     this.sleepTimer = 0;
     this.leaveTimer = 0;
@@ -56,7 +58,11 @@ export class Creature {
   }
 
   get speed() {
-    return this.def.speed * (this.haste > 0 ? 2 : 1);
+    return this.def.speed * (this.haste > 0 || this.slapBoost > 0 ? 2 : 1);
+  }
+
+  get workRate() {
+    return this.slapBoost > 0 ? 1.5 : 1;
   }
 
   get xpNeeded() {
@@ -148,6 +154,8 @@ export class CreatureManager {
 
     if (creature.cooldown > 0) creature.cooldown -= dt;
     if (creature.haste > 0) creature.haste = Math.max(0, creature.haste - dt);
+    if (creature.slapBoost > 0) creature.slapBoost = Math.max(0, creature.slapBoost - dt);
+    if (creature.slapHop > 0) creature.slapHop = Math.max(0, creature.slapHop - dt / 0.32);
     if (creature.rally > 0) creature.rally = Math.max(0, creature.rally - dt);
     if (creature.repath > 0) creature.repath -= dt;
     if (creature.workPulse > 0) creature.workPulse -= dt;
@@ -221,7 +229,7 @@ export class CreatureManager {
     creature.facing = Math.atan2(hero.x - creature.x, hero.y - creature.y);
     if (distance <= creature.def.range + 0.45 && this.canReach(creature, hero)) {
       if (creature.cooldown > 0) return;
-      creature.cooldown = creature.def.interval;
+      creature.cooldown = creature.def.interval / creature.workRate;
       const kind =
         creature.def.role === 'Caster' ? 'magic' : creature.def.range > 2 ? 'spit' : 'melee';
       game.emit('attack', {

@@ -5,7 +5,7 @@
  * The camera can also be nudged with the arrow keys.
  * ------------------------------------------------------------------ */
 
-const PAINT_TOOLS = new Set(['dig', 'claim', 'room', 'trap', 'wall', 'sell']);
+const PAINT_TOOLS = new Set(['dig', 'room', 'trap', 'wall', 'sell']);
 const TAP_TOOLS = new Set(['hand', 'slap', 'spell']);
 
 export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZoom }) {
@@ -29,7 +29,8 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     const tile = renderer.tileAt(clientX, clientY);
     if (!tile) return;
     const existing = game.tasks.tasks.get(game.world.idx(tile.x, tile.y));
-    digMode = game.tool?.type === 'dig' && existing?.kind === 'dig' ? 'remove' : 'add';
+    const planned = existing?.kind === 'dig' || existing?.kind === 'mine';
+    digMode = game.tool?.type === 'dig' && planned ? 'remove' : 'add';
     apply(clientX, clientY, game, { digMode });
     start = { x: clientX, y: clientY, tile };
     mode = 'paint';
@@ -191,6 +192,10 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
 
     if (event.code === 'KeyH') {
       ui.toggleHelp();
+      return;
+    }
+    if (event.code === 'KeyT') {
+      if (!event.repeat) ui.toggleTimeStop();
       return;
     }
     if (event.code === 'Equal' || event.code === 'NumpadAdd') {

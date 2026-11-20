@@ -4,8 +4,8 @@
       "id": "level-1",
       "number": 1,
       "name": "Muddy Beginnings",
-      "subtitle": "Dig, claim, and put the gold somewhere safe.",
-      "briefing": "A tidy band of knights is coming to sweep your new home. Dig out a bit of space, claim it, and build a Treasury before they arrive.",
+      "subtitle": "Dig, build, and put the gold somewhere safe.",
+      "briefing": "A tidy band of knights is coming to sweep your new home. Dig out a bit of space, build a Treasury, and be ready before they arrive.",
       "map": [
         "##############################",
         "##############################",
@@ -49,11 +49,7 @@
         },
         {
           "when": "dug",
-          "text": "Nice digging. Now choose Claim and drag over the dark dug tiles so they become yours."
-        },
-        {
-          "when": "claimed",
-          "text": "This is your dungeon now. Pick Rooms, choose Treasury, and paint a few claimed tiles."
+          "text": "Nice digging — the floor is yours now. Pick Rooms, choose Treasury, and paint a few tiles."
         },
         {
           "when": "room",

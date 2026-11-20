@@ -26,6 +26,7 @@ const SOUND_ALIAS = {
   'hero-dug': 'dig',
   'wall-broken': 'wall',
   'trap-built': 'trap',
+  'time-stop': 'click',
   wages: 'wages',
 };
 
@@ -238,6 +239,12 @@ async function boot() {
         ui.toast(`${event.icon ?? ''} ${event.name} ready!`.trim(), 'good');
       }
       if (event.type === 'research') ui.toast(`Researched: ${event.name}`, 'good');
+      if (event.type === 'time-stop') {
+        ui.toast(
+          event.stopped ? 'Time stopped — plan your dungeon.' : 'Time running again.',
+          event.stopped ? 'info' : 'good'
+        );
+      }
       if (event.type === 'wages' && !event.ok) ui.toast('Payday missed! Mood is dropping.', 'warn');
       if (event.type === 'creature-left') ui.toast(`${event.name} stomped off home.`, 'warn');
       if (event.type === 'hero-died' && event.boss) {

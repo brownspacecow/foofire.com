@@ -34,7 +34,7 @@ const COLORS = {
 
 const TASK_COLORS = {
   dig: '#f2c14e',
-  claim: '#6fc3ff',
+  mine: '#ffe08a',
   wall: '#c9c3d6',
 };
 
@@ -236,7 +236,7 @@ export class Renderer {
     this.levelGroup.add(mesh);
     this.terrain = mesh;
 
-    // Warm tint over rooms and a cooler wash over claimed floor.
+    // Warm tint over rooms and a cooler wash over floor.
     const floorTiles = [];
     for (let index = 0; index < count; index += 1) {
       const tile = world.tiles[index];

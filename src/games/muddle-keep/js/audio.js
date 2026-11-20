@@ -120,9 +120,6 @@ class MuddleAudio {
         this.noise({ dur: 0.14, gain: 0.2, freq: 260 });
         this.tone({ freq: 120, endFreq: 70, dur: 0.16, type: 'triangle', gain: 0.16 });
         break;
-      case 'claim':
-        this.tone({ freq: 392, endFreq: 523, dur: 0.16, type: 'triangle', gain: 0.09 });
-        break;
       case 'gold':
       case 'deposit':
         this.arpeggio([84, 88, 91], 0.06, 0.07, 'sine');

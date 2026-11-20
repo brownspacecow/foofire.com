@@ -5,7 +5,14 @@
  * ------------------------------------------------------------------ */
 
 import * as THREE from '../vendor/three.module.js';
-import { buildCreature, buildHero, buildImp, makeBar, makeShadow } from './models.js';
+import {
+  buildCreature,
+  buildHero,
+  buildImp,
+  creatureLevelScale,
+  makeBar,
+  makeShadow,
+} from './models.js';
 
 class Effects {
   constructor(scene) {
@@ -160,36 +167,59 @@ export class ActorLayer {
   }
 
   addActor(entity, kind, def) {
+    const level = kind === 'creature' ? Math.max(1, Number(entity.level) || 1) : 1;
     const group =
       kind === 'creature'
-        ? buildCreature(def)
+        ? buildCreature(def, level)
         : kind === 'imp'
           ? buildImp()
           : buildHero(def);
-    const scale = def?.boss ? 1.55 : 1;
-    group.scale.setScalar(scale);
+    const baseScale = def?.boss ? 1.55 : 1;
+    const levelScale = kind === 'creature' ? creatureLevelScale(level) : 1;
+    group.scale.setScalar(baseScale * levelScale);
     this.scene.add(group);
     const bar = makeBar(kind === 'hero' ? 0.72 : 0.56);
     bar.group.visible = false;
     this.scene.add(bar.group);
-    const shadow = makeShadow(
-      kind === 'imp' ? 0.22 : def?.boss ? 0.66 : (def?.size ?? 0.3) * 1.2
-    );
+    const shadowBase =
+      kind === 'imp' ? 0.22 : def?.boss ? 0.66 : (def?.size ?? 0.3) * 1.2;
+    const shadow = makeShadow(shadowBase);
+    if (kind === 'creature') {
+      const shadowScale = shadowBase * levelScale;
+      shadow.scale.set(shadowScale, shadowScale, 1);
+    }
     shadow.position.y = 0.035;
     this.scene.add(shadow);
     const actor = {
       entity,
       kind,
       def,
+      level,
+      baseScale,
+      shadowBase,
       group,
       bar,
       shadow,
       baseY: def?.id === 'wisp' ? 0.3 : 0,
-      height: kind === 'hero' ? 1.9 : 1.15,
+      height: kind === 'hero' ? 1.9 : kind === 'creature' ? group.userData.height ?? 1.15 : 1.15,
     };
     this.actors.push(actor);
     this.byEntity.set(entity, actor);
     return actor;
+  }
+
+  /** Creature gear changes with level, so rebuild its model on level-up. */
+  relevelActor(actor, entity) {
+    const level = Math.max(1, Number(entity.level) || 1);
+    const group = buildCreature(actor.def, level);
+    group.position.copy(actor.group.position);
+    group.rotation.copy(actor.group.rotation);
+    group.scale.copy(actor.group.scale);
+    this.scene.remove(actor.group);
+    this.scene.add(group);
+    actor.group = group;
+    actor.level = level;
+    actor.height = group.userData.height ?? 1.15;
   }
 
   sync(game, camera, dt) {
@@ -212,10 +242,22 @@ export class ActorLayer {
         continue;
       }
 
+      const entityLevel =
+        actor.kind === 'creature' ? Math.max(1, Number(entity.level) || 1) : 1;
+      if (actor.kind === 'creature' && actor.level !== entityLevel) {
+        this.relevelActor(actor, entity);
+      }
+      const levelScale = actor.kind === 'creature' ? creatureLevelScale(entityLevel) : 1;
+      const visualScale = actor.baseScale * levelScale;
+
       const bob = Math.sin(entity.anim ?? 0) * 0.045;
       let y = actor.baseY + bob;
       if (entity.carried) y = 1.4 + bob * 0.6;
       if (actor.kind === 'hero' && entity.stun > 0) y = 0.1;
+      if (actor.kind === 'creature' && (entity.slapHop ?? 0) > 0) {
+        const hop = 1 - Math.min(1, entity.slapHop);
+        y += Math.sin(hop * Math.PI) * 0.2;
+      }
 
       actor.group.position.set(entity.x, y, entity.y);
       actor.group.rotation.y = entity.facing ?? 0;
@@ -227,15 +269,19 @@ export class ActorLayer {
       }
 
       actor.shadow.position.set(entity.x, 0.035, entity.y);
+      if (actor.kind === 'creature') {
+        const shadowScale = actor.shadowBase * levelScale;
+        actor.shadow.scale.set(shadowScale, shadowScale, 1);
+      }
       const hurt = (entity.hurtFlash ?? 0) > 0;
-      actor.group.scale.setScalar((actor.def?.boss ? 1.55 : 1) * (hurt ? 1.08 : 1));
+      actor.group.scale.setScalar(visualScale * (hurt ? 1.08 : 1));
 
       const ratio = Math.max(0, Math.min(1, entity.hp / (entity.maxHp || entity.hp || 1)));
       const showBar =
         actor.kind === 'hero' ? ratio < 0.999 : ratio < 0.999 || Boolean(entity.target);
       actor.bar.group.visible = showBar;
       if (showBar) {
-        actor.bar.group.position.set(entity.x, y + actor.height, entity.y);
+        actor.bar.group.position.set(entity.x, y + actor.height * visualScale, entity.y);
         actor.bar.group.quaternion.copy(camera.quaternion);
         actor.bar.fill.scale.x = actor.bar.width * 0.94 * ratio;
         actor.bar.fill.position.x = -(actor.bar.width * 0.94 * (1 - ratio)) / 2;
@@ -317,6 +363,10 @@ export class ActorLayer {
         this.effects.ring(x, z, '#ffc9dd', 1.2, 0.35);
         break;
       }
+      case 'slap-hit':
+        this.effects.ring(event.x, event.y, '#ffc9dd', 0.8, 0.3);
+        this.effects.burst(event.x, event.y, '#ffe6a8', 6, 0.8, 0.35);
+        break;
       case 'trap': {
         const [x, z] = at(event.x, event.y);
         this.effects.burst(x, z, '#ffd166', 10, 1.1);

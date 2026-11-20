@@ -67,7 +67,123 @@ export function makeShadow(size) {
 
 /* --------------------------------------------------------------- models */
 
-export function buildCreature(def) {
+const CREATURE_LEVELS = 8; // mirrors MAX_LEVEL in needs.js
+const CREATURE_SCALE_MIN = 0.72;
+const CREATURE_SCALE_MAX = 1.3;
+
+/** Fresh creatures are small; veterans are visibly bigger and broader. */
+export function creatureLevelScale(level = 1) {
+  const clamped = Math.max(1, Math.min(CREATURE_LEVELS, Number(level) || 1));
+  const progress = (clamped - 1) / (CREATURE_LEVELS - 1);
+  return CREATURE_SCALE_MIN + (CREATURE_SCALE_MAX - CREATURE_SCALE_MIN) * progress;
+}
+
+/** Gear that appears as a creature trains up, so veterans look tougher. */
+function addCreatureGear(group, size, level) {
+  const tier = Math.max(1, Math.min(CREATURE_LEVELS, Math.round(Number(level) || 1)));
+  const gear = new THREE.Group();
+  gear.name = 'creature-gear';
+  const leather = mat('#4a3d56');
+  const metal = mat('#777184');
+  const brightMetal = mat('#b4adbd');
+  const gold = mat('#ffd166');
+
+  if (tier >= 2) {
+    gear.add(
+      part(GEO.box, leather, [size * 1.35, size * 0.16, size * 0.16], [
+        0,
+        size * 1.42,
+        size * 0.9,
+      ]),
+      part(GEO.box, brightMetal, [size * 0.18, size * 0.2, size * 0.18], [
+        0,
+        size * 1.42,
+        size * 1.02,
+      ])
+    );
+  }
+
+  if (tier >= 3) {
+    [-1, 1].forEach((side) => {
+      const brow = part(GEO.box, mat('#33263f'), [size * 0.48, size * 0.11, size * 0.13], [
+        side * size * 0.57,
+        size * 2.14,
+        size * 1.52,
+      ]);
+      brow.rotation.z = side * 0.22;
+      gear.add(brow);
+    });
+  }
+
+  if (tier >= 4) {
+    const bigSpikes = tier >= 6;
+    [-1, 1].forEach((side) => {
+      gear.add(
+        part(GEO.sphere, metal, [size * 0.54, size * 0.26, size * 0.58], [
+          side * size * 1.02,
+          size * 1.56,
+          0,
+        ])
+      );
+      const spike = part(
+        GEO.cone,
+        tier >= 8 ? gold : brightMetal,
+        [
+          size * (bigSpikes ? 0.16 : 0.12),
+          size * (bigSpikes ? 0.5 : 0.36),
+          size * (bigSpikes ? 0.16 : 0.12),
+        ],
+        [side * size * 1.12, size * (bigSpikes ? 1.95 : 1.82), 0]
+      );
+      spike.rotation.z = -side * 0.32;
+      gear.add(spike);
+    });
+  }
+
+  if (tier >= 6) {
+    gear.add(
+      part(GEO.box, metal, [size * 1.05, size * 0.52, size * 0.2], [
+        0,
+        size * 1.34,
+        size * 0.92,
+      ])
+    );
+  }
+
+  if (tier >= 8) {
+    const medallion = part(GEO.cylinder, gold, [size * 0.2, size * 0.055, size * 0.2], [
+      0,
+      size * 1.36,
+      size * 1.07,
+    ]);
+    medallion.rotation.x = Math.PI / 2;
+    gear.add(
+      medallion,
+      part(GEO.box, gold, [size * 1.25, size * 0.09, size * 0.12], [
+        0,
+        size * 1.02,
+        size * 0.88,
+      ])
+    );
+    [-1, 1].forEach((side) => {
+      gear.add(
+        part(GEO.sphere, gold, [size * 0.11, size * 0.11, size * 0.11], [
+          side * size * 1.02,
+          size * 1.73,
+          size * 0.36,
+        ])
+      );
+    });
+  }
+
+  if (gear.children.length) {
+    group.add(gear);
+    group.userData.gear = gear;
+  }
+  group.userData.gearLevel = tier;
+}
+
+export function buildCreature(def, level = 1) {
   const group = new THREE.Group();
   const size = Math.max(0.22, def.size ?? 0.3);
   const bodyMat = mat(def.color);
@@ -185,6 +301,10 @@ export function buildCreature(def) {
       ])
     );
   }
+
+  addCreatureGear(group, size, level);
+  const bounds = new THREE.Box3().setFromObject(group);
+  group.userData.height = Math.max(0.55, bounds.max.y + 0.12);
   return group;
 }
 
