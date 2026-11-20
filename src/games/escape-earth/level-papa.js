@@ -9,6 +9,21 @@ import { TAU, clamp, lerp, rand, drawText, ellipse, roundRect } from './util.js'
 
 const WINS_NEEDED = 2;
 
+/* Phones have no Space bar, so the brace gets a pad a thumb can hold. */
+const bracePad = (view) => {
+  const w = clamp(view.w * 0.5, 150, 330);
+  const h = clamp(view.h * 0.085, 44, 60);
+  return {
+    x: (view.w - w) / 2,
+    y: view.h - h - Math.max(8, view.h * 0.022),
+    w,
+    h,
+  };
+};
+
+const inside = (pad, x, y) =>
+  x >= pad.x && x <= pad.x + pad.w && y >= pad.y && y <= pad.y + pad.h;
+
 const TAUNTS = [
   'Papa says this is for your posture.',
   'Papa is not even out of breath.',
@@ -40,6 +55,7 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
       prevLeft: false,
       prevRight: false,
       prevPointer: false,
+      braceHold: false,
       papa: { state: 'push', timer: 2.6, lean: 0 },
       fingerCooldown: rand(7, 11),
       prevAction: false,
@@ -152,7 +168,13 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
 
     const keys = input.keys;
     const pointer = input.pointer;
-    const brace = Boolean(keys && (keys.has('Space') || keys.has('ArrowDown') || keys.has('KeyS')));
+    const pad = bracePad(view);
+    const padTouch = pointer.down && inside(pad, pointer.x, pointer.y);
+    if (padTouch && !S.prevPointer) S.braceHold = true;
+    if (!pointer.down) S.braceHold = false;
+
+    const braceKey = Boolean(keys && (keys.has('Space') || keys.has('ArrowDown') || keys.has('KeyS')));
+    const brace = braceKey || S.braceHold;
     S.brace = brace;
 
     /* one fresh press is all it takes to pull the finger. Naturally, you will. */
@@ -163,8 +185,9 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
 
     const leftDown = Boolean(keys && (keys.has('ArrowLeft') || keys.has('KeyA')));
     const rightDown = Boolean(keys && (keys.has('ArrowRight') || keys.has('KeyD')));
-    const pointerLeft = pointer.down && pointer.x < view.w * 0.5;
-    const pointerRight = pointer.down && pointer.x >= view.w * 0.5;
+    const pointerPush = pointer.down && !padTouch && !S.braceHold;
+    const pointerLeft = pointerPush && pointer.x < view.w * 0.5;
+    const pointerRight = pointerPush && pointer.x >= view.w * 0.5;
 
     const leftEdge = (leftDown && !S.prevLeft) || (pointerLeft && !S.prevPointer);
     const rightEdge = (rightDown && !S.prevRight) || (pointerRight && !S.prevPointer);
@@ -724,6 +747,21 @@ export function createPapaLevel({ sound, say = () => {}, onWin, onLose }) {
         shadow: '#0a0518',
       });
     }
+
+    /* the brace pad: hold it with a thumb */
+    const pad = bracePad(view);
+    ctx.fillStyle = S.brace ? '#8fd7ff' : 'rgba(10, 5, 24, 0.72)';
+    roundRect(ctx, pad.x, pad.y, pad.w, pad.h, pad.h * 0.35);
+    ctx.fill();
+    ctx.strokeStyle = S.brace ? '#fff8e7' : '#8fd7ff';
+    ctx.lineWidth = 3;
+    roundRect(ctx, pad.x, pad.y, pad.w, pad.h, pad.h * 0.35);
+    ctx.stroke();
+    drawText(ctx, S.brace ? 'BRACING' : 'HOLD TO BRACE', pad.x + pad.w / 2, pad.y + pad.h / 2, {
+      size: clamp(pad.h * 0.28, 8, 12),
+      pixel: true,
+      color: S.brace ? '#0a0518' : '#8fd7ff',
+    });
 
     if (S.flash > 0) {
       ctx.fillStyle = `rgba(255, 46, 99, ${S.flash * 0.45})`;
