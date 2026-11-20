@@ -18,8 +18,10 @@
     <meta property="og:site_name" content="Foofire Games" />
     <meta name="theme-color" content="#120a2a" />
     <link rel="stylesheet" href="./styles.css" />
+      <link rel="icon" href="public/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
         <a href="./index.html" class="logo">Foofire Games</a>
@@ -32,7 +34,7 @@
       </div>
     </header>
 
-    <main>
+    <main id="main">
       <section class="hero">
         <div class="hero-content">
           <p class="tagline">Games for kids</p>
@@ -48,6 +50,9 @@
       <section class="games-preview" aria-labelledby="preview-heading">
         <h2 id="preview-heading">Featured Games</h2>
         <div class="games-grid" id="games-grid"></div>
+        <p class="games-preview-more">
+          <a class="more-link" href="./games.html">See all games &rarr;</a>
+        </p>
       </section>
 
       <section class="dedication" aria-labelledby="dedication-heading">
@@ -57,11 +62,27 @@
           Thanks for playing along, testing every level, and dreaming up the games in the first place.
         </p>
       </section>
+
+      <section class="built-with" aria-labelledby="built-with-heading">
+        <h2 id="built-with-heading">Built with Freebuff</h2>
+        <p>
+          Every game on this site was built with Freebuff, an AI coding agent that turns ideas into
+          working software. If you want to make something of your own, this is where these games
+          started.
+        </p>
+        <a
+          class="primary-button"
+          href="https://freebuff.com/?ref=ref-3858f45c-1a8a-413b-8adb-f38a51bd525a&amp;via=rewards_link"
+          target="_blank"
+          rel="noopener sponsored"
+          >Try Freebuff</a
+        >
+      </section>
     </main>
 
     <footer>
       <p>
-        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
       </p>
       <a href="./disclaimer.html">Legal disclaimer</a>
     </footer>

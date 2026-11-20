@@ -17,6 +17,37 @@ Tagline: **Games for kids.**
 src/
   main.js          # Game portal navigation logic
   games/
+    earwarts/       # Earwarts Academy: direct Three.js listening adventure
+      index.html
+      styles.css
+      styles-ui.css
+      styles-challenge.css
+      vendor/       # vendored three.module.js (MIT)
+      js/
+        audio.js    # Web Audio synthesis and ear-training playback
+        challenges.js # Pitch, interval, rhythm, melody and chord challenges
+        world/      # 3D castle, rooms, NPCs, player and spells
+        ui/         # Spellbook, map, quests, satchel, challenges
+    rough-housing/  # Rough Housing: local two-player couch-fort wrestling
+      index.html
+      game.js
+      arena.js
+      characters.js
+      fighters.js
+    roost-rider/    # Roost Rider first-person off-road motorcycle race
+      index.html
+      game.js
+      track.js
+      riders.js
+      audio.js
+    roof-rider/     # Roof Rider 2D rooftop motocross rhythm racer
+      index.html
+      styles.css
+      game.js
+      terrain.js
+      physics.js
+      audio.js
+      ghost.js
     escape-earth/   # Escape Earth: Survive Grandma's House four-level game
       index.html
       game.js
@@ -33,6 +64,14 @@ src/
     ball-pit/       # Ball Pit Bonanza three.js game
       index.html
       game.js
+    christmas-trees-and-missals/  # Christmas Trees and Missals three.js game
+      index.html
+      game.js
+      ornaments.js
+      ornament-models.js
+      town.js
+      cutscene.js
+      sound.js
   components/
   pages/
   data/
@@ -51,11 +90,23 @@ python -m http.server 8080
 
 Then open `http://localhost:8080`.
 
+### Earwarts Academy
+
+Earwarts Academy is plain HTML, CSS and JavaScript with a vendored Three.js module.
+There is no install or build step. Serve the repository root as above and open:
+
+```text
+http://localhost:8080/src/games/earwarts/
+```
+
+The GitHub Pages workflow uploads the source directly, so the game is available at
+`/src/games/earwarts/index.html` alongside the other games.
+
 ## Adding a New Game
 
 1. Create a folder under `src/games/<game-name>/`.
 2. Add an `index.html` that loads three.js (via the esm.sh import map) and your game script.
-3. Add an entry to the `games` array in `src/main.js` with the game's `id`, `title`, `description`, and `path`.
+3. Add an entry to the `games` array in `src/data/games.js` with the game's `id`, `title`, `description`, `image`, and `path`.
 4. Link to the game from `games.html` (handled automatically by `src/main.js`).
 
 ## GitHub Pages Deployment

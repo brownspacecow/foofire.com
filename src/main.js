@@ -3,6 +3,7 @@ import { getBest } from './utils/scores.js';
 
 const gamesGrid = document.querySelector('#games-grid');
 const gameCards = document.querySelector('#game-cards');
+const libraryCount = document.querySelector('#library-count');
 
 const renderGameList = (container, list) => {
   if (!container) return;
@@ -10,6 +11,16 @@ const renderGameList = (container, list) => {
     ...list.map((game) => {
       const card = document.createElement('article');
       card.className = 'game-card';
+
+      if (game.image) {
+        const shot = document.createElement('img');
+        shot.className = 'game-card-shot';
+        shot.src = game.image;
+        shot.alt = `Screenshot of ${game.title}`;
+        shot.loading = 'lazy';
+        shot.decoding = 'async';
+        card.append(shot);
+      }
 
       const title = document.createElement('h3');
       title.textContent = game.title;
@@ -29,7 +40,7 @@ const renderGameList = (container, list) => {
 
       const link = document.createElement('a');
       link.href = game.path;
-      link.textContent = 'Play';
+      link.textContent = best > 0 ? 'Play again' : 'Play';
       link.className = 'primary-button';
       card.append(link);
 
@@ -39,8 +50,15 @@ const renderGameList = (container, list) => {
 };
 
 const init = () => {
-  renderGameList(gamesGrid, games);
+  renderGameList(
+    gamesGrid,
+    games.filter((game) => game.featured)
+  );
   renderGameList(gameCards, games);
+
+  if (libraryCount) {
+    libraryCount.textContent = `${games.length} games, all free and in your browser.`;
+  }
 };
 
 init();

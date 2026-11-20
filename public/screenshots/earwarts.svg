@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="A moonlit magical castle with glowing windows and floating music notes">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#080617"/>
+      <stop offset="55%" stop-color="#1a1038"/>
+      <stop offset="100%" stop-color="#34204f"/>
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff4cf" stop-opacity=".9"/>
+      <stop offset="55%" stop-color="#ffe6a6" stop-opacity=".24"/>
+      <stop offset="100%" stop-color="#ffe6a6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#382a61"/>
+      <stop offset="100%" stop-color="#160f2d"/>
+    </linearGradient>
+    <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c1538"/>
+      <stop offset="100%" stop-color="#0b071a"/>
+    </linearGradient>
+    <radialGradient id="window" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe7a5"/>
+      <stop offset="70%" stop-color="#f5bd62"/>
+      <stop offset="100%" stop-color="#c48332"/>
+    </radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#sky)"/>
+
+  <g fill="#fff4cf">
+    <circle cx="120" cy="90" r="2" opacity=".8"/>
+    <circle cx="245" cy="52" r="1.4" opacity=".55"/>
+    <circle cx="330" cy="128" r="1.8" opacity=".7"/>
+    <circle cx="455" cy="70" r="1.2" opacity=".5"/>
+    <circle cx="610" cy="44" r="1.6" opacity=".65"/>
+    <circle cx="790" cy="94" r="2" opacity=".8"/>
+    <circle cx="905" cy="46" r="1.3" opacity=".55"/>
+    <circle cx="1040" cy="120" r="1.7" opacity=".7"/>
+    <circle cx="1120" cy="70" r="1.2" opacity=".5"/>
+    <circle cx="910" cy="240" r="1.5" opacity=".6"/>
+    <circle cx="170" cy="230" r="1.4" opacity=".5"/>
+    <circle cx="560" cy="180" r="1.3" opacity=".45"/>
+    <circle cx="1080" cy="300" r="1.5" opacity=".5"/>
+  </g>
+
+  <circle cx="950" cy="150" r="170" fill="url(#moonGlow)"/>
+  <circle cx="950" cy="150" r="64" fill="#fff1c5"/>
+  <circle cx="928" cy="138" r="10" fill="#e9d49b" opacity=".65"/>
+  <circle cx="969" cy="170" r="7" fill="#e9d49b" opacity=".5"/>
+  <circle cx="958" cy="122" r="5" fill="#e9d49b" opacity=".45"/>
+
+  <path d="M0 545 Q180 470 340 520 T660 512 T980 528 T1200 505 L1200 675 L0 675 Z" fill="url(#hill)"/>
+
+  <g fill="url(#stone)" stroke="#5a4788" stroke-width="2">
+    <path d="M120 545 L120 360 L190 360 L190 300 L250 300 L250 360 L300 360 L300 545 Z"/>
+    <path d="M250 300 L220 300 L220 250 L250 216 L280 250 L280 300 Z"/>
+    <path d="M470 545 L470 310 L540 310 L540 210 L580 168 L620 210 L620 310 L690 310 L690 545 Z"/>
+    <path d="M600 168 L565 168 L565 120 L580 92 L620 92 L635 120 L635 168 Z"/>
+    <path d="M760 545 L760 380 L830 380 L830 330 L880 330 L880 380 L940 380 L940 545 Z"/>
+    <path d="M840 330 L810 330 L810 285 L845 255 L880 285 L880 330 Z"/>
+    <path d="M1020 545 L1020 400 L1080 400 L1080 545 Z"/>
+    <path d="M1058 400 L1042 400 L1042 366 L1060 340 L1078 366 L1078 400 Z"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <circle cx="167" cy="410" r="17" fill="url(#window)"/>
+    <circle cx="167" cy="470" r="17" fill="url(#window)"/>
+    <circle cx="533" cy="380" r="22" fill="url(#window)"/>
+    <circle cx="533" cy="455" r="22" fill="url(#window)"/>
+    <circle cx="580" cy="250" r="24" fill="url(#window)"/>
+    <circle cx="846" cy="432" r="18" fill="url(#window)"/>
+    <circle cx="894" cy="484" r="18" fill="url(#window)"/>
+    <circle cx="1060" cy="466" r="13" fill="url(#window)"/>
+    <path d="M530 545 L530 500 Q556 462 582 500 L582 545 Z" fill="#f3c56d" opacity=".85"/>
+  </g>
+
+  <g fill="none" stroke="#8f7bc4" stroke-width="3" opacity=".55">
+    <path d="M700 545 L700 512 L760 512 M700 512 L700 482"/>
+    <path d="M330 545 L330 520 L470 520"/>
+    <path d="M940 545 L980 545 L980 520"/>
+  </g>
+
+  <path d="M420 675 Q600 610 760 675 Z" fill="#3a2b5c" opacity=".7"/>
+
+  <g fill="#f2ce7b" filter="url(#glow)">
+    <g transform="translate(700 275) rotate(-12)">
+      <ellipse cx="0" cy="18" rx="13" ry="9"/>
+      <rect x="9" y="-35" width="4" height="55" rx="2"/>
+      <path d="M13 -35 Q34 -30 30 -12 Q22 -20 13 -18 Z"/>
+    </g>
+    <g transform="translate(805 330) rotate(8)">
+      <ellipse cx="0" cy="16" rx="11" ry="8"/>
+      <rect x="8" y="-28" width="3.5" height="44" rx="2"/>
+      <path d="M11.5 -28 Q30 -24 27 -8 Q19 -15 11.5 -13 Z"/>
+    </g>
+    <g transform="translate(370 260) rotate(10)">
+      <ellipse cx="0" cy="16" rx="11" ry="8"/>
+      <rect x="8" y="-28" width="3.5" height="44" rx="2"/>
+      <path d="M11.5 -28 Q30 -24 27 -8 Q19 -15 11.5 -13 Z"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#a99bff" stroke-width="2" opacity=".5">
+    <circle cx="610" cy="88" r="34"/>
+    <circle cx="610" cy="88" r="48" stroke-dasharray="4 8"/>
+    <circle cx="952" cy="150" r="96" stroke-dasharray="3 10"/>
+  </g>
+
+  <g fill="#ffd9f0" opacity=".8">
+    <circle cx="660" cy="330" r="4"/>
+    <circle cx="840" cy="280" r="3"/>
+    <circle cx="760" cy="400" r="3.5"/>
+    <circle cx="440" cy="360" r="3"/>
+    <circle cx="1000" cy="350" r="3.5"/>
+  </g>
+
+  <text x="600" y="626" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#f7e6bd" letter-spacing="8" opacity=".9">A CASTLE THAT LISTENS</text>
+</svg>

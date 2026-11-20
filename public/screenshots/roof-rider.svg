@@ -1,0 +1,238 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="Roof Rider: a dirt bike jumping between the rooftops of a neighborhood at dusk">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241743"/>
+      <stop offset="0.42" stop-color="#703c78"/>
+      <stop offset="0.74" stop-color="#d45d72"/>
+      <stop offset="1" stop-color="#ffb26b"/>
+    </linearGradient>
+    <linearGradient id="roofLeft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d47a4f"/>
+      <stop offset="0.3" stop-color="#a74d34"/>
+      <stop offset="1" stop-color="#5d2a22"/>
+    </linearGradient>
+    <linearGradient id="roofMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7d8d9c"/>
+      <stop offset="0.35" stop-color="#566576"/>
+      <stop offset="1" stop-color="#2d3542"/>
+    </linearGradient>
+    <linearGradient id="roofRight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b96b48"/>
+      <stop offset="0.35" stop-color="#8c452f"/>
+      <stop offset="1" stop-color="#4c231f"/>
+    </linearGradient>
+    <linearGradient id="wallL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7f4a52"/>
+      <stop offset="1" stop-color="#3b2230"/>
+    </linearGradient>
+    <linearGradient id="wallM" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#916055"/>
+      <stop offset="1" stop-color="#43262c"/>
+    </linearGradient>
+    <linearGradient id="wallR" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#684052"/>
+      <stop offset="1" stop-color="#301b2c"/>
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff3cc" stop-opacity="0.65"/>
+      <stop offset="0.35" stop-color="#ffe0a3" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffe0a3" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="frame">
+      <rect width="640" height="360"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="640" height="360" fill="url(#sky)"/>
+
+    <g fill="#fff4d9" opacity="0.55">
+      <circle cx="86" cy="34" r="1.5"/><circle cx="152" cy="62" r="1.1"/>
+      <circle cx="244" cy="30" r="1.4"/><circle cx="318" cy="54" r="1"/>
+      <circle cx="398" cy="28" r="1.6"/><circle cx="454" cy="66" r="1.1"/>
+      <circle cx="560" cy="38" r="1.4"/><circle cx="604" cy="72" r="1"/>
+      <circle cx="212" cy="96" r="1.2"/><circle cx="350" cy="86" r="1.3"/>
+      <circle cx="512" cy="112" r="1"/>
+    </g>
+
+    <circle cx="486" cy="84" r="108" fill="url(#moonGlow)"/>
+    <circle cx="486" cy="84" r="34" fill="#ffe6ad"/>
+    <g fill="#c8a78b" opacity="0.25">
+      <circle cx="474" cy="74" r="7"/><circle cx="498" cy="94" r="5"/><circle cx="496" cy="68" r="3"/>
+    </g>
+
+    <!-- Far rooftops -->
+    <g fill="#6a4b8c" opacity="0.62">
+      <path d="M0 286v-48h22l16-24 16 24h28v48z"/>
+      <path d="M92 286v-34h34l18-28 18 28h32v34z"/>
+      <path d="M214 286v-52h30l17-26 17 26h32v52z"/>
+      <path d="M340 286v-38h26l16-24 16 24h34v38z"/>
+      <path d="M462 286v-46h32l18-30 18 30h34v46z"/>
+      <path d="M586 286v-34h22l14-22 14 22h24v34z"/>
+    </g>
+    <g fill="#ffd98a" opacity="0.42">
+      <rect x="24" y="252" width="7" height="9"/><rect x="112" y="268" width="7" height="9"/>
+      <rect x="236" y="254" width="7" height="9"/><rect x="368" y="258" width="7" height="9"/>
+      <rect x="486" y="250" width="7" height="9"/><rect x="606" y="264" width="7" height="9"/>
+    </g>
+
+    <!-- Near rooftops -->
+    <g fill="#3a275b">
+      <path d="M-10 300v-46h40l22-32 22 32h44v46z"/>
+      <path d="M142 300v-36h28l20-30 20 30h50v36z"/>
+      <path d="M318 300v-52h38l24-36 24 36h44v52z"/>
+      <path d="M500 300v-40h30l18-28 18 28h44v40z"/>
+    </g>
+    <g fill="#ffd98a" opacity="0.55">
+      <rect x="28" y="272" width="9" height="11"/><rect x="64" y="270" width="9" height="11"/>
+      <rect x="164" y="278" width="9" height="11"/><rect x="200" y="276" width="9" height="11"/>
+      <rect x="348" y="266" width="9" height="11"/><rect x="392" y="268" width="9" height="11"/>
+      <rect x="520" y="274" width="9" height="11"/><rect x="572" y="272" width="9" height="11"/>
+    </g>
+    <g fill="#241633">
+      <rect x="54" y="240" width="9" height="24"/><rect x="51" y="237" width="15" height="5"/>
+      <rect x="356" y="224" width="10" height="28"/><rect x="352" y="221" width="18" height="5"/>
+      <rect x="548" y="244" width="9" height="24"/><rect x="545" y="241" width="15" height="5"/>
+    </g>
+
+    <!-- Dark street -->
+    <rect x="0" y="296" width="640" height="64" fill="#160e20"/>
+    <path d="M0 338h640" stroke="#2c1b35" stroke-width="2" opacity="0.7"/>
+
+    <!-- Foreground houses and their walls -->
+    <rect x="0" y="298" width="194" height="62" fill="url(#wallL)"/>
+    <rect x="250" y="298" width="192" height="62" fill="url(#wallM)"/>
+    <rect x="480" y="298" width="160" height="62" fill="url(#wallR)"/>
+
+    <!-- Clapboard lines -->
+    <g stroke="#fff8e7" stroke-width="1" opacity="0.08">
+      <path d="M0 314h194M0 330h194M0 346h194"/>
+      <path d="M250 314h192M250 330h192M250 346h192"/>
+      <path d="M480 314h160M480 330h160M480 346h160"/>
+    </g>
+
+    <!-- Windows and doors -->
+    <g>
+      <g fill="#1a1026"><rect x="26" y="310" width="26" height="30"/><rect x="78" y="310" width="26" height="30"/><rect x="130" y="310" width="26" height="30"/></g>
+      <g fill="#ffd98a"><rect x="29" y="313" width="20" height="24"/><rect x="81" y="313" width="20" height="24"/><rect x="133" y="313" width="20" height="24"/></g>
+      <g stroke="#21142b" stroke-width="2"><path d="M39 313v24M29 325h20M91 313v24M81 325h20M143 313v24M133 325h20"/></g>
+      <rect x="164" y="316" width="20" height="44" fill="#2a1722"/><rect x="167" y="320" width="14" height="36" fill="#4f2a33"/>
+
+      <g fill="#1a1026"><rect x="270" y="310" width="28" height="30"/><rect x="326" y="310" width="28" height="30"/><rect x="382" y="310" width="28" height="30"/></g>
+      <g fill="#ffd98a"><rect x="273" y="313" width="22" height="24"/><rect x="329" y="313" width="22" height="24"/><rect x="385" y="313" width="22" height="24"/></g>
+      <g stroke="#21142b" stroke-width="2"><path d="M284 313v24M273 325h22M340 313v24M329 325h22M396 313v24M385 325h22"/></g>
+      <rect x="410" y="316" width="20" height="44" fill="#2a1722"/><rect x="413" y="320" width="14" height="36" fill="#5d3330"/>
+
+      <g fill="#1a1026"><rect x="504" y="310" width="24" height="30"/><rect x="552" y="310" width="24" height="30"/><rect x="600" y="310" width="24" height="30"/></g>
+      <g fill="#ffd98a"><rect x="507" y="313" width="18" height="24"/><rect x="555" y="313" width="18" height="24"/><rect x="603" y="313" width="18" height="24"/></g>
+      <g stroke="#21142b" stroke-width="2"><path d="M516 313v24M507 325h18M564 313v24M555 325h18M612 313v24M603 325h18"/></g>
+    </g>
+
+    <!-- Roofs: these are the jumps -->
+    <path d="M-12 300L92 234L198 300Z" fill="url(#roofLeft)"/>
+    <path d="M246 300L346 232L446 300Z" fill="url(#roofMid)"/>
+    <path d="M476 300L570 240L664 300Z" fill="url(#roofRight)"/>
+
+    <!-- Tile courses -->
+    <g stroke="#f0a06b" stroke-width="2" opacity="0.3">
+      <path d="M34 284H158M62 264H126M20 292H172"/>
+      <path d="M278 286H416M300 262H394M260 294H434"/>
+      <path d="M505 286H632M532 264H608M490 294H648"/>
+    </g>
+
+    <!-- Ridge caps -->
+    <path d="M70 241L92 234L114 241" stroke="#ffb37e" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <path d="M324 239L346 232L368 239" stroke="#c9d7dd" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <path d="M548 247L570 240L592 247" stroke="#e39a70" stroke-width="6" stroke-linecap="round" fill="none"/>
+
+    <!-- Eaves -->
+    <g stroke="#25142a" stroke-width="5">
+      <path d="M-12 300H198"/><path d="M246 300H446"/><path d="M476 300H664"/>
+    </g>
+
+    <!-- Green backside line on the landing roof -->
+    <path d="M350 246L430 296" stroke="#3ddc84" stroke-width="5" stroke-linecap="round" stroke-dasharray="8 8" opacity="0.9"/>
+    <path d="M405 272l9 9 2-14z" fill="#3ddc84" opacity="0.95"/>
+
+    <!-- Chimneys and roof furniture -->
+    <g>
+      <rect x="48" y="248" width="18" height="38" fill="#3a2036"/>
+      <rect x="44" y="244" width="26" height="7" fill="#5e3448"/>
+      <rect x="56" y="252" width="4" height="28" fill="#6e4050" opacity="0.6"/>
+      <rect x="592" y="252" width="17" height="34" fill="#341d30"/>
+      <rect x="588" y="248" width="25" height="7" fill="#563044"/>
+
+      <g stroke="#1f142d" stroke-width="2" fill="none">
+        <path d="M526 278v-46M512 244h30M512 252h30M516 236l24 16M540 236l-24 16"/>
+      </g>
+      <rect x="518" y="274" width="16" height="8" fill="#2a1936"/>
+    </g>
+
+    <!-- Bike and rider -->
+    <g transform="translate(318 138) rotate(-13)">
+      <g stroke="#2b1b2e" stroke-width="3" opacity="0.35">
+        <path d="M-58 20h-84"/><path d="M-42 -2h-82"/><path d="M-28 -22h-66"/>
+      </g>
+
+      <g transform="translate(-58 44)">
+        <circle r="31" fill="#120a1c"/>
+        <circle r="26" fill="none" stroke="#a9b4c1" stroke-width="3"/>
+        <g stroke="#a9b4c1" stroke-width="2">
+          <path d="M0-22V22M-22 0H22M-15-15L15 15M15-15L-15 15"/>
+        </g>
+        <circle r="3" fill="#fff8e7"/>
+      </g>
+
+      <g transform="translate(68 38)">
+        <circle r="31" fill="#120a1c"/>
+        <circle r="26" fill="none" stroke="#a9b4c1" stroke-width="3"/>
+        <g stroke="#a9b4c1" stroke-width="2">
+          <path d="M0-22V22M-22 0H22M-15-15L15 15M15-15L-15 15"/>
+        </g>
+        <circle r="3" fill="#fff8e7"/>
+      </g>
+
+      <path d="M-20 8L-58 44" stroke="#a9b4c1" stroke-width="6" stroke-linecap="round"/>
+      <path d="M46 -2L68 38" stroke="#d9d2c4" stroke-width="7" stroke-linecap="round"/>
+
+      <path d="M-40 10L8 30 42 20 34 -10 -6 -20 -36 -14Z" fill="#ff2e63"/>
+      <path d="M-6 32Q24 48 42 32L38 16 -2 22Z" fill="#ff2e63"/>
+      <path d="M-64 32Q-26 42 0 30L-16 18 -60 24Z" fill="#17121f"/>
+      <path d="M-24 -20L14 -10 22 -26 -18 -30Z" fill="#17121f"/>
+
+      <path d="M42 34L64 38 66 16 44 12Z" fill="#fff8e7" stroke="#120a1c" stroke-width="2"/>
+      <path d="M46 12Q80 18 98 2" stroke="#ff2e63" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M30 44L52 50" stroke="#a9b4c1" stroke-width="4" stroke-linecap="round"/>
+      <path d="M0 -14Q-32 -8 -62 8" stroke="#8a7a6c" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+      <g>
+        <path d="M-12 34Q2 18 -2 2" stroke="#1d1a2c" stroke-width="12" stroke-linecap="round" fill="none"/>
+        <path d="M4 32Q16 18 12 4" stroke="#3d3355" stroke-width="10" stroke-linecap="round" fill="none"/>
+        <path d="M-2 28Q22 22 36 4" stroke="#ff2e63" stroke-width="12" stroke-linecap="round" fill="none"/>
+        <path d="M2 8Q22 -2 30 6" stroke="#ff2e63" stroke-width="10" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="-16" r="14" fill="#ffd93d" stroke="#120a1c" stroke-width="2"/>
+        <path d="M40 -16L56 -12 38 -4Z" fill="#120a1c"/>
+        <ellipse cx="44" cy="-14" rx="6" ry="3" fill="#2ec4ff"/>
+        <path d="M4 30L-4 38M18 28L12 38" stroke="#120a1c" stroke-width="8" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- Roof dust kicked off the ridge -->
+    <g fill="#ffd98a" opacity="0.55">
+      <circle cx="250" cy="214" r="3"/><circle cx="232" cy="226" r="2"/>
+      <circle cx="266" cy="232" r="2"/><circle cx="218" cy="206" r="1.6"/>
+    </g>
+
+    <g font-family="'Press Start 2P', 'Courier New', monospace">
+      <text x="32" y="58" fill="#fff8e7" font-size="26" letter-spacing="2">ROOF</text>
+      <text x="32" y="88" fill="#ffd93d" font-size="26" letter-spacing="2">RIDER</text>
+      <text x="34" y="112" fill="#ffd9e2" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="800" letter-spacing="3">ROOFTOP RHYTHM RACING</text>
+    </g>
+
+    <g font-family="Inter, system-ui, sans-serif" font-weight="900" fill="#fff8e7" font-size="11">
+      <text x="456" y="352" font-size="10" letter-spacing="1" opacity="0.8">PRELOAD · POP · SCRUB</text>
+    </g>
+  </g>
+
+  <rect x="1" y="1" width="638" height="358" fill="none" stroke="#120a1c" stroke-width="2" opacity="0.35"/>
+</svg>

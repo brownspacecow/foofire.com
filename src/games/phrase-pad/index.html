@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Phrase Pad | Foofire Games</title>
+    <meta
+      name="description"
+      content="Phrase Pad is a pocket touch synth for the browser: drag the neon pad to play any scale, slide up for brightness, and stack looping phrases layer by layer. Free, no downloads."
+    />
+    <meta property="og:title" content="Phrase Pad | Foofire Games" />
+    <meta
+      property="og:description"
+      content="A Kaossilator-style touch synth in your browser. Play the pad, loop a phrase, stack layers."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/phrase-pad/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#170d33" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
+      <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header pp-page-header">
+        <p class="pp-kicker">Pocket touch synth</p>
+        <h1>Phrase Pad</h1>
+        <p>
+          A whole little synthesizer under one finger. Drag across the pad to play a tune, slide
+          up for a brighter tone, and loop your best idea until it turns into a song. Every note
+          belongs to the scale, so there is nothing here you can play wrong.
+        </p>
+      </section>
+
+      <section class="pp-instrument" aria-label="Phrase Pad touch synthesizer">
+        <div class="pp-topbar">
+          <div class="pp-brand">
+            <span class="pp-brand-name">Phrase Pad</span>
+            <span class="pp-brand-model">PP-01 · touch synth</span>
+          </div>
+
+          <div class="pp-lcds">
+            <div class="pp-lcd">
+              <span class="pp-lcd-label">Note</span>
+              <strong id="note-readout">—</strong>
+            </div>
+            <div class="pp-lcd pp-lcd-tone">
+              <span class="pp-lcd-label">Tone</span>
+              <strong id="tone-readout">65%</strong>
+            </div>
+            <div class="pp-lcd pp-lcd-sound">
+              <span class="pp-lcd-label">Sound</span>
+              <strong id="preset-readout">Neon Lead</strong>
+            </div>
+          </div>
+
+          <div class="pp-topbar-actions">
+            <span class="pp-led" id="audio-led" data-state="off" title="Audio status">Off</span>
+            <button
+              class="pp-icon-button"
+              id="mute-button"
+              type="button"
+              aria-pressed="false"
+              aria-label="Mute sound"
+            >
+              🔊
+            </button>
+          </div>
+        </div>
+
+        <div class="pp-body">
+          <div class="pp-playfield">
+            <div class="pp-pad-shell">
+              <canvas
+                id="pad"
+                tabindex="0"
+                role="application"
+                aria-label="Touch pad. Left and right choose the note, up and down change the tone. Use the arrow keys to move and hold Space to play."
+                aria-describedby="pad-instructions"
+              ></canvas>
+              <p class="pp-pad-hint" id="pad-hint" aria-hidden="true">Touch &amp; drag</p>
+            </div>
+            <p class="pp-sr-only" id="pad-live" aria-live="polite"></p>
+
+            <section class="pp-loop" aria-labelledby="loop-title">
+              <div class="pp-loop-head">
+                <h2 class="pp-section-title" id="loop-title">Loop recorder</h2>
+                <span class="pp-loop-status" id="loop-status" role="status" data-state="empty">
+                  Empty
+                </span>
+                <span class="pp-loop-pos" id="loop-position">4 bars</span>
+              </div>
+
+              <div
+                class="pp-loop-track"
+                role="progressbar"
+                aria-label="Loop position"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              >
+                <span class="pp-loop-fill" id="loop-progress"></span>
+              </div>
+
+              <div class="pp-loop-actions">
+                <button
+                  class="pp-btn rec"
+                  id="record-button"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Record a loop"
+                >
+                  <span class="pp-rec-dot" aria-hidden="true"></span>
+                  <span id="record-label">REC</span>
+                </button>
+                <button class="pp-btn play" id="play-button" type="button" aria-pressed="false">
+                  ▶ PLAY
+                </button>
+                <button class="pp-btn ghost" id="clear-button" type="button">CLEAR</button>
+                <label class="pp-inline-select" for="bars-select">
+                  Bars
+                  <select id="bars-select">
+                    <option value="2">2</option>
+                    <option value="4" selected>4</option>
+                    <option value="8">8</option>
+                  </select>
+                </label>
+              </div>
+
+              <p class="pp-loop-hint" id="loop-hint">
+                Hit REC and slide a phrase. It loops automatically, then you can stack layers.
+              </p>
+            </section>
+          </div>
+
+          <aside class="pp-side" aria-label="Synth controls">
+            <div class="pp-group pp-group-sounds">
+              <h2 class="pp-section-title">Sound</h2>
+              <div
+                class="pp-presets"
+                id="preset-buttons"
+                role="group"
+                aria-label="Sound preset"
+              ></div>
+            </div>
+
+            <div class="pp-group pp-group-split">
+              <label class="pp-field" for="key-select">
+                <span>Key</span>
+                <select id="key-select"></select>
+              </label>
+              <label class="pp-field" for="scale-select">
+                <span>Scale</span>
+                <select id="scale-select"></select>
+              </label>
+            </div>
+
+            <div class="pp-group">
+              <h2 class="pp-section-title" id="rate-title">Gate rate</h2>
+              <div
+                class="pp-segmented"
+                id="rate-buttons"
+                role="group"
+                aria-labelledby="rate-title"
+              >
+                <button type="button" data-rate="4" aria-pressed="false">1/4</button>
+                <button type="button" data-rate="2" aria-pressed="true">1/8</button>
+                <button type="button" data-rate="1" aria-pressed="false">1/16</button>
+              </div>
+              <p class="pp-group-note">How often your finger retriggers.</p>
+            </div>
+
+            <div class="pp-group">
+              <h2 class="pp-section-title">Feel</h2>
+
+              <label class="pp-slider" for="tempo-range">
+                <span class="pp-slider-label">
+                  Tempo
+                  <output id="tempo-value" for="tempo-range">120</output>
+                </span>
+                <input
+                  class="pp-range"
+                  id="tempo-range"
+                  type="range"
+                  min="60"
+                  max="180"
+                  step="1"
+                  value="120"
+                />
+              </label>
+
+              <label class="pp-slider" for="gate-range">
+                <span class="pp-slider-label">
+                  Gate
+                  <output id="gate-value" for="gate-range">55%</output>
+                </span>
+                <input
+                  class="pp-range"
+                  id="gate-range"
+                  type="range"
+                  min="10"
+                  max="95"
+                  step="1"
+                  value="55"
+                />
+              </label>
+
+              <label class="pp-slider" for="volume-range">
+                <span class="pp-slider-label">
+                  Volume
+                  <output id="volume-value" for="volume-range">75%</output>
+                </span>
+                <input
+                  class="pp-range"
+                  id="volume-range"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="75"
+                />
+              </label>
+            </div>
+
+            <div class="pp-group pp-group-help">
+              <h2 class="pp-section-title">How to play</h2>
+              <ul class="pp-help" id="pad-instructions">
+                <li>
+                  <strong>Touch the pad.</strong> Left and right play the scale; up and down opens
+                  the tone.
+                </li>
+                <li>
+                  Pick a <strong>sound</strong> and a <strong>scale</strong> — every note is a good
+                  one.
+                </li>
+                <li>
+                  <strong>REC</strong> a phrase, then press <strong>OVERDUB</strong> to stack more
+                  layers. Change sounds and the loop changes with them.
+                </li>
+                <li>Keyboard: focus the pad, use the arrows, hold <kbd>Space</kbd> to play.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+
+        <p class="pp-fineprint">
+          An original browser instrument inspired by handheld touch synths. Not affiliated with
+          KORG. Sound starts on your first touch.
+        </p>
+      </section>
+
+      <a href="../../../games.html" class="pp-back">&larr; Back to games</a>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>

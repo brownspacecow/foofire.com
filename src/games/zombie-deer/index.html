@@ -447,6 +447,7 @@
         }
       }
     </style>
+      <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
     <header class="site-header">
@@ -481,6 +482,15 @@
               </div>
               <div class="meter"><span id="health-fill"></span></div>
             </div>
+            <button
+              id="pause-button"
+              class="hud-mute foofire-pause-btn"
+              type="button"
+              aria-label="Pause game"
+              aria-pressed="false"
+            >
+              ❚❚
+            </button>
             <button
               id="fullscreen-button"
               class="hud-mute hud-fullscreen"
@@ -568,7 +578,7 @@
 
     <footer>
       <p>
-        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
       </p>
       <a href="../../../disclaimer.html">Legal disclaimer</a>
     </footer>

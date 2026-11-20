@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { PLUSHIES, FAMILY_ICONS, buildPlushie } from './plushies.js';
 import { sound } from './sound.js';
+import { clearScores, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 // ------------------------------------------------------------------ DOM
 const container = document.querySelector('#game-container');
@@ -1148,6 +1150,11 @@ function saveProgress() {
   }
 }
 
+/** Mirror the Plushie Dex into the shared high score store. */
+function recordCollection() {
+  submitScore('claw-machine', state.collected.size);
+}
+
 function updateMuteButton() {
   const enabled = sound.isEnabled();
   muteButton.textContent = enabled ? '🔊' : '🔇';
@@ -1428,6 +1435,7 @@ function awardPrize(entry) {
   showBanner(entry);
   updateHud();
   saveProgress();
+  recordCollection();
 
   if (state.complete) {
     sound.complete();
@@ -1554,6 +1562,7 @@ function startOver() {
   } catch {
     storageAvailable = false;
   }
+  clearScores('claw-machine');
 
   buildDex();
   resetMachine({ resetTries: true, announce: false });
@@ -1628,6 +1637,7 @@ function setupInput() {
   muteButton.addEventListener('click', () => {
     sound.unlock();
     sound.setEnabled(!sound.isEnabled());
+    writeMuted(!sound.isEnabled());
     if (sound.isEnabled()) sound.click();
     updateMuteButton();
     saveProgress();
@@ -2064,9 +2074,11 @@ function animate() {
 }
 
 loadProgress();
+recordCollection();
 setupInput();
 buildDex();
 resetMachine({ announce: false });
+if (readMuted('clawMachineMuted')) sound.setEnabled(false);
 updateMuteButton();
 updateSaveNote();
 

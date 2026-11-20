@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { createAudio } from './audio.js';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
 
 /* ------------------------------------------------------------------ *
  * DOM
@@ -30,11 +32,7 @@ const muteButton = document.querySelector('#mute-button');
 
 const audio = createAudio();
 
-try {
-  if (window.localStorage.getItem('zombieDeerMuted') === '1') audio.setMuted(true);
-} catch (error) {
-  /* Storage can be blocked; sound just defaults to on. */
-}
+if (readMuted('zombieDeerMuted')) audio.setMuted(true);
 
 const refreshMuteButton = () => {
   const muted = audio.isMuted();
@@ -95,12 +93,8 @@ if (fullscreenButton) {
 muteButton.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMuteButton();
-  try {
-    window.localStorage.setItem('zombieDeerMuted', audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   if (!audio.isMuted()) audio.uiClick();
 });
 
@@ -4031,6 +4025,12 @@ function animate(now) {
   lastTime = now;
   const time = now / 1000;
 
+  autoPause.sync();
+  if (autoPause.paused) {
+    renderer.render(scene, camera);
+    return;
+  }
+
   updateCamera(time);
   updateFeedback(dt);
   if (state.phase === 'wave' || state.phase === 'break') updateGame(dt);
@@ -4057,6 +4057,16 @@ if (gameTip && window.matchMedia && window.matchMedia('(pointer: coarse)').match
   gameTip.textContent =
     'Tap a reindeer to throw a snowball. Tap the front door for Bear, the chimney for Santa, or the moon for the little red motorcycles. Hit the tree star three times and Dad comes out with his disc golf bag.';
 }
+
+/* Timed waves freeze when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  button: document.querySelector('#pause-button'),
+  shouldPause: () => state.phase === 'wave' || state.phase === 'break',
+  message: 'Snowball fight paused',
+});
 
 window.addEventListener('resize', sizeScene);
 sizeScene();

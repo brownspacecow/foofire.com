@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Soft Reset | Foofire Games</title>
+    <meta
+      name="description"
+      content="Soft Reset is a two-minute rhythm break: two original early-2000s hip-hop instrumentals and a reggae one-drop, four pads, no failing. Take a breath and tap along."
+    />
+    <meta property="og:title" content="Soft Reset | Foofire Games" />
+    <meta
+      property="og:description"
+      content="A two-minute rhythm break with two early-2000s hip-hop grooves and a reggae one-drop. No failing, no timers, nothing to lose."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/rhythm-break/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#1a1022" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
+      <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="soft-reset">
+        <section class="sr-hero" aria-labelledby="sr-title">
+          <div class="sr-hero-copy">
+            <p class="sr-kicker">A break, in three tracks</p>
+            <h1 id="sr-title">Soft Reset</h1>
+            <p class="sr-lede">
+              Two minutes for the person who has been holding everything together since 6 a.m.
+              Two early-2000s hip-hop grooves and a sun-warmed reggae one-drop, all original and
+              generated live. Tap along, breathe out, and let the rest wait.
+            </p>
+            <p class="sr-hero-note">
+              No failing. No timers. Nothing here needs anything from you.
+            </p>
+          </div>
+          <div class="sr-record" aria-hidden="true">
+            <span class="sr-record-groove"></span>
+            <span class="sr-record-label">
+              <span>SOFT</span>
+              <span>RESET</span>
+              <small>33⅓ · this side</small>
+            </span>
+          </div>
+        </section>
+
+        <section class="sr-picker" id="picker" aria-labelledby="picker-title">
+          <div class="sr-picker-head">
+            <div>
+              <h2 id="picker-title">Pick your reset</h2>
+              <p class="sr-sub">Three moods. Same idea: a couple of minutes that belong to you.</p>
+            </div>
+            <div class="sr-difficulty" role="group" aria-label="Note density">
+              <button type="button" data-difficulty="gentle" aria-pressed="true">Gentle</button>
+              <button type="button" data-difficulty="groove" aria-pressed="false">Groove</button>
+            </div>
+          </div>
+          <p class="sr-hint" id="difficulty-hint">
+            Gentle stays right on the beat. Groove adds the little off-beat flourishes.
+          </p>
+
+          <div class="sr-tracks" id="track-list"></div>
+
+          <div class="sr-picker-foot">
+            <p class="sr-best" id="best-line"></p>
+            <p class="sr-how">
+              Tap the four pads — or press <kbd>D</kbd> <kbd>F</kbd> <kbd>J</kbd> <kbd>K</kbd> on
+              a keyboard — as each note crosses the gold line. On a phone the game takes over the
+              screen, so the pads sit right under your thumbs. Missed notes cost you nothing.
+            </p>
+            <p class="sr-credit">
+              All three instrumentals are generated live in your browser. Original music, no
+              samples.
+            </p>
+          </div>
+        </section>
+
+        <section class="sr-stage" id="stage" aria-label="Soft Reset rhythm game" hidden>
+          <div class="sr-hud">
+            <div class="sr-now">
+              <p class="sr-kicker" id="track-vibe">Warm · unhurried</p>
+              <h2 id="track-name">Golden Hour</h2>
+            </div>
+            <div class="sr-stat">
+              <span class="sr-stat-label">Score</span>
+              <strong id="score">0</strong>
+            </div>
+            <div class="sr-stat">
+              <span class="sr-stat-label">Combo</span>
+              <strong id="combo">—</strong>
+            </div>
+            <div class="sr-hud-actions">
+              <button type="button" class="sr-icon" id="mute-button" aria-label="Mute music" aria-pressed="false">
+                🔊
+              </button>
+              <button type="button" class="sr-icon" id="pause-button" aria-label="Pause">❙❙</button>
+              <button type="button" class="sr-ghost" id="tracks-button">Tracks</button>
+            </div>
+          </div>
+
+          <div class="sr-groove-row">
+            <span class="sr-stat-label">Groove</span>
+            <div
+              class="sr-meter"
+              id="groove-meter"
+              role="progressbar"
+              aria-label="Groove"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+              <span class="sr-meter-fill" id="groove-fill"></span>
+            </div>
+            <span class="sr-meter-value" id="groove-value">0%</span>
+          </div>
+
+          <div class="sr-canvas-wrap" id="canvas-wrap">
+            <canvas
+              id="board"
+              role="img"
+              aria-label="Four lanes of notes falling toward a hit line. Use D, F, J and K or the pads."
+            ></canvas>
+
+            <div class="sr-countdown" id="countdown" aria-live="polite">breathe in…</div>
+
+            <div class="sr-overlay" id="pause-overlay" hidden>
+              <div class="sr-card" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+                <p class="sr-kicker">Paused</p>
+                <h2 id="pause-title">Nothing is happening without you.</h2>
+                <p class="sr-copy">Take the minute. The groove will wait right here.</p>
+                <div class="sr-actions">
+                  <button type="button" class="sr-button primary" id="resume-button">Keep going</button>
+                  <button type="button" class="sr-button" id="restart-button">Start this one again</button>
+                  <button type="button" class="sr-button quiet" id="quit-button">Back to tracks</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sr-overlay" id="result-overlay" hidden>
+              <div class="sr-card sr-result" role="dialog" aria-modal="true" aria-labelledby="result-title">
+                <p class="sr-kicker">Reset complete</p>
+                <h2 id="result-title">That's your break.</h2>
+                <p class="sr-result-track" id="result-track">Golden Hour</p>
+                <p class="sr-result-score"><strong id="result-score">0</strong><span>points</span></p>
+                <p class="sr-result-rating" id="result-rating">Soft Landing</p>
+                <dl class="sr-result-stats">
+                  <div><dt>Accuracy</dt><dd id="result-accuracy">0%</dd></div>
+                  <div><dt>Best combo</dt><dd id="result-combo">0</dd></div>
+                  <div><dt>Perfect</dt><dd id="result-perfect">0</dd></div>
+                  <div><dt>Missed</dt><dd id="result-miss">0</dd></div>
+                </dl>
+                <p class="sr-result-note" id="result-note"></p>
+                <div class="sr-actions">
+                  <button type="button" class="sr-button primary" id="again-button">Run it back</button>
+                  <button type="button" class="sr-button" id="another-button">Pick another groove</button>
+                </div>
+                <p class="sr-result-small">
+                  Scores save in this browser.
+                  <a href="../../../scores.html">See your high scores</a>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sr-pads" id="pads" role="group" aria-label="Note pads">
+            <button type="button" class="sr-pad" data-lane="0" aria-label="Left lane, key D">
+              <span class="sr-pad-key">D</span>
+              <span class="sr-pad-glyph" aria-hidden="true">◆</span>
+            </button>
+            <button type="button" class="sr-pad" data-lane="1" aria-label="Second lane, key F">
+              <span class="sr-pad-key">F</span>
+              <span class="sr-pad-glyph" aria-hidden="true">●</span>
+            </button>
+            <button type="button" class="sr-pad" data-lane="2" aria-label="Third lane, key J">
+              <span class="sr-pad-key">J</span>
+              <span class="sr-pad-glyph" aria-hidden="true">▲</span>
+            </button>
+            <button type="button" class="sr-pad" data-lane="3" aria-label="Right lane, key K">
+              <span class="sr-pad-key">K</span>
+              <span class="sr-pad-glyph" aria-hidden="true">✦</span>
+            </button>
+          </div>
+
+          <p class="sr-whisper" id="whisper" aria-live="polite"></p>
+          <p class="sr-caption">
+            There is no way to fail this. Tap what you can, let the rest pass, and keep breathing.
+          </p>
+
+          <div class="sr-progress" aria-hidden="true">
+            <span class="sr-progress-fill" id="progress-fill"></span>
+          </div>
+        </section>
+
+        <a href="../../../games.html" class="sr-back">&larr; Back to games</a>
+      </div>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>

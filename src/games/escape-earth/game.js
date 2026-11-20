@@ -4,10 +4,12 @@ import { createRemoteLevel } from './level-remote.js';
 import { createPapaLevel } from './level-papa.js';
 import { createAudio } from './sound.js';
 import { submitScore, getBest } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
 
 /* ------------------------------------------------------------------ *
  * Escape Earth: Survive Grandma's House
- * Three levels, one destination, zero responsible adults.
+ * Four levels, one destination, zero responsible adults.
  * ------------------------------------------------------------------ */
 
 const GAME_ID = 'escape-earth';
@@ -111,11 +113,7 @@ const audio = createAudio();
  * Sound preference
  * ------------------------------------------------------------------ */
 
-try {
-  if (window.localStorage.getItem(MUTE_KEY) === '1') audio.setMuted(true);
-} catch (error) {
-  /* Storage can be blocked; sound stays on. */
-}
+if (readMuted(MUTE_KEY)) audio.setMuted(true);
 
 const refreshMuteButton = () => {
   const muted = audio.isMuted();
@@ -131,12 +129,8 @@ refreshMuteButton();
 muteButton.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMuteButton();
-  try {
-    window.localStorage.setItem(MUTE_KEY, audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   if (!audio.isMuted()) audio.blip(660);
 });
 
@@ -500,6 +494,13 @@ let clock = 0;
 const frame = (now) => {
   const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000));
   lastTime = now;
+
+  autoPause.sync();
+  if (autoPause.paused) {
+    requestAnimationFrame(frame);
+    return;
+  }
+
   clock += dt;
 
   if (bannerTimer > 0) {
@@ -525,6 +526,16 @@ try {
 } catch (error) {
   bestEl.textContent = '0';
 }
+
+/* A level freezes when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  button: document.querySelector('#pause-button'),
+  shouldPause: () => state === 'playing',
+  message: 'Level paused',
+});
 
 showIntro();
 requestAnimationFrame(frame);

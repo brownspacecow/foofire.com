@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { createAudio } from './audio.js';
+import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
 
 /* ------------------------------------------------------------------ *
  * Spooky Santa
@@ -65,13 +68,8 @@ for (let i = 0; i < 5; i += 1) {
 
 const audio = createAudio();
 const MUTE_KEY = 'spookySantaMuted';
-const BEST_KEY = 'spookySantaBest';
 
-try {
-  if (window.localStorage.getItem(MUTE_KEY) === '1') audio.setMuted(true);
-} catch (error) {
-  /* Storage can be blocked; sound defaults to on. */
-}
+if (readMuted(MUTE_KEY)) audio.setMuted(true);
 
 const refreshMuteButton = () => {
   const muted = audio.isMuted();
@@ -84,13 +82,19 @@ refreshMuteButton();
 muteButton.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMuteButton();
-  try {
-    window.localStorage.setItem(MUTE_KEY, audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   if (!audio.isMuted()) audio.uiClick();
+});
+
+/* The delivery freezes when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  button: document.querySelector('#pause-button'),
+  shouldPause: () => container.classList.contains('playing'),
+  message: 'Delivery paused',
 });
 
 /*
@@ -139,22 +143,6 @@ if (fullscreenButton) {
     });
   }
 }
-
-const readBest = () => {
-  try {
-    return Number(window.localStorage.getItem(BEST_KEY)) || 0;
-  } catch (error) {
-    return 0;
-  }
-};
-
-const saveBest = (value) => {
-  try {
-    window.localStorage.setItem(BEST_KEY, String(value));
-  } catch (error) {
-    /* ignore */
-  }
-};
 
 /* ------------------------------------------------------------------ *
  * Rules of the night
@@ -1523,7 +1511,7 @@ const treeLight = { dir: Math.PI / 2 };
 
 const cookie = { eaten: false };
 
-let bestScore = readBest();
+let bestScore = getBest('spooky-santa');
 
 /* ------------------------------------------------------------------ *
  * UI helpers
@@ -1720,10 +1708,7 @@ function endRound(won, reason) {
     if (state.peak < 30 && timeLeft > 55) stars = 3;
   }
 
-  if (score > bestScore) {
-    bestScore = score;
-    saveBest(bestScore);
-  }
+  bestScore = submitScore('spooky-santa', score).best;
 
   if (won) {
     audio.win();
@@ -2531,6 +2516,13 @@ let lastFrame = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
+
+  autoPause.sync();
+  if (autoPause.paused) {
+    requestAnimationFrame(frame);
+    return;
+  }
+
   update(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);

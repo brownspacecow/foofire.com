@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roost Rider | Foofire Games</title>
+    <meta
+      name="description"
+      content="Play Roost Rider, a first-person off-road motorcycle race. Three laps, big jumps, three rivals, nitro and air tricks on a dusty three.js dirt circuit."
+    />
+    <meta property="og:title" content="Roost Rider | Foofire Games" />
+    <meta
+      property="og:description"
+      content="First-person dirt bike racing: three laps, big air, nitro and three rivals on a jump-filled off-road circuit."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/roost-rider/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      .race-game {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 1rem 3.5rem;
+      }
+
+      #game-container {
+        position: relative;
+        width: 100%;
+        height: clamp(460px, 74vh, 780px);
+        overflow: hidden;
+        background: #8fc7e4;
+        border: 4px solid var(--ink);
+        box-shadow: 6px 6px 0 var(--ink);
+        touch-action: none;
+        user-select: none;
+      }
+
+      #game-container:focus-visible {
+        outline: 4px dashed var(--accent-soft);
+        outline-offset: 3px;
+      }
+
+      #game-container > canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      #game-container:fullscreen {
+        height: 100%;
+        border: none;
+        box-shadow: none;
+      }
+
+      .hud {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        color: var(--text);
+        font-family: var(--font-body);
+        pointer-events: none;
+      }
+
+      /* ---------------------------------------------------------- top bar */
+
+      .hud-top {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.8rem 0.85rem;
+      }
+
+      .hud-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      .hud-chip {
+        min-width: 4.2rem;
+        padding: 0.38rem 0.55rem 0.42rem;
+        background: rgba(10, 5, 24, 0.68);
+        border: 2px solid rgba(255, 248, 231, 0.16);
+        border-left: 4px solid var(--accent-soft);
+        backdrop-filter: blur(4px);
+      }
+
+      .hud-chip span {
+        display: block;
+        font-family: var(--font-pixel);
+        font-size: 0.4rem;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+
+      .hud-chip strong {
+        display: block;
+        font-size: 1.05rem;
+        font-weight: 900;
+        font-style: italic;
+        line-height: 1.2;
+        letter-spacing: 0.01em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .hud-chip-time strong {
+        color: var(--accent-soft);
+      }
+
+      .hud-buttons {
+        display: flex;
+        gap: 0.4rem;
+        pointer-events: auto;
+      }
+
+      .hud-buttons button {
+        width: 2.35rem;
+        height: 2.35rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255, 248, 231, 0.22);
+        background: rgba(10, 5, 24, 0.7);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+      }
+
+      .hud-buttons button:hover {
+        background: rgba(51, 35, 107, 0.92);
+      }
+
+      .hud-buttons button:active {
+        transform: translateY(1px);
+      }
+
+      /* --------------------------------------------------------- speedo */
+
+      .speedo {
+        position: absolute;
+        left: 0.85rem;
+        bottom: 0.85rem;
+        width: min(230px, 46vw);
+        padding: 0.6rem 0.7rem 0.72rem;
+        background: linear-gradient(160deg, rgba(10, 5, 24, 0.88), rgba(18, 10, 42, 0.58));
+        border: 2px solid rgba(255, 248, 231, 0.16);
+        border-left: 4px solid var(--accent);
+        backdrop-filter: blur(4px);
+      }
+
+      .speedo-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        font-family: var(--font-pixel);
+        font-size: 0.4rem;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+
+      .speedo-unit {
+        color: var(--accent-soft);
+      }
+
+      .speedo-number {
+        display: flex;
+        align-items: baseline;
+        margin: 0.1rem 0 0.28rem;
+      }
+
+      .speedo-number strong {
+        font-size: clamp(2.1rem, 6.2vw, 3.1rem);
+        font-weight: 900;
+        font-style: italic;
+        line-height: 0.95;
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .speed-track {
+        height: 0.4rem;
+        background: rgba(255, 248, 231, 0.15);
+        overflow: hidden;
+      }
+
+      .speed-fill {
+        display: block;
+        width: 100%;
+        height: 100%;
+        transform: scaleX(0);
+        transform-origin: left center;
+        background: linear-gradient(90deg, var(--green), var(--accent-soft) 55%, var(--accent));
+        transition: transform 0.08s linear;
+      }
+
+      .nitro-head {
+        display: flex;
+        justify-content: space-between;
+        margin: 0.55rem 0 0.2rem;
+        font-family: var(--font-pixel);
+        font-size: 0.38rem;
+        letter-spacing: 0.1em;
+        color: var(--blue);
+        text-transform: uppercase;
+      }
+
+      .nitro-track {
+        height: 0.34rem;
+        background: rgba(255, 248, 231, 0.14);
+        overflow: hidden;
+      }
+
+      .nitro-fill {
+        display: block;
+        width: 100%;
+        height: 100%;
+        transform: scaleX(1);
+        transform-origin: left center;
+        background: linear-gradient(90deg, #2ec4ff, #a855f7);
+        transition: transform 0.1s linear;
+      }
+
+      /* -------------------------------------------------------- minimap */
+
+      .minimap {
+        position: absolute;
+        right: 0.85rem;
+        bottom: 0.85rem;
+        padding: 0.35rem;
+        background: rgba(10, 5, 24, 0.68);
+        border: 2px solid rgba(255, 248, 231, 0.16);
+      }
+
+      .minimap canvas {
+        display: block;
+        width: 104px;
+        height: 104px;
+      }
+
+      /* --------------------------------------------------- centre cues */
+
+      .wrong-way {
+        position: absolute;
+        top: 28%;
+        left: 50%;
+        margin: 0;
+        padding: 0.5rem 0.9rem;
+        transform: translate(-50%, -50%) scale(0.9);
+        background: var(--accent);
+        color: #fff;
+        font-family: var(--font-pixel);
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-shadow: 2px 2px 0 var(--ink);
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      .wrong-way.show {
+        opacity: 1;
+        animation: wrong-pulse 0.5s steps(2) infinite;
+      }
+
+      @keyframes wrong-pulse {
+        50% {
+          opacity: 0.55;
+        }
+      }
+
+      .countdown {
+        position: absolute;
+        top: 44%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-weight: 900;
+        font-style: italic;
+        font-size: clamp(4rem, 14vw, 8rem);
+        line-height: 1;
+        letter-spacing: -0.04em;
+        color: var(--accent-soft);
+        text-shadow: 0 0 0 var(--ink), 5px 5px 0 var(--ink), 0 0 42px rgba(255, 217, 61, 0.55);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .countdown.show {
+        opacity: 1;
+      }
+
+      .countdown.pop {
+        animation: count-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1);
+      }
+
+      @keyframes count-pop {
+        from {
+          transform: translate(-50%, -50%) scale(0.55);
+          opacity: 0;
+        }
+        to {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+      }
+
+      .toast {
+        position: absolute;
+        top: 19%;
+        left: 50%;
+        margin: 0;
+        padding: 0.42rem 0.85rem;
+        transform: translate(-50%, -8px);
+        background: rgba(10, 5, 24, 0.8);
+        border: 2px solid var(--accent-soft);
+        color: var(--accent-soft);
+        font-size: clamp(0.82rem, 2.4vw, 1.05rem);
+        font-style: italic;
+        font-weight: 800;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.18s ease, transform 0.18s ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      /* ------------------------------------------------------- overlays */
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        overflow: auto;
+        background: radial-gradient(circle at 50% 38%, rgba(18, 10, 42, 0.6), rgba(10, 5, 24, 0.93));
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.22s ease, visibility 0.22s;
+      }
+
+      .overlay.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+
+      .overlay-card {
+        width: min(100%, 36rem);
+        padding: clamp(1.1rem, 3vw, 1.8rem);
+        background: linear-gradient(170deg, rgba(36, 26, 77, 0.98), rgba(18, 10, 42, 0.98));
+        border: 3px solid var(--ink);
+        box-shadow: 7px 7px 0 var(--ink), inset 0 0 0 2px rgba(255, 248, 231, 0.08);
+        text-align: center;
+      }
+
+      .overlay-kicker {
+        margin: 0 0 0.35rem;
+        color: var(--accent);
+        font-family: var(--font-pixel);
+        font-size: 0.44rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .overlay-card h2 {
+        margin: 0 0 0.4rem;
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: clamp(1.2rem, 5.4vw, 2.1rem);
+        line-height: 1.35;
+        text-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .overlay-lead {
+        max-width: 32rem;
+        margin: 0 auto 0.9rem;
+        font-size: 0.95rem;
+      }
+
+      .control-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+        margin: 0 0 1.1rem;
+        padding: 0;
+      }
+
+      .control-list > div {
+        padding: 0.45rem 0.4rem;
+        background: rgba(255, 248, 231, 0.06);
+        border: 1px solid rgba(255, 248, 231, 0.12);
+      }
+
+      .control-list dt {
+        color: var(--muted);
+        font-size: 0.66rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .control-list dd {
+        margin: 0.1rem 0 0;
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        line-height: 1.7;
+      }
+
+      .touch-tip {
+        display: none;
+        margin: 0 0 1rem;
+        color: var(--text);
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+
+      .touch-tip strong {
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: 0.62rem;
+        white-space: nowrap;
+      }
+
+      .race-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 3rem;
+        padding: 0.75rem 1.5rem;
+        border: 3px solid var(--ink);
+        background: linear-gradient(180deg, var(--accent-soft), #ffb703);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.72rem;
+        line-height: 1.6;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 var(--ink);
+      }
+
+      .race-button:hover {
+        filter: brightness(1.06);
+        transform: translate(-1px, -1px);
+        box-shadow: 5px 5px 0 var(--ink);
+      }
+
+      .race-button:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .overlay-best {
+        margin: 0.8rem 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .overlay-best strong {
+        color: var(--accent-soft);
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+        margin: 1rem 0;
+      }
+
+      .result-grid > div {
+        padding: 0.5rem;
+        background: rgba(255, 248, 231, 0.06);
+        border: 1px solid rgba(255, 248, 231, 0.12);
+      }
+
+      .result-grid dt {
+        color: var(--muted);
+        font-size: 0.68rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .result-grid dd {
+        margin: 0.1rem 0 0;
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: 0.8rem;
+      }
+
+      .overlay-finish h2 {
+        color: var(--accent);
+        font-size: clamp(2rem, 9vw, 3.2rem);
+      }
+
+      .finish-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem 1rem;
+      }
+
+      .race-link {
+        color: var(--text);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      /* -------------------------------------------------------- touch UI */
+
+      .touch-controls {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 4;
+        display: none;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 0.7rem;
+        padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
+        pointer-events: none;
+      }
+
+      .touch-controls button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+        border: 2px solid rgba(255, 248, 231, 0.3);
+        border-radius: 50%;
+        background: rgba(10, 5, 24, 0.55);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 1.05rem;
+        line-height: 1;
+        cursor: pointer;
+        pointer-events: auto;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        user-select: none;
+        backdrop-filter: blur(2px);
+      }
+
+      .touch-steer {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .touch-pedals {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+      }
+
+      .touch-pedals-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .touch-small {
+        width: 3.2rem !important;
+        height: 3.2rem !important;
+        font-size: 0.58rem !important;
+      }
+
+      .touch-boost {
+        color: var(--blue) !important;
+        border-color: rgba(46, 196, 255, 0.6) !important;
+      }
+
+      .touch-gas {
+        width: 4.4rem !important;
+        height: 4.4rem !important;
+        background: rgba(255, 46, 99, 0.6) !important;
+      }
+
+      .touch-controls button.is-pressed {
+        filter: brightness(1.4);
+        transform: scale(0.94);
+      }
+
+      /* -------------------------------------------------------- extras */
+
+      .fallback {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: #120a2a;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .fallback[hidden] {
+        display: none;
+      }
+
+      .race-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem 1.2rem;
+        padding: 0.9rem 0.2rem 0;
+      }
+
+      .race-tip {
+        max-width: 46rem;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .race-tip kbd {
+        padding: 0.1rem 0.3rem;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .back-link {
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      @media (pointer: coarse) {
+        .touch-controls {
+          display: flex;
+        }
+
+        .minimap {
+          display: none;
+        }
+
+        .speedo {
+          top: 4.5rem;
+          bottom: auto;
+          left: 0.6rem;
+          width: 132px;
+          padding: 0.42rem 0.5rem 0.5rem;
+        }
+
+        .speedo-number strong {
+          font-size: 1.85rem;
+        }
+
+        .speed-track {
+          height: 0.28rem;
+        }
+
+        .nitro-track {
+          height: 0.26rem;
+        }
+
+        .nitro-head {
+          margin-top: 0.35rem;
+        }
+
+        .hud-top {
+          padding: 0.6rem;
+        }
+
+        .hud-chip {
+          min-width: 3.5rem;
+          padding: 0.28rem 0.38rem 0.34rem;
+        }
+
+        .hud-chip strong {
+          font-size: 0.88rem;
+        }
+
+        .hud-chip span {
+          font-size: 0.34rem;
+        }
+
+        .hud-buttons button {
+          width: 2.4rem;
+          height: 2.4rem;
+          font-size: 0.9rem;
+        }
+
+        .control-list {
+          display: none;
+        }
+
+        .touch-tip {
+          display: block;
+        }
+      }
+
+      @media (max-width: 620px) {
+        #game-container {
+          height: clamp(430px, 68vh, 620px);
+        }
+
+        .control-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .hud-chip:nth-child(4) {
+          display: none;
+        }
+
+        .speedo {
+          width: min(190px, 52vw);
+        }
+
+        .minimap canvas {
+          width: 84px;
+          height: 84px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .hud-chip {
+          min-width: 3.1rem;
+        }
+
+        .hud-chip strong {
+          font-size: 0.92rem;
+        }
+
+        .overlay-card {
+          padding: 1rem 0.8rem;
+        }
+
+        .control-list {
+          gap: 0.3rem;
+        }
+      }
+
+      @media (pointer: coarse) {
+        #game-container {
+          height: clamp(280px, 72vh, 640px);
+          height: clamp(280px, 72dvh, 640px);
+        }
+      }
+
+      @media (pointer: coarse) and (orientation: landscape) {
+        #game-container {
+          height: clamp(280px, 84vh, 560px);
+          height: clamp(280px, 84dvh, 560px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .countdown,
+        .toast,
+        .overlay,
+        .speed-fill,
+        .nitro-fill {
+          transition-duration: 0.01ms !important;
+          animation: none !important;
+        }
+      }
+    </style>
+      <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Roost Rider</h1>
+        <p>
+          Three laps, first person, full throttle. Feather the brakes into the ruts, preload the
+          jumps, and hold nitro down the back straight while three rivals roost dirt in your face.
+        </p>
+      </section>
+
+      <section class="race-game" aria-label="Roost Rider game">
+        <div
+          id="game-container"
+          tabindex="0"
+          role="application"
+          aria-label="First-person off-road motorcycle race. W or up arrow accelerates, S or down arrow brakes, A and D steer, Shift uses nitro, Space preloads jumps, and R puts you back on the track."
+        >
+          <div class="hud">
+            <div class="hud-top">
+              <div class="hud-chips">
+                <div class="hud-chip">
+                  <span>Position</span>
+                  <strong id="position-value">—/4</strong>
+                </div>
+                <div class="hud-chip">
+                  <span>Lap</span>
+                  <strong id="lap-value">1/3</strong>
+                </div>
+                <div class="hud-chip hud-chip-time">
+                  <span>Race</span>
+                  <strong id="race-time">0:00.0</strong>
+                </div>
+                <div class="hud-chip hud-chip-time">
+                  <span>This lap</span>
+                  <strong id="lap-time">0:00.0</strong>
+                </div>
+              </div>
+              <div class="hud-buttons">
+                <button id="restart-button" type="button" aria-label="Restart race">↺</button>
+                <button
+                  id="pause-button"
+                  type="button"
+                  aria-label="Pause race"
+                  aria-pressed="false"
+                >
+                  ❚❚
+                </button>
+                <button
+                  id="mute-button"
+                  type="button"
+                  aria-label="Mute sounds"
+                  aria-pressed="false"
+                >
+                  🔊
+                </button>
+                <button
+                  id="fullscreen-button"
+                  type="button"
+                  aria-label="Play in full screen"
+                  aria-pressed="false"
+                >
+                  ⛶
+                </button>
+              </div>
+            </div>
+
+            <div class="speedo" aria-label="Speed and nitro">
+              <div class="speedo-head">
+                <span>Speed</span>
+                <span class="speedo-unit">km/h</span>
+              </div>
+              <div class="speedo-number"><strong id="speed-value">0</strong></div>
+              <div class="speed-track"><span class="speed-fill" id="speed-fill"></span></div>
+              <div class="nitro-head"><span>Nitro</span><span>Shift</span></div>
+              <div class="nitro-track"><span class="nitro-fill" id="nitro-fill"></span></div>
+            </div>
+
+            <div class="minimap" aria-hidden="true">
+              <canvas id="minimap" width="150" height="150"></canvas>
+            </div>
+
+            <p class="wrong-way" id="wrong-way">Wrong way!</p>
+            <div class="countdown" id="countdown" aria-hidden="true"></div>
+            <p class="toast" id="toast" role="status" aria-live="polite"></p>
+
+            <div class="overlay is-open" id="start-overlay">
+              <div class="overlay-card">
+                <p class="overlay-kicker">Foofire MX presents</p>
+                <h2>ROOST RIDER</h2>
+                <p class="overlay-lead">
+                  Backwoods Grand Prix — three laps against three rivals on a jump-filled dirt
+                  loop. First person, full throttle, no speedometer you can trust.
+                </p>
+                <dl class="control-list">
+                  <div><dt>Throttle</dt><dd>W / ↑</dd></div>
+                  <div><dt>Brake</dt><dd>S / ↓</dd></div>
+                  <div><dt>Steer</dt><dd>A D / ← →</dd></div>
+                  <div><dt>Nitro</dt><dd>Shift</dd></div>
+                  <div><dt>Preload / hop</dt><dd>Space</dd></div>
+                  <div><dt>Back on track</dt><dd>R</dd></div>
+                </dl>
+                <p class="touch-tip">
+                  Touch: hold <strong>▲</strong> to accelerate, <strong>◀ ▶</strong> to steer,
+                  <strong>■</strong> to brake, <strong>N₂O</strong> for nitro, and
+                  <strong>⤒</strong> to preload jumps. Use <strong>↺</strong> to restart.
+                </p>
+                <button class="race-button" id="start-button" type="button">Start race</button>
+                <p class="overlay-best">Best score <strong id="start-best">0</strong></p>
+              </div>
+            </div>
+
+            <div class="overlay overlay-finish" id="finish-overlay">
+              <div class="overlay-card">
+                <p class="overlay-kicker" id="result-kicker">Chequered flag</p>
+                <h2 id="result-place">P1</h2>
+                <p class="overlay-lead" id="result-title">Winner!</p>
+                <dl class="result-grid">
+                  <div><dt>Race time</dt><dd id="result-time">0:00.0</dd></div>
+                  <div><dt>Best lap</dt><dd id="result-lap">0:00.0</dd></div>
+                  <div><dt>Big air</dt><dd id="result-points">0</dd></div>
+                  <div><dt>Score</dt><dd id="result-score">0</dd></div>
+                </dl>
+                <p class="overlay-best" id="result-best"></p>
+                <div class="finish-actions">
+                  <button class="race-button" id="again-button" type="button">Race again</button>
+                  <a class="race-link" href="../../../games.html">All games</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="touch-controls" aria-label="Touch controls">
+              <div class="touch-steer">
+                <button type="button" data-control="left" aria-label="Steer left">◀</button>
+                <button type="button" data-control="right" aria-label="Steer right">▶</button>
+              </div>
+              <div class="touch-pedals">
+                <div class="touch-pedals-row">
+                  <button
+                    type="button"
+                    data-control="preload"
+                    class="touch-small"
+                    aria-label="Preload suspension"
+                  >
+                    ⤒
+                  </button>
+                  <button
+                    type="button"
+                    data-control="boost"
+                    class="touch-small touch-boost"
+                    aria-label="Use nitro"
+                  >
+                    N2O
+                  </button>
+                </div>
+                <div class="touch-pedals-row">
+                  <button
+                    type="button"
+                    data-control="down"
+                    class="touch-small"
+                    aria-label="Brake"
+                  >
+                    ■
+                  </button>
+                  <button
+                    type="button"
+                    data-control="up"
+                    class="touch-gas"
+                    aria-label="Throttle"
+                  >
+                    ▲
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="fallback" id="fallback" hidden>
+              <p>
+                This game needs WebGL. Try a newer browser, or turn on hardware acceleration and
+                reload.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="race-footer">
+          <p class="race-tip">
+            Nitro: <kbd>Shift</kbd> or <strong>N2O</strong>. Preload: <kbd>Space</kbd> or
+            <strong>⤒</strong>. Land spins for bonus points. Dirt is fast; grass is not.
+          </p>
+          <a class="back-link" href="../../../games.html">&larr; Back to games</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids. Not affiliated with any commercial entity.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

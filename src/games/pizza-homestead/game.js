@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { getBest, submitScore } from '../../utils/scores.js';
+import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
+import { createAutoPause } from '../../utils/auto-pause.js';
+import { prefersReducedMotion } from '../../utils/motion.js';
 
 /* ------------------------------------------------------------------ *
  * Pizza Homestead: Fun Room Rush
@@ -147,11 +150,7 @@ const audio = (() => {
   };
 })();
 
-try {
-  if (window.localStorage.getItem('pizzaHomesteadMuted') === '1') audio.setMuted(true);
-} catch (error) {
-  /* Storage may be blocked; sound defaults to on. */
-}
+if (readMuted('pizzaHomesteadMuted')) audio.setMuted(true);
 
 const refreshMuteButton = () => {
   const muted = audio.isMuted();
@@ -164,12 +163,8 @@ refreshMuteButton();
 muteButton.addEventListener('click', () => {
   audio.unlock();
   audio.setMuted(!audio.isMuted());
+  writeMuted(audio.isMuted());
   refreshMuteButton();
-  try {
-    window.localStorage.setItem('pizzaHomesteadMuted', audio.isMuted() ? '1' : '0');
-  } catch (error) {
-    /* ignore */
-  }
   if (!audio.isMuted()) audio.ui();
 });
 
@@ -2682,7 +2677,7 @@ function updateWorld(dt) {
     camTarget.x += (0 - camTarget.x) * Math.min(1, dt * 6);
   }
 
-  const shake = state.shake * 0.28;
+  const shake = prefersReducedMotion() ? 0 : state.shake * 0.28;
   camera.position.set(
     camTarget.x + rand(-shake, shake),
     camTarget.y + CAM_OFFSET.y + rand(-shake, shake),
@@ -2715,9 +2710,21 @@ function updateBannerTimer() {
 // -------------------------------------------------------------------- boot
 const clock = new THREE.Clock();
 
+/* The buffet clock stops when the tab goes away. */
+const autoPause = createAutoPause({
+  container,
+  audio,
+  muteButton,
+  button: document.querySelector('#pause-button'),
+  shouldPause: () => state.phase === 'play',
+  message: 'Buffet paused',
+});
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
+  autoPause.sync();
+  if (autoPause.paused) return;
   state.time += dt;
   updateRound(dt);
   updatePlayer(dt);

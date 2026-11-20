@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+    />
+    <title>The Grin | Foofire Games</title>
+    <meta
+      name="description"
+      content="The Grin is a four-stage, touch-controlled bullet-hell boss fight. A familiar smile cracks open into something demonic, unhinged and very hard to dodge."
+    />
+    <meta property="og:title" content="The Grin | Foofire Games" />
+    <meta
+      property="og:description"
+      content="A four-stage bullet-hell boss fight with gothic organ music, a morphing boss and touch controls."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/the-grin/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#050208" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      html,
+      body.grin-page {
+        height: 100%;
+      }
+
+      body.grin-page {
+        margin: 0;
+        overflow: hidden;
+        background: #040208;
+        background-image: none;
+        color: #f5eaf0;
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+
+      .grin-main {
+        min-height: 0;
+        height: 100%;
+      }
+
+      .grin-shell {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        background: #040208;
+      }
+
+      #grin-canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .grin-scanlines {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          0deg,
+          rgba(0, 0, 0, 0.2) 0 1px,
+          rgba(0, 0, 0, 0) 1px 3px
+        );
+        opacity: 0.5;
+      }
+
+      .grin-scanlines::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 45%, transparent 52%, rgba(0, 0, 0, 0.6) 100%);
+      }
+
+      .grin-tools {
+        position: absolute;
+        z-index: 4;
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        right: calc(env(safe-area-inset-right, 0px) + 10px);
+        display: flex;
+        gap: 8px;
+      }
+
+      .grin-icon {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border: 2px solid rgba(255, 150, 170, 0.32);
+        border-radius: 4px;
+        background: rgba(10, 4, 14, 0.72);
+        color: #ffc3cf;
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .grin-icon:hover {
+        border-color: #ff9db2;
+        color: #fff;
+      }
+
+      .grin-back {
+        font-size: 20px;
+        transition: opacity 0.25s ease;
+      }
+
+      body.is-playing .grin-back,
+      body.is-playing .grin-scores {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      @media (max-height: 640px) {
+        .grin-icon {
+          width: 32px;
+          height: 32px;
+          font-size: 14px;
+        }
+      }
+    </style>
+      <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="grin-page">
+    <main class="grin-main">
+      <section id="grin-shell" class="grin-shell" aria-label="The Grin boss fight">
+        <canvas
+          id="grin-canvas"
+          width="540"
+          height="960"
+          role="img"
+          aria-label="A pale figure with huge eyes and a wide grin waits at the end of a dark hallway. Drag to move your soul and dodge the bullets."
+        ></canvas>
+        <div class="grin-scanlines" aria-hidden="true"></div>
+        <div class="grin-tools">
+          <a class="grin-icon grin-back" href="../../../games.html" aria-label="Back to games">&larr;</a>
+          <a class="grin-icon grin-scores" href="../../../scores.html" aria-label="High scores"
+            >🏆</a
+          >
+          <button
+            id="grin-mute"
+            class="grin-icon"
+            type="button"
+            aria-label="Mute soundtrack"
+            aria-pressed="false"
+          >
+            🔊
+          </button>
+          <button id="grin-fullscreen" class="grin-icon" type="button" aria-label="Play in full screen">
+            ⛶
+          </button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
