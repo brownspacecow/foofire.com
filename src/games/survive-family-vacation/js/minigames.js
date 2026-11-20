@@ -721,6 +721,14 @@ function clockChipAt(x, y) {
   return -1;
 }
 
+/* The chime dial sits beside the clock face, clear of the HOUR / MINUTE /
+ * CHIME chips. It used to hang under the clock, where the chip row covered its
+ * lower half, so taps aimed at the sun landed on the MINUTE chip instead. */
+function clockChimeAt(g, x, y) {
+  const dialX = g.w / 2 + 258;
+  return Math.abs(x - dialX) <= 80 && Math.abs(y - 250) <= 52;
+}
+
 function turnClock(s, direction) {
   if (s.selected === 0) s.hour = ((s.hour - 1 + direction + 12) % 12) + 1;
   if (s.selected === 1) s.minute = (s.minute + direction + 12) % 12;
@@ -737,7 +745,7 @@ function selectClockHand(g, s, pointer) {
     s.selected = chip;
     return;
   }
-  if (Math.abs(pointer.x - centerX) <= 58 && pointer.y >= 424 && pointer.y <= 472) {
+  if (clockChimeAt(g, pointer.x, pointer.y)) {
     s.selected = 2;
     return;
   }
@@ -753,7 +761,7 @@ function selectClockHand(g, s, pointer) {
 
 const clockwork = {
   name: 'The Storybook Clock',
-  hint: 'Tap a hand, chip or chime to pick it, then drag up and down to turn it. Arrow keys work too.',
+  hint: 'Tap a hand or chip to pick it, then drag up and down to turn it. Tap the chime dial beside the clock to flip it. Arrow keys work too.',
   init(g) {
     const rounds = Array.isArray(g.config.rounds) ? g.config.rounds : [{ hour: 7, minute: 6, chime: '🌙' }];
     return {
@@ -805,7 +813,14 @@ const clockwork = {
     const pointer = g.input.pointer;
     if (!pointer.down) s.drag = null;
     if (pointer.justDown && pointer.inside) {
-      selectClockHand(g, s, pointer);
+      // A tap on the chime dial flips the face right away, sun to moon and
+      // back, the way a tap turns a mirror in the light puzzle.
+      if (clockChimeAt(g, pointer.x, pointer.y)) {
+        s.selected = 2;
+        s.chime = (s.chime + 1) % CHIMES.length;
+      } else {
+        selectClockHand(g, s, pointer);
+      }
       s.drag = { lastY: pointer.y };
       g.sfx('click');
     }
@@ -880,9 +895,11 @@ const clockwork = {
     ctx.fillStyle = '#ffd86b';
     ctx.fill();
 
-    // Chime dial.
-    panel(ctx, centerX - 56, centerY + 186, 112, 66, 'rgba(20, 14, 26, 0.6)', s.selected === 2 ? '#ffd86b' : undefined);
-    text(ctx, CHIMES[s.chime], centerX, centerY + 218, 40, '#fff6e0');
+    // Chime dial, kept beside the clock face so the chips never cover it.
+    const dialX = centerX + 258;
+    text(ctx, 'CHIME', dialX, centerY - 58, 14, s.selected === 2 ? '#ffd86b' : '#c9b6ff');
+    panel(ctx, dialX - 70, centerY - 42, 140, 84, 'rgba(20, 14, 26, 0.6)', s.selected === 2 ? '#ffd86b' : undefined);
+    text(ctx, CHIMES[s.chime], dialX, centerY, 46, '#fff6e0');
 
     // Target card.
     panel(ctx, 40, 30, 300, 96, 'rgba(255, 246, 224, 0.1)');
