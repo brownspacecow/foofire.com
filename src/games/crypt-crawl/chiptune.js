@@ -40,7 +40,9 @@ export const MUSIC = {
 };
 
 // ---- SFX as pure data: each note is { m (MIDI), t (offset s), d (dur s),
-// w ('square'|'triangle'), v (volume) } or { noise: true, t, d, v, f }.
+// w ('square'|'triangle'), v (volume) }, { noise: true, t, d, v, f },
+// or a pitch slide { slide: true, m0 (start MIDI), m1 (end MIDI),
+// t, d, w, v, vib (vibrato Hz, optional) }.
 // The engine in this file plays them; node tests validate the tables.
 export const SFX = {
   blip: [{ m: 81, t: 0, d: 0.06, w: 'square', v: 0.05 }], // button press
@@ -98,7 +100,29 @@ export const SFX = {
     { m: 76, t: 0.1, d: 0.05, w: 'square', v: 0.05 },
     { m: 79, t: 0.15, d: 0.08, w: 'square', v: 0.05 },
   ], // no-moves shuffle: quick square shuffle
+  scream: [
+    // Death scream: a square-wave pitch slide falling fast, high to low,
+    // with a fast vibrato wobble, layered over a short noise burst, and
+    // ending in a low sliding "poof" thud. Bosses play it transposed
+    // down an octave and stretched 1.5x (see Chiptune.scream).
+    { slide: true, m0: 96, m1: 60, t: 0, d: 0.45, w: 'square', v: 0.09, vib: 28 },
+    { noise: true, t: 0, d: 0.3, v: 0.06, f: 2500 },
+    { slide: true, m0: 41, m1: 36, t: 0.45, d: 0.15, w: 'square', v: 0.08 },
+  ],
 };
+
+/** Pure helper: transpose + stretch an SFX table (used for the boss
+ *  scream — same scream, an octave lower and 1.5x longer). */
+export function transformSfxNotes(table, { shift = 0, stretch = 1 } = {}) {
+  return table.map((note) => {
+    const n = { ...note };
+    n.t = note.t * stretch;
+    n.d = note.d * stretch;
+    if (n.m !== undefined) n.m += shift;
+    if (n.m0 !== undefined) { n.m0 += shift; n.m1 += shift; }
+    return n;
+  });
+}
 
 export class Chiptune {
   constructor() {
@@ -168,9 +192,52 @@ export class Chiptune {
     } catch (e) { /* ignore */ }
   }
 
+  // A pitch-slide tone: the frequency ramps from `from` to `to`, with an
+  // optional fast square-wave vibrato wobble (the death scream's warble).
+  slideTone({ type, from, to, when, dur, vol, vib }) {
+    if (!this.ctx) return;
+    try {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(from, when);
+      o.frequency.exponentialRampToValueAtTime(Math.max(1, to), when + dur);
+      g.gain.setValueAtTime(vol, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + dur);
+      o.connect(g);
+      g.connect(this.ctx.destination);
+      let lfo = null;
+      if (vib) {
+        // Square LFO, ±3% of the starting pitch — square only, so the
+        // "no sine/sawtooth" rule still holds for the wobble too.
+        lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        lfo.type = 'square';
+        lfo.frequency.value = vib;
+        lfoGain.gain.value = from * 0.03;
+        lfo.connect(lfoGain);
+        lfoGain.connect(o.frequency);
+        lfo.start(when);
+        lfo.stop(when + dur + 0.02);
+      }
+      o.start(when);
+      o.stop(when + dur + 0.02);
+    } catch (e) { /* ignore */ }
+  }
+
   playNote(note, when) {
     if (note.noise) {
       this.noise({ when, dur: note.d, vol: note.v, freq: note.f });
+    } else if (note.slide) {
+      this.slideTone({
+        type: note.w || 'square',
+        from: midiToFreq(note.m0),
+        to: midiToFreq(note.m1),
+        when,
+        dur: note.d,
+        vol: note.v,
+        vib: note.vib,
+      });
     } else {
       this.tone({
         type: note.w || 'square',
@@ -182,14 +249,17 @@ export class Chiptune {
     }
   }
 
-  playSfx(name) {
+  playSfx(name, opts = {}) {
     if (this.muted) return;
     const table = SFX[name];
     if (!table) return;
     this.ensureCtx();
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    for (const note of table) this.playNote(note, now + note.t);
+    const notes = (opts.shift || opts.stretch)
+      ? transformSfxNotes(table, opts)
+      : table;
+    for (const note of notes) this.playNote(note, now + note.t);
   }
 
   // Named SFX, matching the game.js call sites.
@@ -204,6 +274,12 @@ export class Chiptune {
   relic() { this.playSfx('relic'); }
   over() { this.playSfx('over'); }
   shuffle() { this.playSfx('shuffle'); }
+
+  // Death scream. Same scream for every monster; bosses get it an octave
+  // lower and 1.5x longer (same table, transposed + stretched).
+  scream(boss = false) {
+    this.playSfx('scream', boss ? { shift: -12, stretch: 1.5 } : {});
+  }
 
   // Drag-path tick: pitch climbs with the path, like a rising arpeggio.
   tick(step) {

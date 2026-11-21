@@ -214,7 +214,7 @@ if (typeof document !== 'undefined') {
     hp: 25, maxHp: 25, block: 0, gold: 0, score: 0, floor: 1, kills: 0,
     monster: null, board: [], relics: [], firstMatchThisFloor: true,
     dragging: false, path: [], pathType: null, paused: false, over: false,
-    settling: false, best: 0, bestGold: 0,
+    settling: false, dying: false, best: 0, bestGold: 0,
   };
   try {
     state.best = Number(localStorage.getItem(BEST_KEY) || 0);
@@ -388,7 +388,7 @@ if (typeof document !== 'undefined') {
     return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
   }
   function startDrag(pos) {
-    if (state.paused || state.over || state.screen !== 'play' || state.settling) return;
+    if (state.paused || state.over || state.screen !== 'play' || state.settling || state.dying) return;
     state.dragging = true; state.pathType = state.board[pos.r][pos.c];
     state.path = [pos]; paintBoard();
   }
@@ -464,13 +464,16 @@ if (typeof document !== 'undefined') {
     }
   }
   function floatText(text, kind) {
-    if (reducedMotion) return;
+    // 'slain' is the one float that must still show under reduced motion
+    // (it sits still instead of floating up); every other float is motion.
+    if (reducedMotion && kind !== 'slain') return;
     const el = document.createElement('span');
     el.className = 'float-text ' + kind;
     el.textContent = text;
     const area = $('#float-layer');
-    el.style.left = `${20 + Math.random() * 60}%`;
+    el.style.left = kind === 'slain' ? '50%' : `${20 + Math.random() * 60}%`;
     area.appendChild(el);
+    if (reducedMotion) el.style.animation = 'none';
     setTimeout(() => el.remove(), 1100);
   }
   function banner(text) {
@@ -586,7 +589,7 @@ if (typeof document !== 'undefined') {
       state.settling = false;
       updateHud();
       if (state.monster.hp <= 0) {
-        floorCleared();
+        playDeath();
       } else {
         // The monster bites back once the fall is (mostly) done — a beat
         // later if the board just shuffled, so the player sees the new
@@ -598,7 +601,7 @@ if (typeof document !== 'undefined') {
   }
 
   function monsterAttack() {
-    if (state.over || state.screen !== 'play' || !state.monster || state.monster.hp <= 0) return;
+    if (state.over || state.screen !== 'play' || !state.monster || state.monster.hp <= 0 || state.dying) return;
     const dmg = biteDamage(state.monster.attack, state.block, state.relics);
     const blocked = Math.min(state.block, state.monster.attack);
     state.block = 0;
@@ -616,6 +619,64 @@ if (typeof document !== 'undefined') {
     }
     updateHud();
     if (state.hp <= 0) gameOver();
+  }
+
+  // The monster's little pixel soul (the ghost sprite) rises out of the
+  // monster card and fades away. Motion only — skipped under reduced
+  // motion, where the fade on the monster itself carries the moment.
+  function spawnSoul() {
+    if (reducedMotion) return;
+    const card = $('#monster-card');
+    const soul = document.createElement('span');
+    soul.className = 'soul';
+    soul.setAttribute('aria-hidden', 'true');
+    soul.innerHTML = spriteSVG('monster-ghost');
+    card.appendChild(soul);
+    setTimeout(() => soul.remove(), 950);
+  }
+
+  // Death sequence: the killing blow lands, the monster screams, shakes,
+  // flashes white, tips over and fades — and only then does the floor
+  // clear. Regular deaths take ~700ms, bosses ~1100ms (bigger scream,
+  // board shake, "BOSS SLAIN!"). While dying, drags are blocked
+  // (startDrag guard) and the monster cannot bite back (monsterAttack
+  // guard + no attack is scheduled in the kill branch), so the floor can
+  // only ever increment once per kill, in floorCleared below.
+  function playDeath() {
+    if (state.dying) return;
+    const boss = state.monster.isBoss;
+    state.dying = true;
+    const card = $('#monster-card');
+    card.classList.add('dying');
+    if (boss) card.classList.add('dying-boss');
+    sfx.scream(boss);
+    floatText(boss ? 'BOSS SLAIN!' : 'SLAIN!', 'slain');
+    if (!reducedMotion) {
+      // Quick white flash on the board, and a board shake for bosses.
+      boardEl.animate(
+        [{ filter: 'brightness(2.2)' }, { filter: 'brightness(1)' }],
+        { duration: 300, easing: 'ease-out' },
+      );
+      if (boss) {
+        document.querySelector('.board-wrap').animate(
+          [
+            { transform: 'translateX(0)' },
+            { transform: 'translateX(-5px)' },
+            { transform: 'translateX(5px)' },
+            { transform: 'translateX(-4px)' },
+            { transform: 'translateX(0)' },
+          ],
+          { duration: 250, iterations: 2, easing: 'steps(4)' },
+        );
+      }
+      spawnSoul();
+    }
+    const deathMs = reducedMotion ? 350 : boss ? 1100 : 700;
+    setTimeout(() => {
+      card.classList.remove('dying', 'dying-boss');
+      state.dying = false;
+      floorCleared();
+    }, deathMs);
   }
 
   function floorCleared() {
@@ -691,7 +752,7 @@ if (typeof document !== 'undefined') {
     const diff = DIFFICULTIES[state.difficulty];
     state.maxHp = diff.hp + (state.heroId === 'moss' ? 10 : 0);
     state.hp = state.maxHp; state.block = 0; state.gold = 0; state.score = 0;
-    state.floor = 1; state.kills = 0; state.relics = []; state.over = false; state.paused = false;
+    state.floor = 1; state.kills = 0; state.relics = []; state.over = false; state.paused = false; state.dying = false;
     const hero = HEROES.find((h) => h.id === state.heroId);
     $('#hero-chip').innerHTML = `${spriteSVG(hero.sprite)} ${state.heroName} · ${hero.name}`;
     $('#setup-screen').hidden = true;
