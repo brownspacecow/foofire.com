@@ -26,10 +26,22 @@
       }
 
       .crypt-frame {
-        background: #0e0818;
+        background-color: #17102a;
+        background-image:
+          repeating-linear-gradient(0deg, transparent 0 30px, rgba(0, 0, 0, 0.45) 30px 33px),
+          repeating-linear-gradient(90deg, transparent 0 60px, rgba(0, 0, 0, 0.45) 60px 63px),
+          linear-gradient(#1d1533, #0e0818);
         border: 4px solid var(--accent-soft);
-        box-shadow: var(--shadow-hard);
+        box-shadow: 0 0 0 2px #0e0818, 0 0 0 4px #8a6d1f, var(--shadow-hard);
         padding: 1rem;
+      }
+
+      /* Pixel sprites: crisp, chunky, scale to their container. */
+      .pixel-sprite {
+        display: block;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
       }
 
       .pixel-title {
@@ -137,12 +149,22 @@
       }
 
       .hero-emoji {
-        font-size: 2.2rem;
-        line-height: 1;
+        width: 3.2rem;
+        height: 3.2rem;
+        flex: 0 0 auto;
+        filter: drop-shadow(2px 2px 0 #000);
       }
 
       .hero-emoji.big {
-        font-size: 3rem;
+        width: 4.5rem;
+        height: 4.5rem;
+      }
+
+      .hero-chip .pixel-sprite {
+        width: 1.6rem;
+        height: 1.6rem;
+        display: inline-block;
+        vertical-align: -0.35rem;
       }
 
       .hero-name {
@@ -329,8 +351,9 @@
         align-items: center;
         gap: 0.9rem;
         padding: 0.8rem;
-        background: #1b1238;
-        border: 3px solid var(--ink);
+        background-color: #1d1530;
+        background-image: repeating-linear-gradient(0deg, transparent 0 26px, rgba(0, 0, 0, 0.4) 26px 28px);
+        border: 3px solid #8a6d1f;
         border-bottom: none;
       }
 
@@ -340,8 +363,10 @@
       }
 
       .monster-emoji {
-        font-size: 2.6rem;
-        line-height: 1;
+        width: 3.4rem;
+        height: 3.4rem;
+        flex: 0 0 auto;
+        filter: drop-shadow(2px 2px 0 #000);
       }
 
       .monster-info {
@@ -379,8 +404,12 @@
 
       .board-wrap {
         position: relative;
-        border: 3px solid var(--ink);
-        background: #120a2a;
+        border: 4px solid var(--accent-soft);
+        box-shadow: 0 0 0 2px #0e0818, 0 0 0 4px #8a6d1f;
+        background-color: #17102a;
+        background-image:
+          repeating-linear-gradient(0deg, transparent 0 30px, rgba(0, 0, 0, 0.45) 30px 33px),
+          repeating-linear-gradient(90deg, transparent 0 60px, rgba(0, 0, 0, 0.45) 60px 63px);
         padding: 0.5rem;
       }
 
@@ -399,13 +428,19 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0;
-        border: 3px solid var(--border);
-        border-radius: 0.6rem;
-        background: var(--panel-soft);
-        font-size: clamp(1.3rem, 6vw, 2rem);
+        padding: 6%;
+        border: 3px solid #4a3a6b;
+        border-radius: 0;
+        background: #241d33;
+        box-shadow: inset 0 0 0 2px #17102a, inset 3px 3px 0 rgba(255, 255, 255, 0.05);
         line-height: 1;
         cursor: pointer;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .tile .pixel-sprite {
+        filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6));
       }
 
       .tile.in-path {
@@ -415,10 +450,10 @@
         filter: brightness(1.25);
       }
 
-      .tile-sword { background: #3d1a2e; }
-      .tile-shield { background: #1a2e4d; }
-      .tile-potion { background: #1d4030; }
-      .tile-coin { background: #4d3d10; }
+      .tile-sword { background: #2e1a28; }
+      .tile-shield { background: #1a2438; }
+      .tile-potion { background: #1a2e22; }
+      .tile-coin { background: #33291a; }
 
       #board.paused {
         opacity: 0.4;
@@ -488,10 +523,18 @@
       }
 
       .relic-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
         padding: 0.25rem 0.5rem;
         border: 2px solid var(--accent-soft);
         background: #4a3410;
         font-weight: 700;
+      }
+
+      .relic-chip .pixel-sprite {
+        width: 1.1rem;
+        height: 1.1rem;
       }
 
       .relics-empty {
@@ -637,7 +680,7 @@
         border-color: var(--accent-soft);
       }
 
-      .relic-emoji { font-size: 1.8rem; }
+      .relic-emoji { width: 2.6rem; height: 2.6rem; margin: 0 auto; }
       .relic-choice strong { font-family: var(--font-pixel); font-size: 0.55rem; color: var(--accent-soft); }
       .relic-choice span:last-child { font-size: 0.85rem; color: var(--muted); }
 
@@ -738,7 +781,7 @@
               <span class="stat-label">Block</span><strong id="hud-block">0</strong>
             </div>
             <div class="hud-stat">
-              <span class="stat-label">Gold 🪙</span><strong id="hud-gold">0</strong>
+              <span class="stat-label">Gold</span><strong id="hud-gold">0</strong>
             </div>
             <div class="hud-stat">
               <span class="stat-label">Score</span><strong id="hud-score">0</strong>
@@ -751,7 +794,7 @@
           </div>
 
           <div class="monster-card" id="monster-card">
-            <span class="monster-emoji" id="monster-emoji" aria-hidden="true">🟢</span>
+            <span class="monster-emoji" id="monster-emoji" aria-hidden="true"></span>
             <div class="monster-info">
               <span class="monster-name" id="monster-name">Squeaky Slime</span>
               <div class="monster-meter"><span id="monster-fill" style="width: 100%"></span></div>
@@ -788,7 +831,7 @@
     <!-- Relic choice (boss reward) -->
     <div class="overlay" id="relic-modal" hidden>
       <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="relic-title">
-        <h2 id="relic-title">👑 Boss beaten!</h2>
+        <h2 id="relic-title">Boss beaten!</h2>
         <p>Pick one relic to keep for the rest of this run.</p>
         <div class="relic-choices" id="relic-choices"></div>
         <button class="secondary" id="relic-close" type="button">Not now</button>
