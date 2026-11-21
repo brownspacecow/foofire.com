@@ -11,7 +11,7 @@ import { T } from './tiles.js';
 const HEIGHTS = {
   [T.BEDROCK]: 1.5,
   [T.DIRT]: 0.62,
-  [T.GOLD]: 0.62,
+  [T.GOLD]: 0.68,
   [T.DUG]: 0.12,
   [T.FLOOR]: 0.16,
   [T.WATER]: 0.22,
@@ -23,7 +23,7 @@ const HEIGHTS = {
 const COLORS = {
   [T.BEDROCK]: '#241c30',
   [T.DIRT]: '#6e4a2c',
-  [T.GOLD]: '#d9a13c',
+  [T.GOLD]: '#ffd23e',
   [T.DUG]: '#57504f',
   [T.FLOOR]: '#9a9184',
   [T.WATER]: '#2f8fd8',
@@ -119,6 +119,7 @@ export class Renderer {
     this.levelGroup = null;
     this.terrain = null;
     this.tint = null;
+    this.goldNuggets = null;
     this.markers = null;
     this.instanceTiles = [];
     this.lastVersion = -1;
@@ -179,6 +180,17 @@ export class Renderer {
     this.resize();
   }
 
+  /** World tile coords -> pixels inside the stage element, for HUD floaters. */
+  worldToScreen(x, z) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const v = new THREE.Vector3(x, 0.6, z).project(this.camera);
+    return {
+      x: ((v.x + 1) / 2) * rect.width,
+      y: ((1 - v.y) / 2) * rect.height,
+      behind: v.z > 1,
+    };
+  }
+
   resize() {
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
@@ -216,6 +228,7 @@ export class Renderer {
     this.levelGroup = null;
     this.terrain = null;
     this.tint = null;
+    this.goldNuggets = null;
     this.markers = null;
     this.features = {};
     this.instanceTiles = [];
@@ -232,6 +245,12 @@ export class Renderer {
       this.levelGroup.remove(this.tint);
       this.tint.geometry.dispose();
       this.tint.material.dispose();
+    }
+    if (this.goldNuggets) {
+      this.levelGroup.remove(this.goldNuggets);
+      this.goldNuggets.geometry.dispose();
+      this.goldNuggets.material.dispose();
+      this.goldNuggets = null;
     }
 
     const count = world.tiles.length;
@@ -262,7 +281,12 @@ export class Renderer {
       }
       matrix.compose(position, quaternion, scale);
       mesh.setMatrixAt(index, matrix);
-      mesh.setColorAt(index, jitterColor(COLORS[tile] ?? '#555', x, y));
+      mesh.setColorAt(
+        index,
+        tile === T.GOLD
+          ? jitterColor(COLORS[tile], x, y, 0.05)
+          : jitterColor(COLORS[tile] ?? '#555', x, y)
+      );
       this.instanceTiles.push({ x, y });
     }
     mesh.instanceMatrix.needsUpdate = true;
@@ -271,6 +295,51 @@ export class Renderer {
     mesh.userData.tileMesh = true;
     this.levelGroup.add(mesh);
     this.terrain = mesh;
+
+    // Bright gold nuggets on every seam so gold reads at a glance, even zoomed out.
+    const goldTiles = [];
+    for (let index = 0; index < count; index += 1) {
+      if (world.tiles[index] === T.GOLD) goldTiles.push(index);
+    }
+    if (goldTiles.length) {
+      const nuggetGeometry = new THREE.BoxGeometry(0.22, 0.12, 0.22);
+      const nuggetMaterial = new THREE.MeshLambertMaterial({
+        color: '#ffe066',
+        emissive: '#8a6300',
+      });
+      const nuggets = new THREE.InstancedMesh(
+        nuggetGeometry,
+        nuggetMaterial,
+        goldTiles.length * 3
+      );
+      const nuggetMatrix = new THREE.Matrix4();
+      const nuggetPos = new THREE.Vector3();
+      const nuggetScale = new THREE.Vector3(1, 1, 1);
+      const nuggetQuat = new THREE.Quaternion();
+      const nuggetEuler = new THREE.Euler();
+      goldTiles.forEach((index, slot) => {
+        const gx = world.xOf(index);
+        const gy = world.yOf(index);
+        const hash = Math.sin(gx * 12.9898 + gy * 78.233) * 43758.5453;
+        const spin = (hash - Math.floor(hash)) * 0.9;
+        const spots = [
+          [-0.22, -0.18],
+          [0.2, 0.05],
+          [-0.02, 0.24],
+        ];
+        spots.forEach(([dx, dz], j) => {
+          nuggetEuler.set(0, spin + j * 0.7, 0);
+          nuggetQuat.setFromEuler(nuggetEuler);
+          nuggetPos.set(gx + 0.5 + dx, HEIGHTS[T.GOLD] + 0.06, gy + 0.5 + dz);
+          nuggetMatrix.compose(nuggetPos, nuggetQuat, nuggetScale);
+          nuggets.setMatrixAt(slot * 3 + j, nuggetMatrix);
+        });
+      });
+      nuggets.instanceMatrix.needsUpdate = true;
+      nuggets.receiveShadow = this.shadows;
+      this.levelGroup.add(nuggets);
+      this.goldNuggets = nuggets;
+    }
 
     this.buildRoomProps(game);
 
@@ -368,7 +437,7 @@ export class Renderer {
       const cz = sz / tiles.length;
       const y = 0.2;
       if (roomId === 'treasury') {
-        const gold = lambert('#ffd166');
+        const gold = new THREE.MeshLambertMaterial({ color: '#ffcf3f', emissive: '#7a5200' });
         const scale = 1 + Math.min(1.5, tiles.length / 8);
         group.add(box(gold, 0.5 * scale, 0.22, 0.4 * scale, cx, y + 0.11, cz));
         group.add(box(gold, 0.3 * scale, 0.16, 0.26 * scale, cx + 0.18, y + 0.28, cz + 0.08));
