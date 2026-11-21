@@ -38,6 +38,15 @@
       "desc": "Creatures practise here, spending gold to gain levels."
     },
     {
+      "id": "medical",
+      "name": "Medical Room",
+      "icon": "\ud83e\ude79",
+      "color": "#57c9b0",
+      "cost": 20,
+      "minTiles": 4,
+      "desc": "A cosy cot with a red cross. Hurt creatures come here to patch themselves up, much faster than sleeping it off."
+    },
+    {
       "id": "library",
       "name": "Library",
       "icon": "\ud83d\udcda",

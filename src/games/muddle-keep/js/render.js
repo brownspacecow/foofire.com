@@ -540,6 +540,14 @@ export class Renderer {
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), straw);
         head.position.set(cx, y + 0.85, cz);
         group.add(pole, body, head);
+      } else if (roomId === 'medical') {
+        const wood = lambert('#7a5a3a');
+        const sheet = lambert('#f2f6f2');
+        const cross = lambert('#e05252');
+        group.add(box(wood, 0.9, 0.12, 0.5, cx, y + 0.06, cz));
+        group.add(box(sheet, 0.84, 0.1, 0.44, cx, y + 0.16, cz));
+        group.add(box(cross, 0.2, 0.04, 0.07, cx, y + 0.22, cz));
+        group.add(box(cross, 0.07, 0.04, 0.2, cx, y + 0.22, cz));
       } else if (roomId === 'library') {
         const colors = ['#4a7fc9', '#c94f4f', '#4a9e5f'];
         colors.forEach((color, i) => {

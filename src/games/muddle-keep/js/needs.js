@@ -101,6 +101,28 @@ export function useRoom(manager, creature, state, dt) {
     return;
   }
 
+  if (state === 'heal') {
+    // The cot patches monsters up three times faster than sleeping
+    // does, and it is the only way to recover while still awake.
+    if (!world.hasRoom('medical') || creature.hp >= creature.maxHp) {
+      creature.state = 'idle';
+      creature.destination = null;
+      return;
+    }
+    creature.hp = Math.min(creature.maxHp, creature.hp + 12 * dt);
+    creature.mood = Math.min(100, creature.mood + 0.5 * dt);
+    creature.workPulse += dt;
+    if (creature.workPulse > 0.8) {
+      creature.workPulse = 0;
+      game.emit('heal', { x: creature.x, y: creature.y });
+    }
+    if (creature.hp >= creature.maxHp) {
+      creature.state = 'idle';
+      creature.destination = null;
+    }
+    return;
+  }
+
   if (state === 'train') {
     if (creature.level >= MAX_LEVEL || !world.hasRoom('training') || game.economy.gold < 1) {
       creature.state = 'idle';

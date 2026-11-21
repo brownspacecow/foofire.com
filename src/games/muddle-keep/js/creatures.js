@@ -207,6 +207,16 @@ export class CreatureManager {
       seekRoom(this, creature, 'lair', 'sleep', dt);
       return;
     }
+    // A hurt monster heads for the Medical Room before anything
+    // optional: training and wandering can wait until it is patched
+    // up. Once it is on the cot it stays there until fully healed —
+    // without this it would drift off the moment it crossed half
+    // health. Hunger and exhaustion above still interrupt, and a
+    // hero nearby still comes first.
+    if (creature.state === 'heal' || creature.hp < creature.maxHp * 0.5) {
+      seekRoom(this, creature, 'medical', 'heal', dt);
+      return;
+    }
     // A monster that is already training keeps training. Without this,
     // wantsTraining was re-rolled every frame and its 4s throttle made
     // the answer "no" almost every frame — so a monster trained for a
