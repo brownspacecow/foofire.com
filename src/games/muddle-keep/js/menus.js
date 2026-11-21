@@ -149,6 +149,7 @@ export class Menus {
           <li><strong>Gold seams never run out.</strong> Mark one with Dig and up to four imps will mine it, one from each open side.</li>
           <li><strong>Stop time</strong> with the ⏳ button or T to queue digs, rooms and traps while the dungeon holds still. Press Resume when you are ready.</li>
           <li><strong>Rooms</strong> go on floor. Treasury holds gold, Lair invites creatures, Hatchery feeds them, Training levels them up (veterans grow bigger and tougher), Library researches, Workshop unlocks traps.</li>
+          <li><strong>Move the Hero Gate</strong> with the Hand tool: pick it up and tap any clear floor tile. Knights will enter through the new spot.</li>
           <li><strong>Creatures</strong> fight on their own. Pick them up with the Hand or Slap them to send them flying and speed up their work.</li>
           <li><strong>Spells</strong> cost mana: Zoomies, Soup of Health, Rally Yell and, later, Zap.</li>
           <li>Knights march on the <strong>Dungeon Heart</strong>. Lose the Heart and the run is over.</li>

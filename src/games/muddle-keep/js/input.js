@@ -22,7 +22,8 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     const tile = renderer.tileAt(clientX, clientY);
     if (!tile) return;
     const result = game.applyTool(tile.x, tile.y, options);
-    if (result?.message) ui.toast(result.message, 'warn');
+    // game.error() already toasted this via the 'error' event; don't toast twice.
+    if (result?.message && !result.emitted) ui.toast(result.message, 'warn');
   };
 
   const beginPaint = (clientX, clientY, game) => {
@@ -65,7 +66,7 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     start = { x: event.clientX, y: event.clientY };
     moved = false;
     const tool = game.tool?.type;
-    if (game.handCreature) {
+    if (game.handCreature || game.handGate) {
       mode = 'carry';
       return;
     }

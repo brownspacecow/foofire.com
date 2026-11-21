@@ -38,6 +38,8 @@ export class Game {
     this.timeStopped = false;
     this.tool = { type: 'dig' };
     this.handCreature = null;
+    this.handGate = false;
+    this.carriedTile = null;
     this.events = [];
     this.readyRooms = new Set();
     this.cameraFocus = { x: this.world.heart.x, y: this.world.heart.y };
@@ -177,7 +179,7 @@ export class Game {
 
   error(text) {
     this.emit('error', { text });
-    return { ok: false, message: text };
+    return { ok: false, message: text, emitted: true };
   }
 
   applyTool(x, y, options = {}) {
@@ -333,13 +335,33 @@ export class Game {
     if (this.handCreature) {
       return this.dropCreature(x, y);
     }
+    if (this.handGate) {
+      return this.dropGate(x, y);
+    }
     const creature = this.creatures.findAt(x + 0.5, y + 0.5, 0.95);
-    if (!creature) return { ok: false, message: 'Tap a creature to pick it up.' };
-    this.handCreature = creature;
-    creature.carried = true;
-    creature.path = null;
-    creature.state = 'carried';
-    this.emit('pickup', { x: creature.x, y: creature.y, name: creature.def.name });
+    if (creature) {
+      this.handCreature = creature;
+      creature.carried = true;
+      creature.path = null;
+      creature.state = 'carried';
+      this.emit('pickup', { x: creature.x, y: creature.y, name: creature.def.name });
+      return { ok: true };
+    }
+    if (x === this.world.gate.x && y === this.world.gate.y) {
+      this.handGate = true;
+      this.carriedTile = { x, y };
+      this.emit('gate-pickup', { x, y });
+      return { ok: true };
+    }
+    return { ok: false, message: 'Tap a creature or the Hero Gate to pick it up.' };
+  }
+
+  dropGate(x, y) {
+    if (!this.handGate) return { ok: false };
+    if (!this.world.moveGate(x, y)) return this.error('The gate needs a clear floor tile.');
+    this.handGate = false;
+    this.carriedTile = null;
+    this.emit('gate-placed', { x, y });
     return { ok: true };
   }
 
@@ -356,11 +378,17 @@ export class Game {
     creature.destination = null;
     creature.repath = 0;
     this.handCreature = null;
+    this.handGate = false;
+    this.carriedTile = null;
     this.emit('drop', { x: creature.x, y: creature.y });
     return { ok: true };
   }
 
   updateCarriedCreature(x, y) {
+    if (this.handGate) {
+      if (x != null) this.carriedTile = { x, y };
+      return;
+    }
     if (!this.handCreature || x == null) return;
     this.handCreature.x = x + 0.5;
     this.handCreature.y = y + 0.5;

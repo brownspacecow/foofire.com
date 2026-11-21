@@ -259,6 +259,20 @@ export class World {
     return { destroyed: true };
   }
 
+  /** Relocate the hero gate to a clear floor tile. */
+  moveGate(x, y) {
+    if (x < 0 || y < 0 || x >= this.w || y >= this.h) return false;
+    const index = this.idx(x, y);
+    if (this.tiles[index] !== T.FLOOR) return false;
+    if (this.heart.x === x && this.heart.y === y) return false;
+    if (this.portal.x === x && this.portal.y === y) return false;
+    if (this.traps.has(index)) return false;
+    if (this.walls.has(index)) return false;
+    this.gate = { x, y };
+    this.version += 1;
+    return true;
+  }
+
   placeTrap(index, trapId) {
     if (this.tiles[index] !== T.FLOOR) return false;
     this.traps.set(index, { type: trapId, cooldown: 0 });
@@ -320,6 +334,7 @@ export class World {
       rooms: this.rooms.map((id) => id ?? ''),
       walls: Array.from(this.walls.entries()),
       traps: Array.from(this.traps.entries()),
+      gate: { ...this.gate },
       heartHp: this.heart.hp,
       w: this.w,
       h: this.h,
@@ -337,6 +352,10 @@ export class World {
     this.rooms = Array.from({ length: this.w * this.h }, (_, i) => data.rooms?.[i] || null);
     this.walls = new Map(data.walls ?? []);
     this.traps = new Map(data.traps ?? []);
+    if (data.gate && Number.isFinite(data.gate.x) && Number.isFinite(data.gate.y)
+      && data.gate.x >= 0 && data.gate.y >= 0 && data.gate.x < this.w && data.gate.y < this.h) {
+      this.gate = { x: data.gate.x, y: data.gate.y };
+    }
     this.heart.hp = Number.isFinite(data.heartHp)
       ? Math.max(1, Math.min(this.heart.maxHp, data.heartHp))
       : this.heart.hp;

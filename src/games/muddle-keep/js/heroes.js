@@ -81,6 +81,7 @@ export class HeroManager {
       if (hero.dead) continue;
       this.updateHero(hero, dt);
     }
+    this.separate();
     if (this.list.some((hero) => hero.dead)) {
       this.list = this.list.filter((hero) => !hero.dead);
     }
@@ -141,7 +142,13 @@ export class HeroManager {
         const dy = Math.floor(slot / 3) - 1;
         const spot =
           world.nearestWalkable(gate.x + dx, gate.y + dy, 7) ?? { x: gate.x, y: gate.y };
-        this.list.push(new Hero(game, def, spot.x + 0.5, spot.y + 0.5, waveNumber));
+        this.list.push(new Hero(
+          game,
+          def,
+          spot.x + 0.5 + (Math.random() - 0.5) * 0.3,
+          spot.y + 0.5 + (Math.random() - 0.5) * 0.3,
+          waveNumber
+        ));
         total += 1;
         slot += 1;
       }
@@ -204,6 +211,34 @@ export class HeroManager {
     }
 
     this.march(hero, dt);
+  }
+
+  /** Nudge overlapping heroes apart so they never stack into one blob. */
+  separate() {
+    const alive = this.list.filter((hero) => !hero.dead);
+    const min = 0.55;
+    for (let i = 0; i < alive.length; i += 1) {
+      for (let j = i + 1; j < alive.length; j += 1) {
+        const a = alive[i];
+        const b = alive[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 0.001) {
+          a.x -= 0.2;
+          b.x += 0.2;
+          continue;
+        }
+        if (dist >= min) continue;
+        const push = (min - dist) / 2;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        a.x -= nx * push;
+        a.y -= ny * push;
+        b.x += nx * push;
+        b.y += ny * push;
+      }
+    }
   }
 
   nearestCreature(hero) {

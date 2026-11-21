@@ -26,6 +26,8 @@ const SOUND_ALIAS = {
   'hero-dug': 'dig',
   'wall-broken': 'wall',
   'trap-built': 'trap',
+  'gate-pickup': 'click',
+  'gate-placed': 'click',
   'time-stop': 'click',
   wages: 'wages',
 };
@@ -81,8 +83,6 @@ async function boot() {
     onFocus: (creature) => rig.focus(creature.x, creature.y),
     onFullscreen: () => toggleFullscreen(),
     onSpeed: () => toggleSpeed(),
-    onMute: () => toggleMute(),
-    onRestart: () => startRun(null),
     onZoom: (factor) => rig.zoom(factor),
     onResetCamera: () => {
       if (game) {
@@ -183,11 +183,6 @@ async function boot() {
     ui.setSpeed(speed);
   }
 
-  function toggleMute() {
-    applySettings({ muted: !profile.settings.muted });
-    ui.setMuted(profile.settings.muted);
-  }
-
   function resumeGame() {
     if (!game) return;
     paused = false;
@@ -280,6 +275,8 @@ async function boot() {
         ui.toast(`${event.icon ?? ''} ${event.name} ready!`.trim(), 'good');
       }
       if (event.type === 'research') ui.toast(`Researched: ${event.name}`, 'good');
+      if (event.type === 'gate-pickup') ui.toast('Hero Gate picked up — tap a floor tile to place it.', 'info');
+      if (event.type === 'gate-placed') ui.toast('Gate moved! Knights will now enter here.', 'good');
       if (event.type === 'time-stop') {
         ui.toast(
           event.stopped ? 'Time stopped — plan your dungeon.' : 'Time running again.',

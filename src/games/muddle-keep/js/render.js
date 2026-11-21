@@ -120,6 +120,8 @@ export class Renderer {
     this.terrain = null;
     this.tint = null;
     this.goldNuggets = null;
+    this.trapGroup = null;
+    this.trapPads = [];
     this.markers = null;
     this.instanceTiles = [];
     this.lastVersion = -1;
@@ -229,6 +231,8 @@ export class Renderer {
     this.terrain = null;
     this.tint = null;
     this.goldNuggets = null;
+    this.trapGroup = null;
+    this.trapPads = [];
     this.markers = null;
     this.features = {};
     this.instanceTiles = [];
@@ -251,6 +255,15 @@ export class Renderer {
       this.goldNuggets.geometry.dispose();
       this.goldNuggets.material.dispose();
       this.goldNuggets = null;
+    }
+    if (this.trapGroup) {
+      this.levelGroup.remove(this.trapGroup);
+      this.trapGroup.traverse((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
+      this.trapGroup = null;
+      this.trapPads = [];
     }
 
     const count = world.tiles.length;
@@ -339,6 +352,57 @@ export class Renderer {
       nuggets.receiveShadow = this.shadows;
       this.levelGroup.add(nuggets);
       this.goldNuggets = nuggets;
+    }
+
+    // Visible trap models, rebuilt with the terrain (trap edits bump world.version).
+    // Bounce traps are spring pads that press flat while recharging; dart traps
+    // are little brass barrels aimed at the Dungeon Heart.
+    if (world.traps.size) {
+      const group = new THREE.Group();
+      const baseMat = new THREE.MeshLambertMaterial({ color: '#4a4458' });
+      const springMat = new THREE.MeshLambertMaterial({ color: '#e07b39' });
+      const padMat = new THREE.MeshLambertMaterial({ color: '#ffd23e', emissive: '#7a5200' });
+      const stoneMat = new THREE.MeshLambertMaterial({ color: '#8c8aa0' });
+      const brassMat = new THREE.MeshLambertMaterial({ color: '#c9973f', emissive: '#4a3200' });
+      const tipMat = new THREE.MeshLambertMaterial({ color: '#e14b4b', emissive: '#5c0d0d' });
+      for (const [index, trap] of world.traps) {
+        const tx = world.xOf(index);
+        const ty = world.yOf(index);
+        const cx = tx + 0.5;
+        const cz = ty + 0.5;
+        const floorY = HEIGHTS[T.FLOOR];
+        if (trap.type === 'spike') {
+          const pad = new THREE.Group();
+          pad.position.set(cx, floorY, cz);
+          const base = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.1, 20), baseMat);
+          base.position.y = 0.05;
+          const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.19, 0.16, 10), springMat);
+          spring.position.y = 0.18;
+          const top = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.3, 0.09, 20), padMat);
+          top.position.y = 0.3;
+          pad.add(base, spring, top);
+          group.add(pad);
+          const def = game.content.trapById.get(trap.type);
+          this.trapPads.push({ pad: top, baseY: 0.3, index, maxCooldown: def?.cooldown ?? 4 });
+        } else if (trap.type === 'dart') {
+          const rig = new THREE.Group();
+          rig.position.set(cx, floorY, cz);
+          const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), stoneMat);
+          pedestal.position.y = 0.15;
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.14, 8), stoneMat);
+          post.position.y = 0.35;
+          const angle = Math.atan2(world.heart.x - tx, world.heart.y - ty);
+          const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.14, 0.14), brassMat);
+          barrel.position.y = 0.42;
+          barrel.rotation.y = angle - Math.PI / 2;
+          const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), tipMat);
+          tip.position.set(Math.sin(angle) * 0.32, 0.42, Math.cos(angle) * 0.32);
+          rig.add(pedestal, post, barrel, tip);
+          group.add(rig);
+        }
+      }
+      this.levelGroup.add(group);
+      this.trapGroup = group;
     }
 
     this.buildRoomProps(game);
@@ -692,6 +756,23 @@ export class Renderer {
       }
       if (this.features.heartLight) {
         this.features.heartLight.intensity = ratio < 0.35 ? 1 + Math.sin(time * 12) * 0.8 : 2.4;
+      }
+    }
+    if (this.trapPads.length) {
+      for (const entry of this.trapPads) {
+        const trap = world.traps.get(entry.index);
+        const frac = trap && entry.maxCooldown > 0
+          ? Math.min(1, Math.max(0, trap.cooldown) / entry.maxCooldown)
+          : 0;
+        entry.pad.position.y = entry.baseY - 0.1 * frac;
+        entry.pad.scale.set(1 - 0.1 * frac, 1 - 0.4 * frac, 1 - 0.1 * frac);
+      }
+    }
+    if (this.features.gate) {
+      if (game.handGate && game.carriedTile) {
+        this.features.gate.position.set(game.carriedTile.x + 0.5, 0, game.carriedTile.y + 0.5);
+      } else {
+        this.features.gate.position.set(world.gate.x + 0.5, 0, world.gate.y + 0.5);
       }
     }
     if (this.features.portalSwirl) {
