@@ -20,16 +20,18 @@ const HEIGHTS = {
   [T.DOOR]: 1.1,
 };
 
+// Torch-lit palette: deep warm darks so torchlight and the Heart read
+// as the light sources, with gold and lava as the hot accents.
 const COLORS = {
-  [T.BEDROCK]: '#241c30',
-  [T.DIRT]: '#6e4a2c',
+  [T.BEDROCK]: '#17101a',
+  [T.DIRT]: '#5d3a22',
   [T.GOLD]: '#ffd23e',
-  [T.DUG]: '#57504f',
-  [T.FLOOR]: '#9a9184',
-  [T.WATER]: '#2f8fd8',
-  [T.LAVA]: '#ff6a2a',
-  [T.WALL]: '#7d7789',
-  [T.DOOR]: '#8a5a34',
+  [T.DUG]: '#4a3f3c',
+  [T.FLOOR]: '#8a7f70',
+  [T.WATER]: '#1f6fb0',
+  [T.LAVA]: '#ff5a1a',
+  [T.WALL]: '#5c5468',
+  [T.DOOR]: '#6e4526',
 };
 
 const TASK_COLORS = {
@@ -44,10 +46,10 @@ function stoneTexture() {
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#c9c4bb';
+  ctx.fillStyle = '#a89e8d';
   ctx.fillRect(0, 0, size, size);
   for (let i = 0; i < 420; i += 1) {
-    const shade = 140 + Math.floor(Math.random() * 100);
+    const shade = 118 + Math.floor(Math.random() * 90);
     ctx.fillStyle = `rgba(${shade}, ${shade - 6}, ${shade - 14}, 0.7)`;
     const px = Math.random() * size;
     const py = Math.random() * size;
@@ -100,18 +102,20 @@ export class Renderer {
     container.append(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#120d1c');
-    this.scene.fog = new THREE.Fog('#120d1c', 34, 90);
+    // Near-black warm dark: the dungeon falls off into black at the
+    // edges and the torches and the Heart are the light sources.
+    this.scene.background = new THREE.Color('#0d0806');
+    this.scene.fog = new THREE.Fog('#0d0806', 30, 85);
 
     this.camera = new THREE.PerspectiveCamera(46, 1, 0.1, 220);
     this.camera.position.set(14, 20, 26);
 
-    this.hemi = new THREE.HemisphereLight('#d6c8ff', '#3a2830', 1.85);
+    this.hemi = new THREE.HemisphereLight('#8a6a4a', '#1a0f0a', 1.05);
     this.scene.add(this.hemi);
-    this.key = new THREE.DirectionalLight('#ffe4bb', 1.9);
+    this.key = new THREE.DirectionalLight('#ffb45c', 1.25);
     this.key.position.set(12, 24, 10);
     this.scene.add(this.key);
-    this.rim = new THREE.DirectionalLight('#7f8bff', 0.5);
+    this.rim = new THREE.DirectionalLight('#7f8bff', 0.35);
     this.rim.position.set(-14, 12, -12);
     this.scene.add(this.rim);
 
@@ -122,6 +126,8 @@ export class Renderer {
     this.goldNuggets = null;
     this.trapGroup = null;
     this.trapPads = [];
+    this.torchGroup = null;
+    this.torches = [];
     this.markers = null;
     this.instanceTiles = [];
     this.lastVersion = -1;
@@ -158,10 +164,10 @@ export class Renderer {
     this.renderer.setPixelRatio(
       this.quality === 'low' ? 1 : Math.min(window.devicePixelRatio || 1, 2)
     );
-    this.key.intensity = this.quality === 'low' ? 1.3 : 1.9;
+    this.key.intensity = this.quality === 'low' ? 0.85 : 1.25;
     if (this.scene.fog) {
-      this.scene.fog.near = this.quality === 'low' ? 28 : 34;
-      this.scene.fog.far = this.quality === 'low' ? 72 : 90;
+      this.scene.fog.near = this.quality === 'low' ? 26 : 30;
+      this.scene.fog.far = this.quality === 'low' ? 65 : 85;
     }
     // Real-time shadows on High only: the Low path stays shadow-free for
     // phones. Toggling needs a material refresh, so flag the terrain.
@@ -235,6 +241,8 @@ export class Renderer {
     this.trapPads = [];
     this.markers = null;
     this.features = {};
+    this.torchGroup = null;
+    this.torches = [];
     this.instanceTiles = [];
   }
 
@@ -264,6 +272,15 @@ export class Renderer {
       });
       this.trapGroup = null;
       this.trapPads = [];
+    }
+    if (this.torchGroup) {
+      this.levelGroup.remove(this.torchGroup);
+      this.torchGroup.traverse((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
+      this.torchGroup = null;
+      this.torches = [];
     }
 
     const count = world.tiles.length;
@@ -406,6 +423,7 @@ export class Renderer {
     }
 
     this.buildRoomProps(game);
+    this.buildTorches(game);
 
     // Warm tint over rooms and a cooler wash over floor.
     const floorTiles = [];
@@ -416,9 +434,11 @@ export class Renderer {
     if (floorTiles.length) {
       const tintGeometry = new THREE.PlaneGeometry(0.92, 0.92);
       tintGeometry.rotateX(-Math.PI / 2);
-      const tintMaterial = new THREE.MeshBasicMaterial({
+      // Lambert, not Basic: the tint must fall into shadow with the
+      // rest of the dungeon instead of glowing flat in the dark.
+      const tintMaterial = new THREE.MeshLambertMaterial({
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.5,
         depthWrite: false,
       });
       const tint = new THREE.InstancedMesh(tintGeometry, tintMaterial, floorTiles.length);
@@ -552,6 +572,128 @@ export class Renderer {
     }
   }
 
+  /** Wall torches: the dungeon's light. Rebuilt with the terrain so a
+   * torch never floats where a wall was dug away. Flames are unlit
+   * (MeshBasicMaterial) so they read in the dark on every quality;
+   * the first few also carry a real warm point light on High. */
+  buildTorches(game) {
+    const world = game.world;
+    const candidates = [];
+    for (let index = 0; index < world.tiles.length; index += 1) {
+      const tile = world.tiles[index];
+      if (tile !== T.WALL && tile !== T.BEDROCK) continue;
+      const x = world.xOf(index);
+      const y = world.yOf(index);
+      // Needs open floor on one side to shine onto, and that floor
+      // must not be the Heart, the Gate or a trap tile.
+      const open = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => {
+        const nx = x + dx;
+        const ny = y + dy;
+        const t = world.tile(nx, ny);
+        if (t !== T.FLOOR && t !== T.DUG) return false;
+        if (nx === world.heart.x && ny === world.heart.y) return false;
+        if (nx === world.gate.x && ny === world.gate.y) return false;
+        if (world.traps.has(world.idx(nx, ny))) return false;
+        return true;
+      });
+      if (!open) continue;
+      candidates.push({ x, y, dx: open[0], dy: open[1] });
+    }
+    // Spread them out: greedy pick with a minimum gap, at most eight.
+    const picked = [];
+    for (const c of candidates) {
+      if (picked.length >= 8) break;
+      if (picked.some((p) => Math.hypot(p.x - c.x, p.y - c.y) < 5)) continue;
+      picked.push(c);
+    }
+    // Four braziers ring the Heart itself, so the room where the
+    // fighting happens is always lit, even before any walls are built.
+    const ring = [];
+    for (let dy = -3; dy <= 3; dy += 1) {
+      for (let dx = -3; dx <= 3; dx += 1) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== 3) continue;
+        const nx = world.heart.x + dx;
+        const ny = world.heart.y + dy;
+        const t = world.tile(nx, ny);
+        if (t !== T.FLOOR && t !== T.DUG) continue;
+        if (world.traps.has(world.idx(nx, ny))) continue;
+        ring.push({ x: nx, y: ny, angle: Math.atan2(dy, dx) });
+      }
+    }
+    ring.sort((a, b) => a.angle - b.angle);
+    for (let k = 0; k < 4 && ring.length; k += 1) {
+      const spot = ring[Math.floor((k * ring.length) / 4)];
+      if (spot) picked.push({ x: spot.x, y: spot.y, dx: 0, dy: 0, brazier: true });
+    }
+    if (!picked.length) return;
+    const group = new THREE.Group();
+    const poleMat = new THREE.MeshLambertMaterial({ color: '#3a2c1e' });
+    const stoneMat = new THREE.MeshLambertMaterial({ color: '#5c5468' });
+    const flameMat = new THREE.MeshBasicMaterial({ color: '#ff9a3c' });
+    const coreMat = new THREE.MeshBasicMaterial({ color: '#ffe08a' });
+    // Braziers light the Heart room where the fighting happens, so
+    // they get their lights first; wall torches share the rest.
+    let litWall = 0;
+    let litBrazier = 0;
+    picked.forEach((spot, i) => {
+      const torch = new THREE.Group();
+      if (spot.brazier) {
+        // A squat stone brazier standing in the middle of its tile.
+        torch.position.set(spot.x + 0.5, 0, spot.y + 0.5);
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.5, 0.34), stoneMat);
+        base.position.y = 0.25;
+        const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.12, 0.18, 10), stoneMat);
+        bowl.position.y = 0.58;
+        torch.add(base, bowl);
+      } else {
+        // Standing on the open floor just in front of the wall.
+        torch.position.set(
+          spot.x + spot.dx + 0.5 - spot.dx * 0.28,
+          0,
+          spot.y + spot.dy + 0.5 - spot.dy * 0.28
+        );
+        const pole = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.15, 0.09), poleMat);
+        pole.position.y = 0.58;
+        const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.05, 0.14, 8), poleMat);
+        cup.position.y = 1.2;
+        torch.add(pole, cup);
+      }
+      const flameY = spot.brazier ? 0.95 : 1.55;
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.85, 8), flameMat);
+      flame.position.y = flameY;
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), coreMat);
+      core.position.y = flameY - 0.12;
+      core.scale.y = 1.6;
+      // A soft additive halo so the flame reads as glowing, not just orange.
+      const halo = new THREE.Mesh(
+        new THREE.ConeGeometry(0.5, 1.2, 8),
+        new THREE.MeshBasicMaterial({
+          color: '#ff9a3c', transparent: true, opacity: 0.3,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })
+      );
+      halo.position.y = flameY;
+      torch.add(flame, core, halo);
+      const entry = { flame, halo, phase: i * 1.7, base: 2.2, light: null };
+      // Real light is the expensive part: two braziers and four wall
+      // torches carry one on High, the rest are flame-only.
+      const litCount = spot.brazier ? litBrazier : litWall;
+      const budget = spot.brazier ? 2 : 4;
+      if (this.quality === 'high' && litCount < budget) {
+        const light = new THREE.PointLight('#ff9a3c', 2.2, 8);
+        light.position.y = flameY;
+        torch.add(light);
+        entry.light = light;
+        if (spot.brazier) litBrazier += 1;
+        else litWall += 1;
+      }
+      this.torches.push(entry);
+      group.add(torch);
+    });
+    this.levelGroup.add(group);
+    this.torchGroup = group;
+  }
+
   rebuildMarkers(game) {
     if (this.markers) {
       this.levelGroup.remove(this.markers);
@@ -627,12 +769,12 @@ export class Renderer {
     ring.position.y = 0.82;
     ring.rotation.x = Math.PI / 2;
     heart.add(ring);
-    if (this.quality === 'high') {
-      const light = new THREE.PointLight('#ff6b8b', 2.4, 7.5);
-      light.position.y = 1.4;
-      heart.add(light);
-      this.features.heartLight = light;
-    }
+    // The Heart is a light source in its own right, on every quality:
+    // a steady heartbeat glow that flares when the Heart takes a hit.
+    const light = new THREE.PointLight('#ff6b8b', this.quality === 'low' ? 1.6 : 2.8, 8);
+    light.position.y = 1.4;
+    heart.add(light);
+    this.features.heartLight = light;
     this.levelGroup.add(heart);
     this.features.heart = heart;
     this.features.crystal = crystal;
@@ -658,7 +800,7 @@ export class Renderer {
     flag.position.set(0, 1.88, 0);
     gate.add(flag);
     if (this.quality === 'high') {
-      const torch = new THREE.PointLight('#ffb35c', 1.6, 7);
+      const torch = new THREE.PointLight('#ffb35c', 2.0, 8);
       torch.position.set(0, 2.1, 0);
       gate.add(torch);
       this.features.gateLight = torch;
@@ -731,7 +873,21 @@ export class Renderer {
         this.features.heartMat.emissiveIntensity = this.heartFlash > 0 ? 2.8 : 1.1;
       }
       if (this.features.heartLight) {
-        this.features.heartLight.intensity = ratio < 0.35 ? 1 + Math.sin(time * 12) * 0.8 : 2.4;
+        const base = this.quality === 'low' ? 1.6 : 2.8;
+        // Heartbeat: a slow thump, plus a fast alarm flicker when low.
+        this.features.heartLight.intensity = ratio < 0.35
+          ? 1 + Math.sin(time * 12) * 0.8
+          : base + Math.sin(time * 3) * 0.45 + this.heartFlash * 1.2;
+      }
+      if (this.torches) {
+        for (const torch of this.torches) {
+          // Each flame dances on its own rhythm.
+          const wobble = Math.sin(time * 11 + torch.phase) * 0.5
+            + Math.sin(time * 23 + torch.phase * 2) * 0.3;
+          torch.flame.scale.set(1 + wobble * 0.08, 1 + wobble * 0.22, 1 + wobble * 0.08);
+          if (torch.halo) torch.halo.scale.setScalar(1 + wobble * 0.12);
+          if (torch.light) torch.light.intensity = torch.base * (1 + wobble * 0.25);
+        }
       }
     }
     if (this.trapPads.length) {
