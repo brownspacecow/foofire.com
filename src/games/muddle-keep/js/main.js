@@ -55,6 +55,7 @@ async function boot() {
   let previewGame = null;
   let paused = false;
   let resultTimer = null;
+  let speed = 1;
 
   const menus = new Menus(menuRoot, {
     content,
@@ -79,6 +80,9 @@ async function boot() {
     onHelp: () => menus.showHelp(),
     onFocus: (creature) => rig.focus(creature.x, creature.y),
     onFullscreen: () => toggleFullscreen(),
+    onSpeed: () => toggleSpeed(),
+    onMute: () => toggleMute(),
+    onRestart: () => startRun(null),
     onZoom: (factor) => rig.zoom(factor),
     onResetCamera: () => {
       if (game) {
@@ -173,6 +177,16 @@ async function boot() {
   document.addEventListener('fullscreenchange', () => {
     ui.setFullscreen(Boolean(document.fullscreenElement));
   });
+
+  function toggleSpeed() {
+    speed = speed === 1 ? 2 : 1;
+    ui.setSpeed(speed);
+  }
+
+  function toggleMute() {
+    applySettings({ muted: !profile.settings.muted });
+    ui.setMuted(profile.settings.muted);
+  }
 
   function resumeGame() {
     if (!game) return;
@@ -303,6 +317,10 @@ async function boot() {
       if (event.type === 'hero-died' && event.boss) {
         ui.toast('Baron Bumblefrost has left the dungeon.', 'good');
       }
+      if (event.type === 'hero-died' && event.bounty > 0) {
+        const pos = renderer.worldToScreen(event.x, event.y);
+        if (!pos.behind) ui.floatText(`+${event.bounty} gold`, pos.x, pos.y);
+      }
       if (event.type === 'wave') {
         ui.toast(`Wave ${event.wave}: ${event.label} — ${event.count} intruders!`, 'warn');
       }
@@ -320,7 +338,7 @@ async function boot() {
     last = now;
 
     if (game && !menus.open && !paused && game.status === 'playing') {
-      accumulator += dt;
+      accumulator += dt * speed;
       let steps = 0;
       while (accumulator >= STEP && steps < 4) {
         game.update(STEP);
@@ -357,6 +375,7 @@ async function boot() {
     getMenus: () => menus,
     onPause: () => togglePause(),
     onFullscreen: () => toggleFullscreen(),
+    onSpeed: () => toggleSpeed(),
   });
 
   const unlock = () => audio.unlock();
