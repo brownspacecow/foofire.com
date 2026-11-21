@@ -799,6 +799,63 @@
       .relic-choice strong { font-family: var(--font-pixel); font-size: 0.55rem; color: #F8B800; }
       .relic-choice span:last-child { font-size: 0.85rem; color: #BCBCBC; }
 
+      /* ---- Crypt Shop ---- */
+      .shop-gold {
+        font-family: var(--font-pixel);
+        font-size: 0.7rem;
+        color: #F8B800;
+      }
+
+      .shop-choices {
+        display: grid;
+        gap: 0.6rem;
+        margin-top: 1rem;
+      }
+
+      .shop-choice {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.8rem;
+        border: 3px solid #7C7C7C;
+        background: #000010;
+        color: #FCFCFC;
+        font-family: inherit;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .shop-choice:hover:not(:disabled) {
+        border-color: #F8B800;
+      }
+
+      .shop-choice:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .shop-choice strong { font-family: var(--font-pixel); font-size: 0.55rem; color: #F8B800; }
+      .shop-choice span:nth-child(3) { font-size: 0.85rem; color: #BCBCBC; }
+
+      .shop-price {
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        color: #F8B800;
+      }
+
+      .shop-coin .pixel-sprite {
+        width: 1rem;
+        height: 1rem;
+        display: inline-block;
+        vertical-align: -0.2rem;
+      }
+
+      .shop-reason {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #F83800;
+      }
+
       .crypt-game:fullscreen {
         max-width: none;
         width: 100%;
@@ -938,11 +995,50 @@
             Drag through 3+ matching tiles — swords hurt the monster, shields block its bite,
             potions heal you, coins are treasure! Longer paths are stronger. Drag back along
             your path to undo it and pick a different route. Beat the monster to
-            descend. A boss waits every 5th floor. If there are no moves left, the crypt
+            descend. Between floors, spend your gold at the Crypt Shop! A boss waits
+            every 5th floor. If there are no moves left, the crypt
             shuffles the tiles for free.
           </p>
           <p id="hud-best" class="game-tip"></p>
           <p id="status" class="sr-only" role="status" aria-live="polite">Crypt Crawl is ready.</p>
+        </div>
+
+        <!-- Crypt Shop (between floors) -->
+        <div class="overlay" id="shop-modal" hidden>
+          <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+            <h2 id="shop-title">Crypt Shop</h2>
+            <p>Spend your gold before the next floor — or just keep crawling!</p>
+            <p>Your gold: <strong class="shop-gold" id="shop-gold">0</strong></p>
+            <div class="shop-choices" id="shop-choices"></div>
+            <button id="shop-descend" type="button">⬇ Descend</button>
+          </div>
+        </div>
+
+        <!-- Relic choice (boss reward) -->
+        <div class="overlay" id="relic-modal" hidden>
+          <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="relic-title">
+            <h2 id="relic-title">Boss beaten!</h2>
+            <p>Pick one relic to keep for the rest of this run.</p>
+            <div class="relic-choices" id="relic-choices"></div>
+            <button class="secondary" id="relic-close" type="button">Not now</button>
+          </div>
+        </div>
+
+        <!-- Game over -->
+        <div class="overlay" id="gameover-overlay" hidden>
+          <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="over-title">
+            <h2 id="over-title">The crypt got you!</h2>
+            <p>Your hero wobbles back up the stairs for a snack. Great crawling, though!</p>
+            <div class="over-stats">
+              <div><span>Floor reached</span><strong id="over-floor">1</strong></div>
+              <div><span>Monsters slain</span><strong id="over-kills">0</strong></div>
+              <div><span>Gold collected</span><strong id="over-gold">0</strong></div>
+              <div><span>Score</span><strong id="over-score">0</strong></div>
+            </div>
+            <p id="over-best"></p>
+            <button id="play-again-button" type="button">Crawl again</button>
+            <button class="secondary" id="quit-button" type="button">Back to games</button>
+          </div>
         </div>
       </section>
     </main>
@@ -953,33 +1049,6 @@
       </p>
       <a href="../../../disclaimer.html">Legal disclaimer</a>
     </footer>
-
-    <!-- Relic choice (boss reward) -->
-    <div class="overlay" id="relic-modal" hidden>
-      <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="relic-title">
-        <h2 id="relic-title">Boss beaten!</h2>
-        <p>Pick one relic to keep for the rest of this run.</p>
-        <div class="relic-choices" id="relic-choices"></div>
-        <button class="secondary" id="relic-close" type="button">Not now</button>
-      </div>
-    </div>
-
-    <!-- Game over -->
-    <div class="overlay" id="gameover-overlay" hidden>
-      <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="over-title">
-        <h2 id="over-title">The crypt got you!</h2>
-        <p>Your hero wobbles back up the stairs for a snack. Great crawling, though!</p>
-        <div class="over-stats">
-          <div><span>Floor reached</span><strong id="over-floor">1</strong></div>
-          <div><span>Monsters slain</span><strong id="over-kills">0</strong></div>
-          <div><span>Gold collected</span><strong id="over-gold">0</strong></div>
-          <div><span>Score</span><strong id="over-score">0</strong></div>
-        </div>
-        <p id="over-best"></p>
-        <button id="play-again-button" type="button">Crawl again</button>
-        <button class="secondary" id="quit-button" type="button">Back to games</button>
-      </div>
-    </div>
 
     <script type="module" src="game.js"></script>
   </body>

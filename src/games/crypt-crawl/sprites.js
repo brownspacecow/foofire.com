@@ -231,6 +231,27 @@ Object.assign(SPRITES, {
     '..kkMMMMMMkk....',
     '................',
   ]),
+  // Joel — red mohawk (R), light-orange skin (o), white shirt (W). His
+  // grin is white teeth (W) with a black gap (k) where his front teeth
+  // are missing.
+  'hero-joel': rows([
+    '.......kk.......',
+    '......kRRk......',
+    '......kRRk......',
+    '.....kRRRRk.....',
+    '....kkkkkkkk....',
+    '..kooooooooook..',
+    '..kokooooookok..',
+    '..kooooooooook..',
+    '..kooooooooook..',
+    '..kooWWkkWWook..',
+    '...kooooooook...',
+    '....kkkkkkkk....',
+    '..kWWWWWWWWWWk..',
+    '..kWkWWWWWWkWk..',
+    '................',
+    '................',
+  ]),
 });
 
 // ---- monsters (same monsters, NES restyle) ----
