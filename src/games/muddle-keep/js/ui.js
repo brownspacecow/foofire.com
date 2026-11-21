@@ -54,6 +54,7 @@ export class GameUI {
             <button type="button" data-act="zoom-out" aria-label="Zoom out">−</button>
             <button type="button" data-act="zoom-in" aria-label="Zoom in">+</button>
             <button type="button" data-act="zoom-reset" aria-label="Reset camera">⟲</button>
+            <button type="button" data-act="fullscreen" aria-label="Fullscreen">⛶</button>
             <button type="button" data-act="help" aria-label="How to play">?</button>
             <button type="button" data-act="pause" aria-label="Pause">❚❚</button>
           </div>
@@ -153,12 +154,21 @@ export class GameUI {
     else if (action === 'help') this.options.onHelp();
     else if (action === 'creatures') this.openCreatureSheet();
     else if (action === 'time') this.toggleTimeStop();
+    else if (action === 'fullscreen') this.options.onFullscreen?.();
     else if (action === 'tip-next') this.tutorial.advance();
     else if (action === 'tip-dismiss') this.tutorial.dismissAll();
     else if (action === 'zoom-out') this.options.onZoom?.(1.18);
     else if (action === 'zoom-in') this.options.onZoom?.(0.85);
     else if (action === 'zoom-reset') this.options.onResetCamera?.();
     else if (action === 'sheet-close') this.closeSheet();
+  }
+
+  /** Keep the fullscreen button honest about the current state. */
+  setFullscreen(active) {
+    const button = this.root.querySelector('[data-act="fullscreen"]');
+    if (!button) return;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Fullscreen');
   }
 
   setVisible(visible) {

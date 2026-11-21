@@ -8,7 +8,7 @@
 const PAINT_TOOLS = new Set(['dig', 'room', 'trap', 'wall', 'sell']);
 const TAP_TOOLS = new Set(['hand', 'slap', 'spell']);
 
-export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZoom }) {
+export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZoom, onFullscreen }) {
   const canvas = renderer.domElement;
   const pointers = new Map();
   let mode = 'idle';
@@ -185,6 +185,11 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     if (event.code === 'Escape' || event.code === 'KeyP' || event.code === 'Space') {
       event.preventDefault();
       onPause?.();
+      return;
+    }
+    if (event.code === 'KeyF') {
+      event.preventDefault();
+      onFullscreen?.();
       return;
     }
     if (menus?.open) return;

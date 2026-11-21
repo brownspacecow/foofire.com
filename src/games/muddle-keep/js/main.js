@@ -78,6 +78,7 @@ async function boot() {
     onPause: () => togglePause(),
     onHelp: () => menus.showHelp(),
     onFocus: (creature) => rig.focus(creature.x, creature.y),
+    onFullscreen: () => toggleFullscreen(),
     onZoom: (factor) => rig.zoom(factor),
     onResetCamera: () => {
       if (game) {
@@ -156,6 +157,22 @@ async function boot() {
     ui.closeSheet();
     audio.setAmbient(false);
   }
+
+  function toggleFullscreen() {
+    const app = document.querySelector('.mk-app');
+    if (!app) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    } else if (app.requestFullscreen) {
+      app.requestFullscreen().catch(() => {
+        ui.toast('Fullscreen is not available in this browser.', 'warn');
+      });
+    }
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    ui.setFullscreen(Boolean(document.fullscreenElement));
+  });
 
   function resumeGame() {
     if (!game) return;
@@ -339,6 +356,7 @@ async function boot() {
     ui,
     getMenus: () => menus,
     onPause: () => togglePause(),
+    onFullscreen: () => toggleFullscreen(),
   });
 
   const unlock = () => audio.unlock();

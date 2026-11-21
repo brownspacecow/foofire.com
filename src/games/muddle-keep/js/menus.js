@@ -154,7 +154,7 @@ export class Menus {
           <li>Knights march on the <strong>Dungeon Heart</strong>. Lose the Heart and the run is over.</li>
           <li><strong>There is no final level.</strong> Waves keep coming, get bigger and bring a boss every fifth wave. Survive as long as you can to set your best wave.</li>
         </ol>
-        <p class="mk-small">Controls: drag to paint · two fingers to pan and pinch · wheel or + / − buttons to zoom · right-drag or Shift-drag to pan · 1-7 tools · Q/W/E/R spells · T stop time · Space, P or Esc pause · arrows pan · H help.</p>
+        <p class="mk-small">Controls: drag to paint · two fingers to pan and pinch · wheel or + / − buttons to zoom · right-drag or Shift-drag to pan · 1-7 tools · Q/W/E/R spells · T stop time · Space, P or Esc pause · arrows pan · H help · F fullscreen.</p>
       </div>
       `,
       'help'
