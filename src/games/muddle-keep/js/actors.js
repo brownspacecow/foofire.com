@@ -4,7 +4,7 @@
  * a small pooled particle system for thumps, sparkles and lightning.
  * ------------------------------------------------------------------ */
 
-import * as THREE from '../vendor/three.module.js';
+import * as THREE from '../../../vendor/three.module.js';
 import {
   buildCreature,
   buildHero,

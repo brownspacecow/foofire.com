@@ -7,87 +7,53 @@ Tagline: **Games for kids.**
 ## Features
 
 - Three.js games that run entirely in the browser
-- Game portal with a library of playable games
+- Game portal with a library of 19 playable games, with search and category filters
 - Dark, mobile-first responsive UI
+- Local high scores saved in the browser (top five per game)
 - Dedicated legal disclaimer page
 
 ## Project Structure
 
 ```text
 src/
-  main.js          # Game portal navigation logic
+  main.js          # Portal: featured games + Games-page search/filter
+  scores.js        # High-scores page
+  data/games.js    # The 19 games: id, category, title, description, image, path
+  utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
+  vendor/
+    three.module.js  # Shared Three.js r169, used by Earwarts + Muddle Keep.
+                     # Other games still load three@0.168.0 from esm.sh;
+                     # moving them to the shared copy is a planned follow-up.
   games/
-    earwarts/       # Earwarts Academy: direct Three.js listening adventure
-      index.html
-      styles.css
-      styles-ui.css
-      styles-challenge.css
-      vendor/       # vendored three.module.js (MIT)
-      js/
-        audio.js    # Web Audio synthesis and ear-training playback
-        challenges.js # Pitch, interval, rhythm, melody and chord challenges
-        world/      # 3D castle, rooms, NPCs, player and spells
-        ui/         # Spellbook, map, quests, satchel, challenges
-    muddle-keep/   # Muddle Keep: cheerful Dungeon Keeper-inspired lair tycoon
-      index.html
-      styles.css
-      vendor/       # vendored three.module.js (MIT)
-      js/           # world, imps, creatures, invaders, spells, render, UI, save
-    rough-housing/  # Rough Housing: local two-player couch-fort wrestling
-      index.html
-      game.js
-      arena.js
-      characters.js
-      fighters.js
-    roost-rider/    # Roost Rider first-person off-road motorcycle race
-      index.html
-      game.js
-      track.js
-      riders.js
-      audio.js
-    roof-rider/     # Roof Rider 2D rooftop motocross rhythm racer
-      index.html
-      styles.css
-      game.js
-      terrain.js
-      physics.js
-      audio.js
-      ghost.js
-    escape-earth/   # Escape Earth: Survive Grandma's House four-level game
-      index.html
-      game.js
-      level-drive.js
-      level-dolls.js
-      level-remote.js
-      level-papa.js
+    earwarts/       # Earwarts Academy: listening / ear-training adventure
+    muddle-keep/    # Muddle Keep: cheerful dungeon-keeper lair tycoon
     survive-family-vacation/  # Seven-chapter supernatural road-trip mystery
-      index.html
-      styles.css
-      js/           # engine, world, mini-games, UI and local saves
-    bear/          # Bear the Puppy three.js game
-      index.html
-      game.js
-    pizza-homestead/  # Pizza Homestead: Fun Room Rush three.js game
-      index.html
-      game.js
-    ball-pit/       # Ball Pit Bonanza three.js game
-      index.html
-      game.js
-    christmas-trees-and-missals/  # Christmas Trees and Missals three.js game
-      index.html
-      game.js
-      ornaments.js
-      ornament-models.js
-      town.js
-      cutscene.js
-      sound.js
-  components/
-  pages/
-  data/
-  utils/
+    rough-housing/  # Rough Housing: local two-player couch-fort wrestling
+    roost-rider/    # Roost Rider: first-person off-road motorcycle race
+    roof-rider/     # Roof Rider: 2D rooftop motocross rhythm racer
+    escape-earth/   # Escape Earth: Survive Grandma's House, four levels
+    spot-your-friends/  # First-person hide-and-seek in a 3D house
+    ball-pit/       # Ball Pit Bonanza: dig up treasure, sell it, upgrade
+    bear/           # Bear the Puppy: feed, fetch, tuck in a Shih Tzu
+    pizza-homestead/  # Pizza Homestead: Fun Room Rush
+    claw-machine/   # Claw Crew: collect 100 original plushies
+    christmas-trees-and-missals/  # Decorate the town tree, then launch it
+    zombie-deer/    # Zombie Deer: Christmas Edition tower defence
+    spooky-santa/   # Spooky Santa: chimney stealth before sunrise
+    spark-curfew/   # Spark Curfew: backyard fireworks before curfew
+    the-grin/       # The Grin: four-stage bullet-hell boss fight
+    phrase-pad/     # Phrase Pad: pocket touch synth, no wrong notes
+    rhythm-break/   # Soft Reset: two-minute rhythm break
 public/
   data/
+    muddle-keep/   # rooms, creatures, spells, traps, heroes, levels (JSON)
+    vacation/      # levels, dialogue, collectibles, achievements (JSON)
+  screenshots/     # Portal card art (one image per game)
 ```
+
+Game categories in `src/data/games.js` are `adventure`, `racing`, `music`,
+`arcade` and `cozy`. They drive the filter chips on the Games page and the
+small category tag on each game card.
 
 ## Local Preview
 
@@ -185,8 +151,9 @@ phones.
 
 1. Create a folder under `src/games/<game-name>/`.
 2. Add an `index.html` that loads three.js (via the esm.sh import map) and your game script.
-3. Add an entry to the `games` array in `src/data/games.js` with the game's `id`, `title`, `description`, `image`, and `path`.
-4. Link to the game from `games.html` (handled automatically by `src/main.js`).
+3. Add an entry to the `games` array in `src/data/games.js` with the game's `id`, `category` (`adventure`, `racing`, `music`, `arcade` or `cozy`), `title`, `description`, `image`, and `path`. Add `featured: true` only if it should show on the home page.
+4. Add a card screenshot to `public/screenshots/`.
+5. Link to the game from `games.html` (handled automatically by `src/main.js`).
 
 ## GitHub Pages Deployment
 

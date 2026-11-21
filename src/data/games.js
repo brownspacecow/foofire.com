@@ -1,11 +1,14 @@
 /**
  * The games shown on the portal and on the high scores page.
  * `id` is the key used for the per-device high score store.
- * `featured` games are the six shown on the home page; the Games page shows all.
+ * `featured` games are the ones shown on the home page; the Games page shows all.
+ * `category` is one of 'adventure', 'racing', 'music', 'arcade' or 'cozy'
+ * and drives the filter chips on the Games page.
  */
 export const games = [
   {
     id: 'muddle-keep',
+    category: 'adventure',
     title: 'Muddle Keep',
     description:
       'Dig a cosy dungeon under the hill, fill it with grumpy little monsters, and survive an endless parade of tidying knights. Build rooms, research spells, set bouncy traps, and see how many waves you can last.',
@@ -14,6 +17,7 @@ export const games = [
   },
   {
     id: 'survive-family-vacation',
+    category: 'adventure',
     title: 'Survive Family Vacation',
     description:
       'Seven vacations, one very small mystery. Explore the weird version of every family trip with Jira and Joel, collect Vacation Memories, investigate the clues, and face the thing that keeps standing just outside the photo.',
@@ -23,6 +27,7 @@ export const games = [
   },
   {
     id: 'earwarts',
+    category: 'adventure',
     title: 'Earwarts Academy',
     description:
       'Explore a moonlit 3D castle, learn spells by listening, and wake the sealed wings one note at a time. Touch humming crystals, echo the forest drum, hatch a friendship with a pocket owl, and collect Magic Resonance. A gentle ear-training adventure for kids — no accounts, no wrong answers.',
@@ -31,6 +36,7 @@ export const games = [
   },
   {
     id: 'phrase-pad',
+    category: 'music',
     title: 'Phrase Pad',
     description:
       'A pocket touch synth: drag your finger across the neon pad to play in any scale, slide up for brightness, and stack a looping phrase layer by layer. No wrong notes, no downloads.',
@@ -40,6 +46,7 @@ export const games = [
   },
   {
     id: 'spot-your-friends',
+    category: 'adventure',
     title: 'Spot Your Friends',
     description:
       'Ten friends are hiding all over a three.js house and front yard. Walk around in first person, peek behind couches and inside bathtubs, and tag every one. Clues cost ten seconds, so keep your eyes open.',
@@ -48,6 +55,7 @@ export const games = [
   },
   {
     id: 'rough-housing',
+    category: 'arcade',
     title: 'Rough Housing',
     description:
       'Build a couch-fort wrestling arena out of ten foam pieces, then bump, jump and cartwheel your friend into the lava. Local two-player physics chaos.',
@@ -57,6 +65,7 @@ export const games = [
   },
   {
     id: 'roost-rider',
+    category: 'racing',
     title: 'Roost Rider',
     description:
       'A first-person off-road motorcycle race: three laps, three rivals, big jumps and nitro on a dusty dirt circuit. Preload the lips, land your spins, and keep it pinned.',
@@ -66,6 +75,7 @@ export const games = [
   },
   {
     id: 'roof-rider',
+    category: 'racing',
     title: 'Roof Rider',
     description:
       'A 2D rooftop motocross rhythm racer. Preload the suspension into the gable, pop the ridge, scrub the jump flat and land on the backside of the next roof to carry speed through three long rooflines.',
@@ -74,6 +84,7 @@ export const games = [
   },
   {
     id: 'rhythm-break',
+    category: 'music',
     title: 'Soft Reset',
     description:
       'A two-minute rhythm break with two original early-2000s hip-hop grooves and a reggae one-drop. Four pads, no failing, and nothing that needs you for a hundred seconds. For whoever has been holding everything together since 6 a.m.',
@@ -82,6 +93,7 @@ export const games = [
   },
   {
     id: 'escape-earth',
+    category: 'adventure',
     title: "Escape Earth: Survive Grandma's House",
     description:
       'Four levels of bad decisions: survive the drive to Grandma\'s, escape Raggedy Ann and Andy in the dark, hold the remote against your head, then wrestle Papa.',
@@ -90,6 +102,7 @@ export const games = [
   },
   {
     id: 'ball-pit',
+    category: 'arcade',
     title: 'Ball Pit Bonanza',
     description:
       'Wade through a giant ball pit, shove the balls around, and dig up buried treasure — old watches, soggy pizza, and maybe something brand new. Sell your haul for upgrades and prizes.',
@@ -98,6 +111,7 @@ export const games = [
   },
   {
     id: 'spooky-santa',
+    category: 'arcade',
     title: 'Spooky Santa',
     description:
       'Sneak down the chimney, dodge flashlight beams, the dog and the sweeping tree lights, and leave every present without being detected before sunrise.',
@@ -106,6 +120,7 @@ export const games = [
   },
   {
     id: 'pizza-homestead',
+    category: 'arcade',
     title: 'Pizza Homestead: Fun Room Rush',
     description:
       'Raid a very sincere pizza buffet, eat slices at the booths for arcade money, and whack Hank the mascot in the Fun Room before Mom says it is time to go.',
@@ -114,6 +129,7 @@ export const games = [
   },
   {
     id: 'claw-machine',
+    category: 'arcade',
     title: 'Claw Crew',
     description:
       'Steer the claw and fill your saved Plushie Dex with 100 original characters — including a wild digital circus and some cute-spooky friends.',
@@ -125,6 +141,7 @@ export const games = [
   },
   {
     id: 'christmas-trees-and-missals',
+    category: 'arcade',
     title: 'Christmas Trees and Missals',
     description:
       'Decorate the town tree with hundreds of ornaments from every holiday, then launch it like a rocket at a random landmark. Every ornament comes back, and fancier decorations pay better.',
@@ -135,6 +152,7 @@ export const games = [
   },
   {
     id: 'zombie-deer',
+    category: 'arcade',
     title: 'Zombie Deer: Christmas Edition',
     description:
       'Defend a snow-covered house from waves of zombie reindeer. Throw snowballs, light up the tree, and call Bear the puppy for backup.',
@@ -143,6 +161,7 @@ export const games = [
   },
   {
     id: 'the-grin',
+    category: 'adventure',
     title: 'The Grin',
     description:
       'A four-stage bullet-hell boss fight with touch controls. Something at the end of the hallway is wearing a smile you recognise, and it is coming apart. Dodge, strike, and decide whether to spare what is left.',
@@ -151,6 +170,7 @@ export const games = [
   },
   {
     id: 'spark-curfew',
+    category: 'arcade',
     title: 'Spark Curfew',
     description:
       'Run a backyard fireworks show before curfew. Little fireworks bring the daylight, the big shells only go up at night, and Big Bertha ends the whole street in a white flash. The faster you light her, the bigger your time bonus.',
@@ -160,6 +180,7 @@ export const games = [
   },
   {
     id: 'bear',
+    category: 'cozy',
     title: 'Bear the Puppy',
     description:
       'Take care of Bear, a cute black and white Shih Tzu puppy. Feed him, play fetch, and tuck him into bed!',

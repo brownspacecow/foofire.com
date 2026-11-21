@@ -4,7 +4,7 @@
  * geometry cache, materials and little health bars.
  * ------------------------------------------------------------------ */
 
-import * as THREE from '../vendor/three.module.js';
+import * as THREE from '../../../vendor/three.module.js';
 
 export const GEO = {
   sphere: new THREE.SphereGeometry(1, 10, 8),

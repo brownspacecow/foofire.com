@@ -728,17 +728,17 @@ h1 {
   font-size: 1.02rem;
 }
 
-.search-row {
-  margin-top: 1.75rem;
+/* Games page: search + category filter. */
+.filters {
+  margin: 1.5rem 0 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-width: 640px;
+  gap: 0.9rem;
 }
 
-.search-row input,
-.search-row button {
+.filter-search {
   width: 100%;
+  max-width: 640px;
   padding: 0.9rem 0.95rem;
   font-family: inherit;
   font-size: 1rem;
@@ -749,73 +749,60 @@ h1 {
   box-shadow: 4px 4px 0 var(--ink);
 }
 
-.search-row button {
-  font-family: var(--font-pixel);
-  font-size: 0.7rem;
-  color: var(--ink);
-  background: var(--accent-soft);
-  cursor: pointer;
-  transition: transform 0.1s steps(2), box-shadow 0.1s steps(2);
-}
-
-.search-row button:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 var(--ink);
-}
-
-.search-row button:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0 var(--ink);
-}
-
-.search-row .secondary {
-  color: var(--text);
-  background: var(--panel-soft);
-}
-
-#status {
-  min-height: 1.5rem;
-  margin: 0.85rem 0 0;
+.filter-search::placeholder {
   color: var(--muted);
 }
 
-.results-wrap {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1rem 3.5rem;
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
-.results-wrap h2 {
-  margin-top: 0;
-  font-size: clamp(0.8rem, 2.5vw, 1.05rem);
+.filter-chip {
+  padding: 0.55rem 0.8rem;
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
   line-height: 1.6;
-  color: var(--accent-soft);
-  text-shadow: 3px 3px 0 var(--ink);
-}
-
-.results-grid {
-  display: grid;
-  gap: 1.35rem;
-}
-
-.show-card {
-  padding: 1.2rem;
-  background: var(--panel);
-  border: 4px solid var(--ink);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--panel-soft);
+  border: 3px solid var(--ink);
   border-radius: 0;
-  box-shadow: var(--shadow-hard);
-  transition: transform 0.12s steps(2), box-shadow 0.12s steps(2);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
 }
 
-.show-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 9px 9px 0 var(--ink);
+.filter-chip:hover {
+  color: var(--ink);
+  background: var(--accent-soft);
 }
 
-.badge {
-  display: inline-block;
-  margin-bottom: 0.75rem;
-  padding: 0.35rem 0.6rem;
+.filter-chip.is-active {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.filter-count {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--accent-soft);
+}
+
+.empty-state {
+  max-width: 62ch;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.game-card-category {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.3rem 0.55rem;
+  font-family: var(--font-pixel);
   font-size: 0.5rem;
   line-height: 1.6;
   letter-spacing: 0.06em;
@@ -823,61 +810,6 @@ h1 {
   color: var(--ink);
   background: var(--accent-soft);
   border: 2px solid var(--ink);
-  border-radius: 0;
-}
-
-.show-card h3 {
-  margin: 0;
-  font-size: clamp(0.75rem, 2.2vw, 0.95rem);
-  line-height: 1.65;
-}
-
-.show-card p {
-  margin: 0.5rem 0;
-  color: var(--muted);
-}
-
-.show-card .distance {
-  color: var(--accent-soft);
-  font-weight: 700;
-}
-
-.card-actions {
-  margin-top: 0.9rem;
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.card-actions a,
-.card-actions button {
-  padding: 0.55rem 0.8rem;
-  font-family: var(--font-pixel);
-  font-size: 0.55rem;
-  line-height: 1.6;
-  font-weight: 400;
-  text-decoration: none;
-  border: 3px solid var(--ink);
-  border-radius: 0;
-  box-shadow: 3px 3px 0 var(--ink);
-  cursor: pointer;
-  transition: transform 0.1s steps(2), box-shadow 0.1s steps(2);
-}
-
-.card-actions a {
-  color: var(--ink);
-  background: var(--accent-soft);
-}
-
-.card-actions button {
-  color: var(--text);
-  background: var(--panel-soft);
-}
-
-.card-actions a:active,
-.card-actions button:active {
-  transform: translate(3px, 3px);
-  box-shadow: 0 0 0 var(--ink);
 }
 
 footer {
@@ -952,26 +884,6 @@ footer a:hover {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
-}
-
-@media (min-width: 680px) {
-  .search-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-  }
-
-  .search-row input {
-    min-width: 0;
-  }
-
-  .search-row button {
-    width: auto;
-    white-space: nowrap;
-  }
-
-  .results-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 420px) {

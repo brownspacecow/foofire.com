@@ -4,7 +4,7 @@
  * two-finger pan/pinch. Movement is smoothed so taps do not jolt.
  * ------------------------------------------------------------------ */
 
-import * as THREE from '../vendor/three.module.js';
+import * as THREE from '../../../vendor/three.module.js';
 
 export class CameraRig {
   constructor(camera, bounds) {

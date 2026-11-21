@@ -15,6 +15,7 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com/games.html" />
+    <meta property="og:image" content="https://foofire.com/public/screenshots/bear.webp" />
     <meta property="og:site_name" content="Foofire Games" />
     <meta name="theme-color" content="#120a2a" />
     <link rel="stylesheet" href="./styles.css" />
@@ -43,7 +44,29 @@
 
       <section class="game-library" aria-labelledby="library-heading">
         <h2 id="library-heading">Game Library</h2>
+        <div class="filters" role="search">
+          <label class="sr-only" for="game-search">Search games</label>
+          <input
+            id="game-search"
+            class="filter-search"
+            type="search"
+            placeholder="Search games… try “racing” or “puppy”"
+            autocomplete="off"
+          />
+          <div class="filter-chips" role="group" aria-label="Filter by category">
+            <button type="button" class="filter-chip is-active" data-category-filter="all" aria-pressed="true">All</button>
+            <button type="button" class="filter-chip" data-category-filter="adventure" aria-pressed="false">Adventure</button>
+            <button type="button" class="filter-chip" data-category-filter="racing" aria-pressed="false">Racing</button>
+            <button type="button" class="filter-chip" data-category-filter="music" aria-pressed="false">Music</button>
+            <button type="button" class="filter-chip" data-category-filter="arcade" aria-pressed="false">Arcade</button>
+            <button type="button" class="filter-chip" data-category-filter="cozy" aria-pressed="false">Cozy</button>
+          </div>
+          <p class="filter-count" id="filter-count" aria-live="polite"></p>
+        </div>
         <div class="game-cards" id="game-cards"></div>
+        <p class="empty-state" id="no-results" hidden>
+          No games match that search yet — try a different word, or tap All to see everything.
+        </p>
       </section>
     </main>
 

@@ -1,4 +1,4 @@
-import * as THREE from '../../vendor/three.module.js';
+import * as THREE from '../../../../vendor/three.module.js';
 import { getState, interact, setNearby, syncRoom, subscribe } from '../store.js';
 import { HOUSE_OF, ROOMS } from '../content.js';
 import {

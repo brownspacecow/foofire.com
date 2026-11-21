@@ -5,7 +5,7 @@
  * rebuilt only when the grid changes, never per frame.
  * ------------------------------------------------------------------ */
 
-import * as THREE from '../vendor/three.module.js';
+import * as THREE from '../../../vendor/three.module.js';
 import { T } from './tiles.js';
 
 const HEIGHTS = {
