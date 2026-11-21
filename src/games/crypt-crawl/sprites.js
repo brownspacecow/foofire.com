@@ -1,64 +1,62 @@
-// Crypt Crawl pixel art — original hand-drawn sprites for Foofire Games.
-// Every sprite is a 16x16 grid of characters; one shared palette keeps the
-// dark-crypt + gold look consistent. No external images, no copied art.
-// Rows are padded/truncated to 16 by the renderer, so a short row is just
-// transparent on its right edge, never a crash.
+// Crypt Crawl pixel art — redrawn as authentic 8-bit NES sprites.
+// Original hand-drawn art for Foofire Games. No external images, no
+// copied art. Every sprite is a 16x16 grid of characters drawn from ONE
+// NES palette, and each sprite uses at most 3 fill colours + a black
+// outline ('k') + transparency ('.'). Shading is done with dithering
+// (checkerboard pixels of two palette colours), never smooth shading.
+// Rows are padded/truncated to 16 by the renderer, so a short row is
+// just transparent on its right edge, never a crash.
 
 export const SPRITE_SIZE = 16;
 
-const PALETTE = {
-  k: '#191024', // outline / near-black
-  w: '#fff8e7', // white / cream
-  s: '#dde4ee', // silver light
-  S: '#9aa3b5', // silver dark
-  g: '#ffd93d', // gold
-  G: '#c98b1e', // gold dark
-  y: '#fff0b8', // pale yellow
-  B: '#3f7fc1', // blue
-  b: '#8fc3ee', // light blue
-  r: '#ef4444', // red
-  R: '#9f1d1d', // dark red
-  o: '#ff8a00', // orange
-  O: '#b85c00', // dark orange
-  n: '#3ddc84', // bright green
-  N: '#2a9e5f', // mid green
-  d: '#1d6b3f', // dark green
-  l: '#a5e87a', // lime light
-  L: '#4fae52', // lime
-  p: '#ff9fb2', // pink
-  P: '#d64570', // pink dark
-  u: '#a855f7', // purple
-  U: '#6b21a8', // purple dark
-  t: '#8a5a2b', // brown
-  T: '#54371c', // dark brown
-  e: '#f2c9a0', // skin
-  E: '#c98d5f', // skin shade
-  c: '#7dd3fc', // cyan light
-  C: '#1d7fb8', // cyan dark
+// Authentic NES palette used by every sprite in this file (and by the
+// game CSS in index.html). 'k' is the outline colour, counted separately.
+export const NES_PALETTE = {
+  k: '#000000', // black — outline
+  W: '#FCFCFC', // white
+  G: '#BCBCBC', // light grey
+  g: '#7C7C7C', // dark grey
+  s: '#A4E4FC', // sky
+  B: '#0078F8', // blue
+  b: '#3CBCFC', // light blue
+  d: '#0000FC', // dark blue
+  p: '#F8B8F8', // pink
+  M: '#D800CC', // magenta
+  R: '#E40058', // red
+  r: '#F83800', // orange-red
+  O: '#E45C10', // orange
+  o: '#FCA044', // light orange
+  Y: '#F8B800', // yellow
+  l: '#B8F818', // lime
+  N: '#00B800', // green
+  T: '#00A800', // teal
+  C: '#00FCFC', // cyan
 };
+
+const PALETTE = NES_PALETTE;
 
 function rows(list) {
   return list.map((r) => r.padEnd(16, '.').slice(0, 16));
 }
 
-// ---- tiles: sword, shield, potion, coin ----
+// ---- tiles: sword (W/G/Y), shield (B/b/Y), potion (N/l/W), coin (Y/o/W) ----
 const SPRITES = {
   'tile-sword': rows([
     '..............',
-    '............ss',
-    '...........sSs',
-    '..........sSs.',
-    '.........sSs..',
-    '........sSs...',
-    '.......sSs....',
-    '......sSs.....',
-    '.....sSs......',
-    '....sSs.......',
-    '...sSs........',
-    '..ggs.........',
-    '.ggggg........',
-    '..TgT.........',
-    '...TT.........',
+    '............WW',
+    '...........WGW',
+    '..........WGW.',
+    '.........WGW..',
+    '........WGW...',
+    '.......WGW....',
+    '......WGW.....',
+    '.....WGW......',
+    '....WGW.......',
+    '...WGW........',
+    '..YY..........',
+    '.YYYYY........',
+    '...kk.........',
+    '...kk.........',
     '..............',
   ]),
   'tile-shield': rows([
@@ -67,9 +65,9 @@ const SPRITES = {
     '..kBBBBBBBBk..',
     '..kBbbBBbbBk..',
     '..kBbbBBbbBk..',
-    '..kBBbggbBBk..',
-    '..kBBggggBBk..',
-    '..kBBbggbBBk..',
+    '..kBBbYYbBBk..',
+    '..kBBYYYYBBk..',
+    '..kBBbYYbBBk..',
     '...kBBBBBBk...',
     '....kBBBBk....',
     '.....kBBk.....',
@@ -81,17 +79,17 @@ const SPRITES = {
   ]),
   'tile-potion': rows([
     '......kk......',
-    '......kGk.....',
-    '......kGk.....',
+    '......kNk.....',
+    '......kNk.....',
     '.....kNNNk....',
     '....kNNNNNk...',
     '...kNNllNNNk..',
-    '...kNlnlNNNk..',
-    '..kNNnnnnNNNk.',
-    '..kNnnnnnnNk..',
-    '..kNnnNnnnNk..',
-    '...kNnnnnNk...',
-    '....kNNNNk....',
+    '...kNlWNNNk...',
+    '..kNNlNlNNNk..',
+    '..kNNlNNlNNk..',
+    '..kNNNlNNNk...',
+    '...kNNNNNk....',
+    '....kNNNk.....',
     '.....kkkk.....',
     '..............',
     '..............',
@@ -100,14 +98,14 @@ const SPRITES = {
   'tile-coin': rows([
     '..............',
     '.....kkkk.....',
-    '...kkggggk....',
-    '..kgggggggk...',
-    '..kggwwwggk...',
-    '..kgwwGwwgk...',
-    '..kgwwwwwgk...',
-    '..kgwwGwwgk...',
-    '..kgggggggk...',
-    '...kkggggk....',
+    '...kkYYYYkk...',
+    '..kYYYYYYYYk..',
+    '..kYYWWYYoYk..',
+    '..kYWWYYoYk...',
+    '..kYWWYYoYk...',
+    '..kYYWWYYoYk..',
+    '..kYYYYYYYYk..',
+    '...kkYYYYkk...',
     '.....kkkk.....',
     '..............',
     '..............',
@@ -117,19 +115,20 @@ const SPRITES = {
   ]),
 };
 
-// ---- heroes: 16x16 portraits, head + shoulders ----
+// ---- heroes: 16x16 portraits, head + shoulders (same heroes, NES restyle) ----
 Object.assign(SPRITES, {
+  // Pip the Wanderer — green hood (N), dithered lime (l), cream face (W).
   'hero-pip': rows([
     '.....kkkkkk.....',
     '....kNNNNNNk....',
     '...kNNNNNNNNk...',
     '..kNNkkkkkkNNk..',
-    '..kNkeeeeeekNk..',
-    '..kNkekkkkekNk..',
-    '..kNkeeeeeekNk..',
-    '..kNkeeEEeekNk..',
-    '...kNeeeeeekNk..',
-    '...kNekkkkekNk..',
+    '..kNkWWWWWWkNk..',
+    '..kNkWkWWkWkNk..',
+    '..kNkWWWWWWkNk..',
+    '..kNkWWllWWkNk..',
+    '...kNWWWWWWkNk..',
+    '...kNkWWWWkNk...',
     '....kNNNNNNk....',
     '...kNNNkkNNNk...',
     '..kNNNNNNNNNNk..',
@@ -137,129 +136,136 @@ Object.assign(SPRITES, {
     '..kkkk....kkkk..',
     '................',
   ]),
+  // Bramble the Knight — silver helm (G, dithered with W), cream face (W), gold crest (Y).
   'hero-bramble': rows([
-    '.....ggggg......',
-    '....kggggkg.....',
-    '....ksssssk.....',
-    '...ksssssssk....',
-    '..ksssssssssk...',
-    '..kssSSSSSSsk...',
-    '..kskkkkkkksk...',
-    '..kseeeeeeesk..',
-    '..ksekkkkesk...',
-    '..kseeeeeeesk..',
-    '...ksssssssk....',
-    '..ksskgggkssk...',
-    '..ksssssssssk...',
-    '..kkkkkkkkkkk...',
+    '.....YYYYY......',
+    '....kYYYYYk.....',
+    '....kGGGGGk.....',
+    '...kGGGGGGGk....',
+    '..kGWGWGWGk....',
+    '..kGGGGGGGk....',
+    '..kGkkkkkkGk...',
+    '..kGWWWWWWGk...',
+    '..kGWkWWkWGk...',
+    '..kGWWWWWWGk...',
+    '...kGGGGGGk.....',
+    '..kGGkYYkGGk....',
+    '..kGGGGGGGk.....',
+    '..kkkkkkkkk.....',
     '................',
     '................',
   ]),
+  // Moss the Gardener — leaf hat (N/l), cream face (W), green beard (N).
   'hero-moss': rows([
     '...kkkkkkkkk....',
     '..kNNNNNNNNNk...',
-    '.kNNdNNNNdNNNk..',
+    '.kNNlNNlNNlNNk..',
     '.kNNNNNNNNNNNk..',
     '..kkkkkkkkkkk...',
-    '..keeeeeeeeek...',
-    '..kekkkkkkek....',
-    '..keeeeeeeeek...',
-    '..keekEEkeek....',
-    '...keekkkek.....',
-    '...kddddddk.....',
-    '...kddddddk.....',
+    '..kWWWWWWWWk....',
+    '..kWkWWWWkWk....',
+    '..kWWWWWWWWk....',
+    '..kWWlWWlWWk....',
+    '...kWWWWWWk.....',
+    '...kNNNNNNk.....',
+    '...kNNNNNNk.....',
     '..kkkkkkkkkk....',
     '.kNNkkkkkkNNk...',
     '.kNNNk..kNNNk...',
     '................',
   ]),
+  // Wren the Scout — rust hood (O, dithered with o), cream face (W).
   'hero-wren': rows([
     '.....kkkkkk.....',
-    '....kttttttk....',
-    '...kttttttttk...',
-    '..kttkkkkkkttk..',
-    '..kteeeeeeeetk..',
-    '..ktekkkkketk...',
-    '..kteeeeeeeetk..',
-    '..kteekkeketk...',
-    '...keekkkek.....',
-    '...keeeeeek.....',
-    '....kkkkkk......',
-    '..kttttttttttk..',
-    '..ktk......ktk..',
+    '....kOOOOOOk....',
+    '...kOOOOOOOOk...',
+    '..kOOkkkkkkOOk..',
+    '..kOWWWWWWWOOk..',
+    '..kOWkWWkWOk....',
+    '..kOWWWWWWWOOk..',
+    '..kOWWoWWWOOk...',
+    '...kOWWWWWOOk...',
+    '...kOkkkkkOk....',
+    '....kOOOOOk.....',
+    '..kOOOOOOOOOOk..',
+    '..kOk......kOk..',
     '................',
     '................',
     '................',
   ]),
+  // Biscuit the Cook — white chef hat + face (W), red scarf (R), gold apron (Y).
   'hero-biscuit': rows([
     '....kkkkkkkk....',
-    '...kwwwwwwwwk...',
-    '..kwwwwwwwwwwk..',
-    '..kwkwwwwkwk....',
-    '..kwwwwwwwwwwk..',
+    '...kWWWWWWWWk...',
+    '..kWWWWWWWWWWk..',
+    '..kWkWWWWWWkWk..',
+    '..kWWWWWWWWWWk..',
     '...kkkkkkkkk....',
-    '..keeeeeeeeek...',
-    '..kekkkkkkek....',
-    '..keeeeeeeeek...',
-    '..keekEEkeek....',
-    '...kkkkkkkk.....',
-    '...keeeeeek.....',
+    '..kWWWWWWWWk....',
+    '..kWkWWWWkWk....',
+    '..kWWWWWWWWk....',
+    '..kWWRRRRWWk....',
+    '...kWRRRRWk.....',
+    '...kWWWWWWk.....',
     '..kkkkkkkkkk....',
-    '..kwwwwwwwwk....',
+    '..kYYYYYYYYk....',
     '................',
     '................',
   ]),
+  // Nettle the Wizard — purple hat + robe (M), pink dither (p), cream face (W).
   'hero-nettle': rows([
     '.......k........',
-    '......kUk.......',
-    '......kUk.......',
-    '.....kUUUk......',
-    '.....kUgUk......',
-    '....kUUUUUk.....',
-    '...kUUUUUUUk....',
-    '..kUUUUUUUUUk...',
+    '......kMk.......',
+    '......kMk.......',
+    '.....kMMMk......',
+    '.....kMpMk......',
+    '....kMMMMMk.....',
+    '...kMMMMMMMk....',
+    '..kMMMMMMMMMk...',
     '..kkkkkkkkkkk...',
-    '..keeeeeeeeek...',
-    '..kekkkkkkek....',
-    '..keeeeeeeeek...',
-    '..keekkkkek.....',
-    '...keeeeeek.....',
-    '..kkUUUUUUkk....',
+    '..kWWWWWWWWk....',
+    '..kWkWWWWkWk....',
+    '..kWWWWWWWWk....',
+    '..kWWpWWpWWk....',
+    '...kWWWWWWk.....',
+    '..kkMMMMMMkk....',
     '................',
   ]),
 });
 
-// ---- monsters ----
+// ---- monsters (same monsters, NES restyle) ----
 Object.assign(SPRITES, {
+  // Squeaky Slime — green (N), lime dither (l), white eyes (W).
   'monster-slime': rows([
     '................',
     '................',
     '....kkkkkk......',
-    '...kLLLLLLk.....',
-    '..kLlLLLLlLk....',
-    '..kLLLLLLLLk....',
-    '..kLkwwkwwLk....',
-    '..kLkwkwkwLk....',
-    '..kLLLLLLLLk....',
-    '..kLkKKKKkLk....',
-    '...kLLLLLLk.....',
-    '..kLLkLLkLLk....',
+    '...kNNNNNNk.....',
+    '..kNlNNNNlNk....',
+    '..kNNNNNNNNk....',
+    '..kNkWWkWWNk....',
+    '..kNkWkWkWNk....',
+    '..kNNNNNNNNk....',
+    '..kNkkkkkNk....',
+    '...kNNNNNNk.....',
+    '..kNNkNNkNNk....',
     '................',
     '................',
     '................',
     '................',
   ]),
+  // Wobbly Bat — magenta wings (M), pink dither (p), white eyes (W).
   'monster-bat': rows([
     '.kk........kk...',
-    '.kUkk....kkUk...',
-    '.kUUUkkkkUUUk...',
-    '..kUUUUUUUUkk...',
-    '...kUUUUUUUk....',
-    '..kkUUUUUUkk....',
-    '..kUkkkkkkUk....',
-    '..kUkwkkwkUk....',
-    '..kUkwwwwkUk....',
-    '...kUkkkkUk.....',
+    '.kMkk....kkMk...',
+    '.kMMMkkkkMMMk...',
+    '..kMMMMMMMMkk...',
+    '...kMpMpMpMk....',
+    '..kkMMMMMMkk....',
+    '..kMkkkkkkMk....',
+    '..kMkWWkWMk....',
+    '..kMkWkWMk.....',
+    '...kMkkkkMk.....',
     '....kkkkkk......',
     '................',
     '................',
@@ -267,14 +273,15 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // Ticklish Spider — dark-blue body (d), grey dither (g), red eyes (R).
   'monster-spider': rows([
     '..k..k..k..k....',
     '...k..kk..k.....',
     '....kkkkkk......',
-    '...kKKKKKKk.....',
-    '..kKKkKKkKKk....',
-    '..kKKrrrrKKk....',
-    '..kKKKKKKKKk....',
+    '...kddddddk.....',
+    '..kddgddgddk....',
+    '..kddRRRRddk....',
+    '..kddddddddk....',
     '...kkkkkkkk.....',
     '..k..k..k..k....',
     '.k....kk....k...',
@@ -285,53 +292,56 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // Rattly Skeleton — white bone (W), grey shade (G), black eye holes (k).
   'monster-skeleton': rows([
     '.....kkkk.......',
-    '...kkwwwwkk.....',
-    '..kwwwwwwwwk....',
-    '..kwkkwwkkwk....',
-    '..kwwwwwwwwk....',
-    '..kwkwwwwkwk....',
-    '...kwkwwkwk.....',
+    '...kkWWWWkk.....',
+    '..kWWWWWWWWk....',
+    '..kWkkWWkkWk....',
+    '..kWWWWWWWWk....',
+    '..kWkWWWWkWk....',
+    '...kWkWWkWk.....',
     '....kkkkkk......',
-    '....kwwwwk......',
-    '...kwkwwkwk.....',
-    '...kwkwwkwk.....',
-    '....kwwwwk......',
+    '....kWGGWk......',
+    '...kWkWWkWk.....',
+    '...kWkWWkWk.....',
+    '....kWWWWk......',
     '....kkkkkk......',
     '................',
     '................',
     '................',
   ]),
+  // Grumpy Mushroom — red cap (R), white spots/face (W), green stem (N).
   'monster-mushroom': rows([
     '....kkkkkk......',
-    '..kkrrrrrrkk....',
-    '.krrwwwwrrrrk...',
-    '.krwwrrrrwwrk...',
-    '.krrrrrrrrrrk...',
-    '..kkrrrrrrkk....',
+    '..kkRRRRRRkk....',
+    '.kRRWWRRWWRRk...',
+    '.kRWWRRRRWWRk...',
+    '.kRRRRRRRRRRk...',
+    '..kkRRRRRRkk....',
     '....kkkkkk......',
-    '....kwwwwk......',
-    '...kwwwwwwk.....',
-    '...kwkwwkwk.....',
-    '...kwwwwwwk.....',
+    '....kNNNNk......',
+    '...kNNNNNNk.....',
+    '...kNkNNkNk.....',
+    '...kNNNNNNk.....',
     '....kkkkkk......',
     '................',
     '................',
     '................',
     '................',
   ]),
+  // Sneezy Ghost — white (W), sky dither (s), black eyes (k).
   'monster-ghost': rows([
     '.....kkkk.......',
-    '...kkwwwwkk.....',
-    '..kwwwwwwwwk....',
-    '..kwkwwwwkwk....',
-    '..kwwwwwwwwk....',
-    '..kwwwwwwwwk....',
-    '..kwwwwwwwwk....',
-    '..kwwwwwwwwk....',
-    '..kwwkwwkwwk....',
-    '..kwkwwkwwkwk...',
+    '...kkWWWWkk.....',
+    '..kWWWWWWWWk....',
+    '..kWkWWWWkWk....',
+    '..kWWWWWWWWk....',
+    '..kWWsWWsWWk....',
+    '..kWWWWWWWWk....',
+    '..kWWWWWWWWk....',
+    '..kWWkWWkWWk....',
+    '..kWkWWkWWkWk...',
     '.kk..kk..kk..k..',
     '................',
     '................',
@@ -339,36 +349,38 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // Bouncy Blob — cyan (C), sky dither (s), white eyes (W).
   'monster-blob': rows([
     '................',
     '................',
     '....kkkkkk......',
-    '...kcccccck.....',
-    '..kccCccCcck....',
-    '..kcccccccck....',
-    '..kckwkkwkck....',
-    '..kckwkwkck.....',
-    '..kcccccccck....',
-    '..kcckKKkcck....',
-    '...kcccccck.....',
+    '...kCCCCCCk.....',
+    '..kCCsCCsCCk....',
+    '..kCCCCCCCCk....',
+    '..kCkWWkWCk.....',
+    '..kCkWkWkCk.....',
+    '..kCCCCCCCCk....',
+    '..kCCkkkkCCk....',
+    '...kCCCCCCk.....',
     '....kkkkkk......',
     '................',
     '................',
     '................',
     '................',
   ]),
+  // Sleepy Snake — green (N), lime dither (l), red tongue (R), black eyes (k).
   'monster-snake': rows([
     '................',
     '.....kkkk.......',
     '....kNNNNk......',
-    '...kNkwwkNk.....',
-    '...kNkwkwNk.....',
+    '...kNkkkkNk.....',
+    '...kNkNNkNk.....',
     '....kNNNNk......',
-    '....krkr........',
+    '....kRkR........',
     '...kkkkkkkk.....',
     '..kNNNNNNNNk....',
-    '.kNNkNNNNkNNk...',
-    '.kNNNNNNNNNNk...',
+    '.kNNlNNNlNNk....',
+    '.kNNNNNNNNNk....',
     '..kkkkkkkkkk....',
     '................',
     '................',
@@ -377,19 +389,20 @@ Object.assign(SPRITES, {
   ]),
 });
 
-// ---- bosses: same style, with a crown / boss treatment ----
+// ---- bosses: same bosses, with a crown / boss treatment (NES restyle) ----
 Object.assign(SPRITES, {
+  // King Crumb the Cake Golem — cake (o/O), gold crown (Y).
   'boss-crumb': rows([
-    '....kggggk......',
-    '...kgkgkgk......',
-    '..kkTTTTTTkk....',
-    '..kTwwwwwwTk....',
-    '..kTTTTTTTTk....',
-    '..kTkkkkkkTk....',
-    '..kTkwkkwkTk....',
-    '..kTTTTTTTTk....',
-    '..kTTTTTTTTk....',
-    '...kTTTTTTk.....',
+    '....kYYYYk......',
+    '...kYkYYkYk.....',
+    '..kkooooooOkk...',
+    '..koOOOOOOOok...',
+    '..koOkkkkOOk....',
+    '..koOkkkkOOk....',
+    '..koOOOOOOOok...',
+    '..koOkkkkOOk....',
+    '..koOOOOOOOok...',
+    '...koooooOOk....',
     '....kkkkkk......',
     '................',
     '................',
@@ -397,15 +410,16 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // Queen Wobble the Jelly Giant — pink jelly (p), magenta dither (M), gold crown (Y).
   'boss-wobble': rows([
-    '....kggggk......',
-    '...kgkgkgk......',
+    '....kYYYYk......',
+    '...kYkYYkYk.....',
     '..kkppppppkk....',
+    '..kpMpMpMppk....',
+    '..kppkkppkk....',
+    '..kppkppkppk....',
     '..kppppppppk....',
-    '..kppwwppwwk....',
-    '..kppwkwkwpk....',
-    '..kppppppppk....',
-    '..kppkKKKppk....',
+    '..kppkkkkppk....',
     '..kppppppppk....',
     '...kppppppk.....',
     '....kkkkkk......',
@@ -415,52 +429,54 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // Sir Snores-a-Lot — rust bear (O), light-orange muzzle (o), gold crown (Y).
   'boss-snores': rows([
-    '.....kkkkk......',
-    '....kBBBBBk.....',
-    '...kBBBBBBk.....',
-    '..kttttttttk....',
-    '..ktkttttktk....',
-    '..kttttttttk....',
-    '..ktkkttkktk....',
-    '..ktkwwwwktk....',
-    '..kttwwwwttk....',
-    '..kttkwwkttk....',
-    '...kttttttk.....',
+    '....kYYYYk......',
+    '...kYkYYkYk.....',
+    '..kkOOOOOOkk....',
+    '..kOOOOOOOOOk...',
+    '..kOkOOOOOOk....',
+    '..kOOOkkkOOOk...',
+    '..kOOOOOOOOOk...',
+    '..kOkOOOOOOk....',
+    '..kOooooooOk....',
+    '..kOooooooooOk..',
+    '..kOoooooooOk...',
+    '...kOOOOOOOk....',
     '....kkkkkk......',
-    '................',
     '................',
     '................',
     '................',
   ]),
+  // The Great Grumbly Pumpkin — orange (O), light-orange shade (o), gold stem (Y).
   'boss-pumpkin': rows([
     '......kk........',
-    '......kNk.......',
+    '......kYk.......',
     '....kkkkkk......',
-    '...kooooOook....',
-    '..koooooooOok...',
-    '..kokkookkok....',
-    '..koooooooOok...',
-    '..kokkkkkkok....',
-    '..kookoookok....',
-    '...kooooOook....',
+    '...kOOOOOOOk....',
+    '..kOOOOOOOOOk...',
+    '..kOkkoOOkOOk...',
+    '..kOOOOOOOOOk...',
+    '..kOkkkkkkOOk...',
+    '..kOOkoOOOkOk...',
+    '...kOOOOOOOk....',
     '....kkkkkk......',
-    '................',
     '................',
     '................',
     '................',
     '................',
   ]),
   // ---- relic extras (others reuse the tile sprites) ----
+  // Hearty Stew — orange pot (O), orange-red soup (r), white steam (W).
   'relic-stew': rows([
-    '................',
-    '................',
+    '.....kWWk.......',
+    '....kWWWWk......',
     '....kkkkkk......',
-    '...knnnnnnk.....',
-    '..knnnnnnnnk....',
-    '..kttttttttk....',
-    '..ktwwwwwwtk....',
-    '...kttttttk.....',
+    '...kOOOOOOk.....',
+    '..kOOOOOOOOOk...',
+    '..krrrrrrrrrk...',
+    '..krWWWWWWrk....',
+    '...krrrrrrk.....',
     '....kkkkkk......',
     '................',
     '................',
@@ -470,17 +486,18 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // Soft Boots — orange boots (O), gold buckle (Y), dark-grey sole (g).
   'relic-boots': rows([
     '................',
     '......kk........',
-    '.....kttk.......',
-    '.....kttk.......',
-    '.....kttk.......',
-    '....kttttk......',
-    '...kttttttk.....',
-    '..kttttttttk....',
-    '..kkkkkkkkkk....',
-    '................',
+    '.....kOOk.......',
+    '.....kOOk.......',
+    '.....kOOk.......',
+    '....kOOOOk......',
+    '...kOOOOOOk.....',
+    '..kOOOOOOOOk....',
+    '..kYYYYYYYYk....',
+    '..kggggggggk....',
     '................',
     '................',
     '................',
@@ -514,4 +531,17 @@ export function spriteSVG(name) {
 /** All sprite ids, for tests. */
 export function spriteNames() {
   return Object.keys(SPRITES);
+}
+
+/** Fill colours (excluding the 'k' outline and '.') used by a sprite, for tests. */
+export function spriteColors(name) {
+  const grid = SPRITES[name];
+  if (!grid) return [];
+  const found = new Set();
+  for (const row of grid) {
+    for (const ch of row) {
+      if (ch !== '.' && ch !== 'k') found.add(ch);
+    }
+  }
+  return [...found];
 }
