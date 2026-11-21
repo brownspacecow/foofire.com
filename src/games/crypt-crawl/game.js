@@ -118,6 +118,76 @@ export function randomTile(rng = Math.random) {
   return 'coin';
 }
 
+/**
+ * Does this board have a possible move? A move is a drag path of 3+ tiles
+ * of the same type connected orthogonally (this is a drag-match game, not
+ * a swap-match game), so: does any orthogonally-connected component of one
+ * tile type have size >= 3? Null/empty cells are not tiles.
+ */
+export function hasPossibleMove(board) {
+  if (!board || !board.length || !board[0] || !board[0].length) return false;
+  const rows = board.length;
+  const cols = board[0].length;
+  const seen = board.map((row) => row.map(() => false));
+  const stack = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const type = board[r][c];
+      if (!type || seen[r][c]) continue;
+      // Flood-fill this component; stop as soon as it reaches 3.
+      let size = 0;
+      stack.push([r, c]);
+      seen[r][c] = true;
+      while (stack.length) {
+        const [cr, cc] = stack.pop();
+        size++;
+        if (size >= 3) return true;
+        for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nr = cr + dr;
+          const nc = cc + dc;
+          if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+          if (seen[nr][nc] || board[nr][nc] !== type) continue;
+          seen[nr][nc] = true;
+          stack.push([nr, nc]);
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Gravity + refill for a board with null holes (pure, unit-checked).
+ * Kept tiles fall straight down, keeping their order; brand-new tiles
+ * drop in from above the board. Returns { board, falls } where falls is
+ * a same-size grid of how many rows each tile fell (0 = stayed put).
+ * New tiles in a column all fall the same distance — the number of new
+ * tiles in that column — so they slide down in lockstep like a column.
+ */
+export function refillBoardData(board, rng = Math.random) {
+  const rows = board.length;
+  const cols = board[0].length;
+  const next = board.map((row) => row.slice());
+  const falls = board.map((row) => row.map(() => 0));
+  for (let c = 0; c < cols; c++) {
+    const kept = [];
+    for (let r = rows - 1; r >= 0; r--) {
+      if (board[r][c] !== null && board[r][c] !== undefined) kept.push({ type: board[r][c], from: r });
+    }
+    const nNew = rows - kept.length;
+    for (let r = rows - 1, i = 0; r >= 0; r--, i++) {
+      if (i < kept.length) {
+        next[r][c] = kept[i].type;
+        falls[r][c] = r - kept[i].from;
+      } else {
+        next[r][c] = randomTile(rng);
+        falls[r][c] = nNew;
+      }
+    }
+  }
+  return { board: next, falls };
+}
+
 export function randomName() {
   const names = ['Pip', 'Moss', 'Wren', 'Biscuit', 'Nettle', 'Bramble', 'Tilly', 'Finn', 'Poppy', 'Rowan', 'Juniper', 'Sage'];
   return names[Math.floor(Math.random() * names.length)];
@@ -162,7 +232,7 @@ if (typeof document !== 'undefined') {
     hp: 25, maxHp: 25, block: 0, gold: 0, score: 0, floor: 1, kills: 0,
     monster: null, board: [], relics: [], firstMatchThisFloor: true,
     dragging: false, path: [], pathType: null, paused: false, over: false,
-    best: 0, bestGold: 0,
+    settling: false, best: 0, bestGold: 0,
   };
   try {
     state.best = Number(localStorage.getItem(BEST_KEY) || 0);
@@ -245,7 +315,11 @@ if (typeof document !== 'undefined') {
   }
 
   // Repaint changed tiles and mark the drag path. Never rebuilds the DOM.
-  function paintBoard() {
+  // `falls` is an optional same-size grid of how many rows each tile fell
+  // (from refillBoardData / newBoard) — those tiles animate down into
+  // place with the Web Animations API. Tiles are never rebuilt mid-drag
+  // or mid-fall; only their classes, sprites and transforms change.
+  function paintBoard(falls) {
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const i = tileIndex(r, c);
@@ -261,11 +335,53 @@ if (typeof document !== 'undefined') {
         t.classList.toggle('in-path', state.path.some((p) => p.r === r && p.c === c));
       }
     }
+    if (falls) animateFalls(falls);
   }
 
+  // Tiles that fell slide down from where they were (or from above the
+  // board for brand-new tiles). One tile-height step = tile height + the
+  // grid gap, measured live so it is exact at any screen size. Staggered
+  // a touch per column so the fall ripples across the board. Total is
+  // ~230–430ms, so the turn still feels snappy. Skipped entirely when
+  // the player prefers reduced motion.
+  function animateFalls(falls) {
+    if (reducedMotion || !tileEls.length) return;
+    const first = tileEls[0];
+    const gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
+    const step = first.offsetHeight + gap;
+    if (!step) return;
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const d = falls[r] && falls[r][c];
+        if (!d) continue;
+        const el = tileEls[tileIndex(r, c)];
+        if (!el) continue;
+        el.animate(
+          [
+            { transform: `translateY(${-d * step}px)` },
+            { transform: 'translateY(0)' },
+          ],
+          {
+            duration: 200 + d * 30,
+            delay: c * 12,
+            easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)',
+            fill: 'backwards',
+          },
+        );
+      }
+    }
+  }
+
+  // A fresh board must always have a move — re-deal (silently) if it
+  // somehow does not. Fresh tiles drop in from above the board.
   function newBoard() {
-    state.board = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => randomTile()));
+    let attempts = 0;
+    do {
+      state.board = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => randomTile()));
+      attempts++;
+    } while (!hasPossibleMove(state.board) && attempts < 100);
     buildBoard();
+    paintBoard(state.board.map((row, r) => row.map(() => r + 1)));
   }
 
   // Old name, kept for the floor-clear / start-run call sites.
@@ -290,7 +406,7 @@ if (typeof document !== 'undefined') {
     return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
   }
   function startDrag(pos) {
-    if (state.paused || state.over || state.screen !== 'play') return;
+    if (state.paused || state.over || state.screen !== 'play' || state.settling) return;
     state.dragging = true; state.pathType = state.board[pos.r][pos.c];
     state.path = [pos]; paintBoard();
   }
@@ -389,26 +505,59 @@ if (typeof document !== 'undefined') {
     updateHud();
   }
 
+  // Gravity + refill, with per-cell fall distances for the drop
+  // animation. Pure logic lives in refillBoardData (unit-checked in node).
   function refillBoard() {
-    for (let c = 0; c < GRID; c++) {
-      const kept = [];
-      for (let r = GRID - 1; r >= 0; r--) {
-        if (state.board[r][c] !== null) kept.push(state.board[r][c]);
-      }
-      for (let r = GRID - 1, i = 0; r >= 0; r--, i++) {
-        state.board[r][c] = i < kept.length ? kept[i] : randomTile();
-      }
+    const result = refillBoardData(state.board);
+    state.board = result.board;
+    return result.falls;
+  }
+
+  // No moves left? Shuffle the whole board for free. No HP loss, no extra
+  // monster bite for the shuffle itself — the player just sees the banner
+  // and the tiles wobble into their new places. Guarantees the new board
+  // has at least one possible move. Returns true when a shuffle happened.
+  function ensurePossibleMove() {
+    if (hasPossibleMove(state.board)) return false;
+    let attempts = 0;
+    do {
+      state.board = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => randomTile()));
+      attempts++;
+    } while (!hasPossibleMove(state.board) && attempts < 100);
+    banner('No moves! Shuffling the crypt…');
+    setStatus('No moves left — the crypt shuffled itself, for free! Drag through 3 or more matching tiles.');
+    sfx.pop();
+    if (!reducedMotion) {
+      boardEl.classList.add('shuffling');
+      setTimeout(() => boardEl.classList.remove('shuffling'), 500);
     }
+    return true;
   }
 
   function resolveMatch() {
     const type = state.pathType;
     const len = state.path.length;
+    // endDrag clears state.path right after this call, so capture it.
+    const path = state.path.slice();
     const fx = matchEffect(type, len, state.heroId, state.relics, state.firstMatchThisFloor);
     state.firstMatchThisFloor = false;
     state.score += fx.score;
-    // Clear the matched tiles, then let the rest fall.
-    state.path.forEach((p) => { state.board[p.r][p.c] = null; });
+    // The matched tiles pop, then the rest of the board drops in after a
+    // short beat. New drags are blocked while the board is settling so a
+    // player cannot grab tiles that are about to fall away.
+    state.settling = true;
+    if (!reducedMotion) {
+      path.forEach((p) => {
+        const el = tileEls[tileIndex(p.r, p.c)];
+        if (el) el.animate(
+          [
+            { transform: 'scale(1.08)', opacity: 1 },
+            { transform: 'scale(0.2)', opacity: 0 },
+          ],
+          { duration: 130, easing: 'ease-in', fill: 'forwards' },
+        );
+      });
+    }
     sfx.pop();
     if (type === 'sword' && fx.damage > 0) {
       state.monster.hp -= fx.damage;
@@ -434,14 +583,35 @@ if (typeof document !== 'undefined') {
       if (fx.heal > 0) { state.hp = Math.min(state.maxHp, state.hp + fx.heal); floatText(`+${fx.heal} HP snack!`, 'heal'); }
       sfx.coin();
     }
-    refillBoard();
     updateHud();
-    if (state.monster.hp <= 0) {
-      floorCleared();
-    } else {
-      // Monster bites back after a short beat so the player sees the result.
-      setTimeout(monsterAttack, 420);
-    }
+    const settleMs = reducedMotion ? 0 : 140;
+    setTimeout(() => {
+      // Cancel the pop animations first — they hold opacity 0 with fill
+      // forwards, and the tile must be visible again before it falls.
+      path.forEach((p) => {
+        const el = tileEls[tileIndex(p.r, p.c)];
+        if (el) el.getAnimations().forEach((a) => a.cancel());
+      });
+      // Clear the matched tiles, let the rest fall, and refill.
+      path.forEach((p) => { state.board[p.r][p.c] = null; });
+      const falls = refillBoard();
+      // Turn order: shuffle FIRST if the refilled board has no moves
+      // (free — no HP loss, no extra bite), then the monster attacks
+      // once for this turn as normal.
+      const shuffled = ensurePossibleMove();
+      paintBoard(shuffled ? null : falls);
+      state.settling = false;
+      updateHud();
+      if (state.monster.hp <= 0) {
+        floorCleared();
+      } else {
+        // The monster bites back once the fall is (mostly) done — a beat
+        // later if the board just shuffled, so the player sees the new
+        // board before the bite lands.
+        const attackMs = reducedMotion ? 420 : shuffled ? 720 : 560;
+        setTimeout(monsterAttack, attackMs);
+      }
+    }, settleMs);
   }
 
   function monsterAttack() {

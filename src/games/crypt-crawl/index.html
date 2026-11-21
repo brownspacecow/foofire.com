@@ -455,6 +455,20 @@
       .tile-potion { background: #1a2e22; }
       .tile-coin { background: #33291a; }
 
+      /* No-moves shuffle: the whole board wobbles for a beat so the player
+         sees the crypt rearranging itself. */
+      #board.shuffling .tile {
+        animation: shuffle-wobble 0.45s ease;
+      }
+
+      @keyframes shuffle-wobble {
+        0% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-6px) rotate(-3deg); }
+        50% { transform: translateY(4px) rotate(3deg); }
+        75% { transform: translateY(-3px) rotate(-2deg); }
+        100% { transform: translateY(0) rotate(0deg); }
+      }
+
       #board.paused {
         opacity: 0.4;
         pointer-events: none;
@@ -702,7 +716,7 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .float-text, .shake { animation-duration: 0.01ms; }
+        .float-text, .shake, #board.shuffling .tile { animation-duration: 0.01ms; }
         #hp-fill, #monster-fill { transition: none; }
       }
     </style>
@@ -813,7 +827,8 @@
           <p class="game-tip" id="game-tip">
             Drag through 3+ matching tiles — swords hurt the monster, shields block its bite,
             potions heal you, coins are treasure! Longer paths are stronger. Beat the monster to
-            descend. A boss waits every 5th floor.
+            descend. A boss waits every 5th floor. If there are no moves left, the crypt
+            shuffles the tiles for free.
           </p>
           <p id="hud-best" class="game-tip"></p>
           <p id="status" class="sr-only" role="status" aria-live="polite">Crypt Crawl is ready.</p>
