@@ -14,7 +14,7 @@ const TOOLS = [
   { id: 'wall', label: 'Wall', icon: '🧱', hint: 'Drag on floor to raise a wall (4 gold).' },
   { id: 'trap', label: 'Traps', icon: '🪤', hint: 'Pick a trap, then tap a floor tile.' },
   { id: 'sell', label: 'Sell', icon: '🧹', hint: 'Tap a room, wall, trap or marked tile to undo it.' },
-  { id: 'hand', label: 'Hand', icon: '🖐️', hint: 'Tap a creature to pick it up; tap floor to drop it.' },
+  { id: 'hand', label: 'Hand', icon: '🖐️', hint: 'Tap a creature — or the Hero Gate — to pick it up; tap floor to drop it.' },
   { id: 'slap', label: 'Slap', icon: '👋', hint: 'Tap near creatures to shove them back and speed up their work.' },
 ];
 
@@ -55,8 +55,6 @@ export class GameUI {
             <button type="button" data-act="zoom-in" aria-label="Zoom in">+</button>
             <button type="button" data-act="zoom-reset" aria-label="Reset camera">⟲</button>
             <button type="button" data-act="speed" aria-label="Toggle double speed">1×</button>
-            <button type="button" data-act="mute" aria-label="Mute sound">🔊</button>
-            <button type="button" data-act="restart" aria-label="Restart run">↻</button>
             <button type="button" data-act="fullscreen" aria-label="Fullscreen">⛶</button>
             <button type="button" data-act="help" aria-label="How to play">?</button>
             <button type="button" data-act="pause" aria-label="Pause">❚❚</button>
@@ -161,8 +159,6 @@ export class GameUI {
     else if (action === 'time') this.toggleTimeStop();
     else if (action === 'fullscreen') this.options.onFullscreen?.();
     else if (action === 'speed') this.options.onSpeed?.();
-    else if (action === 'mute') this.options.onMute?.();
-    else if (action === 'restart') this.options.onRestart?.();
     else if (action === 'tip-next') this.tutorial.advance();
     else if (action === 'tip-dismiss') this.tutorial.dismissAll();
     else if (action === 'zoom-out') this.options.onZoom?.(1.18);
@@ -189,16 +185,6 @@ export class GameUI {
     button.textContent = `${speed}×`;
     button.classList.toggle('active', speed !== 1);
     button.setAttribute('aria-label', speed === 1 ? 'Double speed' : 'Normal speed');
-  }
-
-  setMuted(muted) {
-    if (this.mutedState === muted) return;
-    this.mutedState = muted;
-    const button = this.root.querySelector('[data-act="mute"]');
-    if (!button) return;
-    button.textContent = muted ? '🔇' : '🔊';
-    button.classList.toggle('active', muted);
-    button.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
   }
 
   /** Keep the fullscreen button honest about the current state. */
@@ -331,7 +317,9 @@ export class GameUI {
     if (this.activeTool === 'trap' && this.selection.trap) {
       hint = 'Tap floor to place it.';
     }
-    if (this.game?.handCreature) {
+    if (this.game?.handGate) {
+      hint = 'Carrying the Hero Gate. Tap a clear floor tile to place it.';
+    } else if (this.game?.handCreature) {
       hint = `Carrying ${this.game.handCreature.def.name}. Tap floor to drop.`;
     }
     if (this.game?.tasks.size) {
@@ -439,7 +427,7 @@ export class GameUI {
       goldChip.classList.toggle('full', full);
       if (full) goldChip.title += ' · Treasury full! Build more Treasury.';
     }
-    this.setMuted(Boolean(game.profile?.settings?.muted));
+
     this.el.mana.textContent = Math.floor(economy.mana);
     this.el.food.textContent = Math.floor(economy.food);
     this.el.creatures.textContent = game.creatures.count;
