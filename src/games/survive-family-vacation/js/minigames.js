@@ -729,6 +729,40 @@ function clockChimeAt(g, x, y) {
   return Math.abs(x - dialX) <= 80 && Math.abs(y - 250) <= 52;
 }
 
+/* RING IT is the submit button. Kids set the chime and then waited for
+ * something to happen, so give them a button and a plain answer when the
+ * clock does not match the card yet. */
+function clockRingAt(x, y) {
+  return x >= 16 && x <= 188 && y >= 466 && y <= 530;
+}
+
+function clockWin(g, s) {
+  s.celebrate = 1.1;
+  s.message = 'CLUNK. Something enormous turns over.';
+  s.feedback = '';
+  s.feedbackTimer = 0;
+  g.sfx('pickup');
+  g.progress(`Chime ${s.index + 1} / ${s.rounds.length} restored`);
+}
+
+function ringClock(g, s) {
+  const target = s.rounds[s.index];
+  const targetChime = CHIMES.indexOf(target.chime);
+  if (s.hour === target.hour && s.minute === target.minute && s.chime === targetChime) {
+    clockWin(g, s);
+    return;
+  }
+  const shown = `${target.hour}:${String(target.minute * 5).padStart(2, '0')} ${target.chime}`;
+  s.feedback =
+    s.chime !== targetChime
+      ? `Not yet. The park wants ${shown} - check the chime.`
+      : s.minute !== target.minute
+        ? `Not yet. The park wants ${shown} - check the minute hand.`
+        : `Not yet. The park wants ${shown} - check the hour hand.`;
+  s.feedbackTimer = 3.6;
+  g.sfx('fail');
+}
+
 function turnClock(s, direction) {
   if (s.selected === 0) s.hour = ((s.hour - 1 + direction + 12) % 12) + 1;
   if (s.selected === 1) s.minute = (s.minute + direction + 12) % 12;
@@ -761,7 +795,7 @@ function selectClockHand(g, s, pointer) {
 
 const clockwork = {
   name: 'The Storybook Clock',
-  hint: 'Tap a hand or chip to pick it, then drag up and down to turn it. Tap the chime dial beside the clock to flip it. Arrow keys work too.',
+  hint: 'Tap a hand or chip, then drag up and down to turn it. Tap the chime dial to flip it. Tap RING IT to chime the hour. Arrow keys work too.',
   init(g) {
     const rounds = Array.isArray(g.config.rounds) ? g.config.rounds : [{ hour: 7, minute: 6, chime: '🌙' }];
     return {
@@ -774,10 +808,17 @@ const clockwork = {
       solved: 0,
       celebrate: 0,
       message: '',
+      feedback: '',
+      feedbackTimer: 0,
       drag: null,
     };
   },
   update(g, dt, s) {
+    if (s.feedbackTimer > 0) {
+      s.feedbackTimer = Math.max(0, s.feedbackTimer - dt);
+      if (s.feedbackTimer === 0) s.feedback = '';
+    }
+
     if (s.celebrate > 0) {
       s.celebrate -= dt;
       if (s.celebrate <= 0) {
@@ -813,16 +854,21 @@ const clockwork = {
     const pointer = g.input.pointer;
     if (!pointer.down) s.drag = null;
     if (pointer.justDown && pointer.inside) {
-      // A tap on the chime dial flips the face right away, sun to moon and
-      // back, the way a tap turns a mirror in the light puzzle.
-      if (clockChimeAt(g, pointer.x, pointer.y)) {
-        s.selected = 2;
-        s.chime = (s.chime + 1) % CHIMES.length;
+      if (clockRingAt(pointer.x, pointer.y)) {
+        ringClock(g, s);
+        s.drag = null;
       } else {
-        selectClockHand(g, s, pointer);
+        // A tap on the chime dial flips the face right away, sun to moon and
+        // back, the way a tap turns a mirror in the light puzzle.
+        if (clockChimeAt(g, pointer.x, pointer.y)) {
+          s.selected = 2;
+          s.chime = (s.chime + 1) % CHIMES.length;
+        } else {
+          selectClockHand(g, s, pointer);
+        }
+        s.drag = { lastY: pointer.y };
+        g.sfx('click');
       }
-      s.drag = { lastY: pointer.y };
-      g.sfx('click');
     }
     if (s.drag && pointer.down && pointer.inside) {
       const step = 46;
@@ -836,11 +882,8 @@ const clockwork = {
 
     const target = s.rounds[s.index];
     const targetChime = CHIMES.indexOf(target.chime);
-    if (s.hour === target.hour && s.minute === target.minute && s.chime === targetChime) {
-      s.celebrate = 1.1;
-      s.message = 'CLUNK. Something enormous turns over.';
-      g.sfx('pickup');
-      g.progress(`Chime ${s.index + 1} / ${s.rounds.length} restored`);
+    if (s.celebrate <= 0 && s.hour === target.hour && s.minute === target.minute && s.chime === targetChime) {
+      clockWin(g, s);
     }
   },
   draw(g, ctx, s) {
@@ -913,6 +956,11 @@ const clockwork = {
       panel(ctx, x, 470, 170, 54, index === s.selected ? 'rgba(255, 216, 107, 0.22)' : 'rgba(20, 14, 26, 0.5)', index === s.selected ? '#ffd86b' : undefined);
       text(ctx, label, x + 85, 497, 16, index === s.selected ? '#ffd86b' : '#cfc0e8');
     });
+
+    // Submit button, and the park's answer when the clock is not right yet.
+    panel(ctx, 20, 470, 170, 54, 'rgba(255, 216, 107, 0.16)', '#ffd86b');
+    text(ctx, '🔔 RING IT', 105, 497, 17, '#ffe9c4');
+    if (s.feedback) text(ctx, s.feedback, g.w / 2, 443, 18, '#ff9f5a');
 
     if (s.celebrate > 0) {
       ctx.fillStyle = 'rgba(255, 236, 170, 0.14)';
