@@ -14,21 +14,25 @@ export function midiToFreq(m) {
 
 // ---- the dungeon loop: an original 4-bar A-minor tune ----
 // 32 eighth-note steps at 132 BPM (one loop ≈ 7.3 s).
+// Deliberately, unmistakably minor: the melody leans hard on the minor
+// 3rd (C) and minor 6th (F), the bass walks Am–F–Dm–E, and bar 4 uses
+// the harmonic-minor raised 7th (G#) as a leading tone back to A.
+// No major 3rd (C#) or major 6th (F#) anywhere in the melody.
 // melody: square-wave lead. bass: triangle-wave roots.
 // hat: 1 on off-beat steps (soft noise ticks), 0 elsewhere.
 export const MUSIC = {
   bpm: 132,
   steps: 32,
   melody: [
-    69, 69, 72, 76, 74, 72, 69, 67, // bar 1: A A C E | D C A G
-    69, 69, 72, 76, 74, 76, 74, 72, // bar 2: A A C E | D E D C
-    65, 65, 69, 72, 74, 72, 69, 65, // bar 3: F F A C | D C A F
-    64, 64, 67, 71, 69, null, null, null, // bar 4: E E G B | A . . .
+    69, 72, 76, 72, 69, 72, 69, 67, // bar 1 (Am): A C E C | A C A G
+    65, 69, 72, 77, 76, 72, 69, 65, // bar 2 (F):  F A C F | E C A F
+    62, 65, 69, 74, 72, 69, 65, 62, // bar 3 (Dm): D F A D | C A F D
+    64, 68, 71, 76, 71, 68, 69, null, // bar 4 (E→Am): E G# B E | B G# A .
   ],
   bass: [
     45, null, 45, null, 45, null, 45, null, // bar 1: A
-    45, null, 45, null, 45, null, 45, null, // bar 2: A
-    41, null, 41, null, 41, null, 41, null, // bar 3: F
+    41, null, 41, null, 41, null, 41, null, // bar 2: F
+    38, null, 38, null, 38, null, 38, null, // bar 3: D
     40, null, 40, null, 40, null, 45, null, // bar 4: E, walk up to A
   ],
   hat: [
@@ -36,6 +40,36 @@ export const MUSIC = {
     0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
+  ],
+};
+
+// ---- the boss loop: a separate, faster, tenser tune ----
+// Same shape as the main loop (32 eighth-note steps, 4 bars) but at
+// 156 BPM with a driving triangle bass on EVERY step (no rests), a hat
+// on every step, and a tenser square melody — repeated notes, a
+// chromatic descent through Bb and G# in bar 3, and a climb to A5 in
+// bar 4 that drops back to A. Still A minor at heart, still original,
+// still square/triangle/noise only. One loop ≈ 6.2 s.
+export const BOSS_MUSIC = {
+  bpm: 156,
+  steps: 32,
+  melody: [
+    69, 69, 72, 69, 69, 72, 76, 74, // bar 1: A A C A | A C E D
+    69, 69, 72, 76, 79, 76, 74, 72, // bar 2: A A C E | G E D C
+    70, 69, 68, 69, 72, 71, 69, 68, // bar 3: Bb A G# A | C B A G#
+    69, 72, 76, 79, 81, 79, 76, 69, // bar 4: A C E G | A G E A
+  ],
+  bass: [
+    45, 45, 45, 45, 45, 45, 45, 45, // bar 1: A, driving
+    45, 45, 45, 45, 45, 45, 45, 45, // bar 2: A, driving
+    45, 45, 44, 44, 45, 45, 44, 44, // bar 3: A/G# walk
+    40, 40, 40, 40, 40, 40, 45, 45, // bar 4: E, lift to A
+  ],
+  hat: [
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
   ],
 };
 
@@ -124,6 +158,54 @@ export function transformSfxNotes(table, { shift = 0, stretch = 1 } = {}) {
   });
 }
 
+// ---- match sound, scaled by path length ----
+// The longer the drag, the more epic the payoff. Same A-minor arpeggio
+// shape throughout, so a 3-tile match is still instantly recognisable:
+//   len 3: the short 3-note arpeggio (identical to SFX.pop)
+//   len 4: a 4-note arpeggio, brighter and a touch longer
+//   len 5: a 5-note arpeggio plus a quiet harmony voice a minor 3rd
+//          below on the top notes
+//   len 6+: 6+ ascending notes, harmony on the top notes, a noise crash
+//          and a low triangle boom underneath — the full fanfare
+// Lead notes climb the A-minor ladder [72, 76, 79, 84, 88, 91, 96, ...];
+// very long paths cap the ladder at 96 and hold the top note longer.
+// All volumes ≤ 0.09 per note, square/triangle/noise only.
+const MATCH_LADDER = [72, 76, 79, 84, 88, 91, 96, 96];
+export function matchPopNotes(len) {
+  const n = Math.max(3, Math.min(len, 8));
+  const leadCount = Math.min(n, MATCH_LADDER.length);
+  const notes = [];
+  for (let i = 0; i < leadCount; i++) {
+    notes.push({
+      m: MATCH_LADDER[i],
+      t: i * 0.04,
+      // Len 3 reproduces the old SFX.pop table exactly (final note 0.06);
+      // longer paths hold the top note longer for a bigger finish.
+      d: i === leadCount - 1 ? (leadCount === 3 ? 0.06 : 0.14) : 0.05,
+      w: 'square',
+      v: 0.06,
+    });
+  }
+  if (n >= 5) {
+    // Harmony voice, a minor 3rd below the top three lead notes.
+    for (let i = leadCount - 3; i < leadCount; i++) {
+      notes.push({
+        m: MATCH_LADDER[i] - 4,
+        t: i * 0.04,
+        d: 0.07,
+        w: 'square',
+        v: 0.04,
+      });
+    }
+  }
+  if (n >= 6) {
+    // Noise crash + low triangle boom for the full epic treatment.
+    notes.push({ noise: true, t: 0, d: 0.25, v: 0.08, f: 5000 });
+    notes.push({ m: 33, t: 0, d: 0.3, w: 'triangle', v: 0.09 });
+  }
+  return notes;
+}
+
 export class Chiptune {
   constructor() {
     this.ctx = null;
@@ -132,6 +214,12 @@ export class Chiptune {
     this.musicTimer = null;
     this.nextStepTime = 0;
     this.step = 0;
+    // Which loop should be playing: 'main' or 'boss'. `playingMusic` is
+    // the table the running sequencer is actually playing (set at start,
+    // so a track switch always restarts the sequencer cleanly).
+    this.track = 'main';
+    this.playingTrack = null;
+    this.playingMusic = null;
   }
 
   ensureCtx() {
@@ -249,22 +337,34 @@ export class Chiptune {
     }
   }
 
+  playNotes(notes) {
+    if (this.muted || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    for (const note of notes) this.playNote(note, now + note.t);
+  }
+
   playSfx(name, opts = {}) {
     if (this.muted) return;
     const table = SFX[name];
     if (!table) return;
     this.ensureCtx();
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
     const notes = (opts.shift || opts.stretch)
       ? transformSfxNotes(table, opts)
       : table;
-    for (const note of notes) this.playNote(note, now + note.t);
+    this.playNotes(notes);
   }
 
   // Named SFX, matching the game.js call sites.
   blip() { this.playSfx('blip'); }
-  pop() { this.playSfx('pop'); }
+  // Match pop, scaled by path length: 3 tiles is the short arpeggio,
+  // 6+ tiles is the full fanfare (see matchPopNotes).
+  pop(len = 3) {
+    if (this.muted) return;
+    this.ensureCtx();
+    if (!this.ctx) return;
+    this.playNotes(len <= 3 ? SFX.pop : matchPopNotes(len));
+  }
   hit() { this.playSfx('hit'); }
   hurt() { this.playSfx('hurt'); }
   heal() { this.playSfx('heal'); }
@@ -296,14 +396,27 @@ export class Chiptune {
   }
 
   // ---- background music: lookahead step sequencer ----
+  // `track` is 'main' or 'boss'. Calling startMusic with a track while
+  // the other one is playing restarts the sequencer on the new track —
+  // never two loops at once. Calling it with no argument (unpause /
+  // unmute) resumes whichever track was selected, and is a no-op when
+  // that track is already playing.
   get stepDur() {
-    return 60 / MUSIC.bpm / 2; // eighth notes
+    const table = this.playingMusic || MUSIC;
+    return 60 / table.bpm / 2; // eighth notes
   }
 
-  startMusic() {
-    if (this.muted || this.musicTimer) return;
+  startMusic(track) {
+    if (track) this.track = track;
+    if (this.muted) return;
+    if (this.musicTimer) {
+      if (this.playingTrack === this.track) return;
+      this.stopMusic();
+    }
     this.ensureCtx();
     if (!this.ctx) return;
+    this.playingTrack = this.track;
+    this.playingMusic = this.track === 'boss' ? BOSS_MUSIC : MUSIC;
     this.step = 0;
     this.nextStepTime = this.ctx.currentTime + 0.06;
     this.musicTimer = setInterval(() => this.scheduleMusic(), 25);
@@ -314,27 +427,30 @@ export class Chiptune {
       clearInterval(this.musicTimer);
       this.musicTimer = null;
     }
+    this.playingTrack = null;
+    this.playingMusic = null;
   }
 
   scheduleMusic() {
-    if (!this.ctx) return;
+    if (!this.ctx || !this.playingMusic) return;
     while (this.nextStepTime < this.ctx.currentTime + 0.12) {
       this.scheduleStep(this.step, this.nextStepTime);
-      this.step = (this.step + 1) % MUSIC.steps;
+      this.step = (this.step + 1) % this.playingMusic.steps;
       this.nextStepTime += this.stepDur;
     }
   }
 
   scheduleStep(i, when) {
-    const mel = MUSIC.melody[i];
+    const table = this.playingMusic;
+    const mel = table.melody[i];
     if (mel !== null && mel !== undefined) {
       this.tone({ type: 'square', freq: midiToFreq(mel), when, dur: this.stepDur * 0.92, vol: 0.045 });
     }
-    const bass = MUSIC.bass[i];
+    const bass = table.bass[i];
     if (bass !== null && bass !== undefined) {
       this.tone({ type: 'triangle', freq: midiToFreq(bass), when, dur: this.stepDur * 1.8, vol: 0.07 });
     }
-    if (MUSIC.hat[i]) {
+    if (table.hat[i]) {
       this.noise({ when, dur: 0.03, vol: 0.015, freq: 7000 });
     }
   }
