@@ -488,7 +488,18 @@ if (typeof document !== 'undefined') {
     state.monster = monsterForFloor(state.floor, state.difficulty);
     state.firstMatchThisFloor = true;
     if (state.monster.isBoss) sfx.boss();
+    updateMusic();
     updateHud();
+  }
+
+  // Boss floors get the faster, tenser boss loop; regular floors get the
+  // main dungeon tune. startMusic restarts the sequencer only when the
+  // track actually changes, so this is a no-op most floors. Only starts
+  // music while actually playing — if paused, the unpause handler
+  // resumes whichever track was selected.
+  function updateMusic() {
+    if (state.screen !== 'play' || state.paused || state.over) return;
+    sfx.startMusic(state.monster && state.monster.isBoss ? 'boss' : 'main');
   }
 
   // Gravity + refill, with per-cell fall distances for the drop
@@ -544,7 +555,7 @@ if (typeof document !== 'undefined') {
         );
       });
     }
-    sfx.pop();
+    sfx.pop(len); // the match sound grows more epic with the path length
     if (type === 'sword' && fx.damage > 0) {
       state.monster.hp -= fx.damage;
       floatText(`-${fx.damage}`, 'dmg');
