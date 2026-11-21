@@ -127,7 +127,6 @@ export class Renderer {
     this.trapGroup = null;
     this.trapPads = [];
     this.torchGroup = null;
-    this.torches = [];
     this.markers = null;
     this.instanceTiles = [];
     this.lastVersion = -1;
@@ -242,7 +241,6 @@ export class Renderer {
     this.markers = null;
     this.features = {};
     this.torchGroup = null;
-    this.torches = [];
     this.instanceTiles = [];
   }
 
@@ -280,7 +278,6 @@ export class Renderer {
         if (child.material) child.material.dispose();
       });
       this.torchGroup = null;
-      this.torches = [];
     }
 
     const count = world.tiles.length;
@@ -573,9 +570,10 @@ export class Renderer {
   }
 
   /** Wall torches: the dungeon's light. Rebuilt with the terrain so a
-   * torch never floats where a wall was dug away. Flames are unlit
-   * (MeshBasicMaterial) so they read in the dark on every quality;
-   * the first few also carry a real warm point light on High. */
+   * torch never floats where a wall was dug away. There is no visible
+   * flame — the warm point lights are the glow, and the fixtures stay
+   * so each light has a home in the world. The first few carry a real
+   * point light on High. */
   buildTorches(game) {
     const world = game.world;
     const candidates = [];
@@ -629,13 +627,11 @@ export class Renderer {
     const group = new THREE.Group();
     const poleMat = new THREE.MeshLambertMaterial({ color: '#3a2c1e' });
     const stoneMat = new THREE.MeshLambertMaterial({ color: '#5c5468' });
-    const flameMat = new THREE.MeshBasicMaterial({ color: '#ff9a3c' });
-    const coreMat = new THREE.MeshBasicMaterial({ color: '#ffe08a' });
     // Braziers light the Heart room where the fighting happens, so
     // they get their lights first; wall torches share the rest.
     let litWall = 0;
     let litBrazier = 0;
-    picked.forEach((spot, i) => {
+    picked.forEach((spot) => {
       const torch = new THREE.Group();
       if (spot.brazier) {
         // A squat stone brazier standing in the middle of its tile.
@@ -658,36 +654,17 @@ export class Renderer {
         cup.position.y = 1.2;
         torch.add(pole, cup);
       }
-      const flameY = spot.brazier ? 0.95 : 1.55;
-      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.55, 8), flameMat);
-      flame.position.y = flameY;
-      const core = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), coreMat);
-      core.position.y = flameY - 0.08;
-      core.scale.y = 1.6;
-      // A faint additive halo so the flame reads as glowing, not just orange.
-      const halo = new THREE.Mesh(
-        new THREE.ConeGeometry(0.3, 0.7, 8),
-        new THREE.MeshBasicMaterial({
-          color: '#ff9a3c', transparent: true, opacity: 0.12,
-          blending: THREE.AdditiveBlending, depthWrite: false,
-        })
-      );
-      halo.position.y = flameY;
-      torch.add(flame, core, halo);
-      const entry = { flame, halo, phase: i * 1.7, base: 2.2, light: null };
-      // Real light is the expensive part: two braziers and four wall
-      // torches carry one on High, the rest are flame-only.
+      // No visible flame: the warm point light is the glow.
+      const lightY = spot.brazier ? 0.95 : 1.55;
       const litCount = spot.brazier ? litBrazier : litWall;
       const budget = spot.brazier ? 2 : 4;
       if (this.quality === 'high' && litCount < budget) {
         const light = new THREE.PointLight('#ff9a3c', 2.2, 8);
-        light.position.y = flameY;
+        light.position.y = lightY;
         torch.add(light);
-        entry.light = light;
         if (spot.brazier) litBrazier += 1;
         else litWall += 1;
       }
-      this.torches.push(entry);
       group.add(torch);
     });
     this.levelGroup.add(group);
@@ -878,16 +855,6 @@ export class Renderer {
         this.features.heartLight.intensity = ratio < 0.35
           ? 1 + Math.sin(time * 12) * 0.8
           : base + Math.sin(time * 3) * 0.45 + this.heartFlash * 1.2;
-      }
-      if (this.torches) {
-        for (const torch of this.torches) {
-          // Each flame dances on its own rhythm.
-          const wobble = Math.sin(time * 11 + torch.phase) * 0.5
-            + Math.sin(time * 23 + torch.phase * 2) * 0.3;
-          torch.flame.scale.set(1 + wobble * 0.04, 1 + wobble * 0.1, 1 + wobble * 0.04);
-          if (torch.halo) torch.halo.scale.setScalar(1 + wobble * 0.05);
-          if (torch.light) torch.light.intensity = torch.base * (1 + wobble * 0.12);
-        }
       }
     }
     if (this.trapPads.length) {
