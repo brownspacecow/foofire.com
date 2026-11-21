@@ -252,7 +252,8 @@ export class CreatureManager {
   }
 
   canReach(creature, hero) {
-    if (!creature.ranged) return true;
+    // Melee included: without this a creature next to a wall corner
+    // could hit a hero on the other side of the wall.
     return hasLineOfSight(this.game.world, creature.x, creature.y, hero.x, hero.y);
   }
 

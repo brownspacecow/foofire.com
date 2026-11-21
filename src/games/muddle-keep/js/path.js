@@ -153,7 +153,9 @@ export function hasLineOfSight(world, ax, ay, bx, by) {
   for (let step = 1; step < steps; step += 1) {
     const t = step / steps;
     const tile = world.tile(Math.floor(ax + dx * t), Math.floor(ay + dy * t));
-    if (tile === T.BEDROCK || tile === T.WATER || tile === T.LAVA) return false;
+    // Only open floor lets sight through: dirt, gold, built walls and
+    // doors all block it, so ranged attacks can't fire through walls.
+    if (tile !== T.DUG && tile !== T.FLOOR) return false;
   }
   return true;
 }

@@ -12,6 +12,7 @@ export class Menus {
     this.cb = options.callbacks;
     this.screen = 'none';
     this.resetArmed = 0;
+    this.restartArmed = 0;
     this.returnTo = 'title';
     this.pauseGame = null;
     this.root.innerHTML = '<div class="mk-menu-backdrop"></div><div class="mk-menu-card" role="dialog" aria-modal="true"></div>';
@@ -164,6 +165,7 @@ export class Menus {
 
   showPause(game) {
     this.pauseGame = game;
+    this.restartArmed = 0;
     const best = Math.max(0, Number(this.profile.bestWave) || 0);
     this.show(
       `
@@ -228,7 +230,21 @@ export class Menus {
       else this.showTitle();
     }
     else if (action === 'resume') this.cb.resume();
-    else if (action === 'restart') this.cb.restart();
+    else if (action === 'restart') {
+      // Restart wipes the run, so arm it first: tap once to ask,
+      // tap again within 4s to actually restart.
+      if (this.restartArmed && Date.now() - this.restartArmed < 4000) {
+        this.restartArmed = 0;
+        this.cb.restart();
+      } else {
+        this.restartArmed = Date.now();
+        button.textContent = 'Tap again to restart';
+        window.setTimeout(() => {
+          if (!this.restartArmed) return;
+          button.textContent = 'Restart run';
+        }, 4000);
+      }
+    }
     else if (action === 'quit') this.cb.quit();
     else if (action === 'retry') this.cb.retry();
     else if (action === 'reset') {

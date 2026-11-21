@@ -194,7 +194,9 @@ export class HeroManager {
       const distance = Math.hypot(hero.x - target.x, hero.y - target.y);
       hero.facing = Math.atan2(target.x - hero.x, target.y - hero.y);
       const inRange = distance <= hero.def.range + 0.45;
-      const clear = !hero.ranged || hasLineOfSight(world, hero.x, hero.y, target.x, target.y);
+      // Melee needs a clear line too: without this a knight standing
+      // next to a wall corner could hit a creature on the other side.
+      const clear = hasLineOfSight(world, hero.x, hero.y, target.x, target.y);
       if (inRange && clear) {
         this.hitCreature(hero, target);
         return;
