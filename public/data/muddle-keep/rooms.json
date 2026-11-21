@@ -3,7 +3,7 @@
     {
       "id": "treasury",
       "name": "Treasury",
-      "icon": "💰",
+      "icon": "\ud83d\udcb0",
       "color": "#e0b257",
       "cost": 12,
       "minTiles": 3,
@@ -13,7 +13,7 @@
     {
       "id": "lair",
       "name": "Lair",
-      "icon": "🛏️",
+      "icon": "\ud83d\udecf\ufe0f",
       "color": "#a98be0",
       "cost": 14,
       "minTiles": 4,
@@ -22,7 +22,7 @@
     {
       "id": "hatchery",
       "name": "Hatchery",
-      "icon": "🍄",
+      "icon": "\ud83c\udf44",
       "color": "#8fd08a",
       "cost": 16,
       "minTiles": 4,
@@ -31,7 +31,7 @@
     {
       "id": "training",
       "name": "Training Room",
-      "icon": "🎯",
+      "icon": "\ud83c\udfaf",
       "color": "#e08a6a",
       "cost": 22,
       "minTiles": 4,
@@ -40,7 +40,7 @@
     {
       "id": "library",
       "name": "Library",
-      "icon": "📚",
+      "icon": "\ud83d\udcda",
       "color": "#7fb8e0",
       "cost": 26,
       "minTiles": 4,
@@ -49,20 +49,11 @@
     {
       "id": "workshop",
       "name": "Workshop",
-      "icon": "🔨",
+      "icon": "\ud83d\udd28",
       "color": "#b7b7c8",
       "cost": 28,
       "minTiles": 4,
       "desc": "Needed before you can build traps and doors."
-    },
-    {
-      "id": "portal",
-      "name": "Portal",
-      "icon": "🌀",
-      "color": "#d46ae0",
-      "cost": 50,
-      "minTiles": 4,
-      "desc": "A swirling doorway. New creatures wander out of it."
     }
   ],
   "research": [

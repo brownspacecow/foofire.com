@@ -19,8 +19,8 @@ const byId = (list) => new Map(list.map((entry) => [entry.id, entry]));
 
 /**
  * Turn ASCII rows into a tile array plus the special tile positions.
- * Every map gets a heart, a portal and a hero gate; missing ones fall
- * back to sensible positions instead of breaking the level.
+ * Every map gets a heart and a hero gate; missing ones fall back to
+ * sensible positions instead of breaking the level.
  */
 export function parseMap(rows) {
   if (!Array.isArray(rows) || rows.length === 0) throw new Error('Level map is empty');
@@ -28,7 +28,6 @@ export function parseMap(rows) {
   const w = rows.reduce((widest, row) => Math.max(widest, String(row).length), 0);
   const tiles = new Uint8Array(w * h);
   let heart = null;
-  let portal = null;
   let gate = null;
 
   for (let y = 0; y < h; y += 1) {
@@ -38,7 +37,6 @@ export function parseMap(rows) {
       const tile = CHAR_TILES[char] ?? T.BEDROCK;
       tiles[y * w + x] = tile;
       if (char === 'H') heart = { x, y };
-      if (char === 'P') portal = { x, y };
       if (char === 'E') gate = { x, y };
     }
   }
@@ -51,7 +49,6 @@ export function parseMap(rows) {
   };
 
   heart = heart ?? findAny(T.FLOOR) ?? { x: 1, y: 1 };
-  portal = portal ?? heart;
   gate =
     gate ??
     (() => {
@@ -63,11 +60,10 @@ export function parseMap(rows) {
       return { x: w - 2, y: h - 2 };
     })();
 
-  // The heart and portal squares are part of the dungeon from the start.
+  // The heart square is part of the dungeon from the start.
   tiles[heart.y * w + heart.x] = T.FLOOR;
-  tiles[portal.y * w + portal.x] = T.FLOOR;
 
-  return { w, h, tiles, heart, portal, gate };
+  return { w, h, tiles, heart, gate };
 }
 
 export async function loadContent() {

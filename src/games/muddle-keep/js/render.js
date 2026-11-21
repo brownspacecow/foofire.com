@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------ *
  * Renderer
  * The three.js scene: instanced terrain, room tinting, task markers,
- * the Dungeon Heart, portal, hero gate and the tile cursor. Terrain is
+ * the Dungeon Heart, hero gate and the tile cursor. Terrain is
  * rebuilt only when the grid changes, never per frame.
  * ------------------------------------------------------------------ */
 
@@ -641,30 +641,6 @@ export class Renderer {
     this.lastHeartHp = world.heart.hp;
     this.heartFlash = 0;
 
-    const portal = new THREE.Group();
-    portal.position.set(world.portal.x + 0.5, 0.16, world.portal.y + 0.5);
-    const disc = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.62, 0.72, 0.14, 14),
-      new THREE.MeshLambertMaterial({ color: '#3b2b53' })
-    );
-    disc.position.y = 0.07;
-    portal.add(disc);
-    const swirl = new THREE.Mesh(
-      new THREE.TorusGeometry(0.48, 0.1, 8, 24),
-      new THREE.MeshStandardMaterial({
-        color: '#d46ae0',
-        emissive: '#8c2fbf',
-        emissiveIntensity: 1.2,
-        transparent: true,
-        opacity: 0.9,
-      })
-    );
-    swirl.position.y = 0.82;
-    portal.add(swirl);
-    this.features.portalSwirl = swirl;
-    this.levelGroup.add(portal);
-    this.features.portal = portal;
-
     const gate = new THREE.Group();
     gate.position.set(world.gate.x + 0.5, 0, world.gate.y + 0.5);
     const stone = new THREE.MeshLambertMaterial({ color: '#8c8aa0' });
@@ -774,10 +750,6 @@ export class Renderer {
       } else {
         this.features.gate.position.set(world.gate.x + 0.5, 0, world.gate.y + 0.5);
       }
-    }
-    if (this.features.portalSwirl) {
-      this.features.portalSwirl.rotation.z += dt * 1.8;
-      this.features.portalSwirl.rotation.x = Math.PI / 2 + Math.sin(time * 1.3) * 0.18;
     }
   }
 

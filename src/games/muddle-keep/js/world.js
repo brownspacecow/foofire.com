@@ -40,7 +40,6 @@ export class World {
       hp: level.heartHealth ?? 800,
       maxHp: level.heartHealth ?? 800,
     };
-    this.portal = { ...map.portal };
     this.gate = { ...map.gate };
     this.goldPerSeam = GOLD_PER_SEAM;
     this.wallHpBonus = 0;
@@ -259,7 +258,6 @@ export class World {
     const index = this.idx(x, y);
     if (this.tiles[index] !== T.FLOOR) return false;
     if (this.heart.x === x && this.heart.y === y) return false;
-    if (this.portal.x === x && this.portal.y === y) return false;
     if (this.traps.has(index)) return false;
     if (this.walls.has(index)) return false;
     this.gate = { x, y };

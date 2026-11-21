@@ -116,6 +116,6 @@ export function openCreatureSheet(ui) {
     'Wages are paid every minute. Mood drops when creatures are hungry, tired or unpaid.',
     items.length
       ? items
-      : [{ icon: '🕳️', name: 'No creatures yet', desc: 'A Portal will attract some.' }]
+      : [{ icon: '💗', name: 'No creatures yet', desc: 'New monsters burst out of the Dungeon Heart.' }]
   );
 }

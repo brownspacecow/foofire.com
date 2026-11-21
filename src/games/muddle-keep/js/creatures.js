@@ -116,7 +116,7 @@ export class CreatureManager {
   }
 
   // New monsters burst out of the Dungeon Heart itself, on the open
-  // floor ringing it — never through the portal.
+  // floor ringing it.
   tryHeartSpawn() {
     const game = this.game;
     const world = game.world;

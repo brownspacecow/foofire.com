@@ -248,9 +248,6 @@ export class Game {
     if (!def) return { ok: false };
     if (!this.economy.rooms.has(roomId)) return this.error('That room is not available yet.');
     if (x === world.heart.x && y === world.heart.y) return this.error('Not on the Heart.');
-    if (world.portal && x === world.portal.x && y === world.portal.y) {
-      return this.error('That is the Portal — paint the floor around it.');
-    }
     if (world.tile(x, y) !== T.FLOOR) {
       const tile = world.tile(x, y);
       if (tile === T.DIRT || tile === T.GOLD) {
