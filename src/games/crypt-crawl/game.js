@@ -3,21 +3,23 @@
 // Pure game-logic helpers are exported so they can be unit-checked in node;
 // the DOM game only boots when `document` exists.
 
+import { spriteSVG } from './sprites.js';
+
 export const GRID = 6;
 export const BEST_KEY = 'foofire-crypt-crawl-best';
 export const BEST_GOLD_KEY = 'foofire-crypt-crawl-best-gold';
 
 export const TILE_TYPES = ['sword', 'shield', 'potion', 'coin'];
-export const TILE_EMOJI = { sword: '⚔️', shield: '🛡️', potion: '🧪', coin: '🪙' };
+export const TILE_SPRITE = { sword: 'tile-sword', shield: 'tile-shield', potion: 'tile-potion', coin: 'tile-coin' };
 export const TILE_LABEL = { sword: 'Sword', shield: 'Shield', potion: 'Potion', coin: 'Coin' };
 
 export const HEROES = [
-  { id: 'pip', name: 'Pip the Wanderer', emoji: '🧑‍🌾', kind: 'Human • Wanderer', perk: 'Potions heal +1 extra', desc: 'A cheerful traveller who has walked every road and never met a dungeon they could not nap in.' },
-  { id: 'bramble', name: 'Bramble the Knight', emoji: '🛡️', kind: 'Knight • Shield-bearer', perk: 'Shields block +1 extra', desc: 'A very polite knight. Says "excuse me" before blocking a bite.' },
-  { id: 'moss', name: 'Moss the Gardener', emoji: '🌿', kind: 'Gardener • Tough as roots', perk: 'Starts with +10 max HP', desc: 'Grows courage like carrots. Slightly muddy, extremely hard to knock over.' },
-  { id: 'wren', name: 'Wren the Scout', emoji: '🏹', kind: 'Scout • Quick feet', perk: 'Swords deal +1 on paths of 5+', desc: 'Small, speedy and impossible to catch. Long sword-paths are her favourite trick.' },
-  { id: 'biscuit', name: 'Biscuit the Cook', emoji: '🍳', kind: 'Cook • Snack-powered', perk: 'Coins heal 1 HP per 4 matched', desc: 'Believes every problem is a snack problem. Carries a frying pan and a plan.' },
-  { id: 'nettle', name: 'Nettle the Wizard', emoji: '🧙', kind: 'Wizard • First-spell fan', perk: 'First match each floor deals +3', desc: 'A young wizard whose first spell of the day always goes a bit BANG.' },
+  { id: 'pip', name: 'Pip the Wanderer', sprite: 'hero-pip', kind: 'Human • Wanderer', perk: 'Potions heal +1 extra', desc: 'A cheerful traveller who has walked every road and never met a dungeon they could not nap in.' },
+  { id: 'bramble', name: 'Bramble the Knight', sprite: 'hero-bramble', kind: 'Knight • Shield-bearer', perk: 'Shields block +1 extra', desc: 'A very polite knight. Says "excuse me" before blocking a bite.' },
+  { id: 'moss', name: 'Moss the Gardener', sprite: 'hero-moss', kind: 'Gardener • Tough as roots', perk: 'Starts with +10 max HP', desc: 'Grows courage like carrots. Slightly muddy, extremely hard to knock over.' },
+  { id: 'wren', name: 'Wren the Scout', sprite: 'hero-wren', kind: 'Scout • Quick feet', perk: 'Swords deal +1 on paths of 5+', desc: 'Small, speedy and impossible to catch. Long sword-paths are her favourite trick.' },
+  { id: 'biscuit', name: 'Biscuit the Cook', sprite: 'hero-biscuit', kind: 'Cook • Snack-powered', perk: 'Coins heal 1 HP per 4 matched', desc: 'Believes every problem is a snack problem. Carries a frying pan and a plan.' },
+  { id: 'nettle', name: 'Nettle the Wizard', sprite: 'hero-nettle', kind: 'Wizard • First-spell fan', perk: 'First match each floor deals +3', desc: 'A young wizard whose first spell of the day always goes a bit BANG.' },
 ];
 
 export const DIFFICULTIES = {
@@ -27,29 +29,29 @@ export const DIFFICULTIES = {
 };
 
 export const RELICS = [
-  { id: 'sharp-sword', name: 'Sharp Sword', emoji: '🗡️', desc: '+1 sword damage' },
-  { id: 'sturdy-shield', name: 'Sturdy Shield', emoji: '🛡️', desc: '+1 block from shields' },
-  { id: 'lucky-coin', name: 'Lucky Coin', emoji: '🍀', desc: '+1 gold per coin tile' },
-  { id: 'hearty-stew', name: 'Hearty Stew', emoji: '🍲', desc: '+5 max HP and heal 5' },
-  { id: 'soft-boots', name: 'Soft Boots', emoji: '🥾', desc: 'Monster bites hurt 1 less' },
-  { id: 'sweet-potion', name: 'Sweet Potion', emoji: '🧃', desc: '+1 healing from potions' },
+  { id: 'sharp-sword', name: 'Sharp Sword', sprite: 'tile-sword', desc: '+1 sword damage' },
+  { id: 'sturdy-shield', name: 'Sturdy Shield', sprite: 'tile-shield', desc: '+1 block from shields' },
+  { id: 'lucky-coin', name: 'Lucky Coin', sprite: 'tile-coin', desc: '+1 gold per coin tile' },
+  { id: 'hearty-stew', name: 'Hearty Stew', sprite: 'relic-stew', desc: '+5 max HP and heal 5' },
+  { id: 'soft-boots', name: 'Soft Boots', sprite: 'relic-boots', desc: 'Monster bites hurt 1 less' },
+  { id: 'sweet-potion', name: 'Sweet Potion', sprite: 'tile-potion', desc: '+1 healing from potions' },
 ];
 
 const MONSTER_POOL = [
-  { name: 'Squeaky Slime', emoji: '🟢' },
-  { name: 'Wobbly Bat', emoji: '🦇' },
-  { name: 'Ticklish Spider', emoji: '🕷️' },
-  { name: 'Rattly Skeleton', emoji: '💀' },
-  { name: 'Grumpy Mushroom', emoji: '🍄' },
-  { name: 'Sneezy Ghost', emoji: '👻' },
-  { name: 'Bouncy Blob', emoji: '🫧' },
-  { name: 'Sleepy Snake', emoji: '🐍' },
+  { name: 'Squeaky Slime', sprite: 'monster-slime' },
+  { name: 'Wobbly Bat', sprite: 'monster-bat' },
+  { name: 'Ticklish Spider', sprite: 'monster-spider' },
+  { name: 'Rattly Skeleton', sprite: 'monster-skeleton' },
+  { name: 'Grumpy Mushroom', sprite: 'monster-mushroom' },
+  { name: 'Sneezy Ghost', sprite: 'monster-ghost' },
+  { name: 'Bouncy Blob', sprite: 'monster-blob' },
+  { name: 'Sleepy Snake', sprite: 'monster-snake' },
 ];
 const BOSS_POOL = [
-  { name: 'King Crumb the Cake Golem', emoji: '🍰' },
-  { name: 'Queen Wobble the Jelly Giant', emoji: '🍮' },
-  { name: 'Sir Snores-a-Lot', emoji: '🐻' },
-  { name: 'The Great Grumbly Pumpkin', emoji: '🎃' },
+  { name: 'King Crumb the Cake Golem', sprite: 'boss-crumb' },
+  { name: 'Queen Wobble the Jelly Giant', sprite: 'boss-wobble' },
+  { name: 'Sir Snores-a-Lot', sprite: 'boss-snores' },
+  { name: 'The Great Grumbly Pumpkin', sprite: 'boss-pumpkin' },
 ];
 
 export function isBossFloor(floor) {
@@ -179,7 +181,7 @@ if (typeof document !== 'undefined') {
       b.type = 'button';
       b.className = 'hero-card' + (state.heroId === h.id ? ' selected' : '');
       b.setAttribute('aria-pressed', String(state.heroId === h.id));
-      b.innerHTML = `<span class="hero-emoji" aria-hidden="true">${h.emoji}</span><span class="hero-name">${h.name}</span>`;
+      b.innerHTML = `<span class="hero-emoji" aria-hidden="true">${spriteSVG(h.sprite)}</span><span class="hero-name">${h.name}</span>`;
       b.addEventListener('click', () => { state.heroId = h.id; beep(600, 0.05); renderHeroes(); renderDetail(); });
       heroGrid.appendChild(b);
     });
@@ -187,7 +189,7 @@ if (typeof document !== 'undefined') {
   function renderDetail() {
     const h = HEROES.find((x) => x.id === state.heroId);
     detailEl.innerHTML = `
-      <span class="hero-emoji big" aria-hidden="true">${h.emoji}</span>
+      <span class="hero-emoji big" aria-hidden="true">${spriteSVG(h.sprite)}</span>
       <span class="detail-text"><strong>${h.name}</strong><span class="detail-kind">${h.kind}</span>
       <span class="detail-perk">Perk: ${h.perk}</span><span class="detail-desc">${h.desc}</span>
       <span class="detail-flavour">No flaw either — just a brave kid with a torch and a snack.</span></span>`;
@@ -209,12 +211,24 @@ if (typeof document !== 'undefined') {
   renderHeroes(); renderDetail(); renderDifficulty();
 
   // ---- board ----
+  // Tile buttons are built ONCE per board and reused. The old code called
+  // renderBoard() — which did boardEl.innerHTML = '' and rebuilt all 36
+  // tile buttons — on every pointerdown AND every pointermove. Rebuilding
+  // the DOM under the player's finger destroys the touch target mid-drag,
+  // so mobile browsers fire pointercancel and the drag dies. That is the
+  // bug Jordan hit. During a drag we now only toggle the `in-path` class
+  // on the existing tiles; the DOM is rebuilt only when a new board is
+  // dealt or tiles refill (never while dragging).
   const boardEl = $('#board');
-  function newBoard() {
-    state.board = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => randomTile()));
-  }
-  function renderBoard() {
+  let tileEls = []; // 36 buttons, row-major order, built once per board
+  let paintedTypes = []; // last type painted per tile, to avoid rework
+
+  function tileIndex(r, c) { return r * GRID + c; }
+
+  function buildBoard() {
     boardEl.innerHTML = '';
+    tileEls = [];
+    paintedTypes = [];
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const t = document.createElement('button');
@@ -222,17 +236,55 @@ if (typeof document !== 'undefined') {
         t.className = 'tile tile-' + state.board[r][c];
         t.dataset.row = r; t.dataset.col = c;
         t.setAttribute('aria-label', `${TILE_LABEL[state.board[r][c]]} tile, row ${r + 1} column ${c + 1}`);
-        t.innerHTML = `<span aria-hidden="true">${TILE_EMOJI[state.board[r][c]]}</span>`;
-        if (state.path.some((p) => p.r === r && p.c === c)) t.classList.add('in-path');
+        t.innerHTML = spriteSVG(TILE_SPRITE[state.board[r][c]]);
         boardEl.appendChild(t);
+        tileEls.push(t);
+        paintedTypes.push(state.board[r][c]);
       }
     }
   }
+
+  // Repaint changed tiles and mark the drag path. Never rebuilds the DOM.
+  function paintBoard() {
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const i = tileIndex(r, c);
+        const type = state.board[r][c];
+        const t = tileEls[i];
+        if (!t) continue;
+        if (paintedTypes[i] !== type) {
+          paintedTypes[i] = type;
+          t.className = 'tile tile-' + type;
+          t.innerHTML = spriteSVG(TILE_SPRITE[type]);
+          t.setAttribute('aria-label', `${TILE_LABEL[type]} tile, row ${r + 1} column ${c + 1}`);
+        }
+        t.classList.toggle('in-path', state.path.some((p) => p.r === r && p.c === c));
+      }
+    }
+  }
+
+  function newBoard() {
+    state.board = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => randomTile()));
+    buildBoard();
+  }
+
+  // Old name, kept for the floor-clear / start-run call sites.
+  function renderBoard() { paintBoard(); }
+
+  // Which tile is under a pointer? Hit-test first (exact, gap-aware),
+  // grid maths second (so a finger drifting between tiles still tracks).
   function tileAt(clientX, clientY) {
     const el = document.elementFromPoint(clientX, clientY);
     const tile = el && el.closest ? el.closest('.tile') : null;
-    if (!tile || !boardEl.contains(tile)) return null;
-    return { r: Number(tile.dataset.row), c: Number(tile.dataset.col) };
+    if (tile && boardEl.contains(tile)) {
+      return { r: Number(tile.dataset.row), c: Number(tile.dataset.col) };
+    }
+    const rect = boardEl.getBoundingClientRect();
+    if (clientX < rect.left || clientX >= rect.right || clientY < rect.top || clientY >= rect.bottom) return null;
+    return {
+      r: Math.min(GRID - 1, Math.floor((clientY - rect.top) / (rect.height / GRID))),
+      c: Math.min(GRID - 1, Math.floor((clientX - rect.left) / (rect.width / GRID))),
+    };
   }
   function adjacent(a, b) {
     return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
@@ -240,7 +292,7 @@ if (typeof document !== 'undefined') {
   function startDrag(pos) {
     if (state.paused || state.over || state.screen !== 'play') return;
     state.dragging = true; state.pathType = state.board[pos.r][pos.c];
-    state.path = [pos]; renderBoard();
+    state.path = [pos]; paintBoard();
   }
   function extendDrag(pos) {
     if (!state.dragging) return;
@@ -250,28 +302,44 @@ if (typeof document !== 'undefined') {
     if (!adjacent(last, pos)) return;
     state.path.push(pos);
     beep(440 + state.path.length * 60, 0.04, 'sine', 0.04);
-    renderBoard();
+    paintBoard();
+  }
+  function cancelDrag() {
+    if (!state.dragging) return;
+    state.dragging = false; state.path = []; state.pathType = null; paintBoard();
   }
   function endDrag() {
     if (!state.dragging) return;
     state.dragging = false;
     if (state.path.length >= 3) resolveMatch();
-    state.path = []; state.pathType = null; renderBoard();
+    state.path = []; state.pathType = null; paintBoard();
   }
   boardEl.addEventListener('pointerdown', (e) => {
     const pos = tileAt(e.clientX, e.clientY);
     if (!pos) return;
     e.preventDefault();
-    boardEl.setPointerCapture(e.pointerId);
+    try { boardEl.setPointerCapture(e.pointerId); } catch (err) { /* capture unavailable */ }
     startDrag(pos);
   });
-  boardEl.addEventListener('pointermove', (e) => {
+  // Track on the window, not just the board: with pointer capture the
+  // events retarget to the board, but a finger can drift off the board
+  // and capture can be lost on some mobile browsers — window listeners
+  // keep the drag alive either way.
+  window.addEventListener('pointermove', (e) => {
     if (!state.dragging) return;
+    if (e.cancelable) e.preventDefault();
     const pos = tileAt(e.clientX, e.clientY);
     if (pos) extendDrag(pos);
+  }, { passive: false });
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', cancelDrag);
+  boardEl.addEventListener('lostpointercapture', () => {
+    // Capture lost mid-drag (interruption, or the old DOM-rebuild bug).
+    // End the drag cleanly instead of leaving a stuck path.
+    if (state.dragging) cancelDrag();
   });
-  boardEl.addEventListener('pointerup', endDrag);
-  boardEl.addEventListener('pointercancel', () => { state.dragging = false; state.path = []; renderBoard(); });
+  boardEl.addEventListener('contextmenu', (e) => e.preventDefault());
+  boardEl.addEventListener('dragstart', (e) => e.preventDefault());
 
   // ---- HUD / monster ----
   function updateHud() {
@@ -285,13 +353,13 @@ if (typeof document !== 'undefined') {
     $('#relics-row').innerHTML = state.relics.length
       ? state.relics.map((id) => {
           const r = RELICS.find((x) => x.id === id);
-          return `<span class="relic-chip" title="${r.name}: ${r.desc}">${r.emoji} ${r.name}</span>`;
+          return `<span class="relic-chip" title="${r.name}: ${r.desc}">${spriteSVG(r.sprite)}<span>${r.name}</span></span>`;
         }).join('')
       : '<span class="relics-empty">No relics yet — beat a boss on floor 5!</span>';
     const m = state.monster;
     if (m) {
-      $('#monster-emoji').textContent = m.emoji;
-      $('#monster-name').textContent = m.name + (m.isBoss ? ' 👑 BOSS' : '');
+      $('#monster-emoji').innerHTML = spriteSVG(m.sprite);
+      $('#monster-name').textContent = m.name + (m.isBoss ? ' — BOSS' : '');
       $('#monster-hp').textContent = `${Math.max(0, m.hp)} / ${m.maxHp}`;
       $('#monster-fill').style.width = `${Math.max(0, (m.hp / m.maxHp) * 100)}%`;
       $('#monster-card').classList.toggle('boss', m.isBoss);
@@ -344,26 +412,26 @@ if (typeof document !== 'undefined') {
     sfx.pop();
     if (type === 'sword' && fx.damage > 0) {
       state.monster.hp -= fx.damage;
-      floatText(`-${fx.damage} ⚔️`, 'dmg');
+      floatText(`-${fx.damage}`, 'dmg');
       $('#monster-card').classList.add('shake');
       setTimeout(() => $('#monster-card').classList.remove('shake'), 350);
       sfx.hit();
     }
     if (type === 'shield' && fx.block > 0) {
       state.block += fx.block;
-      floatText(`+${fx.block} 🛡️ block`, 'block');
+      floatText(`+${fx.block} block`, 'block');
       sfx.heal();
     }
     if (type === 'potion' && fx.heal > 0) {
       const healed = Math.min(fx.heal, state.maxHp - state.hp);
       state.hp += healed;
-      floatText(`+${healed} ❤️`, 'heal');
+      floatText(`+${healed} HP`, 'heal');
       sfx.heal();
     }
     if (type === 'coin' && fx.gold > 0) {
       state.gold += fx.gold;
-      floatText(`+${fx.gold} 🪙`, 'gold');
-      if (fx.heal > 0) { state.hp = Math.min(state.maxHp, state.hp + fx.heal); floatText(`+${fx.heal} ❤️ snack!`, 'heal'); }
+      floatText(`+${fx.gold} gold`, 'gold');
+      if (fx.heal > 0) { state.hp = Math.min(state.maxHp, state.hp + fx.heal); floatText(`+${fx.heal} HP snack!`, 'heal'); }
       sfx.coin();
     }
     refillBoard();
@@ -383,15 +451,15 @@ if (typeof document !== 'undefined') {
     state.block = 0;
     if (dmg > 0) {
       state.hp -= dmg;
-      floatText(`-${dmg} 😬 bite!`, 'dmg');
+      floatText(`-${dmg} bite!`, 'dmg');
       sfx.hurt();
       $('#hero-chip').classList.add('shake');
       setTimeout(() => $('#hero-chip').classList.remove('shake'), 350);
     } else if (blocked > 0) {
-      floatText('Blocked! 🛡️', 'block');
+      floatText('Blocked!', 'block');
       sfx.pop();
     } else {
-      floatText('Missed! 💨', 'block');
+      floatText('Missed!', 'block');
     }
     updateHud();
     if (state.hp <= 0) gameOver();
@@ -405,7 +473,7 @@ if (typeof document !== 'undefined') {
     state.block = 0;
     sfx.clear();
     const wasBoss = state.monster.isBoss;
-    banner(`Floor ${state.floor} cleared! +${heal} ❤️`);
+    banner(`Floor ${state.floor} cleared! +${heal} HP`);
     setStatus(`Floor ${state.floor} cleared! The ${state.monster.name} wobbled away.`);
     state.floor += 1;
     if (state.floor > state.best) {
@@ -428,7 +496,7 @@ if (typeof document !== 'undefined') {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'relic-choice';
-      b.innerHTML = `<span class="relic-emoji" aria-hidden="true">${r.emoji}</span><strong>${r.name}</strong><span>${r.desc}</span>`;
+      b.innerHTML = `<span class="relic-emoji" aria-hidden="true">${spriteSVG(r.sprite)}</span><strong>${r.name}</strong><span>${r.desc}</span>`;
       b.addEventListener('click', () => {
         state.relics.push(r.id);
         if (r.id === 'hearty-stew') { state.maxHp += 5; state.hp = Math.min(state.maxHp, state.hp + 5); }
@@ -458,7 +526,7 @@ if (typeof document !== 'undefined') {
     $('#over-kills').textContent = state.kills;
     $('#over-gold').textContent = state.gold;
     $('#over-score').textContent = state.score;
-    $('#over-best').textContent = `Best floor: ${state.best} · Best gold: ${state.bestGold}${newBest ? ' — new best floor! 🎉' : ''}`;
+    $('#over-best').textContent = `Best floor: ${state.best} · Best gold: ${state.bestGold}${newBest ? ' — new best floor!' : ''}`;
     $('#gameover-overlay').hidden = false;
     setStatus(`Game over. You reached floor ${floorReached}.`);
     updateHud();
@@ -471,7 +539,7 @@ if (typeof document !== 'undefined') {
     state.hp = state.maxHp; state.block = 0; state.gold = 0; state.score = 0;
     state.floor = 1; state.kills = 0; state.relics = []; state.over = false; state.paused = false;
     const hero = HEROES.find((h) => h.id === state.heroId);
-    $('#hero-chip').innerHTML = `<span aria-hidden="true">${hero.emoji}</span> ${state.heroName} · ${hero.name}`;
+    $('#hero-chip').innerHTML = `${spriteSVG(hero.sprite)} ${state.heroName} · ${hero.name}`;
     $('#setup-screen').hidden = true;
     $('#play-screen').hidden = false;
     $('#gameover-overlay').hidden = true;
