@@ -189,6 +189,34 @@ export function refillBoardData(board, rng = Math.random) {
   return { board: next, falls };
 }
 
+/**
+ * Next drag path after the pointer lands on `pos`.
+ * `path` is a list of orthogonally-adjacent same-type tiles, `board` the
+ * current tile grid. Rules:
+ * - Landing on a tile already in the path BACKTRACKS: every tile after
+ *   that one is dropped, so the player can choose a different route
+ *   from there. Landing on an earlier tile cuts the whole tail off in
+ *   one move; landing on the current last tile changes nothing.
+ * - Otherwise the tile is added only if it matches the path's type and
+ *   sits next to the current last tile. A different-type tile, or one
+ *   that is not adjacent, leaves the path alone.
+ * A tile dropped by backtracking is free again at once, so it can be
+ * re-added by dragging a new route from the truncated end. The path
+ * type never changes. Returns the same array when nothing changes.
+ */
+export function updateDragPath(path, pos, board) {
+  if (!path.length) return [pos];
+  const type = board[path[0].r][path[0].c];
+  if (board[pos.r][pos.c] !== type) return path;
+  const idx = path.findIndex((p) => p.r === pos.r && p.c === pos.c);
+  if (idx >= 0) {
+    return idx === path.length - 1 ? path : path.slice(0, idx + 1);
+  }
+  const last = path[path.length - 1];
+  if (Math.abs(last.r - pos.r) + Math.abs(last.c - pos.c) !== 1) return path;
+  return [...path, pos];
+}
+
 export function randomName() {
   const names = ['Pip', 'Moss', 'Wren', 'Biscuit', 'Nettle', 'Bramble', 'Tilly', 'Finn', 'Poppy', 'Rowan', 'Juniper', 'Sage'];
   return names[Math.floor(Math.random() * names.length)];
@@ -384,9 +412,6 @@ if (typeof document !== 'undefined') {
       c: Math.min(GRID - 1, Math.floor((clientX - rect.left) / (rect.width / GRID))),
     };
   }
-  function adjacent(a, b) {
-    return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
-  }
   function startDrag(pos) {
     if (state.paused || state.over || state.screen !== 'play' || state.settling || state.dying) return;
     state.dragging = true; state.pathType = state.board[pos.r][pos.c];
@@ -394,11 +419,10 @@ if (typeof document !== 'undefined') {
   }
   function extendDrag(pos) {
     if (!state.dragging) return;
-    if (state.board[pos.r][pos.c] !== state.pathType) return;
-    if (state.path.some((p) => p.r === pos.r && p.c === pos.c)) return;
-    const last = state.path[state.path.length - 1];
-    if (!adjacent(last, pos)) return;
-    state.path.push(pos);
+    const next = updateDragPath(state.path, pos, state.board);
+    if (next === state.path) return;
+    state.path = next;
+    // Tick pitch follows path length, so it drops naturally on backtrack.
     sfx.tick(state.path.length);
     paintBoard();
   }
