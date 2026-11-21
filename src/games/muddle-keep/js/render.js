@@ -24,10 +24,10 @@ const HEIGHTS = {
 // as the light sources, with gold and lava as the hot accents.
 const COLORS = {
   [T.BEDROCK]: '#17101a',
-  [T.DIRT]: '#5d3a22',
+  [T.DIRT]: '#6e4a2c',
   [T.GOLD]: '#ffd23e',
-  [T.DUG]: '#4a3f3c',
-  [T.FLOOR]: '#8a7f70',
+  [T.DUG]: '#5a4a44',
+  [T.FLOOR]: '#a08d7a',
   [T.WATER]: '#1f6fb0',
   [T.LAVA]: '#ff5a1a',
   [T.WALL]: '#5c5468',
@@ -104,15 +104,15 @@ export class Renderer {
     this.scene = new THREE.Scene();
     // Near-black warm dark: the dungeon falls off into black at the
     // edges and the torches and the Heart are the light sources.
-    this.scene.background = new THREE.Color('#0d0806');
-    this.scene.fog = new THREE.Fog('#0d0806', 30, 85);
+    this.scene.background = new THREE.Color('#241708');
+    this.scene.fog = new THREE.Fog('#241708', 40, 160);
 
     this.camera = new THREE.PerspectiveCamera(46, 1, 0.1, 220);
     this.camera.position.set(14, 20, 26);
 
-    this.hemi = new THREE.HemisphereLight('#8a6a4a', '#1a0f0a', 1.05);
+    this.hemi = new THREE.HemisphereLight('#8a6a4a', '#1a0f0a', 1.6);
     this.scene.add(this.hemi);
-    this.key = new THREE.DirectionalLight('#ffb45c', 1.25);
+    this.key = new THREE.DirectionalLight('#ffb45c', 1.8);
     this.key.position.set(12, 24, 10);
     this.scene.add(this.key);
     this.rim = new THREE.DirectionalLight('#7f8bff', 0.35);
@@ -164,10 +164,10 @@ export class Renderer {
     this.renderer.setPixelRatio(
       this.quality === 'low' ? 1 : Math.min(window.devicePixelRatio || 1, 2)
     );
-    this.key.intensity = this.quality === 'low' ? 0.85 : 1.25;
+    this.key.intensity = this.quality === 'low' ? 1.15 : 1.8;
     if (this.scene.fog) {
-      this.scene.fog.near = this.quality === 'low' ? 26 : 30;
-      this.scene.fog.far = this.quality === 'low' ? 65 : 85;
+      this.scene.fog.near = this.quality === 'low' ? 34 : 40;
+      this.scene.fog.far = this.quality === 'low' ? 120 : 160;
     }
     // Real-time shadows on High only: the Low path stays shadow-free for
     // phones. Toggling needs a material refresh, so flag the terrain.
@@ -438,7 +438,7 @@ export class Renderer {
       // rest of the dungeon instead of glowing flat in the dark.
       const tintMaterial = new THREE.MeshLambertMaterial({
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.7,
         depthWrite: false,
       });
       const tint = new THREE.InstancedMesh(tintGeometry, tintMaterial, floorTiles.length);
@@ -659,16 +659,16 @@ export class Renderer {
         torch.add(pole, cup);
       }
       const flameY = spot.brazier ? 0.95 : 1.55;
-      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.85, 8), flameMat);
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.55, 8), flameMat);
       flame.position.y = flameY;
-      const core = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), coreMat);
-      core.position.y = flameY - 0.12;
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), coreMat);
+      core.position.y = flameY - 0.08;
       core.scale.y = 1.6;
-      // A soft additive halo so the flame reads as glowing, not just orange.
+      // A faint additive halo so the flame reads as glowing, not just orange.
       const halo = new THREE.Mesh(
-        new THREE.ConeGeometry(0.5, 1.2, 8),
+        new THREE.ConeGeometry(0.3, 0.7, 8),
         new THREE.MeshBasicMaterial({
-          color: '#ff9a3c', transparent: true, opacity: 0.3,
+          color: '#ff9a3c', transparent: true, opacity: 0.12,
           blending: THREE.AdditiveBlending, depthWrite: false,
         })
       );
@@ -884,9 +884,9 @@ export class Renderer {
           // Each flame dances on its own rhythm.
           const wobble = Math.sin(time * 11 + torch.phase) * 0.5
             + Math.sin(time * 23 + torch.phase * 2) * 0.3;
-          torch.flame.scale.set(1 + wobble * 0.08, 1 + wobble * 0.22, 1 + wobble * 0.08);
-          if (torch.halo) torch.halo.scale.setScalar(1 + wobble * 0.12);
-          if (torch.light) torch.light.intensity = torch.base * (1 + wobble * 0.25);
+          torch.flame.scale.set(1 + wobble * 0.04, 1 + wobble * 0.1, 1 + wobble * 0.04);
+          if (torch.halo) torch.halo.scale.setScalar(1 + wobble * 0.05);
+          if (torch.light) torch.light.intensity = torch.base * (1 + wobble * 0.12);
         }
       }
     }
