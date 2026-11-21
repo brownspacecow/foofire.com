@@ -12,6 +12,8 @@ export class Menus {
     this.cb = options.callbacks;
     this.screen = 'none';
     this.resetArmed = 0;
+    this.returnTo = 'title';
+    this.pauseGame = null;
     this.root.innerHTML = '<div class="mk-menu-backdrop"></div><div class="mk-menu-card" role="dialog" aria-modal="true"></div>';
     this.card = this.root.querySelector('.mk-menu-card');
     this.card.addEventListener('click', (event) => this.onClick(event));
@@ -85,7 +87,8 @@ export class Menus {
     );
   }
 
-  showSettings() {
+  showSettings(from = 'title') {
+    this.returnTo = from;
     const settings = this.profile.settings;
     this.show(
       `
@@ -94,7 +97,7 @@ export class Menus {
           <p class="mk-eyebrow">Make it comfortable</p>
           <h2>Settings</h2>
         </div>
-        <button class="mk-btn small" data-action="back-title">Back</button>
+        <button class="mk-btn small" data-action="back">Back</button>
       </div>
       <div class="mk-setting">
         <label for="mk-volume">Volume</label>
@@ -107,6 +110,11 @@ export class Menus {
         <label for="mk-muted">Mute everything</label>
         <input id="mk-muted" type="checkbox" data-setting="muted" ${settings.muted ? 'checked' : ''} />
       </div>
+      <div class="mk-setting check">
+        <label for="mk-kid">Kid mode — slower waves, gentler knights</label>
+        <input id="mk-kid" type="checkbox" data-setting="kidMode" ${settings.kidMode ? 'checked' : ''} />
+      </div>
+      <p class="mk-small">Kid mode applies to your next run, not the one in progress.</p>
       <div class="mk-setting">
         <label for="mk-quality">Visual quality</label>
         <select id="mk-quality" data-setting="quality">
@@ -123,7 +131,8 @@ export class Menus {
     );
   }
 
-  showHelp() {
+  showHelp(from = 'title') {
+    this.returnTo = from;
     this.show(
       `
       <div class="mk-screen-head">
@@ -131,7 +140,7 @@ export class Menus {
           <p class="mk-eyebrow">Keeper school</p>
           <h2>How to play</h2>
         </div>
-        <button class="mk-btn small" data-action="back-title">Back</button>
+        <button class="mk-btn small" data-action="back">Back</button>
       </div>
       <div class="mk-help">
         <p><strong>You are the hand.</strong> Your imps dig and haul. Mark work and they will do it.</p>
@@ -145,7 +154,7 @@ export class Menus {
           <li>Knights march on the <strong>Dungeon Heart</strong>. Lose the Heart and the run is over.</li>
           <li><strong>There is no final level.</strong> Waves keep coming, get bigger and bring a boss every fifth wave. Survive as long as you can to set your best wave.</li>
         </ol>
-        <p class="mk-small">Controls: drag to paint · two fingers to pan and pinch · wheel to zoom · right-drag or Shift-drag to pan · 1-7 tools · Q/W/E/R spells · T stop time · P or Esc pause · arrows pan · H help.</p>
+        <p class="mk-small">Controls: drag to paint · two fingers to pan and pinch · wheel or + / − buttons to zoom · right-drag or Shift-drag to pan · 1-7 tools · Q/W/E/R spells · T stop time · Space, P or Esc pause · arrows pan · H help.</p>
       </div>
       `,
       'help'
@@ -153,6 +162,7 @@ export class Menus {
   }
 
   showPause(game) {
+    this.pauseGame = game;
     const best = Math.max(0, Number(this.profile.bestWave) || 0);
     this.show(
       `
@@ -209,9 +219,13 @@ export class Menus {
     const action = button.dataset.action;
     if (action === 'new-game') this.cb.startRun(null);
     else if (action === 'continue') this.cb.continueGame();
-    else if (action === 'settings') this.showSettings();
-    else if (action === 'help') this.showHelp();
+    else if (action === 'settings') this.showSettings(this.screen === 'pause' ? 'pause' : 'title');
+    else if (action === 'help') this.showHelp(this.screen === 'pause' ? 'pause' : 'title');
     else if (action === 'back-title') this.showTitle();
+    else if (action === 'back') {
+      if (this.returnTo === 'pause' && this.pauseGame) this.showPause(this.pauseGame);
+      else this.showTitle();
+    }
     else if (action === 'resume') this.cb.resume();
     else if (action === 'restart') this.cb.restart();
     else if (action === 'quit') this.cb.quit();
@@ -245,6 +259,8 @@ export class Menus {
       settings.muted = control.checked;
     } else if (control.dataset.setting === 'quality') {
       settings.quality = control.value;
+    } else if (control.dataset.setting === 'kidMode') {
+      settings.kidMode = control.checked;
     }
     this.cb.settings(settings);
   }

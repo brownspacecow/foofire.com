@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS = {
   volume: 0.7,
   muted: false,
   quality: 'high',
+  kidMode: false,
 };
 
 export function freshProfile() {
@@ -51,6 +52,7 @@ export function normaliseProfile(raw) {
       volume: number(raw.settings.volume, DEFAULT_SETTINGS.volume, 0, 1),
       muted: Boolean(raw.settings.muted),
       quality: raw.settings.quality === 'low' ? 'low' : 'high',
+      kidMode: Boolean(raw.settings.kidMode),
     };
   }
   const current = normaliseSnapshot(raw.current);

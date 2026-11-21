@@ -37,7 +37,7 @@ class Effects {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const material = new THREE.PointsMaterial({
       color,
-      size: 0.14,
+      size: 0.24,
       transparent: true,
       opacity: 0.95,
       depthWrite: false,
@@ -164,6 +164,7 @@ export class ActorLayer {
     this.scene.remove(actor.group);
     this.scene.remove(actor.bar.group);
     this.scene.remove(actor.shadow);
+    if (actor.ring) this.scene.remove(actor.ring);
   }
 
   addActor(entity, kind, def) {
@@ -177,6 +178,9 @@ export class ActorLayer {
     const baseScale = def?.boss ? 1.55 : 1;
     const levelScale = kind === 'creature' ? creatureLevelScale(level) : 1;
     group.scale.setScalar(baseScale * levelScale);
+    group.traverse((child) => {
+      if (child.isMesh) child.castShadow = true;
+    });
     this.scene.add(group);
     const bar = makeBar(kind === 'hero' ? 0.72 : 0.56);
     bar.group.visible = false;
@@ -184,6 +188,23 @@ export class ActorLayer {
     const shadowBase =
       kind === 'imp' ? 0.22 : def?.boss ? 0.66 : (def?.size ?? 0.3) * 1.2;
     const shadow = makeShadow(shadowBase);
+    // Intruders get a red ring so they can never be mistaken for your lot.
+    let ring = null;
+    if (kind === 'hero') {
+      ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.4, 0.54, 24),
+        new THREE.MeshBasicMaterial({
+          color: '#ff3b5c',
+          transparent: true,
+          opacity: 0.85,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.05;
+      this.scene.add(ring);
+    }
     if (kind === 'creature') {
       const shadowScale = shadowBase * levelScale;
       shadow.scale.set(shadowScale, shadowScale, 1);
@@ -200,6 +221,7 @@ export class ActorLayer {
       group,
       bar,
       shadow,
+      ring,
       baseY: def?.id === 'wisp' ? 0.3 : 0,
       height: kind === 'hero' ? 1.9 : kind === 'creature' ? group.userData.height ?? 1.15 : 1.15,
     };
@@ -215,6 +237,9 @@ export class ActorLayer {
     group.position.copy(actor.group.position);
     group.rotation.copy(actor.group.rotation);
     group.scale.copy(actor.group.scale);
+    group.traverse((child) => {
+      if (child.isMesh) child.castShadow = true;
+    });
     this.scene.remove(actor.group);
     this.scene.add(group);
     actor.group = group;
@@ -250,7 +275,7 @@ export class ActorLayer {
       const levelScale = actor.kind === 'creature' ? creatureLevelScale(entityLevel) : 1;
       const visualScale = actor.baseScale * levelScale;
 
-      const bob = Math.sin(entity.anim ?? 0) * 0.045;
+      const bob = Math.sin(entity.anim ?? 0) * 0.08;
       let y = actor.baseY + bob;
       if (entity.carried) y = 1.4 + bob * 0.6;
       if (actor.kind === 'hero' && entity.stun > 0) y = 0.1;
@@ -269,16 +294,17 @@ export class ActorLayer {
       }
 
       actor.shadow.position.set(entity.x, 0.035, entity.y);
+      if (actor.ring) actor.ring.position.set(entity.x, 0.05, entity.y);
       if (actor.kind === 'creature') {
         const shadowScale = actor.shadowBase * levelScale;
         actor.shadow.scale.set(shadowScale, shadowScale, 1);
       }
       const hurt = (entity.hurtFlash ?? 0) > 0;
-      actor.group.scale.setScalar(visualScale * (hurt ? 1.08 : 1));
+      actor.group.scale.setScalar(visualScale * (hurt ? 1.18 : 1));
 
       const ratio = Math.max(0, Math.min(1, entity.hp / (entity.maxHp || entity.hp || 1)));
       const showBar =
-        actor.kind === 'hero' ? ratio < 0.999 : ratio < 0.999 || Boolean(entity.target);
+        actor.kind === 'hero' ? true : ratio < 0.999 || Boolean(entity.target);
       actor.bar.group.visible = showBar;
       if (showBar) {
         actor.bar.group.position.set(entity.x, y + actor.height * visualScale, entity.y);
@@ -313,13 +339,13 @@ export class ActorLayer {
         break;
       case 'dig': {
         const [x, z] = at(event.x, event.y);
-        this.effects.burst(x, z, event.gold ? '#ffd166' : '#a97a52', event.gold ? 12 : 7, 1.2);
+        this.effects.burst(x, z, event.gold ? '#ffd166' : '#a97a52', event.gold ? 18 : 10, 1.2, 0.9);
         break;
       }
       case 'deposit':
       case 'gold': {
         const [x, z] = at(event.x ?? 0, event.y ?? 0);
-        this.effects.burst(x, z, '#ffe08a', 9, 0.8, 0.6);
+        this.effects.burst(x, z, '#ffe08a', 14, 0.8, 0.8);
         break;
       }
       case 'room': {
@@ -337,7 +363,7 @@ export class ActorLayer {
           event.toX,
           event.toY,
           event.friendly ? '#ffd166' : '#ff8fa3',
-          0.14
+          0.22
         );
         break;
       case 'lightning':
@@ -360,12 +386,12 @@ export class ActorLayer {
         break;
       case 'slap': {
         const [x, z] = at(event.x, event.y);
-        this.effects.ring(x, z, '#ffc9dd', 1.2, 0.35);
+        this.effects.ring(x, z, '#ffc9dd', 2.2, 0.5);
         break;
       }
       case 'slap-hit':
-        this.effects.ring(event.x, event.y, '#ffc9dd', 0.8, 0.3);
-        this.effects.burst(event.x, event.y, '#ffe6a8', 6, 0.8, 0.35);
+        this.effects.ring(event.x, event.y, '#ffc9dd', 1.2, 0.4);
+        this.effects.burst(event.x, event.y, '#ffe6a8', 10, 0.8, 0.5);
         break;
       case 'trap': {
         const [x, z] = at(event.x, event.y);
@@ -373,10 +399,10 @@ export class ActorLayer {
         break;
       }
       case 'creature-died':
-        this.effects.burst(event.x, event.y, '#b58cff', 14, 1.6, 0.8);
+        this.effects.burst(event.x, event.y, '#b58cff', 20, 1.6, 1);
         break;
       case 'hero-died':
-        this.effects.burst(event.x, event.y, '#ffe08a', 18, 1.8, 0.9);
+        this.effects.burst(event.x, event.y, '#ffe08a', 26, 1.8, 1.1);
         if (event.boss) this.effects.ring(event.x, event.y, '#ffd166', 4, 1);
         break;
       case 'levelup':
@@ -388,7 +414,7 @@ export class ActorLayer {
         this.effects.burst(event.x, event.y, '#c9b8a8', 12, 2, 0.6);
         break;
       case 'heart-hit':
-        this.effects.burst(event.x + 0.5, event.y + 0.5, '#ff5a6e', 12, 1.4, 0.7);
+        this.effects.burst(event.x + 0.5, event.y + 0.5, '#ff5a6e', 20, 1.4, 0.9);
         break;
       case 'wall-hit':
       case 'dirt-hit': {

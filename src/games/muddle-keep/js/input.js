@@ -182,7 +182,7 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     const game = getGame();
     if (event.metaKey || event.ctrlKey || event.altKey) return;
 
-    if (event.code === 'Escape' || event.code === 'KeyP') {
+    if (event.code === 'Escape' || event.code === 'KeyP' || event.code === 'Space') {
       event.preventDefault();
       onPause?.();
       return;

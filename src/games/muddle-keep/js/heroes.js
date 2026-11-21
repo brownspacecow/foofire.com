@@ -10,17 +10,19 @@ import { followPath, moveToward, tileDistance } from './movement.js';
 import { T } from './tiles.js';
 
 const DIRT_HP = 100;
-const FIRST_WAVE_AT = 70;
+const FIRST_WAVE_AT = 90;
+const KID_FIRST_WAVE_AT = 120;
 const WAVE_GAP_START = 46;
 const WAVE_GAP_MIN = 26;
 const WAVE_GAP_STEP = 1.3;
 const MAX_REGULARS = 26;
 
-function scaledHeroDef(def, wave) {
+function scaledHeroDef(def, wave, kid = false) {
   const growth = Math.max(0, wave - 1);
+  const kidFactor = kid ? 0.85 : 1;
   return {
     ...def,
-    hp: Math.round(def.hp * (1 + growth * 0.09)),
+    hp: Math.round(def.hp * (1 + growth * 0.09) * kidFactor),
     attack: Math.round(def.attack * (1 + growth * 0.075) * 10) / 10,
     defense: Math.round(def.defense * (1 + growth * 0.05) * 10) / 10,
     speed: def.speed * Math.min(1.35, 1 + growth * 0.01),
@@ -33,7 +35,7 @@ export class Hero {
   constructor(game, def, x, y, wave = 1) {
     this.game = game;
     this.wave = Math.max(1, wave);
-    this.def = scaledHeroDef(def, this.wave);
+    this.def = scaledHeroDef(def, this.wave, game.profile?.settings?.kidMode);
     this.x = x;
     this.y = y;
     this.maxHp = this.def.hp;
@@ -62,7 +64,9 @@ export class HeroManager {
     this.game = game;
     this.list = [];
     this.waveIndex = 0;
-    this.nextWaveAt = game.level.firstWaveAt ?? FIRST_WAVE_AT;
+    this.nextWaveAt = game.profile?.settings?.kidMode
+      ? KID_FIRST_WAVE_AT
+      : (game.level.firstWaveAt ?? FIRST_WAVE_AT);
     this.label = '';
     this.tileHp = new Map();
   }
@@ -86,7 +90,7 @@ export class HeroManager {
     const boss = waveNumber >= 5 && waveNumber % 5 === 0;
     const regulars = Math.min(
       MAX_REGULARS,
-      3 + Math.floor(waveNumber * 0.6) - (boss ? 1 : 0)
+      2 + Math.floor(waveNumber * 0.6) - (boss ? 1 : 0)
     );
     const types = ['squire'];
     if (waveNumber >= 2) types.push('archer');
@@ -115,10 +119,12 @@ export class HeroManager {
     this.waveIndex = waveNumber;
     const wave = this.buildWave(waveNumber);
     this.spawnWave(wave, waveNumber);
-    this.nextWaveAt = game.time + Math.max(
+    const gap = Math.max(
       WAVE_GAP_MIN,
       WAVE_GAP_START - (waveNumber - 1) * WAVE_GAP_STEP
     );
+    this.nextWaveAt =
+      game.time + (game.profile?.settings?.kidMode ? gap * 1.5 : gap);
   }
 
   spawnWave(wave, waveNumber) {

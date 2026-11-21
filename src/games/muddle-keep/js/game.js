@@ -160,7 +160,10 @@ export class Game {
 
   setTool(tool) {
     this.tool = tool;
-    this.emit('tool', tool);
+    // NOTE: do not spread the tool object here — its own `type` field
+    // ('dig', 'sell', ...) would overwrite the event's `type: 'tool'`
+    // and fan out as a phantom dig/sell event.
+    this.emit('tool', { tool: tool.type, id: tool.id });
   }
 
   setTimeStopped(stopped) {
@@ -242,8 +245,23 @@ export class Game {
     const def = this.content.roomById.get(roomId);
     if (!def) return { ok: false };
     if (!this.economy.rooms.has(roomId)) return this.error('That room is not available yet.');
-    if (world.tile(x, y) !== T.FLOOR) return this.error('Rooms need floor.');
     if (x === world.heart.x && y === world.heart.y) return this.error('Not on the Heart.');
+    if (world.portal && x === world.portal.x && y === world.portal.y) {
+      return this.error('That is the Portal — paint the floor around it.');
+    }
+    if (world.tile(x, y) !== T.FLOOR) {
+      const tile = world.tile(x, y);
+      if (tile === T.DIRT || tile === T.GOLD) {
+        return this.error('That is solid dirt — dig it first, then paint.');
+      }
+      if (tile === T.BEDROCK) return this.error('That is solid rock — it cannot hold a room.');
+      if (tile === T.WATER) return this.error('That is water — rooms need dry floor.');
+      if (tile === T.LAVA) return this.error('That is lava — rooms need dry floor.');
+      if (tile === T.WALL || tile === T.DOOR) {
+        return this.error('There is a wall there — sell it first.');
+      }
+      return this.error('Rooms need floor.');
+    }
     if (world.rooms[index] === roomId) return { ok: true };
     if (!this.economy.spend(def.cost)) return this.error(`The ${def.name} needs ${def.cost} gold a tile.`);
     world.paintRoom(index, roomId);
@@ -281,31 +299,31 @@ export class Game {
     if (room) {
       const def = this.content.roomById.get(room);
       world.clearRoom(index);
-      this.economy.addGold(Math.floor((def?.cost ?? 0) / 2), world);
-      this.emit('sell', { x, y });
+      const refund = this.economy.addGold(Math.floor((def?.cost ?? 0) / 2), world);
+      this.emit('sell', { x, y, refund });
       return { ok: true };
     }
     const trap = world.trapAt(index);
     if (trap) {
       const def = this.content.trapById.get(trap.type);
       world.removeTrap(index);
-      this.economy.addGold(Math.floor((def?.cost ?? 0) * TRAP_REFUND), world);
-      this.emit('sell', { x, y });
+      const refund = this.economy.addGold(Math.floor((def?.cost ?? 0) * TRAP_REFUND), world);
+      this.emit('sell', { x, y, refund });
       return { ok: true };
     }
     const tile = world.tile(x, y);
     if (tile === T.WALL || tile === T.DOOR) {
       world.walls.delete(index);
       world.setTile(x, y, T.FLOOR);
-      this.economy.addGold(2, world);
-      this.emit('sell', { x, y });
+      const refund = this.economy.addGold(2, world);
+      this.emit('sell', { x, y, refund });
       return { ok: true };
     }
     const task = this.tasks.tasks.get(index);
     if (task) {
       this.tasks.remove(x, y);
-      if (task.kind === 'wall') this.economy.addGold(WALL_COST, world);
-      this.emit('sell', { x, y });
+      const refund = task.kind === 'wall' ? this.economy.addGold(WALL_COST, world) : 0;
+      this.emit('sell', { x, y, refund });
       return { ok: true };
     }
     return { ok: false, message: 'Nothing to sell there.' };

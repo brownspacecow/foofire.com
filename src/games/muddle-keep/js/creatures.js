@@ -87,7 +87,8 @@ export class CreatureManager {
   }
 
   cap() {
-    return 4 + Math.floor(this.game.world.roomTiles('lair') / 2);
+    // Base 5 matches the five starters, so the HUD never reads over-cap.
+    return 5 + Math.floor(this.game.world.roomTiles('lair') / 2);
   }
 
   spawn(typeId, x, y, options = {}) {

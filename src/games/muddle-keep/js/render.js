@@ -16,13 +16,13 @@ const HEIGHTS = {
   [T.FLOOR]: 0.16,
   [T.WATER]: 0.22,
   [T.LAVA]: 0.22,
-  [T.WALL]: 1,
-  [T.DOOR]: 0.85,
+  [T.WALL]: 1.3,
+  [T.DOOR]: 1.1,
 };
 
 const COLORS = {
   [T.BEDROCK]: '#241c30',
-  [T.DIRT]: '#7c5638',
+  [T.DIRT]: '#6e4a2c',
   [T.GOLD]: '#d9a13c',
   [T.DUG]: '#57504f',
   [T.FLOOR]: '#9a9184',
@@ -46,15 +46,32 @@ function stoneTexture() {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#c9c4bb';
   ctx.fillRect(0, 0, size, size);
-  for (let i = 0; i < 260; i += 1) {
-    const shade = 150 + Math.floor(Math.random() * 90);
-    ctx.fillStyle = `rgba(${shade}, ${shade - 6}, ${shade - 14}, 0.55)`;
+  for (let i = 0; i < 420; i += 1) {
+    const shade = 140 + Math.floor(Math.random() * 100);
+    ctx.fillStyle = `rgba(${shade}, ${shade - 6}, ${shade - 14}, 0.7)`;
     const px = Math.random() * size;
     const py = Math.random() * size;
-    const r = Math.random() * 2.2 + 0.5;
+    const r = Math.random() * 3.2 + 0.6;
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.fill();
+  }
+  // Darker pebbles and a few cracks so dirt reads as dirt, not flat brown.
+  for (let i = 0; i < 70; i += 1) {
+    ctx.fillStyle = 'rgba(52, 38, 26, 0.55)';
+    ctx.beginPath();
+    ctx.arc(Math.random() * size, Math.random() * size, Math.random() * 1.8 + 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(52, 38, 26, 0.5)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i += 1) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 18, y + (Math.random() - 0.5) * 18);
+    ctx.stroke();
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
@@ -63,7 +80,7 @@ function stoneTexture() {
   return texture;
 }
 
-function jitterColor(hex, x, y, amount = 0.09) {
+function jitterColor(hex, x, y, amount = 0.15) {
   const color = new THREE.Color(hex);
   const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
   const noise = (hash - Math.floor(hash)) * amount * 2 - amount;
@@ -78,11 +95,13 @@ export class Renderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = false;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.shadows = false;
     container.append(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color('#120d1c');
-    this.scene.fog = new THREE.Fog('#120d1c', 34, 78);
+    this.scene.fog = new THREE.Fog('#120d1c', 34, 90);
 
     this.camera = new THREE.PerspectiveCamera(46, 1, 0.1, 220);
     this.camera.position.set(14, 20, 26);
@@ -138,8 +157,24 @@ export class Renderer {
     );
     this.key.intensity = this.quality === 'low' ? 1.3 : 1.9;
     if (this.scene.fog) {
-      this.scene.fog.near = this.quality === 'low' ? 24 : 34;
-      this.scene.fog.far = this.quality === 'low' ? 58 : 78;
+      this.scene.fog.near = this.quality === 'low' ? 28 : 34;
+      this.scene.fog.far = this.quality === 'low' ? 72 : 90;
+    }
+    // Real-time shadows on High only: the Low path stays shadow-free for
+    // phones. Toggling needs a material refresh, so flag the terrain.
+    this.shadows = this.quality === 'high';
+    this.renderer.shadowMap.enabled = this.shadows;
+    this.key.castShadow = this.shadows;
+    if (this.shadows) {
+      this.key.shadow.mapSize.set(1024, 1024);
+      const c = this.key.shadow.camera;
+      c.left = -24; c.right = 24; c.top = 24; c.bottom = -24;
+      c.near = 1; c.far = 70;
+      this.key.shadow.bias = -0.002;
+    }
+    if (this.terrain) {
+      this.terrain.receiveShadow = this.shadows;
+      this.terrain.material.needsUpdate = true;
     }
     this.resize();
   }
@@ -232,9 +267,12 @@ export class Renderer {
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.receiveShadow = this.shadows;
     mesh.userData.tileMesh = true;
     this.levelGroup.add(mesh);
     this.terrain = mesh;
+
+    this.buildRoomProps(game);
 
     // Warm tint over rooms and a cooler wash over floor.
     const floorTiles = [];
@@ -275,6 +313,109 @@ export class Renderer {
       tint.renderOrder = 1;
       this.levelGroup.add(tint);
       this.tint = tint;
+    }
+  }
+
+  /** One readable prop per room cluster: gold piles, beds, mushrooms... */
+  buildRoomProps(game) {
+    if (this.props) {
+      this.levelGroup.remove(this.props);
+      this.props.traverse((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
+      this.props = null;
+    }
+    const world = game.world;
+    const seen = new Set();
+    const group = new THREE.Group();
+    const lambert = (color) => new THREE.MeshLambertMaterial({ color });
+    const box = (mat, sx, sy, sz, x, y, z) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
+      m.position.set(x, y, z);
+      return m;
+    };
+    for (let index = 0; index < world.rooms.length; index += 1) {
+      const roomId = world.rooms[index];
+      if (!roomId || seen.has(index)) continue;
+      // Flood-fill this cluster so split rooms get one prop each.
+      const tiles = [];
+      const stack = [index];
+      seen.add(index);
+      while (stack.length) {
+        const cur = stack.pop();
+        tiles.push(cur);
+        const cx = world.xOf(cur);
+        const cy = world.yOf(cur);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = cx + dx;
+          const ny = cy + dy;
+          if (nx < 0 || ny < 0 || nx >= world.w || ny >= world.h) continue;
+          const ni = world.idx(nx, ny);
+          if (!seen.has(ni) && world.rooms[ni] === roomId) {
+            seen.add(ni);
+            stack.push(ni);
+          }
+        }
+      }
+      let sx = 0;
+      let sz = 0;
+      for (const ti of tiles) {
+        sx += world.xOf(ti) + 0.5;
+        sz += world.yOf(ti) + 0.5;
+      }
+      const cx = sx / tiles.length;
+      const cz = sz / tiles.length;
+      const y = 0.2;
+      if (roomId === 'treasury') {
+        const gold = lambert('#ffd166');
+        const scale = 1 + Math.min(1.5, tiles.length / 8);
+        group.add(box(gold, 0.5 * scale, 0.22, 0.4 * scale, cx, y + 0.11, cz));
+        group.add(box(gold, 0.3 * scale, 0.16, 0.26 * scale, cx + 0.18, y + 0.28, cz + 0.08));
+        const coin = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), gold);
+        coin.position.set(cx - 0.22, y + 0.09, cz - 0.12);
+        coin.scale.y = 0.6;
+        group.add(coin);
+      } else if (roomId === 'lair') {
+        const sheet = lambert('#f2ead8');
+        const wood = lambert('#7a5a3a');
+        group.add(box(wood, 0.9, 0.12, 0.5, cx, y + 0.06, cz));
+        group.add(box(sheet, 0.84, 0.1, 0.44, cx, y + 0.16, cz));
+        group.add(box(sheet, 0.2, 0.12, 0.4, cx - 0.32, y + 0.2, cz));
+      } else if (roomId === 'hatchery') {
+        const stem = lambert('#f2ead8');
+        const cap = lambert('#c94f6d');
+        for (const [ox, oz] of [[-0.2, -0.1], [0.18, 0.08], [0, -0.22]]) {
+          const s = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.2, 8), stem);
+          s.position.set(cx + ox, y + 0.1, cz + oz);
+          const c = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.16, 10), cap);
+          c.position.set(cx + ox, y + 0.26, cz + oz);
+          group.add(s, c);
+        }
+      } else if (roomId === 'training') {
+        const straw = lambert('#d9b36a');
+        const post = lambert('#7a5a3a');
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7, 8), post);
+        pole.position.set(cx, y + 0.35, cz);
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.4, 8), straw);
+        body.position.set(cx, y + 0.55, cz);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), straw);
+        head.position.set(cx, y + 0.85, cz);
+        group.add(pole, body, head);
+      } else if (roomId === 'library') {
+        const colors = ['#4a7fc9', '#c94f4f', '#4a9e5f'];
+        colors.forEach((color, i) => {
+          group.add(box(lambert(color), 0.34, 0.09, 0.26, cx - 0.12 + i * 0.12, y + 0.05 + i * 0.09, cz));
+        });
+      } else if (roomId === 'workshop') {
+        const iron = lambert('#5a5468');
+        group.add(box(iron, 0.5, 0.14, 0.3, cx, y + 0.07, cz));
+        group.add(box(iron, 0.34, 0.16, 0.22, cx, y + 0.22, cz));
+      }
+    }
+    if (group.children.length) {
+      this.levelGroup.add(group);
+      this.props = group;
     }
   }
 
@@ -320,17 +461,27 @@ export class Renderer {
     );
     pedestal.position.y = 0.12;
     heart.add(pedestal);
-    const crystal = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.46),
-      new THREE.MeshStandardMaterial({
-        color: '#ff8fa3',
-        emissive: '#ff2f5a',
-        emissiveIntensity: 1.1,
-        roughness: 0.25,
-        metalness: 0.2,
-      })
-    );
-    crystal.position.y = 0.82;
+    const heartMat = new THREE.MeshStandardMaterial({
+      color: '#ff5a7a',
+      emissive: '#ff2f5a',
+      emissiveIntensity: 1.1,
+      roughness: 0.3,
+      metalness: 0.1,
+    });
+    const crystal = new THREE.Group();
+    const lobeL = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), heartMat);
+    lobeL.position.set(-0.2, 0.95, 0);
+    lobeL.scale.set(1, 0.9, 0.7);
+    const lobeR = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), heartMat);
+    lobeR.position.set(0.2, 0.95, 0);
+    lobeR.scale.set(1, 0.9, 0.7);
+    const point = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.55, 4), heartMat);
+    point.position.set(0, 0.62, 0);
+    point.rotation.x = Math.PI;
+    point.rotation.y = Math.PI / 4;
+    point.scale.set(1, 1, 0.62);
+    crystal.add(lobeL, lobeR, point);
+    crystal.position.y = 0.12;
     heart.add(crystal);
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(0.64, 0.05, 8, 22),
@@ -352,7 +503,10 @@ export class Renderer {
     this.levelGroup.add(heart);
     this.features.heart = heart;
     this.features.crystal = crystal;
+    this.features.heartMat = heartMat;
     this.features.heartRing = ring;
+    this.lastHeartHp = world.heart.hp;
+    this.heartFlash = 0;
 
     const portal = new THREE.Group();
     portal.position.set(world.portal.x + 0.5, 0.16, world.portal.y + 0.5);
@@ -394,6 +548,12 @@ export class Renderer {
     );
     flag.position.set(0, 1.88, 0);
     gate.add(flag);
+    if (this.quality === 'high') {
+      const torch = new THREE.PointLight('#ffb35c', 1.6, 7);
+      torch.position.set(0, 2.1, 0);
+      gate.add(torch);
+      this.features.gateLight = torch;
+    }
     this.levelGroup.add(gate);
     this.features.gate = gate;
   }
@@ -449,10 +609,18 @@ export class Renderer {
     const time = game.time;
     if (this.features.crystal) {
       const ratio = world.heart.hp / world.heart.maxHp;
-      const pulse = 1 + Math.sin(time * 3) * 0.08;
+      if (this.lastHeartHp != null && world.heart.hp < this.lastHeartHp) {
+        this.heartFlash = 0.6;
+      }
+      this.lastHeartHp = world.heart.hp;
+      if (this.heartFlash > 0) this.heartFlash = Math.max(0, this.heartFlash - dt);
+      const pulse = 1 + Math.sin(time * 3) * 0.08 + this.heartFlash * 0.35;
       this.features.crystal.scale.setScalar(pulse * (ratio < 0.35 ? 0.9 : 1));
       this.features.crystal.rotation.y += dt * 0.9;
       this.features.heartRing.rotation.z += dt * 1.4;
+      if (this.features.heartMat) {
+        this.features.heartMat.emissiveIntensity = this.heartFlash > 0 ? 2.8 : 1.1;
+      }
       if (this.features.heartLight) {
         this.features.heartLight.intensity = ratio < 0.35 ? 1 + Math.sin(time * 12) * 0.8 : 2.4;
       }

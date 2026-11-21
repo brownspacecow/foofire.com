@@ -51,6 +51,9 @@ export class GameUI {
           <div class="mk-top-actions">
             <button type="button" data-act="creatures" aria-label="Creature list">👾<span>Creatures</span></button>
             <button type="button" data-act="time" data-el="time" aria-label="Stop time" aria-pressed="false"><i data-el="time-icon" aria-hidden="true">⏳</i><span data-el="time-label">Time</span></button>
+            <button type="button" data-act="zoom-out" aria-label="Zoom out">−</button>
+            <button type="button" data-act="zoom-in" aria-label="Zoom in">+</button>
+            <button type="button" data-act="zoom-reset" aria-label="Reset camera">⟲</button>
             <button type="button" data-act="help" aria-label="How to play">?</button>
             <button type="button" data-act="pause" aria-label="Pause">❚❚</button>
           </div>
@@ -80,6 +83,7 @@ export class GameUI {
         <div class="mk-tip" data-el="tip" hidden>
           <p data-el="tip-text"></p>
           <button type="button" data-act="tip-next">Got it</button>
+          <button type="button" data-act="tip-dismiss" aria-label="Hide all tips">✕</button>
         </div>
 
         <div class="mk-bottom">
@@ -88,6 +92,7 @@ export class GameUI {
             <div class="mk-spells" data-el="spells"></div>
           </div>
           <p class="mk-tool-hint" data-el="hint"></p>
+          <p class="mk-keys">Space pause · 1–7 tools · Q/W/E/R spells · wheel or + / − to zoom</p>
         </div>
       </div>
       <div class="mk-sheet" data-el="sheet" hidden>
@@ -149,6 +154,10 @@ export class GameUI {
     else if (action === 'creatures') this.openCreatureSheet();
     else if (action === 'time') this.toggleTimeStop();
     else if (action === 'tip-next') this.tutorial.advance();
+    else if (action === 'tip-dismiss') this.tutorial.dismissAll();
+    else if (action === 'zoom-out') this.options.onZoom?.(1.18);
+    else if (action === 'zoom-in') this.options.onZoom?.(0.85);
+    else if (action === 'zoom-reset') this.options.onResetCamera?.();
     else if (action === 'sheet-close') this.closeSheet();
   }
 
@@ -253,6 +262,7 @@ export class GameUI {
     this.setActiveTool('spell');
     this.game.setTool({ type: 'spell', id });
     this.el.hint.textContent = `Tap the dungeon to cast ${def.name} (${def.cost} mana).`;
+    this.toast(`Now tap the dungeon to cast ${def.name}!`, 'info');
   }
 
   pickSpellIndex(index) {
@@ -280,7 +290,16 @@ export class GameUI {
       const size = this.game.tasks.size;
       const blocked = this.game.tasks.blockedCount;
       hint += `  ·  ${size} job${size === 1 ? '' : 's'} queued`;
-      if (blocked > 0) hint += `  ·  ${blocked} waiting for a tunnel`;
+      if (blocked > 0) {
+        hint += `  ·  ${blocked} need${blocked === 1 ? 's' : ''} a tunnel — imps dig one tile at a time from open floor`;
+      }
+    }
+    if (
+      this.game?.creatures &&
+      this.game.creatures.count < this.game.creatures.cap() &&
+      this.game.world.portalExists()
+    ) {
+      hint += `  ·  Next creature in ${Math.max(1, Math.ceil(this.game.creatures.spawnTimer))}s`;
     }
     this.el.hint.textContent = hint;
   }
@@ -319,6 +338,26 @@ export class GameUI {
     this.tutorial.advance();
   }
 
+  /** Flash the Heart bar when the Heart is hit. */
+  heartAlarm() {
+    const track = this.el['heart-track'];
+    if (!track) return;
+    track.classList.remove('alarm');
+    void track.offsetWidth;
+    track.classList.add('alarm');
+    window.setTimeout(() => track.classList.remove('alarm'), 700);
+  }
+
+  /** Brief pulse on the gold chip, e.g. at payday. */
+  pulseGold() {
+    const chip = this.el.gold.closest('.mk-chip');
+    if (!chip) return;
+    chip.classList.remove('pulse');
+    void chip.offsetWidth;
+    chip.classList.add('pulse');
+    window.setTimeout(() => chip.classList.remove('pulse'), 600);
+  }
+
   toast(text, kind = 'info') {
     const node = document.createElement('div');
     node.className = `mk-toast ${kind}`;
@@ -345,6 +384,10 @@ export class GameUI {
 
     const economy = game.economy;
     this.el.gold.textContent = Math.floor(economy.gold).toLocaleString('en-US');
+    const goldChip = this.el.gold.closest('.mk-chip');
+    if (goldChip) {
+      goldChip.title = `Gold · wages ${game.creatures.wageTotal()}/min`;
+    }
     this.el.mana.textContent = Math.floor(economy.mana);
     this.el.food.textContent = Math.floor(economy.food);
     this.el.creatures.textContent = game.creatures.count;
@@ -381,6 +424,16 @@ export class GameUI {
       button.disabled = !unlocked || cd > 0;
       const cdNode = button.querySelector('[data-cd]');
       cdNode.textContent = cd > 0 ? `${Math.ceil(cd)}` : unlocked ? '' : '🔒';
+      if (!unlocked) {
+        const research = def.research
+          ? this.content.researchById.get(def.research)
+          : null;
+        button.title = research
+          ? `Locked — research ${research.name} in a Library`
+          : `Locked — research ${def.name} in a Library`;
+      } else {
+        button.title = `${def.name} — ${def.cost} mana. ${def.desc ?? ''}`;
+      }
     }
 
     this.updateHint();

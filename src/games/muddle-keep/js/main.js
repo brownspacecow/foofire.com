@@ -78,6 +78,16 @@ async function boot() {
     onPause: () => togglePause(),
     onHelp: () => menus.showHelp(),
     onFocus: (creature) => rig.focus(creature.x, creature.y),
+    onZoom: (factor) => rig.zoom(factor),
+    onResetCamera: () => {
+      if (game) {
+        rig.resetCamera(
+          renderer.camera.aspect,
+          game.world.heart.x + 0.5,
+          game.world.heart.y + 0.5
+        );
+      }
+    },
   });
   ui.setVisible(false);
 
@@ -222,6 +232,9 @@ async function boot() {
 
   /* -------------------------------------------------------------- events */
 
+  let lastHeartAlarm = -99;
+  let slapToasts = 0;
+
   function handleEvents() {
     if (!game) return;
     const events = game.drainEvents();
@@ -242,7 +255,33 @@ async function boot() {
           event.stopped ? 'info' : 'good'
         );
       }
-      if (event.type === 'wages' && !event.ok) ui.toast('Payday missed! Mood is dropping.', 'warn');
+      if (event.type === 'wages') {
+        if (!event.ok) ui.toast('Payday missed! Mood is dropping.', 'warn');
+        else if (event.paid > 0) {
+          ui.toast(`Payday −${event.paid} gold`, 'info');
+          ui.pulseGold();
+        }
+      }
+      if (event.type === 'heart-hit') {
+        // Throttled: one alarm per few seconds, not one per hit.
+        if (game.time - lastHeartAlarm > 4) {
+          lastHeartAlarm = game.time;
+          ui.heartAlarm();
+          ui.toast('The Heart is under attack!', 'danger');
+          rig.shake(0.5);
+        }
+      }
+      if (event.type === 'sell' && event.refund != null) {
+        const refund = Number(event.refund) || 0;
+        ui.toast(
+          refund > 0 ? `Sold for +${refund} gold` : 'Sold — Treasury full, no gold kept',
+          refund > 0 ? 'good' : 'warn'
+        );
+      }
+      if (event.type === 'slap' && event.hit > 0 && slapToasts < 3) {
+        slapToasts += 1;
+        ui.toast(`Shoved ${event.hit} creature${event.hit === 1 ? '' : 's'}!`, 'good');
+      }
       if (event.type === 'creature-left') ui.toast(`${event.name} stomped off home.`, 'warn');
       if (event.type === 'hero-died' && event.boss) {
         ui.toast('Baron Bumblefrost has left the dungeon.', 'good');
@@ -318,9 +357,8 @@ async function boot() {
   window.setInterval(() => {
     if (game && !menus.open && !paused) saveCurrent();
   }, 10_000);
-  window.addEventListener('resize', () => {
-    if (renderer.bounds) rig.frame(renderer.camera.aspect);
-  });
+  // No resize handler here on purpose: the renderer re-fits itself, and
+  // re-framing the camera on every resize used to reset the player's zoom.
 
   buildPreview();
   menus.showTitle();

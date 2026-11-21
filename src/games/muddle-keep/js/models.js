@@ -60,7 +60,7 @@ export function makeBar(width = 0.64) {
 }
 
 export function makeShadow(size) {
-  const shadow = part(GEO.circle, basic('#0b0710', 0.34), [size, size, 1], [0, 0, 0]);
+  const shadow = part(GEO.circle, basic('#0b0710', 0.5), [size, size, 1], [0, 0, 0]);
   shadow.rotation.x = -Math.PI / 2;
   return shadow;
 }
@@ -343,6 +343,12 @@ export function buildHero(def) {
   if (def.id === 'boss') {
     group.add(part(GEO.cylinder, basic('#ffd166'), [0.28, 0.12, 0.28], [0, 1.38, 0]));
   }
+  if (def.id === 'knight') {
+    // Knights must read as knights, not blobs: plume, big shield, silver chest.
+    const plume = part(GEO.cone, mat('#e05252'), [0.1, 0.36, 0.1], [0, 1.44, 0]);
+    group.add(plume);
+    group.add(part(GEO.box, basic('#dfe7f2'), [0.36, 0.3, 0.28], [0, 0.68, 0.02]));
+  }
   if (def.ranged) {
     const bow = part(GEO.torus, accent, [1, 1, 1], [0.32, 0.72, 0.12]);
     bow.rotation.y = Math.PI / 2;
@@ -351,7 +357,11 @@ export function buildHero(def) {
     const sword = part(GEO.box, basic('#dfe7f2'), [0.06, 0.62, 0.06], [0.32, 0.82, 0.08]);
     sword.rotation.z = -0.2;
     group.add(sword);
-    group.add(part(GEO.box, accent, [0.06, 0.4, 0.3], [-0.28, 0.66, 0.1]));
+    if (def.id === 'knight') {
+      group.add(part(GEO.box, mat('#c9a13c'), [0.08, 0.56, 0.44], [-0.3, 0.68, 0.1]));
+    } else {
+      group.add(part(GEO.box, accent, [0.06, 0.4, 0.3], [-0.28, 0.66, 0.1]));
+    }
   }
   if (def.id === 'mage') {
     group.add(part(GEO.cone, accent, [0.36, 0.34, 0.36], [0, 1.42, 0]));

@@ -32,7 +32,7 @@
       "heartHealth": 900,
       "startCreatures": [
         { "type": "grumblet", "count": 2 },
-        { "type": "snootle", "count": 1 },
+        { "type": "snootle", "count": 2 },
         { "type": "spittles", "count": 1 }
       ],
       "availableRooms": [
@@ -46,11 +46,11 @@
       "availableSpells": ["haste", "heal", "rally"],
       "availableTraps": ["spike"],
       "endless": true,
-      "firstWaveAt": 70,
+      "firstWaveAt": 90,
       "tutorial": [
         {
           "when": "start",
-          "text": "Welcome, Keeper! There is no final level — survive as many waves as you can. The first tidy patrol arrives in 70 seconds. Dig out some floor and start building!"
+          "text": "Welcome, Keeper! There is no final level — survive as many waves as you can. The first tidy patrol arrives soon. Dig out some floor and start building!"
         },
         {
           "when": "dug",

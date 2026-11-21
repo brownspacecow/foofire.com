@@ -17,7 +17,9 @@ export class CameraRig {
     this.yaw = 0;
     this.pitch = 1.02;
     this.minDistance = 9;
-    this.maxDistance = 56;
+    this.maxDistance = 44;
+    this.shakeT = 0;
+    this.shakeMag = 0;
   }
 
   pan(dx, dy) {
@@ -35,6 +37,20 @@ export class CameraRig {
       this.minDistance,
       this.maxDistance
     );
+  }
+
+  /** Nudge the camera, e.g. when the Heart is hit. */
+  shake(mag = 0.5) {
+    this.shakeT = 0.5;
+    this.shakeMag = mag;
+  }
+
+  /** Re-frame the whole map and centre on the Heart. */
+  resetCamera(aspect, x, z) {
+    this.frame(aspect);
+    this.focus(x, z);
+    this.distance = this.desiredDistance;
+    this.target.copy(this.desired);
   }
 
   focus(x, z) {
@@ -77,5 +93,13 @@ export class CameraRig {
       this.target.z + Math.cos(this.yaw) * horizontal
     );
     this.camera.lookAt(this.target);
+    if (this.shakeT > 0) {
+      this.shakeT = Math.max(0, this.shakeT - dt);
+      const decay = this.shakeT / 0.5;
+      const mag = this.shakeMag * decay;
+      this.camera.position.x += (Math.random() - 0.5) * mag;
+      this.camera.position.y += (Math.random() - 0.5) * mag * 0.6;
+      this.camera.position.z += (Math.random() - 0.5) * mag;
+    }
   }
 }

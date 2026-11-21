@@ -105,7 +105,7 @@ export function openCreatureSheet(ui) {
     )} · ${creature.def.role}`,
     desc: `Hunger ${Math.round(creature.hunger)} · Energy ${Math.round(
       creature.energy
-    )} · Wage ${creature.def.wage}/min · ${creature.state}`,
+    )} · Wage ${creature.def.wage}/min · ${creature.state} — hungry? Build a Hatchery. Tired? Build a Lair.`,
     onPick: () => {
       ui.options.onFocus?.(creature);
     },

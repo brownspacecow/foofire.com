@@ -11,11 +11,13 @@ export class Tutorial {
     this.index = -1;
     this.age = 0;
     this.completed = new Set();
+    this.dismissed = false;
   }
 
   start(game) {
     this.steps = Array.isArray(game?.level.tutorial) ? game.level.tutorial : [];
     this.completed = new Set();
+    this.dismissed = false;
     this.index = -1;
     this.age = 0;
     if (!this.steps.length) {
@@ -65,29 +67,53 @@ export class Tutorial {
     this.ui.el.tip.hidden = true;
   }
 
+  /** "Got it" dismisses the tip instead of queuing the next one. */
   advance() {
     if (!this.steps.length) return;
-    this.show(this.index + 1);
+    if (this.index >= 0) {
+      const step = this.steps[this.index];
+      if (step) this.completed.add(step.when);
+    }
+    this.hide();
+  }
+
+  /** Hide every tip for the rest of this run. */
+  dismissAll() {
+    this.dismissed = true;
+    this.hide();
   }
 
   handle(event) {
+    if (this.dismissed) return;
     const key = this.triggerFor(event);
     if (key) {
       this.completed.add(key);
       if (key.startsWith('room:')) this.completed.add('room');
     }
-    if (this.index < 0 || !key) return;
-    const step = this.steps[this.index];
-    if (!step) return;
-    const matches =
-      step.when === key ||
-      (step.when === 'room' && key.startsWith('room:')) ||
-      (step.when.startsWith('room:') && key === step.when);
-    if (matches) this.advance();
+    if (!key) return;
+    if (this.index >= 0) {
+      const step = this.steps[this.index];
+      if (!step) return;
+      const matches =
+        step.when === key ||
+        (step.when === 'room' && key.startsWith('room:')) ||
+        (step.when.startsWith('room:') && key === step.when);
+      if (matches) this.advance();
+      return;
+    }
+    // No tip showing: a later tip whose moment has come may appear.
+    const next = this.steps.findIndex(
+      (step) =>
+        !this.completed.has(step.when) &&
+        (step.when === key ||
+          (step.when === 'room' && key.startsWith('room:')) ||
+          (step.when.startsWith('room:') && key === step.when))
+    );
+    if (next >= 0) this.show(next);
   }
 
   update(dt) {
-    if (this.index < 0) return;
+    if (this.dismissed || this.index < 0) return;
     this.age += dt;
     // Only the welcome card times out. Action tips wait for the player (or stay
     // dismissed with the Got it button), so they cannot run away mid-read.
