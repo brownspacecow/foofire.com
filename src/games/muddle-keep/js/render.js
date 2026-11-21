@@ -20,8 +20,8 @@ const HEIGHTS = {
   [T.DOOR]: 1.1,
 };
 
-// Torch-lit palette: deep warm darks so torchlight and the Heart read
-// as the light sources, with gold and lava as the hot accents.
+// Warm palette: deep warm darks so the Heart reads as the light
+// source, with gold and lava as the hot accents.
 const COLORS = {
   [T.BEDROCK]: '#17101a',
   [T.DIRT]: '#6e4a2c',
@@ -103,7 +103,7 @@ export class Renderer {
 
     this.scene = new THREE.Scene();
     // Near-black warm dark: the dungeon falls off into black at the
-    // edges and the torches and the Heart are the light sources.
+    // edges and the Heart is the light source.
     this.scene.background = new THREE.Color('#241708');
     this.scene.fog = new THREE.Fog('#241708', 40, 160);
 
@@ -126,7 +126,6 @@ export class Renderer {
     this.goldNuggets = null;
     this.trapGroup = null;
     this.trapPads = [];
-    this.torchGroup = null;
     this.markers = null;
     this.instanceTiles = [];
     this.lastVersion = -1;
@@ -240,7 +239,6 @@ export class Renderer {
     this.trapPads = [];
     this.markers = null;
     this.features = {};
-    this.torchGroup = null;
     this.instanceTiles = [];
   }
 
@@ -271,15 +269,6 @@ export class Renderer {
       this.trapGroup = null;
       this.trapPads = [];
     }
-    if (this.torchGroup) {
-      this.levelGroup.remove(this.torchGroup);
-      this.torchGroup.traverse((child) => {
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) child.material.dispose();
-      });
-      this.torchGroup = null;
-    }
-
     const count = world.tiles.length;
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshLambertMaterial({
@@ -420,7 +409,6 @@ export class Renderer {
     }
 
     this.buildRoomProps(game);
-    this.buildTorches(game);
 
     // Warm tint over rooms and a cooler wash over floor.
     const floorTiles = [];
@@ -567,108 +555,6 @@ export class Renderer {
       this.levelGroup.add(group);
       this.props = group;
     }
-  }
-
-  /** Wall torches: the dungeon's light. Rebuilt with the terrain so a
-   * torch never floats where a wall was dug away. There is no visible
-   * flame — the warm point lights are the glow, and the fixtures stay
-   * so each light has a home in the world. The first few carry a real
-   * point light on High. */
-  buildTorches(game) {
-    const world = game.world;
-    const candidates = [];
-    for (let index = 0; index < world.tiles.length; index += 1) {
-      const tile = world.tiles[index];
-      if (tile !== T.WALL && tile !== T.BEDROCK) continue;
-      const x = world.xOf(index);
-      const y = world.yOf(index);
-      // Needs open floor on one side to shine onto, and that floor
-      // must not be the Heart, the Gate or a trap tile.
-      const open = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => {
-        const nx = x + dx;
-        const ny = y + dy;
-        const t = world.tile(nx, ny);
-        if (t !== T.FLOOR && t !== T.DUG) return false;
-        if (nx === world.heart.x && ny === world.heart.y) return false;
-        if (nx === world.gate.x && ny === world.gate.y) return false;
-        if (world.traps.has(world.idx(nx, ny))) return false;
-        return true;
-      });
-      if (!open) continue;
-      candidates.push({ x, y, dx: open[0], dy: open[1] });
-    }
-    // Spread them out: greedy pick with a minimum gap, at most eight.
-    const picked = [];
-    for (const c of candidates) {
-      if (picked.length >= 8) break;
-      if (picked.some((p) => Math.hypot(p.x - c.x, p.y - c.y) < 5)) continue;
-      picked.push(c);
-    }
-    // Four braziers ring the Heart itself, so the room where the
-    // fighting happens is always lit, even before any walls are built.
-    const ring = [];
-    for (let dy = -3; dy <= 3; dy += 1) {
-      for (let dx = -3; dx <= 3; dx += 1) {
-        if (Math.max(Math.abs(dx), Math.abs(dy)) !== 3) continue;
-        const nx = world.heart.x + dx;
-        const ny = world.heart.y + dy;
-        const t = world.tile(nx, ny);
-        if (t !== T.FLOOR && t !== T.DUG) continue;
-        if (world.traps.has(world.idx(nx, ny))) continue;
-        ring.push({ x: nx, y: ny, angle: Math.atan2(dy, dx) });
-      }
-    }
-    ring.sort((a, b) => a.angle - b.angle);
-    for (let k = 0; k < 4 && ring.length; k += 1) {
-      const spot = ring[Math.floor((k * ring.length) / 4)];
-      if (spot) picked.push({ x: spot.x, y: spot.y, dx: 0, dy: 0, brazier: true });
-    }
-    if (!picked.length) return;
-    const group = new THREE.Group();
-    const poleMat = new THREE.MeshLambertMaterial({ color: '#3a2c1e' });
-    const stoneMat = new THREE.MeshLambertMaterial({ color: '#5c5468' });
-    // Braziers light the Heart room where the fighting happens, so
-    // they get their lights first; wall torches share the rest.
-    let litWall = 0;
-    let litBrazier = 0;
-    picked.forEach((spot) => {
-      const torch = new THREE.Group();
-      if (spot.brazier) {
-        // A squat stone brazier standing in the middle of its tile.
-        torch.position.set(spot.x + 0.5, 0, spot.y + 0.5);
-        const base = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.5, 0.34), stoneMat);
-        base.position.y = 0.25;
-        const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.12, 0.18, 10), stoneMat);
-        bowl.position.y = 0.58;
-        torch.add(base, bowl);
-      } else {
-        // Standing on the open floor just in front of the wall.
-        torch.position.set(
-          spot.x + spot.dx + 0.5 - spot.dx * 0.28,
-          0,
-          spot.y + spot.dy + 0.5 - spot.dy * 0.28
-        );
-        const pole = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.15, 0.09), poleMat);
-        pole.position.y = 0.58;
-        const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.05, 0.14, 8), poleMat);
-        cup.position.y = 1.2;
-        torch.add(pole, cup);
-      }
-      // No visible flame: the warm point light is the glow.
-      const lightY = spot.brazier ? 0.95 : 1.55;
-      const litCount = spot.brazier ? litBrazier : litWall;
-      const budget = spot.brazier ? 2 : 4;
-      if (this.quality === 'high' && litCount < budget) {
-        const light = new THREE.PointLight('#ff9a3c', 2.2, 8);
-        light.position.y = lightY;
-        torch.add(light);
-        if (spot.brazier) litBrazier += 1;
-        else litWall += 1;
-      }
-      group.add(torch);
-    });
-    this.levelGroup.add(group);
-    this.torchGroup = group;
   }
 
   rebuildMarkers(game) {
