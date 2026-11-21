@@ -21,6 +21,7 @@ export const HEROES = [
   { id: 'wren', name: 'Wren the Scout', sprite: 'hero-wren', kind: 'Scout • Quick feet', perk: 'Swords deal +1 on paths of 5+', desc: 'Small, speedy and impossible to catch. Long sword-paths are her favourite trick.' },
   { id: 'biscuit', name: 'Biscuit the Cook', sprite: 'hero-biscuit', kind: 'Cook • Snack-powered', perk: 'Coins heal 1 HP per 4 matched', desc: 'Believes every problem is a snack problem. Carries a frying pan and a plan.' },
   { id: 'nettle', name: 'Nettle the Wizard', sprite: 'hero-nettle', kind: 'Wizard • First-spell fan', perk: 'First match each floor deals +3', desc: 'A young wizard whose first spell of the day always goes a bit BANG.' },
+  { id: 'joel', name: 'Joel', sprite: 'hero-joel', kind: 'Kid • Mohawk charger', perk: 'Swords deal +1 damage', desc: 'A brave 7-year-old with a mighty mohawk and a grin missing its front teeth. Charges into the crypt headfirst — usually yelling.' },
 ];
 
 export const DIFFICULTIES = {
@@ -80,14 +81,17 @@ export function relicCount(relics, id) {
  * Effect of matching `len` tiles of `type`.
  * `heroId` applies the hero perk; `relics` is an array of relic ids;
  * `firstMatchThisFloor` applies Nettle's perk once per floor.
+ * `swordBuff` is the shop's Sharp Sword: +5 damage on a sword match.
  * Returns { damage, block, heal, gold, score }.
  */
-export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor = false) {
+export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor = false, swordBuff = false) {
   const bonus = Math.max(0, len - 3);
   const out = { damage: 0, block: 0, heal: 0, gold: 0, score: len * 10 };
   if (type === 'sword') {
     out.damage = 3 + bonus + relicCount(relics, 'sharp-sword');
+    if (swordBuff) out.damage += 5;
     if (heroId === 'wren' && len >= 5) out.damage += 1;
+    if (heroId === 'joel') out.damage += 1;
     if (heroId === 'nettle' && firstMatchThisFloor) out.damage += 3;
     out.score += out.damage * 5;
   } else if (type === 'shield') {
@@ -109,6 +113,54 @@ export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor 
 /** Damage the hero actually takes from a monster bite after block + boots. */
 export function biteDamage(attack, block, relics = []) {
   return Math.max(0, attack - block - relicCount(relics, 'soft-boots'));
+}
+
+/**
+ * Block left after a monster bite absorbs what it can. Block carries
+ * over: only the absorbed amount is spent, never the whole bank.
+ */
+export function absorbBlock(block, attack) {
+  return Math.max(0, block - attack);
+}
+
+/**
+ * The Crypt Shop — what gold buys between floors. Fixed stock, fixed
+ * prices, so kids always know what things cost. Relics are NOT sold
+ * here: they stay boss rewards only.
+ */
+export const SHOP_ITEMS = [
+  { id: 'stew', name: 'Hearty Stew', sprite: 'relic-stew', desc: 'Heal 10 HP right now', price: 8 },
+  { id: 'shield', name: 'Sturdy Shield', sprite: 'tile-shield', desc: '+10 block right now', price: 10 },
+  { id: 'sword', name: 'Sharp Sword', sprite: 'tile-sword', desc: 'Your next sword match deals +5 damage', price: 12 },
+];
+
+/**
+ * A shop player's spendable state: { gold, hp, maxHp, block, swordBuff }.
+ * `shopBuy` is pure: it returns a new player object with the purchase
+ * applied, or null when the purchase is refused (too little gold, stew
+ * at full HP, or a sword buff already held). Gold never goes negative.
+ */
+export function shopBuy(itemId, p) {
+  const item = SHOP_ITEMS.find((i) => i.id === itemId);
+  if (!item) return null;
+  if (p.gold < item.price) return null;
+  if (itemId === 'stew' && p.hp >= p.maxHp) return null;
+  if (itemId === 'sword' && p.swordBuff) return null;
+  const next = { ...p, gold: p.gold - item.price };
+  if (itemId === 'stew') next.hp = Math.min(p.maxHp, p.hp + 10);
+  if (itemId === 'shield') next.block = p.block + 10;
+  if (itemId === 'sword') next.swordBuff = true;
+  return next;
+}
+
+/** Why an item cannot be bought right now, or null when it can. */
+export function shopDisabledReason(itemId, p) {
+  const item = SHOP_ITEMS.find((i) => i.id === itemId);
+  if (!item) return 'Not for sale';
+  if (itemId === 'stew' && p.hp >= p.maxHp) return 'Full HP!';
+  if (itemId === 'sword' && p.swordBuff) return 'Already sharp!';
+  if (p.gold < item.price) return 'Not enough gold';
+  return null;
 }
 
 export function randomTile(rng = Math.random) {
@@ -240,7 +292,7 @@ if (typeof document !== 'undefined') {
   const state = {
     screen: 'setup', heroId: 'pip', difficulty: 'normal', heroName: randomName(),
     hp: 25, maxHp: 25, block: 0, gold: 0, score: 0, floor: 1, kills: 0,
-    monster: null, board: [], relics: [], firstMatchThisFloor: true,
+    monster: null, board: [], relics: [], firstMatchThisFloor: true, swordBuff: false,
     dragging: false, path: [], pathType: null, paused: false, over: false,
     settling: false, dying: false, best: 0, bestGold: 0,
   };
@@ -472,12 +524,17 @@ if (typeof document !== 'undefined') {
     $('#hud-gold').textContent = state.gold;
     $('#hud-score').textContent = state.score;
     $('#hud-best').textContent = `Best floor ${state.best}`;
-    $('#relics-row').innerHTML = state.relics.length
+    $('#relics-row').innerHTML = (state.relics.length
       ? state.relics.map((id) => {
           const r = RELICS.find((x) => x.id === id);
           return `<span class="relic-chip" title="${r.name}: ${r.desc}">${spriteSVG(r.sprite)}<span>${r.name}</span></span>`;
         }).join('')
-      : '<span class="relics-empty">No relics yet — beat a boss on floor 5!</span>';
+      : '<span class="relics-empty">No relics yet — beat a boss on floor 5!</span>')
+      // The shop's Sharp Sword is a one-match buff, not a relic — show it
+      // as a chip here so the player can see it is waiting to be used.
+      + (state.swordBuff
+        ? `<span class="relic-chip" title="Sharp Sword: your next sword match deals +5 damage">${spriteSVG('tile-sword')}<span>Sharp Sword +5</span></span>`
+        : '');
     const m = state.monster;
     if (m) {
       $('#monster-emoji').innerHTML = spriteSVG(m.sprite);
@@ -560,7 +617,7 @@ if (typeof document !== 'undefined') {
     const len = state.path.length;
     // endDrag clears state.path right after this call, so capture it.
     const path = state.path.slice();
-    const fx = matchEffect(type, len, state.heroId, state.relics, state.firstMatchThisFloor);
+    const fx = matchEffect(type, len, state.heroId, state.relics, state.firstMatchThisFloor, state.swordBuff);
     state.firstMatchThisFloor = false;
     state.score += fx.score;
     // The matched tiles pop, then the rest of the board drops in after a
@@ -586,6 +643,11 @@ if (typeof document !== 'undefined') {
       $('#monster-card').classList.add('shake');
       setTimeout(() => $('#monster-card').classList.remove('shake'), 350);
       sfx.hit();
+      // The shop's Sharp Sword is spent on the first sword match.
+      if (state.swordBuff) {
+        state.swordBuff = false;
+        floatText('Sharp Sword! +5', 'dmg');
+      }
     }
     if (type === 'shield' && fx.block > 0) {
       state.block += fx.block;
@@ -639,7 +701,9 @@ if (typeof document !== 'undefined') {
     if (state.over || state.screen !== 'play' || !state.monster || state.monster.hp <= 0 || state.dying) return;
     const dmg = biteDamage(state.monster.attack, state.block, state.relics);
     const blocked = Math.min(state.block, state.monster.attack);
-    state.block = 0;
+    // Block carries over: a bite only eats what it absorbs, so any
+    // leftover block stays for the next bite (and the next floor).
+    state.block = absorbBlock(state.block, state.monster.attack);
     if (dmg > 0) {
       state.hp -= dmg;
       floatText(`-${dmg} bite!`, 'dmg');
@@ -719,7 +783,7 @@ if (typeof document !== 'undefined') {
     state.score += 50 + state.floor * 10;
     const heal = 3;
     state.hp = Math.min(state.maxHp, state.hp + heal);
-    state.block = 0;
+    // Block is NOT reset here: leftover block carries to the next floor.
     sfx.clear();
     const wasBoss = state.monster.isBoss;
     banner(`Floor ${state.floor} cleared! +${heal} HP`);
@@ -729,14 +793,80 @@ if (typeof document !== 'undefined') {
       state.best = state.floor;
       try { localStorage.setItem(BEST_KEY, String(state.best)); } catch (e) { /* ignore */ }
     }
+    // The shop opens between floors, so the boss loop must not follow
+    // the player out of a boss floor — back to the main tune now. This
+    // is a no-op on regular floors, where the main loop is already
+    // playing, and the shop itself never touches the music. (Skipped
+    // while paused; unpause resumes the selected track, and the next
+    // monster's spawn fixes the track either way.)
+    if (!state.paused) sfx.startMusic('main');
     newBoard();
-    spawnMonster();
-    updateHud();
     renderBoard();
-    if (wasBoss) setTimeout(showRelicChoice, 700);
+    updateHud();
+    // The next monster only spawns once the player leaves the shop, so
+    // the shop is never a race against a live monster.
+    const descend = () => { spawnMonster(); updateHud(); renderBoard(); };
+    // A short beat first, so the player sees the "Floor cleared" banner.
+    // Boss floors: relic pick first, then the shop. Other floors: shop.
+    if (wasBoss) setTimeout(() => showRelicChoice(() => showShop(descend)), 700);
+    else setTimeout(() => showShop(descend), 700);
   }
 
-  function showRelicChoice() {
+  // The shop player's spendable state, read from / written back to state.
+  function shopPlayer() {
+    return { gold: state.gold, hp: state.hp, maxHp: state.maxHp, block: state.block, swordBuff: state.swordBuff };
+  }
+  function applyShopPlayer(next) {
+    state.gold = next.gold; state.hp = next.hp; state.block = next.block; state.swordBuff = next.swordBuff;
+  }
+
+  // The Crypt Shop: fixed stock, fixed prices, open after every floor is
+  // cleared. The overlay itself covers the board, so — like the relic
+  // modal — no drag can start while it is open. Descend is always free
+  // and always available, even with 0 gold, so the shop can never block
+  // the game.
+  function showShop(onDescend) {
+    const modal = $('#shop-modal');
+    const list = $('#shop-choices');
+    $('#shop-gold').textContent = state.gold;
+    $('#shop-descend').textContent = `⬇ Descend to floor ${state.floor}`;
+    list.innerHTML = '';
+    SHOP_ITEMS.forEach((item) => {
+      const reason = shopDisabledReason(item.id, shopPlayer());
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'shop-choice';
+      b.disabled = reason !== null;
+      b.innerHTML = `<span class="relic-emoji" aria-hidden="true">${spriteSVG(item.sprite)}</span><strong>${item.name}</strong><span>${item.desc}</span><span class="shop-price"><span class="shop-coin" aria-hidden="true">${spriteSVG('tile-coin')}</span> ${item.price} gold</span>${reason ? `<span class="shop-reason">${reason}</span>` : ''}`;
+      b.addEventListener('click', () => {
+        const before = shopPlayer();
+        const next = shopBuy(item.id, before);
+        if (!next) return;
+        applyShopPlayer(next);
+        sfx.coin();
+        if (item.id === 'stew') { floatText(`+${next.hp - before.hp} HP`, 'heal'); sfx.heal(); }
+        if (item.id === 'shield') floatText('+10 block', 'block');
+        if (item.id === 'sword') floatText('Sharp Sword ready!', 'dmg');
+        setStatus(`${item.name} bought for ${item.price} gold.`);
+        updateHud();
+        showShop(onDescend); // re-render: fresh gold, fresh disabled states
+      });
+      list.appendChild(b);
+    });
+    modal.hidden = false;
+    $('#shop-descend').onclick = () => {
+      modal.hidden = true;
+      sfx.blip();
+      onDescend();
+    };
+  }
+
+  // What runs when the relic modal closes without a pick ("Not now") —
+  // set by showRelicChoice so the boss-floor flow can continue to the shop.
+  let relicDone = null;
+
+  function showRelicChoice(onDone) {
+    relicDone = onDone || null;
     const pool = [...RELICS].sort(() => Math.random() - 0.5).slice(0, 3);
     const modal = $('#relic-modal');
     const list = $('#relic-choices');
@@ -753,6 +883,8 @@ if (typeof document !== 'undefined') {
         sfx.relic();
         setStatus(`Relic found: ${r.name} — ${r.desc}`);
         updateHud();
+        const done = relicDone; relicDone = null;
+        if (done) done();
       });
       list.appendChild(b);
     });
@@ -761,6 +893,7 @@ if (typeof document !== 'undefined') {
 
   function gameOver() {
     state.over = true;
+    state.swordBuff = false; // a bought buff never survives into a new run
     sfx.stopMusic();
     sfx.over();
     const floorReached = state.floor;
@@ -787,7 +920,7 @@ if (typeof document !== 'undefined') {
     const diff = DIFFICULTIES[state.difficulty];
     state.maxHp = diff.hp + (state.heroId === 'moss' ? 10 : 0);
     state.hp = state.maxHp; state.block = 0; state.gold = 0; state.score = 0;
-    state.floor = 1; state.kills = 0; state.relics = []; state.over = false; state.paused = false; state.dying = false;
+    state.floor = 1; state.kills = 0; state.relics = []; state.swordBuff = false; state.over = false; state.paused = false; state.dying = false;
     const hero = HEROES.find((h) => h.id === state.heroId);
     $('#hero-chip').innerHTML = `${spriteSVG(hero.sprite)} ${state.heroName} · ${hero.name}`;
     $('#setup-screen').hidden = true;
@@ -854,5 +987,9 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && state.screen === 'play' && !state.over) setPaused(true);
   });
-  $('#relic-close').addEventListener('click', () => { $('#relic-modal').hidden = true; });
+  $('#relic-close').addEventListener('click', () => {
+    $('#relic-modal').hidden = true;
+    const done = relicDone; relicDone = null;
+    if (done) done();
+  });
 }
