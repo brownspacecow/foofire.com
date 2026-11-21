@@ -1,0 +1,405 @@
+{
+  "levels": [
+    {
+      "id": "level-1",
+      "number": 1,
+      "name": "Muddy Beginnings",
+      "subtitle": "Dig, build, and put the gold somewhere safe.",
+      "briefing": "A tidy band of knights is coming to sweep your new home. Dig out a bit of space, build a Treasury, and be ready before they arrive.",
+      "map": [
+        "##############################",
+        "##############################",
+        "##.........................###",
+        "##....g....................###",
+        "##.........................###",
+        "##........####.............###",
+        "##........####.............###",
+        "##..........................##",
+        "##...._P_..................###",
+        "##...._H_..................###",
+        "##....___..................###",
+        "##..........................##",
+        "##................g........###",
+        "##..........................##",
+        "##..........ww..............##",
+        "##..........................##",
+        "##...............E..........###",
+        "##############################",
+        "##############################"
+      ],
+      "startGold": 260,
+      "startMana": 70,
+      "imps": 3,
+      "heartHealth": 700,
+      "startCreatures": [{ "type": "grumblet", "count": 3 }],
+      "availableRooms": ["treasury", "lair", "hatchery"],
+      "availableSpells": ["haste", "heal", "rally"],
+      "availableTraps": [],
+      "waves": [
+        {
+          "at": 80,
+          "label": "A very tidy patrol",
+          "spawn": [{ "type": "squire", "count": 3 }]
+        }
+      ],
+      "tutorial": [
+        {
+          "when": "start",
+          "text": "Welcome, Keeper! You are the floating hand. Pick Dig and drag over brown dirt to plan a tunnel — it can reach into the dark, and imps start as soon as a path gets there. Drag over planned tiles again to un-plan."
+        },
+        {
+          "when": "dug",
+          "text": "Nice digging — the floor is yours now. Pick Rooms, choose Treasury, and paint a few tiles."
+        },
+        {
+          "when": "room",
+          "text": "Gold goes in the Treasury. Your creatures sleep, eat and train in rooms too. Keep an eye on the top bar."
+        },
+        {
+          "when": "wave",
+          "text": "Knights! They march for the Dungeon Heart. Your creatures fight on their own — use spells and the Rally Yell to help."
+        }
+      ],
+      "outro": "The patrol went home muddy and confused. Word is spreading about the nice monster down the hole."
+    },
+    {
+      "id": "level-2",
+      "number": 2,
+      "name": "Room Service",
+      "subtitle": "A lair, a hatchery, and a little dinner diplomacy.",
+      "briefing": "More creatures want to move in, but they expect beds and snacks. Build a Lair and a Hatchery, then survive two waves of tidying knights.",
+      "map": [
+        "##############################",
+        "##############################",
+        "##..........................##",
+        "##....g..........g..........##",
+        "##..........................##",
+        "##........####..............##",
+        "##........####......####....##",
+        "##..................####....##",
+        "##........_P_..............##",
+        "##...._______...............##",
+        "##....___H___...............##",
+        "##...._______...............##",
+        "##..................ww......##",
+        "##........####..............##",
+        "##........####..............##",
+        "##....g..........g..........##",
+        "##..........................##",
+        "##..E.......................##",
+        "##..........................##",
+        "##############################"
+      ],
+      "startGold": 320,
+      "startMana": 80,
+      "imps": 4,
+      "heartHealth": 850,
+      "startCreatures": [
+        { "type": "grumblet", "count": 3 },
+        { "type": "snootle", "count": 1 }
+      ],
+      "availableRooms": ["treasury", "lair", "hatchery", "training"],
+      "availableSpells": ["haste", "heal", "rally"],
+      "availableTraps": [],
+      "waves": [
+        {
+          "at": 90,
+          "label": "The cleaning crew",
+          "spawn": [
+            { "type": "squire", "count": 4 },
+            { "type": "archer", "count": 1 }
+          ]
+        },
+        {
+          "at": 190,
+          "label": "Arrows and attitude",
+          "spawn": [
+            { "type": "squire", "count": 2 },
+            { "type": "archer", "count": 3 }
+          ]
+        }
+      ],
+      "tutorial": [
+        {
+          "when": "start",
+          "text": "New neighbours are coming. A Lair lets creatures sleep and makes room for more of them. A Hatchery keeps them fed."
+        },
+        {
+          "when": "room:lair",
+          "text": "Lovely blankets. Now paint a Hatchery so nobody chews the furniture."
+        },
+        {
+          "when": "wave",
+          "text": "Tap a creature with the Hand to pick it up, then tap the floor to drop it somewhere useful. The Slap tool gives a creature a burst of get-up-and-go."
+        }
+      ],
+      "outro": "Two whole waves, tidied away. The lair smells like socks and victory."
+    },
+    {
+      "id": "level-3",
+      "number": 3,
+      "name": "Monster Mash",
+      "subtitle": "A library, a lecture, and a lot of lava.",
+      "briefing": "The knights brought friends. Build a Library, research something fizzy, and train your creatures before three waves arrive.",
+      "map": [
+        "##############################",
+        "##############################",
+        "##..........................##",
+        "##....g.....llll......g.....##",
+        "##..........llll............##",
+        "##..........llll............##",
+        "##....._P_..................##",
+        "##....._H_..................##",
+        "##.....___..................##",
+        "##..........................##",
+        "##..........llll............##",
+        "##..........llll............##",
+        "##..........................##",
+        "##....g..........g..........##",
+        "##.........####.............##",
+        "##.........####.............##",
+        "##..........................##",
+        "##E.........................##",
+        "##..........................##",
+        "##############################"
+      ],
+      "startGold": 380,
+      "startMana": 90,
+      "imps": 5,
+      "heartHealth": 950,
+      "startCreatures": [
+        { "type": "grumblet", "count": 3 },
+        { "type": "snootle", "count": 2 },
+        { "type": "spittles", "count": 1 }
+      ],
+      "availableRooms": ["treasury", "lair", "hatchery", "training", "library"],
+      "availableSpells": ["haste", "heal", "rally"],
+      "availableTraps": [],
+      "waves": [
+        {
+          "at": 75,
+          "label": "Knights with a map",
+          "spawn": [
+            { "type": "squire", "count": 4 },
+            { "type": "mage", "count": 1 }
+          ]
+        },
+        {
+          "at": 175,
+          "label": "The big lads",
+          "spawn": [
+            { "type": "knight", "count": 2 },
+            { "type": "archer", "count": 3 }
+          ]
+        },
+        {
+          "at": 275,
+          "label": "Everybody at once",
+          "spawn": [
+            { "type": "squire", "count": 3 },
+            { "type": "knight", "count": 1 },
+            { "type": "mage", "count": 2 }
+          ]
+        }
+      ],
+      "tutorial": [
+        {
+          "when": "start",
+          "text": "Lava is not a shortcut. It is a wall. Build a Library and let your clever creatures read up on new tricks."
+        },
+        {
+          "when": "research",
+          "text": "Research done! New spells and traps appear in your bars. Zap is good for a crowded doorway."
+        },
+        {
+          "when": "wave",
+          "text": "Tip: the Training Room turns gold into levels. Higher-level creatures hit harder and take more knocks."
+        }
+      ],
+      "outro": "The knights fled through the lava room without reading the sign. Research complete: nobody reads signs."
+    },
+    {
+      "id": "level-4",
+      "number": 4,
+      "name": "Spiky Business",
+      "subtitle": "A workshop, a corridor, and some very bouncy tiles.",
+      "briefing": "Four waves are coming down two long corridors. Build a Workshop and line the halls with traps and doors.",
+      "map": [
+        "##############################",
+        "##############################",
+        "##..........................##",
+        "##...####........####.......##",
+        "##...####........####.......##",
+        "##........ww........ww......##",
+        "##........ww........ww......##",
+        "##..........................##",
+        "##......_P_.................##",
+        "##......_H_.................##",
+        "##......___.................##",
+        "##..........................##",
+        "##...####........####.......##",
+        "##...####........####.......##",
+        "##..........................##",
+        "##....g........g............##",
+        "##..........................##",
+        "##E.........................##",
+        "##..........................##",
+        "##############################"
+      ],
+      "startGold": 460,
+      "startMana": 110,
+      "imps": 6,
+      "heartHealth": 1100,
+      "startCreatures": [
+        { "type": "grumblet", "count": 4 },
+        { "type": "snootle", "count": 2 },
+        { "type": "spittles", "count": 2 },
+        { "type": "chonk", "count": 1 }
+      ],
+      "availableRooms": [
+        "treasury",
+        "lair",
+        "hatchery",
+        "training",
+        "library",
+        "workshop"
+      ],
+      "availableSpells": ["haste", "heal", "rally"],
+      "availableTraps": ["spike"],
+      "waves": [
+        {
+          "at": 70,
+          "label": "First sweep",
+          "spawn": [
+            { "type": "squire", "count": 4 },
+            { "type": "archer", "count": 2 }
+          ]
+        },
+        {
+          "at": 160,
+          "label": "Armour, at speed",
+          "spawn": [{ "type": "knight", "count": 3 }]
+        },
+        {
+          "at": 250,
+          "label": "The mop squad",
+          "spawn": [
+            { "type": "mage", "count": 3 },
+            { "type": "squire", "count": 4 }
+          ]
+        },
+        {
+          "at": 340,
+          "label": "Everything must go",
+          "spawn": [
+            { "type": "knight", "count": 2 },
+            { "type": "archer", "count": 3 },
+            { "type": "mage", "count": 2 }
+          ]
+        }
+      ],
+      "tutorial": [
+        {
+          "when": "start",
+          "text": "A Workshop unlocks traps. Pick Traps, choose Bounce Trap, and paint a corridor. Intruders step on them; your creatures know where the bouncy bits are."
+        },
+        {
+          "when": "trap",
+          "text": "Traps need repairing after a while. The Library can research doors and dart traps to slow knights down even more."
+        },
+        {
+          "when": "wave",
+          "text": "Doors let your creatures through but block knights until they knock them down. Put them at the end of a trap corridor."
+        }
+      ],
+      "outro": "The corridor is now mostly trampoline. The knights have requested a different route and a lie down."
+    },
+    {
+      "id": "level-5",
+      "number": 5,
+      "name": "The Big Cheese",
+      "subtitle": "One boss, one heart, and one extremely fancy hat.",
+      "briefing": "Baron Bumblefrost is coming himself. Build up, train up, and keep the Dungeon Heart beating through the boss wave.",
+      "map": [
+        "##############################",
+        "##############################",
+        "##..........llll...........##",
+        "##..........llll...........##",
+        "##..........................##",
+        "##....####........####......##",
+        "##....####........####......##",
+        "##..........................##",
+        "##........_P_..............##",
+        "##.....___H___..............##",
+        "##....._______..............##",
+        "##..........................##",
+        "##....g..........g..........##",
+        "##..........................##",
+        "##..........ww..............##",
+        "##..........................##",
+        "##E.....g...........g.......##",
+        "##..........................##",
+        "##############################"
+      ],
+      "startGold": 520,
+      "startMana": 130,
+      "imps": 7,
+      "heartHealth": 1400,
+      "startCreatures": [
+        { "type": "grumblet", "count": 4 },
+        { "type": "snootle", "count": 3 },
+        { "type": "spittles", "count": 2 },
+        { "type": "wisp", "count": 1 },
+        { "type": "chonk", "count": 1 }
+      ],
+      "availableRooms": [
+        "treasury",
+        "lair",
+        "hatchery",
+        "training",
+        "library",
+        "workshop"
+      ],
+      "availableSpells": ["haste", "heal", "rally"],
+      "availableTraps": ["spike"],
+      "waves": [
+        {
+          "at": 80,
+          "label": "The warm-up",
+          "spawn": [
+            { "type": "squire", "count": 5 },
+            { "type": "archer", "count": 2 }
+          ]
+        },
+        {
+          "at": 180,
+          "label": "Hat inspection",
+          "spawn": [
+            { "type": "knight", "count": 2 },
+            { "type": "mage", "count": 2 }
+          ]
+        },
+        {
+          "at": 280,
+          "label": "Baron Bumblefrost",
+          "spawn": [
+            { "type": "boss", "count": 1 },
+            { "type": "knight", "count": 2 },
+            { "type": "archer", "count": 2 }
+          ]
+        }
+      ],
+      "tutorial": [
+        {
+          "when": "start",
+          "text": "Last one, Keeper. The Baron is very large and very polite about it. Build everything, train everyone, and keep your heart safe."
+        },
+        {
+          "when": "wave",
+          "text": "The Baron stomps the floor every few seconds. Keep your creatures spread out, heal through it, and hit him with everything."
+        }
+      ],
+      "outro": "Baron Bumblefrost's hat came off. He apologised, swept the floor, and left. The dungeon is officially cosy."
+    }
+  ]
+}
