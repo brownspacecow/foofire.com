@@ -16,7 +16,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com/src/games/crypt-crawl/index.html" />
     <meta property="og:site_name" content="Foofire Games" />
-    <meta name="theme-color" content="#0e0818" />
+    <meta name="theme-color" content="#000000" />
     <link rel="stylesheet" href="../../../styles.css" />
     <style>
       .crypt-game {
@@ -25,14 +25,14 @@
         padding: 0 1rem 3.5rem;
       }
 
+      /* NES frame: flat near-black blue with a dithered brick pattern
+         (two palette colours, no gradients), chunky gold border. */
       .crypt-frame {
-        background-color: #17102a;
-        background-image:
-          repeating-linear-gradient(0deg, transparent 0 30px, rgba(0, 0, 0, 0.45) 30px 33px),
-          repeating-linear-gradient(90deg, transparent 0 60px, rgba(0, 0, 0, 0.45) 60px 63px),
-          linear-gradient(#1d1533, #0e0818);
-        border: 4px solid var(--accent-soft);
-        box-shadow: 0 0 0 2px #0e0818, 0 0 0 4px #8a6d1f, var(--shadow-hard);
+        position: relative;
+        background-color: #000010;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Crect width='64' height='32' fill='%23000010'/%3E%3Cpath d='M0 16H64 M32 0V16 M16 16V32 M48 16V32' stroke='%237C7C7C' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+        border: 4px solid #F8B800;
+        box-shadow: 4px 4px 0 #000000;
         padding: 1rem;
       }
 
@@ -46,19 +46,65 @@
 
       .pixel-title {
         font-family: var(--font-pixel);
-        color: var(--accent-soft);
+        color: #F8B800;
         text-align: center;
         font-size: clamp(1rem, 4vw, 1.4rem);
         line-height: 1.6;
         margin: 0.2rem 0 1rem;
-        text-shadow: 3px 3px 0 #000;
+        text-shadow: 4px 4px 0 #000000;
+      }
+
+      .game-title {
+        font-family: var(--font-pixel);
+        color: #F8B800;
+        text-align: center;
+        font-size: clamp(1.4rem, 6vw, 2.2rem);
+        line-height: 1.5;
+        margin: 0.2rem 0 0.1rem;
+        text-shadow: 4px 4px 0 #000000;
+      }
+
+      .game-subtitle {
+        font-family: var(--font-pixel);
+        color: #FCFCFC;
+        text-align: center;
+        font-size: clamp(0.5rem, 2vw, 0.65rem);
+        line-height: 1.6;
+        margin: 0 0 0.6rem;
+        text-shadow: 2px 2px 0 #000000;
+      }
+
+      .press-start {
+        font-family: var(--font-pixel);
+        color: #FCFCFC;
+        text-align: center;
+        font-size: 0.6rem;
+        line-height: 1.6;
+        margin: 0.9rem 0 0;
+        text-shadow: 2px 2px 0 #000000;
+        animation: nes-blink 1s steps(1) infinite;
+      }
+
+      @keyframes nes-blink {
+        0%, 49% { opacity: 1; }
+        50%, 100% { opacity: 0; }
+      }
+
+      /* CRT scanlines over the play area: hard 1px dark lines, no glow,
+         pointer-events none so they never block a drag. */
+      .crt {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 4;
+        background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
       }
 
       .crypt-label {
         font-family: var(--font-pixel);
         font-size: 0.55rem;
         letter-spacing: 0.08em;
-        color: var(--accent-soft);
+        color: #F8B800;
         text-transform: uppercase;
         margin: 1rem 0 0.5rem;
         text-align: center;
@@ -72,9 +118,9 @@
       .name-row input {
         width: min(100%, 22rem);
         padding: 0.7rem 0.8rem;
-        background: #1b1238;
-        border: 3px solid var(--accent-soft);
-        color: var(--text);
+        background: #000010;
+        border: 3px solid #F8B800;
+        color: #FCFCFC;
         font-family: var(--font-pixel);
         font-size: 0.7rem;
         text-align: center;
@@ -91,9 +137,9 @@
         flex: 1 1 7rem;
         max-width: 12rem;
         padding: 0.7rem 0.5rem;
-        border: 3px solid var(--border);
-        background: var(--panel-soft);
-        color: var(--text);
+        border: 3px solid #7C7C7C;
+        background: #000010;
+        color: #FCFCFC;
         font-family: var(--font-pixel);
         font-size: 0.5rem;
         line-height: 1.7;
@@ -105,13 +151,13 @@
         font-family: var(--font-body);
         font-size: 0.72rem;
         font-weight: 600;
-        color: var(--muted);
+        color: #BCBCBC;
       }
 
       .choice-btn.selected {
-        border-color: var(--accent-soft);
-        background: #4a3410;
-        box-shadow: 0 0 0 2px var(--accent-soft);
+        border-color: #F8B800;
+        background: #0078F8;
+        box-shadow: 4px 4px 0 #000000;
       }
 
       .choice-btn.locked {
@@ -131,28 +177,27 @@
         align-items: center;
         gap: 0.35rem;
         padding: 0.7rem 0.4rem;
-        border: 3px solid var(--border);
-        background: var(--panel-soft);
-        color: var(--text);
+        border: 3px solid #7C7C7C;
+        background: #000010;
+        color: #FCFCFC;
         font-family: inherit;
         cursor: pointer;
       }
 
       .hero-card:hover {
-        border-color: var(--accent-soft);
+        border-color: #F8B800;
       }
 
       .hero-card.selected {
-        border-color: var(--accent-soft);
-        background: #4a3410;
-        box-shadow: 0 0 0 2px var(--accent-soft);
+        border-color: #F8B800;
+        background: #0078F8;
+        box-shadow: 4px 4px 0 #000000;
       }
 
       .hero-emoji {
         width: 3.2rem;
         height: 3.2rem;
         flex: 0 0 auto;
-        filter: drop-shadow(2px 2px 0 #000);
       }
 
       .hero-emoji.big {
@@ -180,8 +225,8 @@
         align-items: center;
         margin-top: 0.8rem;
         padding: 0.9rem;
-        border: 3px solid var(--accent-soft);
-        background: #1b1238;
+        border: 3px solid #F8B800;
+        background: #000010;
       }
 
       .detail-text {
@@ -194,30 +239,30 @@
       .detail-text strong {
         font-family: var(--font-pixel);
         font-size: 0.6rem;
-        color: var(--accent-soft);
+        color: #F8B800;
         line-height: 1.6;
       }
 
       .detail-kind {
         font-size: 0.8rem;
-        color: var(--muted);
+        color: #BCBCBC;
       }
 
       .detail-perk {
         font-size: 0.85rem;
         font-weight: 800;
-        color: var(--green);
+        color: #B8F818;
       }
 
       .detail-desc,
       .detail-flavour {
         font-size: 0.85rem;
-        color: var(--text);
+        color: #FCFCFC;
         line-height: 1.45;
       }
 
       .detail-flavour {
-        color: var(--muted);
+        color: #BCBCBC;
         font-style: italic;
       }
 
@@ -227,7 +272,7 @@
         margin-top: 0.9rem;
         font-family: var(--font-pixel);
         font-size: 0.5rem;
-        color: var(--muted);
+        color: #BCBCBC;
       }
 
       .descend-row {
@@ -239,33 +284,33 @@
       .descend-btn {
         flex: 1;
         padding: 1rem;
-        border: 3px solid var(--ink);
-        background: var(--accent-soft);
-        color: var(--ink);
+        border: 4px solid #000000;
+        background: #F8B800;
+        color: #000000;
         font-family: var(--font-pixel);
         font-size: 0.85rem;
         cursor: pointer;
-        box-shadow: 4px 4px 0 var(--ink);
+        box-shadow: 4px 4px 0 #000000;
       }
 
       .descend-btn:hover {
-        filter: brightness(1.08);
+        background: #FCA044;
       }
 
       .descend-btn:active {
         transform: translate(2px, 2px);
-        box-shadow: 2px 2px 0 var(--ink);
+        box-shadow: 2px 2px 0 #000000;
       }
 
       .back-btn {
         padding: 1rem 0.9rem;
-        border: 3px solid var(--ink);
-        background: var(--panel-soft);
-        color: var(--text);
+        border: 4px solid #000000;
+        background: #7C7C7C;
+        color: #000000;
         font-family: var(--font-pixel);
         font-size: 0.6rem;
         cursor: pointer;
-        box-shadow: 4px 4px 0 var(--ink);
+        box-shadow: 4px 4px 0 #000000;
       }
 
       /* ---- play screen ---- */
@@ -275,8 +320,8 @@
         align-items: center;
         gap: 0.5rem 1rem;
         padding: 0.7rem 0.8rem;
-        background: var(--panel);
-        border: 3px solid var(--ink);
+        background: #000010;
+        border: 3px solid #000000;
         border-bottom: none;
       }
 
@@ -292,18 +337,19 @@
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: var(--muted);
+        color: #BCBCBC;
       }
 
       .hud-stat strong {
         font-family: var(--font-pixel);
         font-size: 0.62rem;
-        color: var(--accent-soft);
+        color: #F8B800;
       }
 
       .hero-chip {
         font-weight: 800;
         font-size: 0.9rem;
+        color: #FCFCFC;
       }
 
       .hud-actions {
@@ -316,25 +362,26 @@
         width: 2.5rem;
         height: 2.5rem;
         padding: 0;
-        border: 3px solid var(--ink);
-        background: var(--panel-soft);
-        color: var(--text);
+        border: 3px solid #000000;
+        background: #0078F8;
+        color: #FCFCFC;
         font-size: 1rem;
         line-height: 1;
         cursor: pointer;
-        box-shadow: 2px 2px 0 var(--ink);
+        box-shadow: 2px 2px 0 #000000;
       }
 
       .icon-button[aria-pressed="true"] {
-        background: var(--accent-soft);
-        color: var(--ink);
+        background: #F8B800;
+        color: #000000;
       }
 
       .hp-meter {
         height: 0.55rem;
         margin-top: 0.25rem;
-        border-radius: 999px;
-        background: #2b2b2b;
+        border: 2px solid #FCFCFC;
+        border-radius: 0;
+        background: #000000;
         overflow: hidden;
         min-width: 6rem;
       }
@@ -342,8 +389,8 @@
       #hp-fill {
         display: block;
         height: 100%;
-        background: linear-gradient(90deg, #4fae52, #a5e87a);
-        transition: width 0.25s ease;
+        background: #00B800;
+        transition: width 0.25s steps(4);
       }
 
       .monster-card {
@@ -351,22 +398,21 @@
         align-items: center;
         gap: 0.9rem;
         padding: 0.8rem;
-        background-color: #1d1530;
-        background-image: repeating-linear-gradient(0deg, transparent 0 26px, rgba(0, 0, 0, 0.4) 26px 28px);
-        border: 3px solid #8a6d1f;
+        background-color: #000010;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23000010'/%3E%3Crect width='1' height='1' fill='%230000FC'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%230000FC'/%3E%3C/svg%3E");
+        border: 3px solid #F8B800;
         border-bottom: none;
       }
 
       .monster-card.boss {
-        border-color: var(--accent);
-        background: #3d1030;
+        border-color: #F83800;
+        background-color: #000010;
       }
 
       .monster-emoji {
         width: 3.4rem;
         height: 3.4rem;
         flex: 0 0 auto;
-        filter: drop-shadow(2px 2px 0 #000);
       }
 
       .monster-info {
@@ -377,39 +423,38 @@
       .monster-name {
         font-family: var(--font-pixel);
         font-size: 0.6rem;
-        color: var(--text);
+        color: #FCFCFC;
         line-height: 1.6;
       }
 
       .monster-meter {
         height: 0.6rem;
         margin-top: 0.4rem;
-        border-radius: 999px;
-        background: #2b2b2b;
+        border: 2px solid #FCFCFC;
+        border-radius: 0;
+        background: #000000;
         overflow: hidden;
       }
 
       #monster-fill {
         display: block;
         height: 100%;
-        background: linear-gradient(90deg, #ff2e63, #ff8a00);
-        transition: width 0.25s ease;
+        background: #E40058;
+        transition: width 0.25s steps(4);
       }
 
       .monster-hp {
         font-size: 0.75rem;
-        color: var(--muted);
+        color: #BCBCBC;
         font-weight: 700;
       }
 
       .board-wrap {
         position: relative;
-        border: 4px solid var(--accent-soft);
-        box-shadow: 0 0 0 2px #0e0818, 0 0 0 4px #8a6d1f;
-        background-color: #17102a;
-        background-image:
-          repeating-linear-gradient(0deg, transparent 0 30px, rgba(0, 0, 0, 0.45) 30px 33px),
-          repeating-linear-gradient(90deg, transparent 0 60px, rgba(0, 0, 0, 0.45) 60px 63px);
+        border: 4px solid #F8B800;
+        box-shadow: 4px 4px 0 #000000;
+        background-color: #000010;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Crect width='64' height='32' fill='%23000010'/%3E%3Cpath d='M0 16H64 M32 0V16 M16 16V32 M48 16V32' stroke='%237C7C7C' stroke-width='2' fill='none'/%3E%3C/svg%3E");
         padding: 0.5rem;
       }
 
@@ -429,31 +474,26 @@
         align-items: center;
         justify-content: center;
         padding: 6%;
-        border: 3px solid #4a3a6b;
+        border: 3px solid #7C7C7C;
         border-radius: 0;
-        background: #241d33;
-        box-shadow: inset 0 0 0 2px #17102a, inset 3px 3px 0 rgba(255, 255, 255, 0.05);
+        background: #000010;
         line-height: 1;
         cursor: pointer;
         touch-action: none;
         -webkit-tap-highlight-color: transparent;
       }
 
-      .tile .pixel-sprite {
-        filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6));
-      }
-
       .tile.in-path {
         transform: scale(1.08);
-        border-color: var(--accent-soft);
-        box-shadow: 0 0 0 2px var(--accent-soft), 0 0 14px rgba(255, 217, 61, 0.6);
-        filter: brightness(1.25);
+        border-color: #F8B800;
+        background: #0000FC;
+        box-shadow: 4px 4px 0 #000000;
       }
 
-      .tile-sword { background: #2e1a28; }
-      .tile-shield { background: #1a2438; }
-      .tile-potion { background: #1a2e22; }
-      .tile-coin { background: #33291a; }
+      .tile-sword { border-color: #FCFCFC; }
+      .tile-shield { border-color: #3CBCFC; }
+      .tile-potion { border-color: #00B800; }
+      .tile-coin { border-color: #F8B800; }
 
       /* No-moves shuffle: the whole board wobbles for a beat so the player
          sees the crypt rearranging itself. */
@@ -486,14 +526,14 @@
         top: 30%;
         font-weight: 900;
         font-size: 1.1rem;
-        text-shadow: 2px 2px 0 #000;
+        text-shadow: 2px 2px 0 #000000;
         animation: float-up 1s ease-out forwards;
       }
 
-      .float-text.dmg { color: #ff6b6b; }
-      .float-text.heal { color: #3ddc84; }
-      .float-text.gold { color: var(--accent-soft); }
-      .float-text.block { color: #2ec4ff; }
+      .float-text.dmg { color: #E40058; }
+      .float-text.heal { color: #00B800; }
+      .float-text.gold { color: #F8B800; }
+      .float-text.block { color: #3CBCFC; }
 
       @keyframes float-up {
         from { opacity: 1; transform: translateY(0); }
@@ -516,10 +556,10 @@
       .banner span {
         display: block;
         padding: 0.6rem 1.2rem;
-        border-radius: 999px;
-        background: rgba(12, 14, 16, 0.85);
-        border: 2px solid var(--accent-soft);
-        color: var(--accent-soft);
+        border-radius: 0;
+        background: #000000;
+        border: 2px solid #F8B800;
+        color: #F8B800;
         font-family: var(--font-pixel);
         font-size: 0.55rem;
         white-space: nowrap;
@@ -530,8 +570,8 @@
         flex-wrap: wrap;
         gap: 0.4rem;
         padding: 0.6rem 0.8rem;
-        background: var(--panel);
-        border: 3px solid var(--ink);
+        background: #000010;
+        border: 3px solid #000000;
         border-top: none;
         font-size: 0.8rem;
       }
@@ -541,8 +581,9 @@
         align-items: center;
         gap: 0.35rem;
         padding: 0.25rem 0.5rem;
-        border: 2px solid var(--accent-soft);
-        background: #4a3410;
+        border: 2px solid #F8B800;
+        background: #0000FC;
+        color: #FCFCFC;
         font-weight: 700;
       }
 
@@ -552,21 +593,21 @@
       }
 
       .relics-empty {
-        color: var(--muted);
+        color: #BCBCBC;
       }
 
       .paused-note {
         margin: 0.6rem 0 0;
         text-align: center;
         font-weight: 800;
-        color: var(--accent-soft);
+        color: #F8B800;
       }
 
       .game-tip {
         margin: 0.9rem auto 0;
         max-width: 42rem;
         text-align: center;
-        color: var(--muted);
+        color: #BCBCBC;
         font-size: 0.9rem;
       }
 
@@ -574,7 +615,7 @@
         display: block;
         width: fit-content;
         margin: 1.4rem auto 0;
-        color: var(--text);
+        color: #FCFCFC;
         font-weight: 600;
         text-decoration: underline;
       }
@@ -598,7 +639,7 @@
         align-items: center;
         justify-content: center;
         padding: 1rem;
-        background: rgba(8, 4, 18, 0.8);
+        background: rgba(0, 0, 0, 0.85);
       }
 
       .overlay[hidden] { display: none; }
@@ -606,10 +647,10 @@
       .overlay-card {
         width: min(92%, 30rem);
         padding: 1.4rem 1.5rem 1.6rem;
-        border: 4px solid var(--accent-soft);
-        border-radius: 1rem;
-        background: var(--panel);
-        box-shadow: var(--shadow-hard);
+        border: 4px solid #F8B800;
+        border-radius: 0;
+        background: #000010;
+        box-shadow: 6px 6px 0 #000000;
         text-align: center;
       }
 
@@ -617,13 +658,13 @@
         margin: 0;
         font-family: var(--font-pixel);
         font-size: 0.9rem;
-        color: var(--accent-soft);
+        color: #F8B800;
         line-height: 1.7;
       }
 
       .overlay-card p {
         margin: 0.6rem 0 0;
-        color: var(--muted);
+        color: #BCBCBC;
       }
 
       .over-stats {
@@ -636,14 +677,14 @@
 
       .over-stats div {
         padding: 0.6rem;
-        background: #1b1238;
-        border: 2px solid var(--border);
+        background: #000010;
+        border: 2px solid #7C7C7C;
       }
 
       .over-stats span {
         display: block;
         font-size: 0.7rem;
-        color: var(--muted);
+        color: #BCBCBC;
         text-transform: uppercase;
         font-weight: 700;
       }
@@ -651,24 +692,24 @@
       .over-stats strong {
         font-family: var(--font-pixel);
         font-size: 0.7rem;
-        color: var(--accent-soft);
+        color: #F8B800;
       }
 
       .overlay-card button {
         margin-top: 1rem;
         padding: 0.8rem 1.4rem;
-        border: 3px solid var(--ink);
-        background: var(--accent-soft);
-        color: var(--ink);
+        border: 3px solid #000000;
+        background: #F8B800;
+        color: #000000;
         font-family: var(--font-pixel);
         font-size: 0.55rem;
         cursor: pointer;
-        box-shadow: 3px 3px 0 var(--ink);
+        box-shadow: 3px 3px 0 #000000;
       }
 
       .overlay-card button.secondary {
-        background: var(--panel-soft);
-        color: var(--text);
+        background: #7C7C7C;
+        color: #000000;
       }
 
       .relic-choices {
@@ -682,21 +723,21 @@
         flex-direction: column;
         gap: 0.15rem;
         padding: 0.8rem;
-        border: 3px solid var(--border);
-        background: #1b1238;
-        color: var(--text);
+        border: 3px solid #7C7C7C;
+        background: #000010;
+        color: #FCFCFC;
         font-family: inherit;
         cursor: pointer;
         text-align: center;
       }
 
       .relic-choice:hover {
-        border-color: var(--accent-soft);
+        border-color: #F8B800;
       }
 
       .relic-emoji { width: 2.6rem; height: 2.6rem; margin: 0 auto; }
-      .relic-choice strong { font-family: var(--font-pixel); font-size: 0.55rem; color: var(--accent-soft); }
-      .relic-choice span:last-child { font-size: 0.85rem; color: var(--muted); }
+      .relic-choice strong { font-family: var(--font-pixel); font-size: 0.55rem; color: #F8B800; }
+      .relic-choice span:last-child { font-size: 0.85rem; color: #BCBCBC; }
 
       .crypt-game:fullscreen {
         max-width: none;
@@ -705,7 +746,7 @@
         margin: 0;
         padding: 0.5rem;
         overflow-y: auto;
-        background: #0e0818;
+        background: #000010;
       }
 
       @media (max-width: 640px) {
@@ -717,6 +758,7 @@
 
       @media (prefers-reduced-motion: reduce) {
         .float-text, .shake, #board.shuffling .tile { animation-duration: 0.01ms; }
+        .press-start { animation: none; }
         #hp-fill, #monster-fill { transition: none; }
       }
     </style>
@@ -747,6 +789,9 @@
       <section class="crypt-game" id="crypt-game" aria-label="Crypt Crawl">
         <!-- ======== NEW RUN / SETUP ======== -->
         <div id="setup-screen" class="crypt-frame">
+          <div class="crt" aria-hidden="true"></div>
+          <h2 class="game-title">CRYPT CRAWL</h2>
+          <p class="game-subtitle">MATCH. DRAG. SLAY.</p>
           <h2 class="pixel-title">NEW RUN</h2>
           <p class="crypt-label">Name your hero</p>
           <div class="name-row">
@@ -774,6 +819,7 @@
 
           <div class="relic-line"><span>RELICS</span><span id="relic-count">0/50</span></div>
 
+          <p class="press-start">▶ PRESS START ◀</p>
           <div class="descend-row">
             <button class="back-btn" id="back-button" type="button">BACK</button>
             <button class="descend-btn" id="descend-button" type="button">⬇ DESCEND</button>
@@ -818,6 +864,7 @@
 
           <div class="board-wrap">
             <div id="board" role="application" aria-label="Tile board. Drag through 3 or more matching tiles."></div>
+            <div class="crt" aria-hidden="true"></div>
             <div class="float-layer" id="float-layer" aria-hidden="true"></div>
             <div class="banner" id="banner" aria-hidden="true"><span></span></div>
           </div>

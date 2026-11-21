@@ -4,6 +4,7 @@
 // the DOM game only boots when `document` exists.
 
 import { spriteSVG } from './sprites.js';
+import { createChiptune } from './chiptune.js';
 
 export const GRID = 6;
 export const BEST_KEY = 'foofire-crypt-crawl-best';
@@ -199,32 +200,13 @@ export function randomName() {
 if (typeof document !== 'undefined') {
   const $ = (sel) => document.querySelector(sel);
 
-  // ---- tiny WebAudio bleeps (no audio files) ----
-  let audioCtx = null;
+  // ---- NES chiptune engine: square / triangle / noise only ----
+  // All sound (SFX + the looping dungeon tune) comes from chiptune.js.
+  // No audio files, no sine/sawtooth. The mute button silences it all.
   let muted = false;
   try { muted = localStorage.getItem('foofireMuted.v1') === '1'; } catch (e) { /* ignore */ }
-  function beep(freq, dur = 0.08, type = 'square', vol = 0.06) {
-    if (muted) return;
-    try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = type; o.frequency.value = freq;
-      g.gain.setValueAtTime(vol, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start(); o.stop(audioCtx.currentTime + dur);
-    } catch (e) { /* audio unavailable */ }
-  }
-  const sfx = {
-    pop: () => { beep(520, 0.07); setTimeout(() => beep(780, 0.07), 40); },
-    hit: () => beep(180, 0.12, 'sawtooth', 0.08),
-    hurt: () => beep(110, 0.18, 'sawtooth', 0.09),
-    heal: () => { beep(660, 0.08, 'sine'); setTimeout(() => beep(880, 0.1, 'sine'), 60); },
-    coin: () => { beep(990, 0.06, 'sine'); setTimeout(() => beep(1320, 0.08, 'sine'), 50); },
-    clear: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.07), i * 90)),
-    over: () => [400, 300, 200, 140].forEach((f, i) => setTimeout(() => beep(f, 0.16, 'sawtooth', 0.07), i * 130)),
-  };
+  const sfx = createChiptune();
+  sfx.setMuted(muted);
 
   // ---- state ----
   const state = {
@@ -252,7 +234,7 @@ if (typeof document !== 'undefined') {
       b.className = 'hero-card' + (state.heroId === h.id ? ' selected' : '');
       b.setAttribute('aria-pressed', String(state.heroId === h.id));
       b.innerHTML = `<span class="hero-emoji" aria-hidden="true">${spriteSVG(h.sprite)}</span><span class="hero-name">${h.name}</span>`;
-      b.addEventListener('click', () => { state.heroId = h.id; beep(600, 0.05); renderHeroes(); renderDetail(); });
+      b.addEventListener('click', () => { state.heroId = h.id; sfx.blip(); renderHeroes(); renderDetail(); });
       heroGrid.appendChild(b);
     });
   }
@@ -272,7 +254,7 @@ if (typeof document !== 'undefined') {
     });
   }
   document.querySelectorAll('[data-difficulty]').forEach((b) => {
-    b.addEventListener('click', () => { state.difficulty = b.dataset.difficulty; beep(600, 0.05); renderDifficulty(); });
+    b.addEventListener('click', () => { state.difficulty = b.dataset.difficulty; sfx.blip(); renderDifficulty(); });
   });
   const nameInput = $('#hero-name');
   nameInput.value = state.heroName;
@@ -417,7 +399,7 @@ if (typeof document !== 'undefined') {
     const last = state.path[state.path.length - 1];
     if (!adjacent(last, pos)) return;
     state.path.push(pos);
-    beep(440 + state.path.length * 60, 0.04, 'sine', 0.04);
+    sfx.tick(state.path.length);
     paintBoard();
   }
   function cancelDrag() {
@@ -502,6 +484,7 @@ if (typeof document !== 'undefined') {
   function spawnMonster() {
     state.monster = monsterForFloor(state.floor, state.difficulty);
     state.firstMatchThisFloor = true;
+    if (state.monster.isBoss) sfx.boss();
     updateHud();
   }
 
@@ -526,7 +509,7 @@ if (typeof document !== 'undefined') {
     } while (!hasPossibleMove(state.board) && attempts < 100);
     banner('No moves! Shuffling the crypt…');
     setStatus('No moves left — the crypt shuffled itself, for free! Drag through 3 or more matching tiles.');
-    sfx.pop();
+    sfx.shuffle();
     if (!reducedMotion) {
       boardEl.classList.add('shuffling');
       setTimeout(() => boardEl.classList.remove('shuffling'), 500);
@@ -671,7 +654,7 @@ if (typeof document !== 'undefined') {
         state.relics.push(r.id);
         if (r.id === 'hearty-stew') { state.maxHp += 5; state.hp = Math.min(state.maxHp, state.hp + 5); }
         modal.hidden = true;
-        sfx.clear();
+        sfx.relic();
         setStatus(`Relic found: ${r.name} — ${r.desc}`);
         updateHud();
       });
@@ -682,6 +665,7 @@ if (typeof document !== 'undefined') {
 
   function gameOver() {
     state.over = true;
+    sfx.stopMusic();
     sfx.over();
     const floorReached = state.floor;
     const newBest = floorReached > state.best;
@@ -717,6 +701,7 @@ if (typeof document !== 'undefined') {
     newBoard(); renderBoard(); spawnMonster(); updateHud();
     setStatus(`Floor 1: a ${state.monster.name} blocks the way. Drag through 3 or more matching tiles!`);
     sfx.clear();
+    sfx.startMusic();
   }
   $('#descend-button').addEventListener('click', startRun);
   $('#back-button').addEventListener('click', () => { window.location.href = '../../../games.html'; });
@@ -739,6 +724,9 @@ if (typeof document !== 'undefined') {
     pauseBtn.setAttribute('aria-label', p ? 'Resume game' : 'Pause game');
     $('#paused-note').hidden = !p;
     boardEl.classList.toggle('paused', p);
+    // NES games stop the tune when paused — resume it on unpause.
+    if (p) sfx.stopMusic();
+    else if (state.screen === 'play' && !state.over) sfx.startMusic();
   }
   pauseBtn.addEventListener('click', () => setPaused(!state.paused));
   const muteBtn = $('#mute-button');
@@ -750,8 +738,12 @@ if (typeof document !== 'undefined') {
   muteBtn.addEventListener('click', () => {
     muted = !muted;
     try { localStorage.setItem('foofireMuted.v1', muted ? '1' : '0'); } catch (e) { /* ignore */ }
+    sfx.setMuted(muted);
     renderMute();
-    if (!muted) beep(600, 0.06);
+    if (!muted) {
+      sfx.blip();
+      if (state.screen === 'play' && !state.paused && !state.over) sfx.startMusic();
+    }
   });
   renderMute();
   const fsBtn = $('#fullscreen-button');
