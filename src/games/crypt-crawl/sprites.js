@@ -252,6 +252,46 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // Mom — orange hair (O) swept into a side ponytail, light-orange skin
+  // (o), green shirt (N). Her smirk leans to one side: very sneaky.
+  'hero-mom': rows([
+    '.....kkkkkk.....',
+    '....kOOOOOOOk...',
+    '...kOOOOOOOOOk..',
+    '..kOOooooooOOOk.',
+    '..kOOooooooOOOk.',
+    '..kOOokookoOOOk.',
+    '..kOOooooooOOOk.',
+    '..kOOooookkOOOk.',
+    '..kOOooooooOOOk.',
+    '...kOoooooOkOk..',
+    '....kkkkkkkkOk..',
+    '..kNNNNNNNNNNk..',
+    '..kNNkNNNNkNNk..',
+    '..kNNNNNNNNNNk..',
+    '................',
+    '................',
+  ]),
+  // Dad — blue cap (B) with the brim stuck out cheekily, light-orange
+  // skin (o), red shirt (R). A wide mischievous grin.
+  'hero-dad': rows([
+    '....kkkkkkkk....',
+    '...kBBBBBBBBk...',
+    '..kBBBBBBBBBBk..',
+    '...kkkkkkkkkkkk.',
+    '..kooooooooook..',
+    '..kookooookook..',
+    '..kooooooooook..',
+    '..kookkkkkkook..',
+    '..kooooooooook..',
+    '...kooooooook...',
+    '....kkkkkkkk....',
+    '..kRRRRRRRRRRk..',
+    '..kRRkRRRRkRRk..',
+    '..kRRRRRRRRRRk..',
+    '................',
+    '................',
+  ]),
 });
 
 // ---- monsters (same monsters, NES restyle) ----
