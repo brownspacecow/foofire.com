@@ -20,7 +20,7 @@ import { VacationAudio } from './audio.js?v=2';
 import { Input } from './input.js?v=3';
 import { buildWorld } from './world.js?v=2';
 import { Siblings, updateCinematicCamera, updateTitleCamera } from './siblings.js?v=2';
-import { MINIGAMES } from './minigames.js?v=8';
+import { MINIGAMES } from './minigames.js?v=9';
 import { GameUI } from './ui.js?v=4';
 import { readMuted, writeMuted } from '../../../utils/audio-prefs.js?v=2';
 

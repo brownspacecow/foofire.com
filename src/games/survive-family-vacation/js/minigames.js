@@ -960,7 +960,10 @@ const clockwork = {
     // Submit button, and the park's answer when the clock is not right yet.
     panel(ctx, 20, 470, 170, 54, 'rgba(255, 216, 107, 0.16)', '#ffd86b');
     text(ctx, '🔔 RING IT', 105, 497, 17, '#ffe9c4');
-    if (s.feedback) text(ctx, s.feedback, g.w / 2, 443, 18, '#ff9f5a');
+    if (s.feedback) {
+      panel(ctx, 150, 420, 660, 46, 'rgba(20, 14, 26, 0.72)', 'rgba(255, 159, 90, 0.55)');
+      text(ctx, s.feedback, g.w / 2, 443, 20, '#ffb27a');
+    }
 
     if (s.celebrate > 0) {
       ctx.fillStyle = 'rgba(255, 236, 170, 0.14)';
