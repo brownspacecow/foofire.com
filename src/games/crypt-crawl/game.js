@@ -22,6 +22,8 @@ export const HEROES = [
   { id: 'biscuit', name: 'Biscuit the Cook', sprite: 'hero-biscuit', kind: 'Cook • Snack-powered', perk: 'Coins heal 1 HP per 4 matched', desc: 'Believes every problem is a snack problem. Carries a frying pan and a plan.' },
   { id: 'nettle', name: 'Nettle the Wizard', sprite: 'hero-nettle', kind: 'Wizard • First-spell fan', perk: 'First match each floor deals +3', desc: 'A young wizard whose first spell of the day always goes a bit BANG.' },
   { id: 'joel', name: 'Joel', sprite: 'hero-joel', kind: 'Kid • Mohawk charger', perk: 'Swords deal +1 damage', desc: 'A brave 7-year-old with a mighty mohawk and a grin missing its front teeth. Charges into the crypt headfirst — usually yelling.' },
+  { id: 'mom', name: 'Mom', sprite: 'hero-mom', kind: 'Mom • Sneaky', perk: 'Connect diagonal tiles', desc: 'Sneaky as they come. Mom slips diagonally through the crypt, taking shortcuts no one else can see.' },
+  { id: 'dad', name: 'Dad', sprite: 'hero-dad', kind: 'Dad • Cheater', perk: 'Once per chain, jump across one unrelated tile', desc: 'A loveable cheat. Once per chain, Dad hops clean over a tile that doesn\'t match to keep the chain going.' },
 ];
 
 export const DIFFICULTIES = {
@@ -175,14 +177,22 @@ export function randomTile(rng = Math.random) {
 
 /**
  * Does this board have a possible move? A move is a drag path of 3+ tiles
- * of the same type connected orthogonally (this is a drag-match game, not
- * a swap-match game), so: does any orthogonally-connected component of one
- * tile type have size >= 3? Null/empty cells are not tiles.
+ * of the same type. For most heroes the path is connected orthogonally
+ * (this is a drag-match game, not a swap-match game), so: does any
+ * orthogonally-connected component of one tile type have size >= 3?
+ * Mom connects diagonally too, so her flood-fill runs 8-directional.
+ * Dad may also use one jump over an unrelated tile per chain, so when
+ * the orthogonal check finds nothing his paths are searched separately
+ * (see hasDadJumpMove). Null/empty cells are not tiles.
  */
-export function hasPossibleMove(board) {
+export function hasPossibleMove(board, heroId = null) {
   if (!board || !board.length || !board[0] || !board[0].length) return false;
   const rows = board.length;
   const cols = board[0].length;
+  // Mom's paths run diagonally as well as orthogonally.
+  const dirs = heroId === 'mom'
+    ? [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+    : [[1, 0], [-1, 0], [0, 1], [0, -1]];
   const seen = board.map((row) => row.map(() => false));
   const stack = [];
   for (let r = 0; r < rows; r++) {
@@ -197,7 +207,7 @@ export function hasPossibleMove(board) {
         const [cr, cc] = stack.pop();
         size++;
         if (size >= 3) return true;
-        for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        for (const [dr, dc] of dirs) {
           const nr = cr + dr;
           const nc = cc + dc;
           if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
@@ -206,6 +216,55 @@ export function hasPossibleMove(board) {
           stack.push([nr, nc]);
         }
       }
+    }
+  }
+  // Dad's one jump can open a move no orthogonal component has.
+  if (heroId === 'dad') return hasDadJumpMove(board);
+  return false;
+}
+
+/**
+ * For Dad: is there a 3-tile path of one tile type using orthogonal
+ * steps plus at most one jump over an unrelated tile? A depth-limited
+ * DFS from every tile (paths longer than 3 are never needed — a move
+ * only needs 3). Jump landings are the tiles one bridge away: straight
+ * two steps, or diagonal via either corner tile (dadJumpBridge checks
+ * the bridge is a real, unrelated tile).
+ */
+function hasDadJumpMove(board) {
+  const rows = board.length;
+  const cols = board[0].length;
+  const inBounds = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols;
+  const steps = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const jumpOffsets = [[2, 0], [-2, 0], [0, 2], [0, -2], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  function dfs(r, c, type, visited, jumpUsed) {
+    if (visited.size >= 3) return true;
+    for (const [dr, dc] of steps) {
+      const nr = r + dr;
+      const nc = c + dc;
+      if (!inBounds(nr, nc) || board[nr][nc] !== type || visited.has(`${nr},${nc}`)) continue;
+      visited.add(`${nr},${nc}`);
+      if (dfs(nr, nc, type, visited, jumpUsed)) return true;
+      visited.delete(`${nr},${nc}`);
+    }
+    if (!jumpUsed) {
+      for (const [dr, dc] of jumpOffsets) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (!inBounds(nr, nc) || board[nr][nc] !== type || visited.has(`${nr},${nc}`)) continue;
+        if (!dadJumpBridge({ r, c }, { r: nr, c: nc }, board, type)) continue;
+        visited.add(`${nr},${nc}`);
+        if (dfs(nr, nc, type, visited, true)) return true;
+        visited.delete(`${nr},${nc}`);
+      }
+    }
+    return false;
+  }
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const type = board[r][c];
+      if (!type) continue;
+      if (dfs(r, c, type, new Set([`${r},${c}`]), false)) return true;
     }
   }
   return false;
@@ -244,21 +303,59 @@ export function refillBoardData(board, rng = Math.random) {
 }
 
 /**
+ * Does this drag path already use Dad's one jump? A jump is any
+ * consecutive pair that is not orthogonally adjacent. Derived from the
+ * path itself, so backtracking past the jump landing tile refunds the
+ * jump automatically — no separate flag to drift out of sync.
+ */
+export function pathJumpUsed(path) {
+  for (let i = 1; i < path.length; i++) {
+    if (Math.abs(path[i].r - path[i - 1].r) + Math.abs(path[i].c - path[i - 1].c) !== 1) return true;
+  }
+  return false;
+}
+
+/**
+ * For Dad: is there a single unrelated tile B bridging `last` to `pos`?
+ * B must be orthogonally adjacent to both ends and a different type from
+ * the path (a same-type tile is just a normal step, not a jump). The
+ * bridge tile is jumped over, never added to the path.
+ */
+function dadJumpBridge(last, pos, board, type) {
+  const rows = board.length;
+  const cols = board[0].length;
+  for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const br = last.r + dr;
+    const bc = last.c + dc;
+    if (br < 0 || br >= rows || bc < 0 || bc >= cols) continue;
+    if (Math.abs(br - pos.r) + Math.abs(bc - pos.c) !== 1) continue;
+    if (board[br][bc] && board[br][bc] !== type) return { r: br, c: bc };
+  }
+  return null;
+}
+
+/**
  * Next drag path after the pointer lands on `pos`.
- * `path` is a list of orthogonally-adjacent same-type tiles, `board` the
- * current tile grid. Rules:
+ * `path` is a list of same-type tiles, `board` the current tile grid,
+ * `heroId` the hero being played (movement perks are hero-keyed).
+ * Rules:
  * - Landing on a tile already in the path BACKTRACKS: every tile after
  *   that one is dropped, so the player can choose a different route
  *   from there. Landing on an earlier tile cuts the whole tail off in
  *   one move; landing on the current last tile changes nothing.
  * - Otherwise the tile is added only if it matches the path's type and
- *   sits next to the current last tile. A different-type tile, or one
- *   that is not adjacent, leaves the path alone.
+ *   is reachable from the current last tile. Reachable means:
+ *   orthogonally adjacent (every hero); diagonally adjacent (Mom only
+ *   — she sneaks diagonally); or one jump away for Dad — a matching
+ *   tile with a single unrelated tile bridging it to the last tile,
+ *   once per chain (a normal adjacent step never spends the jump).
+ *   A different-type tile, or one that is not reachable, leaves the
+ *   path alone.
  * A tile dropped by backtracking is free again at once, so it can be
  * re-added by dragging a new route from the truncated end. The path
  * type never changes. Returns the same array when nothing changes.
  */
-export function updateDragPath(path, pos, board) {
+export function updateDragPath(path, pos, board, heroId = null) {
   if (!path.length) return [pos];
   const type = board[path[0].r][path[0].c];
   if (board[pos.r][pos.c] !== type) return path;
@@ -267,7 +364,17 @@ export function updateDragPath(path, pos, board) {
     return idx === path.length - 1 ? path : path.slice(0, idx + 1);
   }
   const last = path[path.length - 1];
-  if (Math.abs(last.r - pos.r) + Math.abs(last.c - pos.c) !== 1) return path;
+  const manhattan = Math.abs(last.r - pos.r) + Math.abs(last.c - pos.c);
+  if (heroId === 'mom') {
+    // Sneaky: diagonal steps count as adjacent.
+    if (Math.max(Math.abs(last.r - pos.r), Math.abs(last.c - pos.c)) !== 1) return path;
+  } else if (heroId === 'dad') {
+    // Cheater: one jump across an unrelated tile per chain. An adjacent
+    // step is free and never spends the jump.
+    if (manhattan !== 1 && !( !pathJumpUsed(path) && dadJumpBridge(last, pos, board, type) )) return path;
+  } else if (manhattan !== 1) {
+    return path;
+  }
   return [...path, pos];
 }
 
@@ -443,7 +550,7 @@ if (typeof document !== 'undefined') {
     do {
       state.board = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => randomTile()));
       attempts++;
-    } while (!hasPossibleMove(state.board) && attempts < 100);
+    } while (!hasPossibleMove(state.board, state.heroId) && attempts < 100);
     buildBoard();
     paintBoard(state.board.map((row, r) => row.map(() => r + 1)));
   }
@@ -473,7 +580,7 @@ if (typeof document !== 'undefined') {
   }
   function extendDrag(pos) {
     if (!state.dragging) return;
-    const next = updateDragPath(state.path, pos, state.board);
+    const next = updateDragPath(state.path, pos, state.board, state.heroId);
     if (next === state.path) return;
     state.path = next;
     // Tick pitch follows path length, so it drops naturally on backtrack.
@@ -598,12 +705,12 @@ if (typeof document !== 'undefined') {
   // and the tiles wobble into their new places. Guarantees the new board
   // has at least one possible move. Returns true when a shuffle happened.
   function ensurePossibleMove() {
-    if (hasPossibleMove(state.board)) return false;
+    if (hasPossibleMove(state.board, state.heroId)) return false;
     let attempts = 0;
     do {
       state.board = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => randomTile()));
       attempts++;
-    } while (!hasPossibleMove(state.board) && attempts < 100);
+    } while (!hasPossibleMove(state.board, state.heroId) && attempts < 100);
     banner('No moves! Shuffling the crypt…');
     setStatus('No moves left — the crypt shuffled itself, for free! Drag through 3 or more matching tiles.');
     sfx.shuffle();
