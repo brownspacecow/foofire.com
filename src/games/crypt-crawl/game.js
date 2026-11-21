@@ -15,7 +15,7 @@ export const TILE_SPRITE = { sword: 'tile-sword', shield: 'tile-shield', potion:
 export const TILE_LABEL = { sword: 'Sword', shield: 'Shield', potion: 'Potion', coin: 'Coin' };
 
 export const HEROES = [
-  { id: 'pip', name: 'Pip the Wanderer', sprite: 'hero-pip', kind: 'Human • Wanderer', perk: 'Potions heal +1 extra', desc: 'A cheerful traveller who has walked every road and never met a dungeon they could not nap in.' },
+  { id: 'pip', name: 'Pip the Penguin', sprite: 'hero-penguin', kind: 'Penguin • Waddler', perk: 'Potions heal +1 extra', desc: 'A brave little penguin who waddled all the way from the South Pole to the crypt. Loves fish, naps, and potions — mostly potions.' },
   { id: 'bramble', name: 'Bramble the Knight', sprite: 'hero-bramble', kind: 'Knight • Shield-bearer', perk: 'Shields block +1 extra', desc: 'A very polite knight. Says "excuse me" before blocking a bite.' },
   { id: 'moss', name: 'Moss the Gardener', sprite: 'hero-moss', kind: 'Gardener • Tough as roots', perk: 'Starts with +10 max HP', desc: 'Grows courage like carrots. Slightly muddy, extremely hard to knock over.' },
   { id: 'wren', name: 'Wren the Scout', sprite: 'hero-wren', kind: 'Scout • Quick feet', perk: 'Swords deal +1 on paths of 5+', desc: 'Small, speedy and impossible to catch. Long sword-paths are her favourite trick.' },
