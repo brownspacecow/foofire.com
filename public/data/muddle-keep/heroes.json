@@ -59,7 +59,7 @@
     {
       "id": "boss",
       "name": "Baron Bumblefrost",
-      "hp": 700,
+      "hp": 350,
       "attack": 18,
       "defense": 5,
       "speed": 1.2,
