@@ -17,14 +17,24 @@ const WAVE_GAP_MIN = 26;
 const WAVE_GAP_STEP = 1.3;
 const MAX_REGULARS = 26;
 
-function scaledHeroDef(def, wave, kid = false) {
+// Bosses scale gently: the same +9% HP per wave that works for a
+// squire turns a boss into a wall by wave 10, because it compounds
+// on a 350 HP base while the player's army grows roughly linearly.
+// A boss keeps about half the HP growth, two-thirds the attack
+// growth and half the defense growth of a regular, so every fifth
+// wave stays a boss fight instead of a brick wall. Regulars are
+// untouched.
+export function scaledHeroDef(def, wave, kid = false) {
   const growth = Math.max(0, wave - 1);
   const kidFactor = kid ? 0.85 : 1;
+  const hpRate = def.boss ? 0.045 : 0.09;
+  const attackRate = def.boss ? 0.05 : 0.075;
+  const defenseRate = def.boss ? 0.025 : 0.05;
   return {
     ...def,
-    hp: Math.round(def.hp * (1 + growth * 0.09) * kidFactor),
-    attack: Math.round(def.attack * (1 + growth * 0.075) * 10) / 10,
-    defense: Math.round(def.defense * (1 + growth * 0.05) * 10) / 10,
+    hp: Math.round(def.hp * (1 + growth * hpRate) * kidFactor),
+    attack: Math.round(def.attack * (1 + growth * attackRate) * 10) / 10,
+    defense: Math.round(def.defense * (1 + growth * defenseRate) * 10) / 10,
     speed: def.speed * Math.min(1.35, 1 + growth * 0.01),
     interval: def.interval * Math.max(0.7, 1 - growth * 0.006),
     bounty: Math.round(def.bounty * (1 + growth * 0.04)),
