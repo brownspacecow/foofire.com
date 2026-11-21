@@ -29,6 +29,17 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
   const beginPaint = (clientX, clientY, game) => {
     const tile = renderer.tileAt(clientX, clientY);
     if (!tile) return;
+    // In dig mode, a drag that starts on ground that can't be dug —
+    // the floor already dug out, a wall, the bedrock edge — pans the
+    // camera instead of doing nothing (and toasting about it). The
+    // player can look around without switching tools, and digging
+    // still starts the moment a drag starts on dirt or gold.
+    if (game.tool?.type === 'dig' && !game.world.diggable(tile.x, tile.y)) {
+      start = { x: clientX, y: clientY };
+      mode = 'pan';
+      moved = false;
+      return;
+    }
     const existing = game.tasks.tasks.get(game.world.idx(tile.x, tile.y));
     const planned = existing?.kind === 'dig' || existing?.kind === 'mine';
     digMode = game.tool?.type === 'dig' && planned ? 'remove' : 'add';
