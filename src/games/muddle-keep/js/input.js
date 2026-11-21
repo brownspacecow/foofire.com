@@ -8,7 +8,7 @@
 const PAINT_TOOLS = new Set(['dig', 'room', 'trap', 'wall', 'sell']);
 const TAP_TOOLS = new Set(['hand', 'slap', 'spell']);
 
-export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZoom, onFullscreen }) {
+export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZoom, onFullscreen, onSpeed }) {
   const canvas = renderer.domElement;
   const pointers = new Map();
   let mode = 'idle';
@@ -201,6 +201,10 @@ export function setupInput({ getGame, renderer, rig, ui, getMenus, onPause, onZo
     }
     if (event.code === 'KeyT') {
       if (!event.repeat) ui.toggleTimeStop();
+      return;
+    }
+    if (event.code === 'KeyX') {
+      if (!event.repeat) onSpeed?.();
       return;
     }
     if (event.code === 'Equal' || event.code === 'NumpadAdd') {

@@ -54,6 +54,9 @@ export class GameUI {
             <button type="button" data-act="zoom-out" aria-label="Zoom out">−</button>
             <button type="button" data-act="zoom-in" aria-label="Zoom in">+</button>
             <button type="button" data-act="zoom-reset" aria-label="Reset camera">⟲</button>
+            <button type="button" data-act="speed" aria-label="Toggle double speed">1×</button>
+            <button type="button" data-act="mute" aria-label="Mute sound">🔊</button>
+            <button type="button" data-act="restart" aria-label="Restart run">↻</button>
             <button type="button" data-act="fullscreen" aria-label="Fullscreen">⛶</button>
             <button type="button" data-act="help" aria-label="How to play">?</button>
             <button type="button" data-act="pause" aria-label="Pause">❚❚</button>
@@ -81,6 +84,8 @@ export class GameUI {
 
         <div class="mk-toasts" data-el="toasts" aria-live="polite"></div>
 
+        <div class="mk-floaters" data-el="floaters" aria-hidden="true"></div>
+
         <div class="mk-tip" data-el="tip" hidden>
           <p data-el="tip-text"></p>
           <button type="button" data-act="tip-next">Got it</button>
@@ -93,7 +98,7 @@ export class GameUI {
             <div class="mk-spells" data-el="spells"></div>
           </div>
           <p class="mk-tool-hint" data-el="hint"></p>
-          <p class="mk-keys">Space pause · 1–7 tools · Q/W/E/R spells · wheel or + / − to zoom</p>
+          <p class="mk-keys">Space pause · 1–7 tools · Q/W/E/R spells · wheel or + / − to zoom · X speed</p>
         </div>
       </div>
       <div class="mk-sheet" data-el="sheet" hidden>
@@ -155,12 +160,45 @@ export class GameUI {
     else if (action === 'creatures') this.openCreatureSheet();
     else if (action === 'time') this.toggleTimeStop();
     else if (action === 'fullscreen') this.options.onFullscreen?.();
+    else if (action === 'speed') this.options.onSpeed?.();
+    else if (action === 'mute') this.options.onMute?.();
+    else if (action === 'restart') this.options.onRestart?.();
     else if (action === 'tip-next') this.tutorial.advance();
     else if (action === 'tip-dismiss') this.tutorial.dismissAll();
     else if (action === 'zoom-out') this.options.onZoom?.(1.18);
     else if (action === 'zoom-in') this.options.onZoom?.(0.85);
     else if (action === 'zoom-reset') this.options.onResetCamera?.();
     else if (action === 'sheet-close') this.closeSheet();
+  }
+
+  /** Floating "+18 gold" text at a spot on the canvas. */
+  floatText(text, x, y) {
+    if (!this.el.floaters) return;
+    const node = document.createElement('div');
+    node.className = 'mk-floater';
+    node.textContent = text;
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    this.el.floaters.append(node);
+    window.setTimeout(() => node.remove(), 1100);
+  }
+
+  setSpeed(speed) {
+    const button = this.root.querySelector('[data-act="speed"]');
+    if (!button) return;
+    button.textContent = `${speed}×`;
+    button.classList.toggle('active', speed !== 1);
+    button.setAttribute('aria-label', speed === 1 ? 'Double speed' : 'Normal speed');
+  }
+
+  setMuted(muted) {
+    if (this.mutedState === muted) return;
+    this.mutedState = muted;
+    const button = this.root.querySelector('[data-act="mute"]');
+    if (!button) return;
+    button.textContent = muted ? '🔇' : '🔊';
+    button.classList.toggle('active', muted);
+    button.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
   }
 
   /** Keep the fullscreen button honest about the current state. */
@@ -397,7 +435,11 @@ export class GameUI {
     const goldChip = this.el.gold.closest('.mk-chip');
     if (goldChip) {
       goldChip.title = `Gold · wages ${game.creatures.wageTotal()}/min`;
+      const full = economy.gold >= economy.capacity(game.world);
+      goldChip.classList.toggle('full', full);
+      if (full) goldChip.title += ' · Treasury full! Build more Treasury.';
     }
+    this.setMuted(Boolean(game.profile?.settings?.muted));
     this.el.mana.textContent = Math.floor(economy.mana);
     this.el.food.textContent = Math.floor(economy.food);
     this.el.creatures.textContent = game.creatures.count;
@@ -469,7 +511,21 @@ export class GameUI {
     }
     this.el.wave.classList.remove('danger');
     if (next != null) {
-      this.el.wave.textContent = `Wave ${game.heroes.waveIndex + 1} in ${Math.ceil(next)}s`;
+      const preview = game.heroes.buildWave(game.heroes.waveIndex + 1);
+      const labels = {
+        squire: 'Squire',
+        archer: 'Archer',
+        mage: 'Mage',
+        knight: 'Knight',
+        boss: 'Baron Bumblefrost',
+      };
+      const parts = preview.spawn.map(({ type, count }) => {
+        const label = labels[type] ?? type;
+        return `${count} ${label}${count > 1 && type !== 'boss' ? 's' : ''}`;
+      });
+      const boss = preview.spawn.some((entry) => entry.type === 'boss');
+      this.el.wave.textContent = `Wave ${game.heroes.waveIndex + 1} in ${Math.ceil(next)}s · ${parts.join(' + ')}`;
+      if (boss) this.el.wave.classList.add('danger');
     } else {
       this.el.wave.textContent = 'The next wave is coming!';
     }
