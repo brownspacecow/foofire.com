@@ -1,12 +1,12 @@
 /* ------------------------------------------------------------------ *
  * Save profile
- * Level progress, the current level snapshot and settings live in
+ * The best endless wave, the current run snapshot and settings live in
  * localStorage. A blocked or corrupt store must never stop the game
  * from playing; it just forgets.
  * ------------------------------------------------------------------ */
 
 const KEY = 'muddleKeep.v1';
-const VERSION = 1;
+const VERSION = 2;
 
 export const DEFAULT_SETTINGS = {
   volume: 0.7,
@@ -17,11 +17,10 @@ export const DEFAULT_SETTINGS = {
 export function freshProfile() {
   return {
     version: VERSION,
-    unlocked: 1,
-    best: {},
+    bestWave: 0,
     current: null,
     settings: { ...DEFAULT_SETTINGS },
-    stats: { wins: 0, heroes: 0 },
+    stats: { heroes: 0, runs: 0 },
     seenTips: [],
   };
 }
@@ -37,7 +36,7 @@ const number = (value, fallback, min, max) => {
 
 function normaliseSnapshot(raw) {
   if (!isRecord(raw)) return null;
-  if (typeof raw.levelId !== 'string') return null;
+  if (raw.levelId !== 'endless') return null;
   if (!isRecord(raw.world) || !Array.isArray(raw.world.tiles)) return null;
   return raw;
 }
@@ -46,7 +45,7 @@ export function normaliseProfile(raw) {
   const profile = freshProfile();
   if (!isRecord(raw)) return profile;
 
-  profile.unlocked = Math.floor(number(raw.unlocked, 1, 1, 5));
+  profile.bestWave = Math.floor(number(raw.bestWave, 0, 0, 100_000));
   if (isRecord(raw.settings)) {
     profile.settings = {
       volume: number(raw.settings.volume, DEFAULT_SETTINGS.volume, 0, 1),
@@ -58,15 +57,9 @@ export function normaliseProfile(raw) {
   if (current && current.status === 'playing') profile.current = current;
   if (isRecord(raw.stats)) {
     profile.stats = {
-      wins: Math.floor(number(raw.stats.wins, 0, 0, 10_000)),
       heroes: Math.floor(number(raw.stats.heroes, 0, 0, 1_000_000)),
+      runs: Math.floor(number(raw.stats.runs, 0, 0, 1_000_000)),
     };
-  }
-  if (isRecord(raw.best)) {
-    for (const [levelId, value] of Object.entries(raw.best)) {
-      const time = number(value, 0, 0, 100_000);
-      if (time > 0) profile.best[levelId] = Math.round(time);
-    }
   }
   if (Array.isArray(raw.seenTips)) {
     profile.seenTips = raw.seenTips.filter((tip) => typeof tip === 'string').slice(0, 64);

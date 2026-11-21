@@ -38,8 +38,8 @@ export class GameUI {
       <div class="mk-hud">
         <header class="mk-top">
           <div class="mk-title">
-            <span class="mk-kicker" data-el="kicker">Level 1</span>
-            <strong data-el="level">Muddle Beginnings</strong>
+            <span class="mk-kicker" data-el="kicker">Endless run</span>
+            <strong data-el="level">Survive the longest wave</strong>
           </div>
           <div class="mk-resources">
             <span class="mk-chip gold" title="Gold"><span aria-hidden="true">💰</span><b data-el="gold">0</b></span>
@@ -163,8 +163,11 @@ export class GameUI {
     this.activeTool = 'dig';
     this.selection = { room: null, trap: null };
     this.closeSheet();
-    this.el.kicker.textContent = `Level ${game.level.number} · ${game.level.name}`;
-    this.el.level.textContent = game.level.subtitle ?? '';
+    this.el.kicker.textContent = 'Endless run';
+    const bestWave = Math.max(0, Number(game.profile?.bestWave) || 0);
+    this.el.level.textContent = bestWave
+      ? `Best wave ${bestWave}`
+      : 'Survive the longest wave';
     this.updateToolLabels();
     this.setActiveTool('dig');
     this.updateHint();
@@ -384,25 +387,28 @@ export class GameUI {
   }
 
   updateWave(game) {
-    const waves = game.level.waves ?? [];
     const alive = game.heroes.list.length;
     if (game.status !== 'playing') {
-      this.el.wave.textContent = game.status === 'won' ? 'Dungeon saved!' : 'The Heart has fallen';
+      this.el.wave.textContent = 'The Heart has fallen';
+      this.el.wave.classList.add('danger');
       return;
     }
+    const next = game.heroes.nextWaveIn();
     if (alive > 0) {
-      this.el.wave.textContent = `${alive} intruder${alive === 1 ? '' : 's'} in the dungeon · wave ${
+      this.el.wave.textContent = `Wave ${Math.max(
+        1,
         game.heroes.waveIndex
-      }/${waves.length}`;
+      )} · ${alive} intruder${alive === 1 ? '' : 's'} in the dungeon${
+        next != null ? ` · next in ${Math.ceil(next)}s` : ''
+      }`;
       this.el.wave.classList.add('danger');
       return;
     }
     this.el.wave.classList.remove('danger');
-    const next = game.heroes.nextWaveIn();
     if (next != null) {
       this.el.wave.textContent = `Wave ${game.heroes.waveIndex + 1} in ${Math.ceil(next)}s`;
     } else {
-      this.el.wave.textContent = 'All waves here — finish the intruders!';
+      this.el.wave.textContent = 'The next wave is coming!';
     }
   }
 }

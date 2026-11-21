@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------ *
  * Muddle Keep
- * Boot, the fixed-timestep loop, level flow, saving and event fan-out
- * to audio, effects and the HUD.
+ * Boot, the fixed-timestep loop, endless run flow, saving and event
+ * fan-out to audio, effects and the HUD.
  * ------------------------------------------------------------------ */
 
 import { loadContent } from './content.js';
@@ -60,13 +60,13 @@ async function boot() {
     content,
     profile,
     callbacks: {
-      startLevel: (levelId, snapshot) => startLevel(levelId, snapshot),
+      startRun: (snapshot = null) => startRun(snapshot),
       continueGame: () => {
-        if (profile.current) startLevel(profile.current.levelId, profile.current);
+        if (profile.current) startRun(profile.current);
       },
       resume: () => resumeGame(),
-      restart: () => game && startLevel(game.level.id, null),
-      retry: () => game && startLevel(game.level.id, null),
+      restart: () => startRun(null),
+      retry: () => startRun(null),
       quit: () => quitToTitle(),
       settings: (settings) => applySettings(settings),
       resetProgress: () => resetProgress(),
@@ -83,12 +83,12 @@ async function boot() {
 
   /* --------------------------------------------------------------- flow */
 
-  function startLevel(levelId, snapshot) {
+  function startRun(snapshot = null) {
     if (resultTimer) {
       window.clearTimeout(resultTimer);
       resultTimer = null;
     }
-    const level = content.levelById.get(levelId) ?? content.levels[0];
+    const level = content.levels[0];
     let nextGame = new Game(content, level, profile);
     if (snapshot) {
       const restored = nextGame.restore(snapshot);
@@ -108,10 +108,10 @@ async function boot() {
     paused = false;
     audio.unlock();
     audio.setAmbient(true);
-    document.title = `${level.name} · Muddle Keep`;
+    document.title = `Endless Keep · Muddle Keep`;
     profile.current = null;
     saveProfile(profile);
-    if (game.status !== 'playing') finishLevel(game.status === 'won');
+    if (game.status === 'lost') finishRun();
   }
 
   function buildPreview() {
@@ -169,38 +169,35 @@ async function boot() {
     document.title = 'Muddle Keep | Foofire Games';
   }
 
-  function finishLevel(won) {
-    if (!game) return;
-    const level = game.level;
-    const nextLevel =
-      content.levels.find((entry) => entry.number === level.number + 1) ?? null;
-    if (won) {
-      profile.unlocked = Math.max(
-        profile.unlocked,
-        Math.min(content.levels.length, level.number + 1)
-      );
-      profile.stats.wins = (profile.stats.wins ?? 0) + 1;
-      profile.stats.heroes = (profile.stats.heroes ?? 0) + game.stats.heroes;
-      const best = profile.best[level.id];
-      if (!best || game.time < best) profile.best[level.id] = Math.round(game.time);
-      profile.current = null;
-    } else {
-      profile.current = null;
-    }
+  function finishRun() {
+    if (!game || game.resultRecorded) return;
+    game.resultRecorded = true;
+    const reached = Math.max(0, game.heroes.waveIndex);
+    const previousBest = Math.max(0, Number(profile.bestWave) || 0);
+    const newBest = reached > previousBest;
+    if (newBest) profile.bestWave = reached;
+    profile.stats.heroes = (profile.stats.heroes ?? 0) + game.stats.heroes;
+    profile.stats.runs = (profile.stats.runs ?? 0) + 1;
+    profile.current = null;
     saveProfile(profile);
     paused = true;
     ui.setVisible(false);
     audio.setAmbient(false);
-    audio.play(won ? 'win' : 'lose');
+    audio.play('lose');
     menus.refresh(profile);
-    menus.showResult({ won, game, nextLevel: won ? nextLevel : null });
+    menus.showResult({
+      game,
+      bestWave: profile.bestWave,
+      newBest,
+      reached,
+    });
   }
 
-  function scheduleResult(won) {
+  function scheduleResult() {
     if (resultTimer) return;
     resultTimer = window.setTimeout(() => {
       resultTimer = null;
-      finishLevel(won);
+      finishRun();
     }, 1200);
   }
 
@@ -250,8 +247,10 @@ async function boot() {
       if (event.type === 'hero-died' && event.boss) {
         ui.toast('Baron Bumblefrost has left the dungeon.', 'good');
       }
-      if (event.type === 'win') scheduleResult(true);
-      if (event.type === 'lose') scheduleResult(false);
+      if (event.type === 'wave') {
+        ui.toast(`Wave ${event.wave}: ${event.label} — ${event.count} intruders!`, 'warn');
+      }
+      if (event.type === 'lose') scheduleResult();
     }
   }
 

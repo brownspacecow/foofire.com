@@ -10,15 +10,34 @@ import { followPath, moveToward, tileDistance } from './movement.js';
 import { T } from './tiles.js';
 
 const DIRT_HP = 100;
+const FIRST_WAVE_AT = 70;
+const WAVE_GAP_START = 46;
+const WAVE_GAP_MIN = 26;
+const WAVE_GAP_STEP = 1.3;
+const MAX_REGULARS = 26;
+
+function scaledHeroDef(def, wave) {
+  const growth = Math.max(0, wave - 1);
+  return {
+    ...def,
+    hp: Math.round(def.hp * (1 + growth * 0.09)),
+    attack: Math.round(def.attack * (1 + growth * 0.075) * 10) / 10,
+    defense: Math.round(def.defense * (1 + growth * 0.05) * 10) / 10,
+    speed: def.speed * Math.min(1.35, 1 + growth * 0.01),
+    interval: def.interval * Math.max(0.7, 1 - growth * 0.006),
+    bounty: Math.round(def.bounty * (1 + growth * 0.04)),
+  };
+}
 
 export class Hero {
-  constructor(game, def, x, y) {
+  constructor(game, def, x, y, wave = 1) {
     this.game = game;
-    this.def = def;
+    this.wave = Math.max(1, wave);
+    this.def = scaledHeroDef(def, this.wave);
     this.x = x;
     this.y = y;
-    this.maxHp = def.hp;
-    this.hp = def.hp;
+    this.maxHp = this.def.hp;
+    this.hp = this.def.hp;
     this.path = null;
     this.pathIndex = 0;
     this.repath = Math.random() * 0.5;
@@ -43,18 +62,15 @@ export class HeroManager {
     this.game = game;
     this.list = [];
     this.waveIndex = 0;
-    this.allSpawned = (game.level.waves ?? []).length === 0;
+    this.nextWaveAt = game.level.firstWaveAt ?? FIRST_WAVE_AT;
     this.label = '';
     this.tileHp = new Map();
   }
 
   update(dt) {
     const game = this.game;
-    const waves = game.level.waves ?? [];
-    if (this.waveIndex < waves.length && game.time >= waves[this.waveIndex].at) {
-      this.spawnWave(waves[this.waveIndex]);
-      this.waveIndex += 1;
-      if (this.waveIndex >= waves.length) this.allSpawned = true;
+    if (this.nextWaveAt != null && game.time >= this.nextWaveAt) {
+      this.spawnNextWave();
     }
 
     for (const hero of this.list) {
@@ -64,13 +80,48 @@ export class HeroManager {
     if (this.list.some((hero) => hero.dead)) {
       this.list = this.list.filter((hero) => !hero.dead);
     }
-
-    if (this.allSpawned && this.list.length === 0 && game.status === 'playing' && game.time > 8) {
-      game.win();
-    }
   }
 
-  spawnWave(wave) {
+  buildWave(waveNumber) {
+    const boss = waveNumber >= 5 && waveNumber % 5 === 0;
+    const regulars = Math.min(
+      MAX_REGULARS,
+      3 + Math.floor(waveNumber * 0.6) - (boss ? 1 : 0)
+    );
+    const types = ['squire'];
+    if (waveNumber >= 2) types.push('archer');
+    if (waveNumber >= 4) types.push('mage');
+    if (waveNumber >= 6) types.push('knight');
+
+    const counts = new Map();
+    for (let index = 0; index < regulars; index += 1) {
+      const type = types[(index + Math.floor(waveNumber / 2)) % types.length];
+      counts.set(type, (counts.get(type) ?? 0) + 1);
+    }
+
+    const spawn = [...counts].map(([type, count]) => ({ type, count }));
+    if (boss) spawn.push({ type: 'boss', count: 1 });
+
+    const labels = ['A tidy patrol', 'Brooms at dawn', 'The mop squad', 'Polished armour'];
+    return {
+      label: boss ? 'Baron Bumblefrost returns' : labels[(waveNumber - 1) % labels.length],
+      spawn,
+    };
+  }
+
+  spawnNextWave() {
+    const game = this.game;
+    const waveNumber = this.waveIndex + 1;
+    this.waveIndex = waveNumber;
+    const wave = this.buildWave(waveNumber);
+    this.spawnWave(wave, waveNumber);
+    this.nextWaveAt = game.time + Math.max(
+      WAVE_GAP_MIN,
+      WAVE_GAP_START - (waveNumber - 1) * WAVE_GAP_STEP
+    );
+  }
+
+  spawnWave(wave, waveNumber) {
     const game = this.game;
     const world = game.world;
     const gate = world.gate;
@@ -84,13 +135,18 @@ export class HeroManager {
         const dy = Math.floor(slot / 3) - 1;
         const spot =
           world.nearestWalkable(gate.x + dx, gate.y + dy, 7) ?? { x: gate.x, y: gate.y };
-        this.list.push(new Hero(game, def, spot.x + 0.5, spot.y + 0.5));
+        this.list.push(new Hero(game, def, spot.x + 0.5, spot.y + 0.5, waveNumber));
         total += 1;
         slot += 1;
       }
     }
     this.label = wave.label ?? 'Intruders!';
-    game.emit('wave', { label: this.label, count: total, index: this.waveIndex });
+    game.emit('wave', {
+      label: this.label,
+      count: total,
+      index: waveNumber,
+      wave: waveNumber,
+    });
   }
 
   updateHero(hero, dt) {
@@ -347,6 +403,7 @@ export class HeroManager {
   serialize() {
     return this.list.map((hero) => ({
       type: hero.def.id,
+      wave: hero.wave,
       x: hero.x,
       y: hero.y,
       hp: hero.hp,
@@ -359,19 +416,18 @@ export class HeroManager {
       .filter((entry) => this.game.content.heroById.has(entry.type))
       .map((entry) => {
         const def = this.game.content.heroById.get(entry.type);
-        const hero = new Hero(this.game, def, entry.x, entry.y);
+        const wave = Math.max(1, Math.floor(Number(entry.wave) || 1));
+        const hero = new Hero(this.game, def, entry.x, entry.y, wave);
         hero.hp = Number.isFinite(entry.hp) ? entry.hp : hero.maxHp;
         return hero;
       });
-    this.waveIndex = Math.max(0, Math.min(state.waveIndex ?? 0, (this.game.level.waves ?? []).length));
-    this.allSpawned =
-      state.allSpawned ?? this.waveIndex >= (this.game.level.waves ?? []).length;
+    this.waveIndex = Math.max(0, Math.floor(Number(state.waveIndex) || 0));
+    const nextWaveAt = Number(state.nextWaveAt);
+    this.nextWaveAt = Number.isFinite(nextWaveAt) ? nextWaveAt : this.game.time + 10;
     this.label = state.label ?? '';
   }
 
   nextWaveIn() {
-    const waves = this.game.level.waves ?? [];
-    if (this.waveIndex >= waves.length) return null;
-    return Math.max(0, waves[this.waveIndex].at - this.game.time);
+    return Math.max(0, this.nextWaveAt - this.game.time);
   }
 }

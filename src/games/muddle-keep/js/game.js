@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ *
  * Game
- * One running level: the world, economy, imps, creatures, invaders and
+ * One endless run: the world, economy, imps, creatures, invaders and
  * spells stitched together. Player actions (tools) live here too so
  * the UI and input never poke at subsystems directly.
  * ------------------------------------------------------------------ */
@@ -148,12 +148,6 @@ export class Game {
         });
       }
     }
-  }
-
-  win() {
-    if (this.status !== 'playing') return;
-    this.status = 'won';
-    this.emit('win', { level: this.level });
   }
 
   lose(reason = 'heart') {
@@ -389,7 +383,7 @@ export class Game {
 
   snapshot() {
     return {
-      v: 1,
+      v: 2,
       levelId: this.level.id,
       time: this.time,
       status: this.status,
@@ -400,7 +394,7 @@ export class Game {
       heroes: this.heroes.serialize(),
       heroState: {
         waveIndex: this.heroes.waveIndex,
-        allSpawned: this.heroes.allSpawned,
+        nextWaveAt: this.heroes.nextWaveAt,
         label: this.heroes.label,
       },
       tasks: [...this.tasks.tasks.values()].map((task) => ({
@@ -419,13 +413,13 @@ export class Game {
     this.economy.restore(data.economy);
     this.creatures.restore(data.creatures);
     this.imps.restore(data.imps);
+    this.time = Number(data.time) || 0;
     this.heroes.restore(data.heroes, data.heroState ?? {});
     this.tasks.clear();
     for (const task of data.tasks ?? []) this.tasks.add(task.kind, task.x, task.y);
-    this.time = Number(data.time) || 0;
     this.stats = { ...this.stats, ...(data.stats ?? {}) };
     this.readyRooms = new Set(data.readyRooms ?? []);
-    this.status = data.status === 'won' || data.status === 'lost' ? data.status : 'playing';
+    this.status = data.status === 'lost' ? 'lost' : 'playing';
     return true;
   }
 

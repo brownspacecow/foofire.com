@@ -124,7 +124,9 @@ code. Progress, the scrapbook, achievements and settings are stored in localStor
 A cheerful monster-lair management game inspired by the classic dungeon-keeper
 genre (original title, creatures and maps). You play a disembodied hand: mark
 dirt to dig, paint rooms, then let imps, creatures and traps handle the tidying
-knights who keep marching on your Dungeon Heart.
+knights who keep marching on your Dungeon Heart. It is one endless arena: waves
+keep arriving, bosses turn up every fifth wave, and the goal is to set the
+highest wave survived.
 
 Plain HTML, CSS and ES modules with a vendored three.js — no build step. Serve
 the repo root as above and open:
@@ -141,7 +143,7 @@ src/games/muddle-keep/
   styles.css
   vendor/three.module.js
   js/
-    main.js        # boot, fixed-timestep loop, level flow, saves
+    main.js        # boot, fixed-timestep loop, run flow, saves
     content.js     # loads the JSON and parses ASCII maps
     tiles.js       # tile constants
     world.js       # grid, floors, rooms, walls, traps, serialisation
@@ -153,7 +155,7 @@ src/games/muddle-keep/
     heroes.js      # invader waves and their AI
     spells.js      # Keeper spells
     economy.js     # gold, mana, food, research, wages
-    game.js        # one level: actions, traps, win/lose, snapshots
+    game.js        # one endless run: actions, traps, loss, snapshots
     render.js      # three.js scene, instanced terrain, Heart and portal
     actors.js      # entity sync and pooled particle effects
     models.js      # procedural creature, imp and knight models
@@ -161,9 +163,9 @@ src/games/muddle-keep/
     input.js       # mouse, touch and keyboard
     ui.js          # HUD, tool belt and live counters
     sheets.js      # room, trap and creature sheets
-    tutorial.js    # level tips that advance on player actions
-    menus.js       # title, levels, settings, pause, results
-    save.js        # localStorage profile
+    tutorial.js    # endless tips that advance on player actions
+    menus.js       # title, settings, pause, results
+    save.js        # localStorage profile and best wave
     audio.js       # synthesised Web Audio sound and ambience
 public/data/muddle-keep/
   rooms.json       # room types and research list
@@ -171,11 +173,11 @@ public/data/muddle-keep/
   spells.json      # Keeper spells
   traps.json       # traps and doors
   heroes.json      # invader types
-  levels.json      # five ASCII maps, waves and tutorial steps
+  levels.json      # endless arena and tutorial steps
 ```
 
-Rooms, creatures, spells, traps and all five levels are data changes rather than
-engine code. Progress, the current level snapshot and settings live in
+Rooms, creatures, spells, traps and the arena are data changes rather than engine
+code. The best wave, the current run snapshot and settings live in
 `localStorage`; settings include volume, mute and a low-quality mode for slower
 phones.
 

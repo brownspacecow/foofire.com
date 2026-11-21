@@ -1,16 +1,8 @@
 /* ------------------------------------------------------------------ *
  * Menus
- * Title, level select, settings, how to play, pause and results. One
- * overlay, a handful of screens, all plain DOM.
+ * Title, settings, how to play, pause and results. One overlay, a
+ * handful of screens, all plain DOM.
  * ------------------------------------------------------------------ */
-
-const LEVEL_TIPS = [
-  'Dig a few tiles, then paint a Treasury so your gold has a home.',
-  'A Lair attracts more creatures. A Hatchery keeps them from grumbling.',
-  'Lava is a wall. Build a Library and research something fizzy.',
-  'Build a Workshop, then line a corridor with traps and doors.',
-  'Train your creatures. The Baron is large and extremely polite about it.',
-];
 
 export class Menus {
   constructor(root, options) {
@@ -51,31 +43,34 @@ export class Menus {
 
   showTitle() {
     const hasCurrent = Boolean(this.profile.current);
-    const currentLevel = hasCurrent
-      ? this.content.levelById.get(this.profile.current.levelId)
-      : null;
+    const savedWave = Math.max(
+      1,
+      Number(this.profile.current?.heroState?.waveIndex) || 1
+    );
+    const bestWave = Math.max(0, Number(this.profile.bestWave) || 0);
+    const bestLabel = bestWave > 0 ? `Best run: wave ${bestWave}` : 'No waves survived yet';
     this.show(
       `
       <div class="mk-title-screen">
-        <p class="mk-eyebrow">A very tidy dungeon problem</p>
+        <p class="mk-eyebrow">A very tidy endless problem</p>
         <h1 class="mk-logo"><span>MUDDLE</span><span>KEEP</span></h1>
         <p class="mk-lede">
           Dig a cosy home under the hill. Fill it with grumpy little monsters.
-          Politely discourage the knights who keep trying to sweep it clean.
+          The knights never stop coming — survive as many waves as you can.
         </p>
         <div class="mk-menu-buttons">
           ${
             hasCurrent
               ? `<button class="mk-btn primary" data-action="continue">Continue
-                  <small>Level ${currentLevel?.number ?? 1}: ${currentLevel?.name ?? ''}</small>
+                  <small>Wave ${savedWave} · ${formatTime(this.profile.current.time ?? 0)}</small>
                 </button>`
               : ''
           }
-          <button class="mk-btn ${hasCurrent ? '' : 'primary'}" data-action="new-game">New game</button>
-          <button class="mk-btn" data-action="levels">Levels</button>
+          <button class="mk-btn ${hasCurrent ? '' : 'primary'}" data-action="new-game">New run</button>
           <button class="mk-btn" data-action="settings">Settings</button>
           <button class="mk-btn" data-action="help">How to play</button>
         </div>
+        <p class="mk-small">${bestLabel}</p>
         <p class="mk-small">
           Free, no accounts. Mouse, touch or keyboard. All music and sound is made in your browser.
         </p>
@@ -87,40 +82,6 @@ export class Menus {
       </div>
       `,
       'title'
-    );
-  }
-
-  showLevels() {
-    const cards = this.content.levels
-      .map((level) => {
-        const locked = level.number > this.profile.unlocked;
-        const best = this.profile.best[level.id];
-        return `
-          <button class="mk-level-card ${locked ? 'locked' : ''}" data-action="start-level" data-level="${
-            level.id
-          }" ${locked ? 'disabled' : ''}>
-            <span class="mk-level-number">${locked ? '🔒' : level.number}</span>
-            <span class="mk-level-body">
-              <strong>${level.name}</strong>
-              <span>${level.subtitle ?? ''}</span>
-              <em>${best ? `Best ${formatTime(best)}` : LEVEL_TIPS[level.number - 1] ?? ''}</em>
-            </span>
-          </button>
-        `;
-      })
-      .join('');
-    this.show(
-      `
-      <div class="mk-screen-head">
-        <div>
-          <p class="mk-eyebrow">Five little holes in the ground</p>
-          <h2>Levels</h2>
-        </div>
-        <button class="mk-btn small" data-action="back-title">Back</button>
-      </div>
-      <div class="mk-level-grid">${cards}</div>
-      `,
-      'levels'
     );
   }
 
@@ -181,7 +142,8 @@ export class Menus {
           <li><strong>Rooms</strong> go on floor. Treasury holds gold, Lair invites creatures, Hatchery feeds them, Training levels them up (veterans grow bigger and tougher), Library researches, Workshop unlocks traps.</li>
           <li><strong>Creatures</strong> fight on their own. Pick them up with the Hand or Slap them to send them flying and speed up their work.</li>
           <li><strong>Spells</strong> cost mana: Zoomies, Soup of Health, Rally Yell and, later, Zap.</li>
-          <li>Knights march on the <strong>Dungeon Heart</strong>. Lose the Heart and the level is over.</li>
+          <li>Knights march on the <strong>Dungeon Heart</strong>. Lose the Heart and the run is over.</li>
+          <li><strong>There is no final level.</strong> Waves keep coming, get bigger and bring a boss every fifth wave. Survive as long as you can to set your best wave.</li>
         </ol>
         <p class="mk-small">Controls: drag to paint · two fingers to pan and pinch · wheel to zoom · right-drag or Shift-drag to pan · 1-7 tools · Q/W/E/R spells · T stop time · P or Esc pause · arrows pan · H help.</p>
       </div>
@@ -191,16 +153,17 @@ export class Menus {
   }
 
   showPause(game) {
+    const best = Math.max(0, Number(this.profile.bestWave) || 0);
     this.show(
       `
       <div class="mk-pause">
-        <p class="mk-eyebrow">Level ${game.level.number}</p>
+        <p class="mk-eyebrow">Endless run · wave ${Math.max(1, game.heroes.waveIndex)}</p>
         <h2>Paused</h2>
         <p class="mk-lede">The imps have put their tiny tools down.</p>
+        <p class="mk-small">Best wave: ${best || 'none yet'} · time ${formatTime(game.time)}</p>
         <div class="mk-menu-buttons">
           <button class="mk-btn primary" data-action="resume">Resume</button>
-          <button class="mk-btn" data-action="restart">Restart level</button>
-          <button class="mk-btn" data-action="levels">Level select</button>
+          <button class="mk-btn" data-action="restart">Restart run</button>
           <button class="mk-btn" data-action="settings">Settings</button>
           <button class="mk-btn" data-action="quit">Save &amp; quit to title</button>
         </div>
@@ -210,32 +173,26 @@ export class Menus {
     );
   }
 
-  showResult({ won, game, nextLevel }) {
-    const waves = game.level.waves?.length ?? 0;
-    this.profile = this.profile;
+  showResult({ game, bestWave, newBest, reached }) {
+    const wave = Math.max(0, reached ?? game.heroes.waveIndex);
     this.show(
       `
-      <div class="mk-result ${won ? 'won' : 'lost'}">
-        <p class="mk-eyebrow">${won ? 'Dungeon saved' : 'Dungeon swept'}</p>
-        <h2>${won ? 'Tidy knights, untidied.' : 'The Heart got swept away'}</h2>
+      <div class="mk-result ${newBest ? 'won' : 'lost'}">
+        <p class="mk-eyebrow">${newBest ? 'New best run' : 'Run over'}</p>
+        <h2>${newBest ? 'A new best wave!' : 'The Heart got swept away'}</h2>
         <p class="mk-lede">${
-          won
-            ? game.level.outro ?? 'The dungeon is cosy again.'
-            : 'The nice knights found the Heart. Your monsters will be very grumpy about this.'
+          newBest
+            ? `You survived to wave ${wave}. Can you reach wave ${wave + 1}?`
+            : `You survived to wave ${wave}. Your best is wave ${bestWave}.`
         }</p>
         <div class="mk-result-stats">
+          <span><b>${wave}</b> wave reached</span>
+          <span><b>${bestWave}</b> best wave</span>
           <span><b>${formatTime(game.time)}</b> time</span>
           <span><b>${game.stats.heroes}</b> knights sent home</span>
-          <span><b>${Math.floor(game.economy.gold)}</b> gold</span>
-          <span><b>${waves}</b> waves</span>
         </div>
         <div class="mk-menu-buttons">
-          ${
-            won && nextLevel
-              ? `<button class="mk-btn primary" data-action="next" data-level="${nextLevel.id}">Next level</button>`
-              : ''
-          }
-          <button class="mk-btn ${won ? '' : 'primary'}" data-action="retry">Try again</button>
+          <button class="mk-btn primary" data-action="retry">Try again</button>
           <button class="mk-btn" data-action="quit">Back to title</button>
         </div>
       </div>
@@ -250,17 +207,14 @@ export class Menus {
     const button = event.target.closest('[data-action]');
     if (!button || button.disabled) return;
     const action = button.dataset.action;
-    if (action === 'new-game') this.cb.startLevel(this.content.levels[0].id, null);
+    if (action === 'new-game') this.cb.startRun(null);
     else if (action === 'continue') this.cb.continueGame();
-    else if (action === 'start-level') this.cb.startLevel(button.dataset.level, null);
-    else if (action === 'levels') this.showLevels();
     else if (action === 'settings') this.showSettings();
     else if (action === 'help') this.showHelp();
     else if (action === 'back-title') this.showTitle();
     else if (action === 'resume') this.cb.resume();
     else if (action === 'restart') this.cb.restart();
     else if (action === 'quit') this.cb.quit();
-    else if (action === 'next') this.cb.startLevel(button.dataset.level, null);
     else if (action === 'retry') this.cb.retry();
     else if (action === 'reset') {
       if (this.resetArmed && Date.now() - this.resetArmed < 4000) {

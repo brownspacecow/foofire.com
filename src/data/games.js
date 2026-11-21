@@ -8,7 +8,7 @@ export const games = [
     id: 'muddle-keep',
     title: 'Muddle Keep',
     description:
-      'Dig a cosy dungeon under the hill, fill it with grumpy little monsters, and politely discourage the tidying knights. Build rooms, research spells, set bouncy traps, and keep the Dungeon Heart out of reach.',
+      'Dig a cosy dungeon under the hill, fill it with grumpy little monsters, and survive an endless parade of tidying knights. Build rooms, research spells, set bouncy traps, and see how many waves you can last.',
     image: './public/screenshots/muddle-keep.svg',
     path: './src/games/muddle-keep/index.html',
   },

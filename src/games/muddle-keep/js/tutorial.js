@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ *
  * Tutorial
- * Level-specific tips that advance as the player actually does the
+ * Endless-run tips that advance as the player actually does the
  * thing. Out-of-order actions are remembered so a step never blocks.
  * ------------------------------------------------------------------ */
 
