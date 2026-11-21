@@ -330,11 +330,7 @@ export class GameUI {
         hint += `  ·  ${blocked} need${blocked === 1 ? 's' : ''} a tunnel — imps dig one tile at a time from open floor`;
       }
     }
-    if (
-      this.game?.creatures &&
-      this.game.creatures.count < this.game.creatures.cap() &&
-      this.game.world.portalExists()
-    ) {
+    if (this.game?.creatures && this.game.creatures.count < this.game.creatures.cap()) {
       hint += `  ·  Next creature in ${Math.max(1, Math.ceil(this.game.creatures.spawnTimer))}s`;
     }
     this.el.hint.textContent = hint;

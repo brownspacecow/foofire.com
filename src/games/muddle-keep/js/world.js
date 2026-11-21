@@ -212,12 +212,6 @@ export class World {
     return group.tiles[Math.floor(rng() * group.tiles.length)];
   }
 
-  portalExists() {
-    return (
-      this.roomTiles('portal') >= this.minTilesFor('portal') ||
-      (this.portal && this.walkable(this.portal.x, this.portal.y))
-    );
-  }
 
   /* ------------------------------------------------------ walls & traps */
 

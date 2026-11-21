@@ -9,7 +9,9 @@ import { findPath, floorCost, hasLineOfSight } from './path.js';
 import { followPath, moveToward, tileDistance } from './movement.js';
 import { seekRoom, wander, wantsTraining } from './needs.js';
 
-const AGGRO_RANGE = 6;
+// Monsters notice a hero this far away (tile distance) and head for the
+// fight instead of wandering off to eat, sleep or train.
+const AGGRO_RANGE = 12;
 
 export class Creature {
   constructor(game, typeId, x, y, options = {}) {
@@ -103,7 +105,7 @@ export class CreatureManager {
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnTimer = 16;
-      this.tryPortalSpawn();
+      this.tryHeartSpawn();
     }
     for (const creature of this.list) {
       this.updateCreature(creature, dt);
@@ -113,10 +115,11 @@ export class CreatureManager {
     }
   }
 
-  tryPortalSpawn() {
+  // New monsters burst out of the Dungeon Heart itself, on the open
+  // floor ringing it — never through the portal.
+  tryHeartSpawn() {
     const game = this.game;
     const world = game.world;
-    if (!world.portalExists()) return;
     if (this.list.length >= this.cap()) return;
     const eligible = game.content.creatures.filter((type) => {
       if (!type.needs) return true;
@@ -133,9 +136,11 @@ export class CreatureManager {
         break;
       }
     }
+    const dx = Math.floor(Math.random() * 3) - 1;
+    const dy = Math.floor(Math.random() * 3) - 1;
     const spot =
-      world.randomTileInRoom('portal') ??
-      world.nearestWalkable(world.portal.x, world.portal.y, 3);
+      world.nearestWalkable(world.heart.x + dx, world.heart.y + dy, 7) ??
+      world.heart;
     if (!spot) return;
     const creature = this.spawn(chosen.id, spot.x, spot.y);
     game.emit('spawn', {
