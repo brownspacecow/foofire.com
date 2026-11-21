@@ -7,7 +7,7 @@
 
 import { findPath, floorCost, hasLineOfSight } from './path.js';
 import { followPath, moveToward, tileDistance } from './movement.js';
-import { seekRoom, wander, wantsTraining } from './needs.js';
+import { ACTION_ROOM, roomActionFor, seekRoom, wander, wantsTraining } from './needs.js';
 
 // Monsters notice a hero this far away (tile distance) and head for the
 // fight instead of wandering off to eat, sleep or train.
@@ -29,6 +29,7 @@ export class Creature {
     this.energy = options.energy ?? 70 + Math.random() * 25;
     this.mood = options.mood ?? 78;
     this.state = 'idle';
+    this.directed = null;
     this.path = null;
     this.pathIndex = 0;
     this.destination = null;
@@ -198,6 +199,22 @@ export class CreatureManager {
 
     if (creature.state === 'eat' && creature.hunger < 4) creature.state = 'idle';
     if (creature.state === 'sleep' && creature.energy > 99) creature.state = 'idle';
+
+    // A monster the Hand dropped into a room keeps doing that room's
+    // job until it is done, even if it gets peckish or tired in the
+    // meantime — the drop is an instruction, not a suggestion. A hero
+    // nearby still comes first, and the job still ends on its own
+    // terms (full, rested, healed, max level, or out of gold), after
+    // which the usual needs take over again.
+    if (creature.directed) {
+      const roomId = ACTION_ROOM[creature.directed];
+      if (roomId && world.hasRoom(roomId) && roomActionFor(creature, roomId)) {
+        seekRoom(this, creature, roomId, creature.directed, dt);
+        if (creature.state !== creature.directed) creature.directed = null;
+        return;
+      }
+      creature.directed = null;
+    }
 
     if (creature.hunger > 65) {
       seekRoom(this, creature, 'hatchery', 'eat', dt);

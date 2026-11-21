@@ -15,6 +15,21 @@ export const MAX_LEVEL = 8;
 // the first wave.
 const TRAIN_GOLD_PER_SECOND = 0.5;
 
+// The job each room offers a creature, and the room that job belongs
+// to. A drop only assigns the job when the creature can actually do
+// it right now: a full monster will not eat, a rested one will not
+// sleep, a healthy one will not heal, and a max-level one will not
+// train. Anything else is just a drop.
+export const ACTION_ROOM = { train: 'training', eat: 'hatchery', sleep: 'lair', heal: 'medical' };
+
+export function roomActionFor(creature, roomId) {
+  if (roomId === 'training' && creature.level < MAX_LEVEL) return 'train';
+  if (roomId === 'hatchery' && creature.hunger > 4) return 'eat';
+  if (roomId === 'lair' && creature.energy < 99) return 'sleep';
+  if (roomId === 'medical' && creature.hp < creature.maxHp) return 'heal';
+  return null;
+}
+
 export function wantsTraining(manager, creature) {
   if (creature.trainTimer > 0) return false;
   creature.trainTimer = 4;

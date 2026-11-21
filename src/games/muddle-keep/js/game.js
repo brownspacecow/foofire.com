@@ -14,6 +14,7 @@ import { SpellBook } from './spells.js';
 import { T } from './tiles.js';
 import { hasLineOfSight } from './path.js';
 import { knockBack } from './movement.js';
+import { roomActionFor } from './needs.js';
 
 const WALL_COST = 4;
 const TRAP_REFUND = 0.5;
@@ -374,6 +375,12 @@ export class Game {
     creature.path = null;
     creature.destination = null;
     creature.repath = 0;
+    // Dropping a monster in a room tells it to do that room's job —
+    // train, eat, sleep or heal — but only when the job makes sense
+    // for it right now. Any other drop is just a drop.
+    const action = roomActionFor(creature, world.rooms[world.idx(x, y)]);
+    creature.directed = action;
+    if (action) creature.state = action;
     this.handCreature = null;
     this.handGate = false;
     this.carriedTile = null;
