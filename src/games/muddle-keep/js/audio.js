@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ *
  * Audio
- * Every sound in Muddle Keep is synthesised with Web Audio: thumps,
+ * Every sound in Keep is synthesised with Web Audio: thumps,
  * coins, pops, bounces, a sleepy dungeon pad. No audio files.
  * ------------------------------------------------------------------ */
 

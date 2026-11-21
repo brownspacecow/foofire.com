@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ *
- * Muddle Keep
+ * Keep
  * Boot, the fixed-timestep loop, endless run flow, saving and event
  * fan-out to audio, effects and the HUD.
  * ------------------------------------------------------------------ */
@@ -123,7 +123,7 @@ async function boot() {
     paused = false;
     audio.unlock();
     audio.setAmbient(true);
-    document.title = `Endless Keep · Muddle Keep`;
+    document.title = 'Keep · Endless Run';
     profile.current = null;
     saveProfile(profile);
     if (game.status === 'lost') finishRun();
@@ -202,7 +202,7 @@ async function boot() {
     menus.refresh(profile);
     menus.showTitle();
     buildPreview();
-    document.title = 'Muddle Keep | Foofire Games';
+    document.title = 'Keep | Foofire Games';
   }
 
   function finishRun() {
@@ -408,7 +408,7 @@ async function boot() {
 }
 
 boot().catch((error) => {
-  console.error('Muddle Keep failed to start', error);
+  console.error('Keep failed to start', error);
   const loading = document.querySelector('#mk-loading');
   const errorBox = document.querySelector('#mk-error');
   if (loading) loading.hidden = true;

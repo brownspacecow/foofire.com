@@ -21,12 +21,12 @@ src/
   data/games.js    # The 19 games: id, category, title, description, image, path
   utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
   vendor/
-    three.module.js  # Shared Three.js r169, used by Earwarts + Muddle Keep.
+    three.module.js  # Shared Three.js r169, used by Earwarts + Keep.
                      # Other games still load three@0.168.0 from esm.sh;
                      # moving them to the shared copy is a planned follow-up.
   games/
     earwarts/       # Earwarts Academy: listening / ear-training adventure
-    muddle-keep/    # Muddle Keep: cheerful dungeon-keeper lair tycoon
+    muddle-keep/    # Keep: cheerful dungeon-keeper lair tycoon
     survive-family-vacation/  # Seven-chapter supernatural road-trip mystery
     rough-housing/  # Rough Housing: local two-player couch-fort wrestling
     roost-rider/    # Roost Rider: first-person off-road motorcycle race
@@ -85,7 +85,7 @@ encounter. Levels, dialogue, collectibles, achievements and cutscenes live in
 `public/data/vacation/*.json`, so new vacations are a data change rather than engine
 code. Progress, the scrapbook, achievements and settings are stored in localStorage.
 
-### Muddle Keep
+### Keep
 
 A cheerful monster-lair management game inspired by the classic dungeon-keeper
 genre (original title, creatures and maps). You play a disembodied hand: mark
