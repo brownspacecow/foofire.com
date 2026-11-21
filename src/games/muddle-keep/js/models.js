@@ -68,10 +68,10 @@ export function makeShadow(size) {
 /* --------------------------------------------------------------- models */
 
 const CREATURE_LEVELS = 8; // mirrors MAX_LEVEL in needs.js
-const CREATURE_SCALE_MIN = 0.72;
-const CREATURE_SCALE_MAX = 1.3;
+const CREATURE_SCALE_MIN = 0.65;
+const CREATURE_SCALE_MAX = 1.35;
 
-/** Fresh creatures are small; veterans are visibly bigger and broader. */
+/** Fresh creatures are tiny; veterans are visibly bigger and broader. */
 export function creatureLevelScale(level = 1) {
   const clamped = Math.max(1, Math.min(CREATURE_LEVELS, Number(level) || 1));
   const progress = (clamped - 1) / (CREATURE_LEVELS - 1);

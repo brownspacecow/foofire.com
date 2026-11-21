@@ -207,6 +207,18 @@ export class CreatureManager {
       seekRoom(this, creature, 'lair', 'sleep', dt);
       return;
     }
+    // A monster that is already training keeps training. Without this,
+    // wantsTraining was re-rolled every frame and its 4s throttle made
+    // the answer "no" almost every frame — so a monster trained for a
+    // single frame, wandered off, and had to walk all the way back.
+    // That is why the Training Room looked unused: a level took many
+    // minutes instead of a few seconds. Hunger and energy above still
+    // interrupt training, and useRoom ends it when gold runs out or
+    // the monster hits max level.
+    if (creature.state === 'train') {
+      seekRoom(this, creature, 'training', 'train', dt);
+      return;
+    }
     if (wantsTraining(this, creature)) {
       seekRoom(this, creature, 'training', 'train', dt);
       return;

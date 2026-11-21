@@ -409,6 +409,12 @@ export class ActorLayer {
         this.effects.ring(event.x, event.y, '#ffd166', 1.6, 0.7);
         this.effects.burst(event.x, event.y, '#ffe6a8', 10, 1, 0.7);
         break;
+      case 'train':
+        // Training had no visual at all — a training monster looked
+        // exactly like a wandering one. A little gold sparkle every
+        // beat, so working out reads as working out.
+        this.effects.burst(event.x, event.y, '#ffd166', 5, 0.6, 0.5);
+        break;
       case 'stomp':
         this.effects.ring(event.x, event.y, '#ff8fa3', 3, 0.5);
         this.effects.burst(event.x, event.y, '#c9b8a8', 12, 2, 0.6);

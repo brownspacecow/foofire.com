@@ -8,7 +8,12 @@ import { findPath, floorCost } from './path.js';
 import { followPath, tileDistance } from './movement.js';
 
 export const MAX_LEVEL = 8;
-const TRAIN_GOLD_PER_SECOND = 4;
+// Half a gold a second per training monster: training is continuous
+// now, so the old 4-a-second rate emptied the treasury in about 20
+// seconds with a full army on the mats. At this rate a full-army
+// session costs real gold without leaving the Keeper broke before
+// the first wave.
+const TRAIN_GOLD_PER_SECOND = 0.5;
 
 export function wantsTraining(manager, creature) {
   if (creature.trainTimer > 0) return false;
@@ -18,8 +23,13 @@ export function wantsTraining(manager, creature) {
   if (creature.level >= MAX_LEVEL) return false;
   if (!world.hasRoom('training')) return false;
   if (game.economy.gold < 12) return false;
-  if (creature.hunger > 60 || creature.energy < 30 || creature.mood < 35) return false;
-  return Math.random() < 0.45;
+  // The hunger/energy gates match the eat/sleep thresholds in
+  // updateCreature, so there is no dead zone where a monster is too
+  // hungry to train but not hungry enough to eat (and the same for
+  // sleep). A fed, rested monster in a good mood trains most of the
+  // time instead of wandering off.
+  if (creature.hunger > 65 || creature.energy < 28 || creature.mood < 35) return false;
+  return Math.random() < 0.8;
 }
 
 export function seekRoom(manager, creature, roomId, state, dt) {
@@ -99,7 +109,11 @@ export function useRoom(manager, creature, state, dt) {
     }
     const spend = Math.min(TRAIN_GOLD_PER_SECOND * dt, game.economy.gold);
     game.economy.gold -= spend;
-    creature.xp += 7 * creature.workRate * dt;
+    // 1 XP a second: training is continuous now, so the old 7-a-second
+    // rate maxed a monster out in a single session. At this rate the
+    // first level-up lands inside the first session and max level is
+    // a whole-run arc, not a first-minute freebie.
+    creature.xp += 1 * creature.workRate * dt;
     creature.mood = Math.min(100, creature.mood + 0.5 * dt);
     creature.workPulse += dt;
     if (creature.workPulse > 0.8) {
