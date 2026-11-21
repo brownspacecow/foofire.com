@@ -7,7 +7,7 @@ Tagline: **Games for kids.**
 ## Features
 
 - Three.js games that run entirely in the browser
-- Game portal with a library of 19 playable games, with search and category filters
+- Game portal with a library of 20 playable games, with search and category filters
 - Dark, mobile-first responsive UI
 - Local high scores saved in the browser (top five per game)
 - Dedicated legal disclaimer page
@@ -18,7 +18,7 @@ Tagline: **Games for kids.**
 src/
   main.js          # Portal: featured games + Games-page search/filter
   scores.js        # High-scores page
-  data/games.js    # The 19 games: id, category, title, description, image, path
+  data/games.js    # The 20 games: id, category, title, description, image, path
   utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
   vendor/
     three.module.js  # Shared Three.js r169, used by Earwarts + Keep.
@@ -39,6 +39,7 @@ src/
     claw-machine/   # Claw Crew: collect 100 original plushies
     christmas-trees-and-missals/  # Decorate the town tree, then launch it
     zombie-deer/    # Zombie Deer: Christmas Edition tower defence
+    crypt-crawl/    # Crypt Crawl: match-drag-slay puzzle dungeon crawler
     spooky-santa/   # Spooky Santa: chimney stealth before sunrise
     spark-curfew/   # Spark Curfew: backyard fireworks before curfew
     the-grin/       # The Grin: four-stage bullet-hell boss fight
@@ -84,6 +85,21 @@ Memories, investigate clues about the Vacation Collector, then survive a themed 
 encounter. Levels, dialogue, collectibles, achievements and cutscenes live in
 `public/data/vacation/*.json`, so new vacations are a data change rather than engine
 code. Progress, the scrapbook, achievements and settings are stored in localStorage.
+
+### Crypt Crawl
+
+A kid-friendly puzzle dungeon crawler: pick one of six original heroes, then drag
+paths through a 6x6 board of matching tiles — swords hurt the monster, shields block
+its bite, potions heal you, coins are treasure. Longer paths hit harder. Beat the
+monster to descend; a boss waits every 5th floor and drops a relic to keep for the
+run. Endless — the goal is your deepest floor, saved in localStorage.
+
+Plain HTML, CSS and one ES module (`src/games/crypt-crawl/game.js`) — no build
+step, no three.js, no external assets. Serve the repo root as above and open:
+
+```text
+http://localhost:8080/src/games/crypt-crawl/
+```
 
 ### Keep
 
