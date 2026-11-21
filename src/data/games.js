@@ -151,6 +151,15 @@ export const games = [
     progress: { total: 180, unit: 'ornaments' },
   },
   {
+    id: 'crypt-crawl',
+    category: 'adventure',
+    title: 'Crypt Crawl',
+    description:
+      'Match. Drag. Slay. Pick a hero, drag through matching tiles, and crawl as deep into the crypt as you can — swords hurt the silly monsters, shields block their bites, potions heal you, and coins are treasure. A boss waits every 5th floor.',
+    image: './public/screenshots/crypt-crawl.svg',
+    path: './src/games/crypt-crawl/index.html',
+  },
+  {
     id: 'zombie-deer',
     category: 'arcade',
     title: 'Zombie Deer: Christmas Edition',

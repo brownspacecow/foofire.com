@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crypt Crawl | Foofire Games</title>
+    <meta
+      name="description"
+      content="Crypt Crawl: a kid-friendly puzzle dungeon crawler. Pick a hero, drag through matching tiles, and slay the silliest monsters in the crypt — one floor at a time."
+    />
+    <meta property="og:title" content="Crypt Crawl | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Match. Drag. Slay. Pick a hero, drag through matching tiles, and crawl as deep into the crypt as you can."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/crypt-crawl/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#0e0818" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <style>
+      .crypt-game {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 1rem 3.5rem;
+      }
+
+      .crypt-frame {
+        background: #0e0818;
+        border: 4px solid var(--accent-soft);
+        box-shadow: var(--shadow-hard);
+        padding: 1rem;
+      }
+
+      .pixel-title {
+        font-family: var(--font-pixel);
+        color: var(--accent-soft);
+        text-align: center;
+        font-size: clamp(1rem, 4vw, 1.4rem);
+        line-height: 1.6;
+        margin: 0.2rem 0 1rem;
+        text-shadow: 3px 3px 0 #000;
+      }
+
+      .crypt-label {
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        letter-spacing: 0.08em;
+        color: var(--accent-soft);
+        text-transform: uppercase;
+        margin: 1rem 0 0.5rem;
+        text-align: center;
+      }
+
+      .name-row {
+        display: flex;
+        justify-content: center;
+      }
+
+      .name-row input {
+        width: min(100%, 22rem);
+        padding: 0.7rem 0.8rem;
+        background: #1b1238;
+        border: 3px solid var(--accent-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.7rem;
+        text-align: center;
+      }
+
+      .choice-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+      }
+
+      .choice-btn {
+        flex: 1 1 7rem;
+        max-width: 12rem;
+        padding: 0.7rem 0.5rem;
+        border: 3px solid var(--border);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        line-height: 1.7;
+        cursor: pointer;
+      }
+
+      .choice-btn small {
+        display: block;
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      .choice-btn.selected {
+        border-color: var(--accent-soft);
+        background: #4a3410;
+        box-shadow: 0 0 0 2px var(--accent-soft);
+      }
+
+      .choice-btn.locked {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.6rem;
+      }
+
+      .hero-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.7rem 0.4rem;
+        border: 3px solid var(--border);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      .hero-card:hover {
+        border-color: var(--accent-soft);
+      }
+
+      .hero-card.selected {
+        border-color: var(--accent-soft);
+        background: #4a3410;
+        box-shadow: 0 0 0 2px var(--accent-soft);
+      }
+
+      .hero-emoji {
+        font-size: 2.2rem;
+        line-height: 1;
+      }
+
+      .hero-emoji.big {
+        font-size: 3rem;
+      }
+
+      .hero-name {
+        font-family: var(--font-pixel);
+        font-size: 0.42rem;
+        line-height: 1.6;
+        text-align: center;
+      }
+
+      .hero-detail {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-top: 0.8rem;
+        padding: 0.9rem;
+        border: 3px solid var(--accent-soft);
+        background: #1b1238;
+      }
+
+      .detail-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 0;
+      }
+
+      .detail-text strong {
+        font-family: var(--font-pixel);
+        font-size: 0.6rem;
+        color: var(--accent-soft);
+        line-height: 1.6;
+      }
+
+      .detail-kind {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      .detail-perk {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--green);
+      }
+
+      .detail-desc,
+      .detail-flavour {
+        font-size: 0.85rem;
+        color: var(--text);
+        line-height: 1.45;
+      }
+
+      .detail-flavour {
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .relic-line {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.9rem;
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        color: var(--muted);
+      }
+
+      .descend-row {
+        display: flex;
+        gap: 0.7rem;
+        margin-top: 0.9rem;
+      }
+
+      .descend-btn {
+        flex: 1;
+        padding: 1rem;
+        border: 3px solid var(--ink);
+        background: var(--accent-soft);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.85rem;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 var(--ink);
+      }
+
+      .descend-btn:hover {
+        filter: brightness(1.08);
+      }
+
+      .descend-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .back-btn {
+        padding: 1rem 0.9rem;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-family: var(--font-pixel);
+        font-size: 0.6rem;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 var(--ink);
+      }
+
+      /* ---- play screen ---- */
+      .crypt-hud {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 1rem;
+        padding: 0.7rem 0.8rem;
+        background: var(--panel);
+        border: 3px solid var(--ink);
+        border-bottom: none;
+      }
+
+      .hud-stat {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+        min-width: 3.4rem;
+      }
+
+      .hud-stat .stat-label {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .hud-stat strong {
+        font-family: var(--font-pixel);
+        font-size: 0.62rem;
+        color: var(--accent-soft);
+      }
+
+      .hero-chip {
+        font-weight: 800;
+        font-size: 0.9rem;
+      }
+
+      .hud-actions {
+        display: flex;
+        gap: 0.4rem;
+        margin-left: auto;
+      }
+
+      .icon-button {
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0;
+        border: 3px solid var(--ink);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .icon-button[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      .hp-meter {
+        height: 0.55rem;
+        margin-top: 0.25rem;
+        border-radius: 999px;
+        background: #2b2b2b;
+        overflow: hidden;
+        min-width: 6rem;
+      }
+
+      #hp-fill {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #4fae52, #a5e87a);
+        transition: width 0.25s ease;
+      }
+
+      .monster-card {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        padding: 0.8rem;
+        background: #1b1238;
+        border: 3px solid var(--ink);
+        border-bottom: none;
+      }
+
+      .monster-card.boss {
+        border-color: var(--accent);
+        background: #3d1030;
+      }
+
+      .monster-emoji {
+        font-size: 2.6rem;
+        line-height: 1;
+      }
+
+      .monster-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .monster-name {
+        font-family: var(--font-pixel);
+        font-size: 0.6rem;
+        color: var(--text);
+        line-height: 1.6;
+      }
+
+      .monster-meter {
+        height: 0.6rem;
+        margin-top: 0.4rem;
+        border-radius: 999px;
+        background: #2b2b2b;
+        overflow: hidden;
+      }
+
+      #monster-fill {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #ff2e63, #ff8a00);
+        transition: width 0.25s ease;
+      }
+
+      .monster-hp {
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .board-wrap {
+        position: relative;
+        border: 3px solid var(--ink);
+        background: #120a2a;
+        padding: 0.5rem;
+      }
+
+      #board {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 0.4rem;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .tile {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 3px solid var(--border);
+        border-radius: 0.6rem;
+        background: var(--panel-soft);
+        font-size: clamp(1.3rem, 6vw, 2rem);
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .tile.in-path {
+        transform: scale(1.08);
+        border-color: var(--accent-soft);
+        box-shadow: 0 0 0 2px var(--accent-soft), 0 0 14px rgba(255, 217, 61, 0.6);
+        filter: brightness(1.25);
+      }
+
+      .tile-sword { background: #3d1a2e; }
+      .tile-shield { background: #1a2e4d; }
+      .tile-potion { background: #1d4030; }
+      .tile-coin { background: #4d3d10; }
+
+      #board.paused {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .float-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .float-text {
+        position: absolute;
+        top: 30%;
+        font-weight: 900;
+        font-size: 1.1rem;
+        text-shadow: 2px 2px 0 #000;
+        animation: float-up 1s ease-out forwards;
+      }
+
+      .float-text.dmg { color: #ff6b6b; }
+      .float-text.heal { color: #3ddc84; }
+      .float-text.gold { color: var(--accent-soft); }
+      .float-text.block { color: #2ec4ff; }
+
+      @keyframes float-up {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-70px); }
+      }
+
+      .banner {
+        position: absolute;
+        left: 50%;
+        top: 12%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      .banner.show { opacity: 1; }
+
+      .banner span {
+        display: block;
+        padding: 0.6rem 1.2rem;
+        border-radius: 999px;
+        background: rgba(12, 14, 16, 0.85);
+        border: 2px solid var(--accent-soft);
+        color: var(--accent-soft);
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        white-space: nowrap;
+      }
+
+      .relics-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding: 0.6rem 0.8rem;
+        background: var(--panel);
+        border: 3px solid var(--ink);
+        border-top: none;
+        font-size: 0.8rem;
+      }
+
+      .relic-chip {
+        padding: 0.25rem 0.5rem;
+        border: 2px solid var(--accent-soft);
+        background: #4a3410;
+        font-weight: 700;
+      }
+
+      .relics-empty {
+        color: var(--muted);
+      }
+
+      .paused-note {
+        margin: 0.6rem 0 0;
+        text-align: center;
+        font-weight: 800;
+        color: var(--accent-soft);
+      }
+
+      .game-tip {
+        margin: 0.9rem auto 0;
+        max-width: 42rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .back-link {
+        display: block;
+        width: fit-content;
+        margin: 1.4rem auto 0;
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      .shake {
+        animation: shake 0.3s ease;
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
+      }
+
+      /* ---- overlays ---- */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(8, 4, 18, 0.8);
+      }
+
+      .overlay[hidden] { display: none; }
+
+      .overlay-card {
+        width: min(92%, 30rem);
+        padding: 1.4rem 1.5rem 1.6rem;
+        border: 4px solid var(--accent-soft);
+        border-radius: 1rem;
+        background: var(--panel);
+        box-shadow: var(--shadow-hard);
+        text-align: center;
+      }
+
+      .overlay-card h2 {
+        margin: 0;
+        font-family: var(--font-pixel);
+        font-size: 0.9rem;
+        color: var(--accent-soft);
+        line-height: 1.7;
+      }
+
+      .overlay-card p {
+        margin: 0.6rem 0 0;
+        color: var(--muted);
+      }
+
+      .over-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        text-align: left;
+      }
+
+      .over-stats div {
+        padding: 0.6rem;
+        background: #1b1238;
+        border: 2px solid var(--border);
+      }
+
+      .over-stats span {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .over-stats strong {
+        font-family: var(--font-pixel);
+        font-size: 0.7rem;
+        color: var(--accent-soft);
+      }
+
+      .overlay-card button {
+        margin-top: 1rem;
+        padding: 0.8rem 1.4rem;
+        border: 3px solid var(--ink);
+        background: var(--accent-soft);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        cursor: pointer;
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .overlay-card button.secondary {
+        background: var(--panel-soft);
+        color: var(--text);
+      }
+
+      .relic-choices {
+        display: grid;
+        gap: 0.6rem;
+        margin-top: 1rem;
+      }
+
+      .relic-choice {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.8rem;
+        border: 3px solid var(--border);
+        background: #1b1238;
+        color: var(--text);
+        font-family: inherit;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .relic-choice:hover {
+        border-color: var(--accent-soft);
+      }
+
+      .relic-emoji { font-size: 1.8rem; }
+      .relic-choice strong { font-family: var(--font-pixel); font-size: 0.55rem; color: var(--accent-soft); }
+      .relic-choice span:last-child { font-size: 0.85rem; color: var(--muted); }
+
+      .crypt-game:fullscreen {
+        max-width: none;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0.5rem;
+        overflow-y: auto;
+        background: #0e0818;
+      }
+
+      @media (max-width: 640px) {
+        .hero-grid { grid-template-columns: repeat(2, 1fr); }
+        .hero-detail { flex-direction: column; text-align: center; }
+        .crypt-frame { padding: 0.7rem; }
+        .hud-stat { min-width: 2.9rem; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .float-text, .shake { animation-duration: 0.01ms; }
+        #hp-fill, #monster-fill { transition: none; }
+      }
+    </style>
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Crypt Crawl</h1>
+        <p>
+          Match. Drag. Slay. Pick a hero, drag through matching tiles, and crawl as deep into
+          the crypt as you can — the monsters down there are silly, but they do bite.
+        </p>
+      </section>
+
+      <section class="crypt-game" id="crypt-game" aria-label="Crypt Crawl">
+        <!-- ======== NEW RUN / SETUP ======== -->
+        <div id="setup-screen" class="crypt-frame">
+          <h2 class="pixel-title">NEW RUN</h2>
+          <p class="crypt-label">Name your hero</p>
+          <div class="name-row">
+            <input id="hero-name" type="text" maxlength="16" aria-label="Hero name" autocomplete="off" />
+          </div>
+
+          <p class="crypt-label">Difficulty</p>
+          <div class="choice-row" role="group" aria-label="Difficulty">
+            <button class="choice-btn" type="button" data-difficulty="easy">EASY<small>Gentle monsters · 30 HP</small></button>
+            <button class="choice-btn selected" type="button" data-difficulty="normal">NORMAL<small>The crypt as it was meant to be · 25 HP</small></button>
+            <button class="choice-btn" type="button" data-difficulty="hard">HARD<small>Spiky monsters · 20 HP</small></button>
+          </div>
+
+          <p class="crypt-label">Mode</p>
+          <div class="choice-row" role="group" aria-label="Mode">
+            <button class="choice-btn selected" type="button">ENDLESS DELVE<small>Survive as long as you can</small></button>
+            <button class="choice-btn locked" type="button" disabled title="Coming soon">DAILY DELVE<small>Coming soon</small></button>
+            <button class="choice-btn locked" type="button" disabled title="Coming soon">TWO-PLAYER<small>Coming soon</small></button>
+          </div>
+
+          <p class="crypt-label">Hero (pick one)</p>
+          <div class="hero-grid" id="hero-grid" role="group" aria-label="Choose your hero"></div>
+
+          <div class="hero-detail" id="hero-detail" aria-live="polite"></div>
+
+          <div class="relic-line"><span>RELICS</span><span id="relic-count">0/50</span></div>
+
+          <div class="descend-row">
+            <button class="back-btn" id="back-button" type="button">BACK</button>
+            <button class="descend-btn" id="descend-button" type="button">⬇ DESCEND</button>
+          </div>
+        </div>
+
+        <!-- ======== PLAY ======== -->
+        <div id="play-screen" hidden>
+          <div class="crypt-hud">
+            <span class="hero-chip" id="hero-chip"></span>
+            <div class="hud-stat">
+              <span class="stat-label">Floor</span><strong id="hud-floor">1</strong>
+            </div>
+            <div class="hud-stat">
+              <span class="stat-label">HP <span id="hud-hp">25 / 25</span></span>
+              <span class="hp-meter"><span id="hp-fill" style="width: 100%"></span></span>
+            </div>
+            <div class="hud-stat">
+              <span class="stat-label">Block</span><strong id="hud-block">0</strong>
+            </div>
+            <div class="hud-stat">
+              <span class="stat-label">Gold 🪙</span><strong id="hud-gold">0</strong>
+            </div>
+            <div class="hud-stat">
+              <span class="stat-label">Score</span><strong id="hud-score">0</strong>
+            </div>
+            <div class="hud-actions">
+              <button class="icon-button" id="pause-button" type="button" aria-label="Pause game" aria-pressed="false">❚❚</button>
+              <button class="icon-button" id="fullscreen-button" type="button" aria-label="Play in full screen" aria-pressed="false">⛶</button>
+              <button class="icon-button" id="mute-button" type="button" aria-label="Mute sounds" aria-pressed="false">🔊</button>
+            </div>
+          </div>
+
+          <div class="monster-card" id="monster-card">
+            <span class="monster-emoji" id="monster-emoji" aria-hidden="true">🟢</span>
+            <div class="monster-info">
+              <span class="monster-name" id="monster-name">Squeaky Slime</span>
+              <div class="monster-meter"><span id="monster-fill" style="width: 100%"></span></div>
+            </div>
+            <span class="monster-hp" id="monster-hp">18 / 18</span>
+          </div>
+
+          <div class="board-wrap">
+            <div id="board" role="application" aria-label="Tile board. Drag through 3 or more matching tiles."></div>
+            <div class="float-layer" id="float-layer" aria-hidden="true"></div>
+            <div class="banner" id="banner" aria-hidden="true"><span></span></div>
+          </div>
+
+          <div class="relics-row" id="relics-row"></div>
+          <p class="paused-note" id="paused-note" hidden>Paused — tap ▶ to keep crawling.</p>
+          <p class="game-tip" id="game-tip">
+            Drag through 3+ matching tiles — swords hurt the monster, shields block its bite,
+            potions heal you, coins are treasure! Longer paths are stronger. Beat the monster to
+            descend. A boss waits every 5th floor.
+          </p>
+          <p id="hud-best" class="game-tip"></p>
+          <p id="status" class="sr-only" role="status" aria-live="polite">Crypt Crawl is ready.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <!-- Relic choice (boss reward) -->
+    <div class="overlay" id="relic-modal" hidden>
+      <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="relic-title">
+        <h2 id="relic-title">👑 Boss beaten!</h2>
+        <p>Pick one relic to keep for the rest of this run.</p>
+        <div class="relic-choices" id="relic-choices"></div>
+        <button class="secondary" id="relic-close" type="button">Not now</button>
+      </div>
+    </div>
+
+    <!-- Game over -->
+    <div class="overlay" id="gameover-overlay" hidden>
+      <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="over-title">
+        <h2 id="over-title">The crypt got you!</h2>
+        <p>Your hero wobbles back up the stairs for a snack. Great crawling, though!</p>
+        <div class="over-stats">
+          <div><span>Floor reached</span><strong id="over-floor">1</strong></div>
+          <div><span>Monsters slain</span><strong id="over-kills">0</strong></div>
+          <div><span>Gold collected</span><strong id="over-gold">0</strong></div>
+          <div><span>Score</span><strong id="over-score">0</strong></div>
+        </div>
+        <p id="over-best"></p>
+        <button id="play-again-button" type="button">Crawl again</button>
+        <button class="secondary" id="quit-button" type="button">Back to games</button>
+      </div>
+    </div>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="A young hero with a wooden sword facing a goofy green slime in a torch-lit crypt, gold coins scattered on the stone floor">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#241733"/>
+      <stop offset="55%" stop-color="#1a1029"/>
+      <stop offset="100%" stop-color="#0e0818"/>
+    </linearGradient>
+    <radialGradient id="torchGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd93d" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#ff8a00" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8a7458"/>
+      <stop offset="100%" stop-color="#5f4a3c"/>
+    </linearGradient>
+    <linearGradient id="slimeBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a5e87a"/>
+      <stop offset="100%" stop-color="#4fae52"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="72%">
+      <stop offset="55%" stop-color="#07040d" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#07040d" stop-opacity="0.85"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#bg)"/>
+
+  <!-- stone wall blocks -->
+  <g stroke="#2c1d3d" stroke-width="4">
+    <rect x="0" y="60" width="1200" height="120" fill="#241733"/>
+    <line x1="150" y1="60" x2="150" y2="180"/><line x1="400" y1="60" x2="400" y2="180"/>
+    <line x1="650" y1="60" x2="650" y2="180"/><line x1="900" y1="60" x2="900" y2="180"/>
+    <line x1="0" y1="120" x2="1200" y2="120"/>
+    <rect x="0" y="180" width="1200" height="120" fill="#1d1228"/>
+    <line x1="260" y1="180" x2="260" y2="300"/><line x1="520" y1="180" x2="520" y2="300"/>
+    <line x1="780" y1="180" x2="780" y2="300"/><line x1="1040" y1="180" x2="1040" y2="300"/>
+    <line x1="0" y1="240" x2="1200" y2="240"/>
+  </g>
+
+  <!-- torches -->
+  <g>
+    <circle cx="180" cy="150" r="120" fill="url(#torchGlow)"/>
+    <circle cx="1020" cy="150" r="120" fill="url(#torchGlow)"/>
+    <rect x="172" y="150" width="16" height="60" rx="6" fill="#6d4c36"/>
+    <rect x="1012" y="150" width="16" height="60" rx="6" fill="#6d4c36"/>
+    <path d="M180 110 q-22 -26 0 -52 q6 22 14 26 q10 -14 8 -30 q24 18 10 44 q-8 14 -32 12 Z" fill="#ff8a00"/>
+    <path d="M180 118 q-10 -12 0 -26 q12 10 6 22 q-2 6 -6 4 Z" fill="#ffd93d"/>
+    <path d="M1020 110 q-22 -26 0 -52 q6 22 14 26 q10 -14 8 -30 q24 18 10 44 q-8 14 -32 12 Z" fill="#ff8a00"/>
+    <path d="M1020 118 q-10 -12 0 -26 q12 10 6 22 q-2 6 -6 4 Z" fill="#ffd93d"/>
+  </g>
+
+  <!-- arched doorway behind the slime -->
+  <path d="M700 540 L700 330 Q800 210 900 330 L900 540 Z" fill="#120a2a" stroke="#3b2a4d" stroke-width="10"/>
+  <path d="M730 540 L730 350 Q800 260 870 350 L870 540 Z" fill="#0a0518"/>
+
+  <!-- floor -->
+  <ellipse cx="600" cy="560" rx="560" ry="90" fill="url(#floor)"/>
+  <g stroke="#4a3659" stroke-width="3" opacity="0.7">
+    <line x1="120" y1="520" x2="1080" y2="520"/>
+    <line x1="200" y1="590" x2="1000" y2="590"/>
+    <line x1="350" y1="500" x2="300" y2="640"/>
+    <line x1="700" y1="500" x2="760" y2="640"/>
+    <line x1="950" y1="510" x2="900" y2="640"/>
+  </g>
+
+  <!-- gold coins scattered on the floor -->
+  <g>
+    <g fill="#ffd166" stroke="#c98b1e" stroke-width="3">
+      <circle cx="420" cy="600" r="20"/><circle cx="470" cy="622" r="16"/>
+      <circle cx="950" cy="606" r="18"/><circle cx="1000" cy="626" r="14"/>
+      <circle cx="560" cy="632" r="13"/><circle cx="880" cy="636" r="12"/>
+    </g>
+    <g fill="#fff0b8">
+      <circle cx="414" cy="594" r="6"/><circle cx="946" cy="600" r="5"/><circle cx="466" cy="617" r="4"/>
+    </g>
+    <g fill="#c98b1e" font-family="Georgia, serif" font-size="20" font-weight="bold" text-anchor="middle">
+      <text x="420" y="607">★</text><text x="950" y="613">★</text>
+    </g>
+  </g>
+
+  <!-- hero: Pip the Wanderer, left, wooden sword raised -->
+  <g transform="translate(330 470)">
+    <ellipse cx="0" cy="118" rx="70" ry="14" fill="#1b1122" opacity="0.5"/>
+    <!-- legs -->
+    <rect x="-26" y="62" width="20" height="56" rx="8" fill="#4a3d56"/>
+    <rect x="6" y="62" width="20" height="56" rx="8" fill="#4a3d56"/>
+    <!-- tunic -->
+    <path d="M-42 66 L-34 -6 Q0 -22 34 -6 L42 66 Q0 78 -42 66 Z" fill="#3ddc84"/>
+    <rect x="-42" y="52" width="84" height="12" fill="#2a9e5f"/>
+    <!-- belt + pouch -->
+    <rect x="-40" y="34" width="80" height="10" fill="#6d4c36"/>
+    <rect x="18" y="40" width="20" height="18" rx="4" fill="#ffd166"/>
+    <!-- head -->
+    <circle cx="0" cy="-44" r="30" fill="#f0c9a0"/>
+    <path d="M-30 -52 Q0 -92 30 -52 Q0 -66 -30 -52 Z" fill="#8a5a2b"/>
+    <circle cx="-11" cy="-46" r="4" fill="#241a2e"/>
+    <circle cx="11" cy="-46" r="4" fill="#241a2e"/>
+    <path d="M-8 -30 q8 7 16 0" stroke="#7a4a2b" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- green hood -->
+    <path d="M-32 -56 Q-34 -92 0 -96 Q34 -92 32 -56 Q18 -72 0 -72 Q-18 -72 -32 -56 Z" fill="#2a9e5f"/>
+    <!-- arm + wooden sword raised -->
+    <path d="M34 -2 L78 -52" stroke="#3ddc84" stroke-width="16" stroke-linecap="round"/>
+    <path d="M78 -52 L118 -118" stroke="#c9a86a" stroke-width="10" stroke-linecap="round"/>
+    <path d="M66 -66 L92 -80" stroke="#6d4c36" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="118" cy="-118" r="5" fill="#c9a86a"/>
+    <!-- shield arm -->
+    <circle cx="-46" cy="8" r="22" fill="#2ec4ff" stroke="#1a6a8a" stroke-width="5"/>
+    <circle cx="-46" cy="8" r="8" fill="#ffd166"/>
+  </g>
+
+  <!-- goofy slime, right, wobbling -->
+  <g transform="translate(800 500)">
+    <ellipse cx="0" cy="62" rx="90" ry="14" fill="#1b1122" opacity="0.5"/>
+    <path d="M-84 56 Q-96 -20 -52 -44 Q-30 -78 0 -70 Q34 -80 56 -44 Q96 -18 84 56 Q40 72 -84 56 Z" fill="url(#slimeBody)"/>
+    <ellipse cx="-30" cy="10" rx="26" ry="18" fill="#c8f5a8" opacity="0.6"/>
+    <circle cx="-28" cy="-18" r="14" fill="#fff"/>
+    <circle cx="28" cy="-18" r="14" fill="#fff"/>
+    <circle cx="-26" cy="-16" r="7" fill="#241a2e"/>
+    <circle cx="30" cy="-16" r="7" fill="#241a2e"/>
+    <circle cx="-24" cy="-19" r="2.5" fill="#fff"/>
+    <circle cx="32" cy="-19" r="2.5" fill="#fff"/>
+    <path d="M-18 22 q18 14 36 0" stroke="#2f6b2f" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="-58" cy="30" r="8" fill="#ff9fb2" opacity="0.7"/>
+    <circle cx="58" cy="30" r="8" fill="#ff9fb2" opacity="0.7"/>
+    <!-- little crown, it thinks it is royalty -->
+    <path d="M-24 -66 L-16 -86 L-6 -68 L4 -88 L14 -68 L24 -84 L26 -62 Q0 -54 -24 -66 Z" fill="#ffd166" stroke="#c98b1e" stroke-width="3"/>
+  </g>
+
+  <!-- floating dust motes -->
+  <g fill="#ffd166" opacity="0.6">
+    <circle cx="560" cy="200" r="3"/><circle cx="620" cy="260" r="2.5"/>
+    <circle cx="480" cy="300" r="2"/><circle cx="980" cy="360" r="3"/>
+  </g>
+
+  <!-- title banner -->
+  <g>
+    <rect x="330" y="26" width="540" height="64" rx="12" fill="#0e0818" stroke="#ffd93d" stroke-width="5"/>
+    <text x="600" y="68" text-anchor="middle" font-family="'Press Start 2P', 'Courier New', monospace" font-size="34" fill="#ffd93d">CRYPT CRAWL</text>
+  </g>
+
+  <rect width="1200" height="675" fill="url(#vignette)"/>
+</svg>
