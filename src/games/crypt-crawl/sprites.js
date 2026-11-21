@@ -117,23 +117,23 @@ const SPRITES = {
 
 // ---- heroes: 16x16 portraits, head + shoulders (same heroes, NES restyle) ----
 Object.assign(SPRITES, {
-  // Pip the Wanderer — green hood (N), dithered lime (l), cream face (W).
-  'hero-pip': rows([
+  // Pip the Penguin — black body (k), white face + belly (W), orange beak (o).
+  'hero-penguin': rows([
     '.....kkkkkk.....',
-    '....kNNNNNNk....',
-    '...kNNNNNNNNk...',
-    '..kNNkkkkkkNNk..',
-    '..kNkWWWWWWkNk..',
-    '..kNkWkWWkWkNk..',
-    '..kNkWWWWWWkNk..',
-    '..kNkWWllWWkNk..',
-    '...kNWWWWWWkNk..',
-    '...kNkWWWWkNk...',
-    '....kNNNNNNk....',
-    '...kNNNkkNNNk...',
-    '..kNNNNNNNNNNk..',
-    '..kNNNk..kNNNk..',
-    '..kkkk....kkkk..',
+    '....kkkkkkkk....',
+    '...kkkkkkkkkk...',
+    '..kkkkkkkkkkkk..',
+    '..kkWWWWWWWWkk..',
+    '..kkWkWWWWkWkk..',
+    '..kkWWWWWWWWkk..',
+    '...kkWWooWWkk...',
+    '.....kkookk.....',
+    '....kkkkkkkk....',
+    '...kkkkkkkkkk...',
+    '..kkkkWWWWkkkk..',
+    '..kkkWWWWWWkkk..',
+    '..kkkWWWWWWkkk..',
+    '..kkkkkkkkkkkk..',
     '................',
   ]),
   // Bramble the Knight — silver helm (G, dithered with W), cream face (W), gold crest (Y).
