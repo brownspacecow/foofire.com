@@ -143,7 +143,11 @@ export class CreatureManager {
       world.nearestWalkable(world.heart.x + dx, world.heart.y + dy, 7) ??
       world.heart;
     if (!spot) return;
-    const creature = this.spawn(chosen.id, spot.x, spot.y);
+    // Newcomers arrive with a little experience under their belts, so
+    // a death late in a run does not reset the army to level 1: level
+    // 2 from wave 4, level 3 from wave 8.
+    const level = Math.min(3, 1 + Math.floor(this.game.heroes.waveIndex / 4));
+    const creature = this.spawn(chosen.id, spot.x, spot.y, { level });
     game.emit('spawn', {
       id: creature.typeId,
       x: creature.x,

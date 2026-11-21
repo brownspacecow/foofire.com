@@ -18,17 +18,20 @@ const WAVE_GAP_STEP = 1.3;
 const MAX_REGULARS = 26;
 
 // Bosses scale gently: the same +9% HP per wave that works for a
-// squire turns a boss into a wall by wave 10, because it compounds
-// on a 350 HP base while the player's army grows roughly linearly.
-// A boss keeps about half the HP growth, two-thirds the attack
-// growth and half the defense growth of a regular, so every fifth
-// wave stays a boss fight instead of a brick wall. Regulars are
-// untouched.
+// Bosses scale gently on purpose: the wave-10 Baron was 634 HP before
+// this, because +9% HP a wave compounds on a 350 HP base while the
+// player's army grows roughly linearly. Regulars scale slower than
+// they used to for the same reason — +7% HP and +6% attack a wave
+// instead of +9% and +7.5% — so the late waves stay hard without the
+// difficulty cliff that used to wipe a level-2 army at wave 8. A boss
+// keeps about two-thirds the HP growth, five-sixths the attack growth
+// and half the defense growth of a regular, so every fifth wave stays
+// a boss fight instead of a brick wall.
 export function scaledHeroDef(def, wave, kid = false) {
   const growth = Math.max(0, wave - 1);
   const kidFactor = kid ? 0.85 : 1;
-  const hpRate = def.boss ? 0.045 : 0.09;
-  const attackRate = def.boss ? 0.05 : 0.075;
+  const hpRate = def.boss ? 0.045 : 0.07;
+  const attackRate = def.boss ? 0.05 : 0.06;
   const defenseRate = def.boss ? 0.025 : 0.05;
   return {
     ...def,
@@ -101,7 +104,9 @@ export class HeroManager {
     const boss = waveNumber >= 5 && waveNumber % 5 === 0;
     const regulars = Math.min(
       MAX_REGULARS,
-      2 + Math.floor(waveNumber * 0.6) - (boss ? 1 : 0)
+      // Boss waves bring two fewer regulars: the boss is the fight,
+      // and a full squad alongside it wiped level-2 armies outright.
+      2 + Math.floor(waveNumber * 0.6) - (boss ? 2 : 0)
     );
     const types = ['squire'];
     if (waveNumber >= 2) types.push('archer');
