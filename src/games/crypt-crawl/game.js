@@ -67,8 +67,10 @@ export function monsterForFloor(floor, difficultyId = 'normal') {
   const pick = boss
     ? BOSS_POOL[Math.floor(floor / 5 - 1) % BOSS_POOL.length]
     : MONSTER_POOL[(floor - 1) % MONSTER_POOL.length];
-  const hp = boss ? 16 + floor * 6 : 10 + floor * 5;
-  const attack = Math.max(1, (boss ? 3 : 1) + Math.ceil(floor / 2) + diff.attackMod + (boss ? 1 : 0));
+  const hp = boss ? 12 + floor * 4 : 10 + floor * 5;
+  const attack = boss
+    ? Math.max(1, 1 + Math.ceil(floor / 3) + diff.attackMod)
+    : Math.max(1, 1 + Math.ceil(floor / 2) + diff.attackMod);
   return { ...pick, hp, maxHp: hp, attack, isBoss: boss };
 }
 
