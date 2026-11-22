@@ -6,17 +6,17 @@
     <title>Drum Quest | Foofire Games</title>
     <meta
       name="description"
-      content="Drum Quest is a drum game for kids learning to play: tap a big drum kit in Free Play, copy the beat in Copy Cat, and build your own beat in Beat Builder. Free, no downloads, no failing."
+      content="Drum Quest is a Three.js 3D drum game for kids learning to play: tap a real-looking 3D drum kit in Free Play, copy the beat in Copy Cat, and build your own beat in Beat Builder. Free, no downloads, no failing."
     />
     <meta property="og:title" content="Drum Quest | Foofire Games" />
     <meta
       property="og:description"
-      content="Tap a big drum kit, copy the beat, and build your own. A drum game for kids learning to play — no failing, no accounts."
+      content="A 3D drum kit on a stage — tap the drums, copy the beat, and build your own. A drum game for kids learning to play, no failing, no accounts."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com/src/games/drum-quest/index.html" />
     <meta property="og:site_name" content="Foofire Games" />
-    <meta name="theme-color" content="#1a1022" />
+    <meta name="theme-color" content="#0a0418" />
     <link rel="stylesheet" href="../../../styles.css" />
     <link rel="stylesheet" href="./styles.css" />
     <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
@@ -37,37 +37,14 @@
     <main>
       <div class="drum-quest">
         <section class="dq-hero" aria-labelledby="dq-title">
-          <div class="dq-hero-copy">
-            <p class="dq-kicker">Joel's drum game · for kids learning to play</p>
-            <h1 id="dq-title">Drum Quest</h1>
-            <p class="dq-lede">
-              Bang the big drums, copy the beat, then build a beat of your own.
-              There is no way to fail here — a missed beat just means you get to
-              hear it again.
-            </p>
-            <p class="dq-best" id="best-line"></p>
-          </div>
-          <div class="dq-hero-joel" aria-hidden="true">
-            <svg viewBox="0 0 220 220" role="img" aria-label="Joel grinning behind his drum kit">
-              <circle cx="110" cy="118" r="62" fill="#f2c29b" />
-              <path d="M62 92 L52 52 L74 70 L82 38 L100 62 L110 30 L122 60 L140 36 L146 68 L168 52 L158 92 Z" fill="#e63946" />
-              <circle cx="88" cy="112" r="7" fill="#1a1022" />
-              <circle cx="132" cy="112" r="7" fill="#1a1022" />
-              <circle cx="88" cy="110" r="2.5" fill="#fff" />
-              <circle cx="132" cy="110" r="2.5" fill="#fff" />
-              <circle cx="72" cy="132" r="9" fill="#f08fa4" opacity="0.7" />
-              <circle cx="148" cy="132" r="9" fill="#f08fa4" opacity="0.7" />
-              <path d="M82 140 Q110 168 138 140" fill="none" stroke="#7a3b2e" stroke-width="5" stroke-linecap="round" />
-              <rect x="96" y="143" width="12" height="12" rx="2" fill="#fff" />
-              <rect x="112" y="143" width="12" height="12" rx="2" fill="#fff" />
-              <path d="M96 143 h28" stroke="#7a3b2e" stroke-width="2" />
-              <ellipse cx="52" cy="196" rx="34" ry="16" fill="#f4c95d" stroke="#1a1022" stroke-width="4" />
-              <ellipse cx="168" cy="196" rx="34" ry="16" fill="#f4c95d" stroke="#1a1022" stroke-width="4" />
-              <circle cx="110" cy="200" r="26" fill="#ff6b5e" stroke="#1a1022" stroke-width="4" />
-              <circle cx="110" cy="200" r="26" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 6" opacity="0.6" />
-              <rect x="106" y="172" width="8" height="18" rx="3" fill="#f2c29b" />
-            </svg>
-          </div>
+          <p class="dq-kicker">Joel's drum game · for kids learning to play</p>
+          <h1 id="dq-title">Drum Quest</h1>
+          <p class="dq-lede">
+            Joel is on stage behind a real drum kit. Tap the drums right on the
+            kit, copy the beat, then build a beat of your own. There is no way
+            to fail here — a missed beat just means you get to hear it again.
+          </p>
+          <p class="dq-best" id="best-line"></p>
         </section>
 
         <nav class="dq-modes" aria-label="Game modes">
@@ -85,14 +62,22 @@
           </button>
         </nav>
 
-        <p class="dq-message" id="message" aria-live="polite">Tap a drum to make some noise!</p>
+        <p class="dq-message" id="message" aria-live="polite">Tap a drum on the kit to make some noise!</p>
+
+        <!-- The 3D stage: Joel behind his kit. Tap the drums in 3D. -->
+        <div
+          id="stage"
+          class="dq-stage"
+          role="img"
+          aria-label="3D drum kit on a stage. Tap the kick, snare, hi-hat, toms or crash cymbal to play them."
+        ></div>
 
         <!-- ------------------------------------------------------- Free Play -->
         <section class="dq-panel" id="panel-free" aria-labelledby="free-title">
           <div class="dq-panel-head">
             <div>
               <h2 id="free-title">Free Play</h2>
-              <p class="dq-sub">Five big drums. Tap them, or use the keys on a keyboard.</p>
+              <p class="dq-sub">Tap the drums right on the kit — or use keys A S D F G on a keyboard.</p>
             </div>
             <div class="dq-metronome">
               <span class="dq-count" id="beat-count" aria-label="Metronome beat">–</span>
@@ -100,34 +85,6 @@
                 ▶ Count 1-2-3-4
               </button>
             </div>
-          </div>
-
-          <div class="dq-pads" id="pads" role="group" aria-label="Drum kit">
-            <button type="button" class="dq-pad" data-drum="kick" style="--pad-color: #ff6b5e" aria-label="Kick drum, key A">
-              <span class="dq-pad-emoji" aria-hidden="true">🥁</span>
-              <span class="dq-pad-name">Kick</span>
-              <span class="dq-pad-key">A</span>
-            </button>
-            <button type="button" class="dq-pad" data-drum="snare" style="--pad-color: #f4c95d" aria-label="Snare drum, key S">
-              <span class="dq-pad-emoji" aria-hidden="true">🪘</span>
-              <span class="dq-pad-name">Snare</span>
-              <span class="dq-pad-key">S</span>
-            </button>
-            <button type="button" class="dq-pad" data-drum="hihat" style="--pad-color: #7fd8c6" aria-label="Hi-hat, key D">
-              <span class="dq-pad-emoji" aria-hidden="true">🎩</span>
-              <span class="dq-pad-name">Hi-Hat</span>
-              <span class="dq-pad-key">D</span>
-            </button>
-            <button type="button" class="dq-pad" data-drum="tom" style="--pad-color: #b6a3ff" aria-label="Tom drum, key F">
-              <span class="dq-pad-emoji" aria-hidden="true">🥁</span>
-              <span class="dq-pad-name">Tom</span>
-              <span class="dq-pad-key">F</span>
-            </button>
-            <button type="button" class="dq-pad" data-drum="crash" style="--pad-color: #f08fa4" aria-label="Crash cymbal, key G">
-              <span class="dq-pad-emoji" aria-hidden="true">✨</span>
-              <span class="dq-pad-name">Crash</span>
-              <span class="dq-pad-key">G</span>
-            </button>
           </div>
 
           <p class="dq-hint">
@@ -174,7 +131,7 @@
           <div class="dq-panel-head">
             <div>
               <h2 id="builder-title">Beat Builder</h2>
-              <p class="dq-sub">Tap the squares to build one bar of music, then press play and loop it.</p>
+              <p class="dq-sub">Tap the squares to build one bar of music, then press play and watch the kit play it.</p>
             </div>
             <div class="dq-tempo">
               <label for="tempo-slider">Speed <strong id="tempo-value">90 BPM</strong></label>
@@ -214,6 +171,13 @@
       <a href="../../../disclaimer.html">Legal disclaimer</a>
     </footer>
 
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.168.0"
+        }
+      }
+    </script>
     <script type="module" src="./game.js"></script>
   </body>
 </html>

@@ -1,6 +1,7 @@
-/* Drum Quest — big, bright and thumb-friendly. Pads and grid cells are
-   sized for a 7-year-old on a phone, and everything works without the
-   animations for players who prefer reduced motion. */
+/* Drum Quest — the 3D stage is the game. The HUD below it stays small:
+   mode tabs, a message line, and the Copy Cat / Beat Builder panels.
+   Everything is sized for a 7-year-old on a phone, and the stage
+   animation calms down for players who prefer reduced motion. */
 
 .drum-quest {
   --dq-ink: #f9eddf;
@@ -40,21 +41,13 @@
 /* ------------------------------------------------------------------- hero */
 
 .dq-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.5fr);
-  align-items: center;
-  gap: 2rem;
   margin: 0 -1rem;
-  padding: clamp(2rem, 5vw, 3.2rem) clamp(1.25rem, 4vw, 3rem);
+  padding: clamp(1.6rem, 4vw, 2.6rem) clamp(1.25rem, 4vw, 3rem);
   border-bottom: 4px solid var(--ink);
   background:
     radial-gradient(circle at 18% 18%, rgba(244, 201, 93, 0.22), transparent 45%),
     radial-gradient(circle at 82% 10%, rgba(240, 143, 164, 0.2), transparent 42%),
     linear-gradient(155deg, #2c1532 0%, #3c1b31 48%, #1a1022 100%);
-}
-
-.dq-hero-copy {
-  max-width: 36rem;
 }
 
 .dq-hero h1 {
@@ -65,6 +58,7 @@
 }
 
 .dq-lede {
+  max-width: 36rem;
   margin: 0;
   font-size: 1.05rem;
   line-height: 1.5;
@@ -75,14 +69,6 @@
   margin: 0.9rem 0 0;
   font-weight: 700;
   color: var(--dq-gold);
-}
-
-.dq-hero-joel svg {
-  display: block;
-  width: 100%;
-  max-width: 240px;
-  height: auto;
-  margin: 0 auto;
 }
 
 /* ------------------------------------------------------------------ modes */
@@ -145,6 +131,26 @@
   color: var(--dq-gold);
 }
 
+/* ------------------------------------------------------------------ stage */
+
+.dq-stage {
+  position: relative;
+  width: 100%;
+  height: clamp(430px, 62vh, 640px);
+  margin-top: 0.75rem;
+  overflow: hidden;
+  background: #0a0418;
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  touch-action: manipulation;
+}
+
+.dq-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* ----------------------------------------------------------------- panels */
 
 .dq-panel {
@@ -185,61 +191,6 @@
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1rem;
-}
-
-/* ------------------------------------------------------------------- pads */
-
-.dq-pads {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-}
-
-.dq-pad {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  min-height: 132px;
-  padding: 1rem 0.5rem 0.75rem;
-  border: 3px solid var(--pad-color, var(--dq-gold));
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--pad-color, #f4c95d) 22%, #1a1022);
-  color: var(--dq-ink);
-  font: inherit;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease, background-color 0.08s ease, box-shadow 0.08s ease;
-}
-
-.dq-pad:active,
-.dq-pad.is-hit {
-  transform: scale(0.94);
-  background: var(--pad-color, var(--dq-gold));
-  box-shadow: 0 0 0 4px rgba(249, 237, 223, 0.35), 0 0 28px var(--pad-color, var(--dq-gold));
-}
-
-.dq-pad-emoji {
-  font-size: 2.2rem;
-  line-height: 1;
-}
-
-.dq-pad-name {
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.dq-pad-key {
-  display: inline-block;
-  min-width: 1.6rem;
-  padding: 0.05rem 0.4rem;
-  border: 1px solid var(--dq-line);
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.35);
-  font-size: 0.8rem;
-  font-weight: 700;
 }
 
 /* -------------------------------------------------------------- metronome */
@@ -443,21 +394,8 @@
 /* --------------------------------------------------------------- responsive */
 
 @media (max-width: 720px) {
-  .dq-hero {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .dq-hero-joel svg {
-    max-width: 180px;
-  }
-
-  .dq-pads {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .dq-pad {
-    min-height: 112px;
+  .dq-stage {
+    height: clamp(380px, 58vh, 520px);
   }
 
   .dq-grid-row {
@@ -469,18 +407,7 @@
   }
 }
 
-@media (max-width: 420px) {
-  .dq-pads {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dq-pad-key {
-    display: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dq-pad,
   .dq-dot,
   .dq-cell {
     transition: none;

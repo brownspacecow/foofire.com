@@ -1,5 +1,6 @@
 /* -------------------------------------------------------------------------
- * Drum Quest — Free Play, Copy Cat and Beat Builder in one game.
+ * Drum Quest — Free Play, Copy Cat and Beat Builder, played on a 3D
+ * Three.js drum kit (see scene.js). Tap a drum in 3D, or use keys A/S/D/F/G.
  * No failing anywhere: a wrong tap in Copy Cat just replays the pattern,
  * and Free Play and Beat Builder never score at all.
  * ---------------------------------------------------------------------- */
@@ -26,6 +27,7 @@ import {
   toggleCell,
 } from './logic.js';
 import { DrumSynth } from './sound.js';
+import { createStage } from './scene.js';
 import { getBest, submitScore } from '../../utils/scores.js';
 import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
@@ -38,42 +40,42 @@ const synth = new DrumSynth();
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const messageEl = $('message');
-const pads = [...document.querySelectorAll('.dq-pad')];
-const padByDrum = Object.fromEntries(pads.map((pad) => [pad.dataset.drum, pad]));
 
 const setMessage = (text) => {
   messageEl.textContent = text;
 };
 
-/* ------------------------------------------------------------------ pads */
+/* ---------------------------------------------------------------- 3D kit */
 
-function flashPad(drum) {
-  const pad = padByDrum[drum];
-  if (!pad) return;
-  pad.classList.remove('is-hit');
-  // Force a reflow so a fast repeat still replays the flash.
-  void pad.offsetWidth;
-  pad.classList.add('is-hit');
-  window.setTimeout(() => pad.classList.remove('is-hit'), prefersReducedMotion ? 60 : 180);
-}
+let mode = 'free';
 
 async function hitDrum(drum) {
-  flashPad(drum);
+  stage.hit(drum);
   try {
     await synth.play(drum);
   } catch (error) {
-    /* Audio needs a first tap on some browsers; the flash still shows. */
+    /* Audio needs a first tap on some browsers; the visual still shows. */
   }
 }
 
-/* ------------------------------------------------------------------ modes */
+/** A tap on a 3D drum (or a keyboard key): sound + Copy Cat handling. */
+function userHit(drum) {
+  hitDrum(drum);
+  if (mode === 'copy') handleCopyTap(drum);
+}
 
-let mode = 'free';
+const stage = createStage($('stage'), {
+  reducedMotion: prefersReducedMotion,
+  onHit: userHit,
+});
+
+/* ------------------------------------------------------------------ modes */
 
 function showMode(next) {
   stopMetronome();
   stopBuilderLoop();
   stopCopyPlayback();
+  stage.clearGlow();
   mode = next;
   for (const button of document.querySelectorAll('.dq-mode')) {
     const active = button.dataset.mode === next;
@@ -83,7 +85,7 @@ function showMode(next) {
   for (const panel of ['free', 'copy', 'builder']) {
     $(`panel-${panel}`).hidden = panel !== next;
   }
-  if (next === 'free') setMessage('Tap a drum to make some noise!');
+  if (next === 'free') setMessage('Tap a drum on the kit to make some noise!');
   if (next === 'copy') setMessage('Press “Play the pattern”, then copy it back!');
   if (next === 'builder') setMessage('Tap the squares to build a beat, then press play!');
 }
@@ -148,6 +150,7 @@ function stopCopyPlayback() {
   for (const timer of copyCat.timers) window.clearTimeout(timer);
   copyCat.timers = [];
   if (copyCat.phase === 'watch') copyCat.phase = 'idle';
+  stage.clearGlow();
 }
 
 function renderCopyDots(activeIndex = -1) {
@@ -193,6 +196,8 @@ function playCopyPattern() {
   copyCat.pattern.forEach((drum, index) => {
     copyCat.timers.push(
       window.setTimeout(() => {
+        stage.clearGlow();
+        stage.setGlow(drum, true);
         hitDrum(drum);
         renderCopyDots(index);
       }, 500 + index * stepMs),
@@ -201,6 +206,7 @@ function playCopyPattern() {
   copyCat.timers.push(
     window.setTimeout(() => {
       copyCat.phase = 'play';
+      stage.clearGlow();
       renderCopyDots();
       copyPlayButton.disabled = false;
       copyAgainButton.disabled = false;
@@ -347,6 +353,15 @@ function highlightBuilderStep(step) {
   }
 }
 
+function builderTick() {
+  const step = builder.step;
+  highlightBuilderStep(step);
+  for (const event of gridToEvents(builder.grid)) {
+    if (event.step === step) hitDrum(event.drum);
+  }
+  builder.step = (builder.step + 1) % BUILDER_STEPS;
+}
+
 function stopBuilderLoop() {
   if (builder.timer) window.clearInterval(builder.timer);
   builder.timer = 0;
@@ -365,16 +380,8 @@ function startBuilderLoop() {
   builder.step = 0;
   builderPlayButton.textContent = '■ Stop';
   setMessage('Rocking your beat! Tap the squares to change it while it plays.');
-  const tick = () => {
-    const step = builder.step;
-    highlightBuilderStep(step);
-    for (const event of gridToEvents(builder.grid)) {
-      if (event.step === step) hitDrum(event.drum);
-    }
-    builder.step = (builder.step + 1) % BUILDER_STEPS;
-  };
-  tick();
-  builder.timer = window.setInterval(tick, builderStepMs(builder.bpm));
+  builderTick();
+  builder.timer = window.setInterval(builderTick, builderStepMs(builder.bpm));
 }
 
 builderPlayButton.addEventListener('click', () => {
@@ -408,35 +415,11 @@ tempoSlider.addEventListener('input', () => {
   tempoValueEl.textContent = `${builder.bpm} BPM`;
   if (builder.playing) {
     window.clearInterval(builder.timer);
-    builder.timer = window.setInterval(() => {
-      const step = builder.step;
-      highlightBuilderStep(step);
-      for (const event of gridToEvents(builder.grid)) {
-        if (event.step === step) hitDrum(event.drum);
-      }
-      builder.step = (builder.step + 1) % BUILDER_STEPS;
-    }, builderStepMs(builder.bpm));
+    builder.timer = window.setInterval(builderTick, builderStepMs(builder.bpm));
   }
 });
 
-/* ------------------------------------------------------------ pads + keys */
-
-pads.forEach((pad) => {
-  pad.addEventListener('pointerdown', (event) => {
-    event.preventDefault();
-    const drum = pad.dataset.drum;
-    hitDrum(drum);
-    if (mode === 'copy') handleCopyTap(drum);
-  });
-  // Keyboard activation (Space/Enter on a focused pad) fires a click with
-  // detail 0; pointer clicks have detail >= 1 and were already handled.
-  pad.addEventListener('click', (event) => {
-    if (event.detail !== 0) return;
-    const drum = pad.dataset.drum;
-    hitDrum(drum);
-    if (mode === 'copy') handleCopyTap(drum);
-  });
-});
+/* ------------------------------------------------------------ keys + mute */
 
 document.addEventListener('keydown', (event) => {
   if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
@@ -444,11 +427,8 @@ document.addEventListener('keydown', (event) => {
   const drum = drumByKey(event.key);
   if (!drum) return;
   event.preventDefault();
-  hitDrum(drum.id);
-  if (mode === 'copy') handleCopyTap(drum.id);
+  userHit(drum.id);
 });
-
-/* ------------------------------------------------------------------ mute */
 
 const muteButton = $('mute-button');
 
