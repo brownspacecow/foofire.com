@@ -5,10 +5,13 @@
  * Jack plays REAL beats: one bar of a groove, with drums landing
  * together the way a real beat does (kick + hi-hat, snare + hi-hat).
  * The flow never stops — one clock drives every bar, Jack's bar runs
- * into Joel's bar at the barline, a quiet hi-hat tick keeps the pulse
+ * into Joel's bar at the barline, a metronome click keeps the pulse
  * alive while Joel plays, a miss means Jack plays it again at the
  * end of the bar, and a win means the next level starts at the end
  * of the bar. No count-in, no pauses, no failing, no extra beat.
+ * The click is a click on purpose: the old keep-time beat was a
+ * hi-hat, the same sound as the groove's hi-hat, so it read as an
+ * extra drum pulse between the turns — a click can never do that.
  * ---------------------------------------------------------------------- */
 
 import {
@@ -129,14 +132,16 @@ metronomeButton.addEventListener('click', async () => {
  *
  * One bar, on a loop, forever, on ONE clock. Jack plays the groove
  * (watch), then the very next bar is Joel's turn (play) — the pulse
- * never stops. A quiet hi-hat tick marks every beat of Joel's bar,
+ * never stops. A metronome click marks every beat of Joel's bar,
  * downbeat included, so the beat is always there even if he hasn't
- * tapped yet. Bars are exactly 4 beats (4 quarter-note steps at
- * levels 1–2, 8 eighth-note steps after), and every handoff happens
- * on a barline: a miss means Jack plays it again at the end of the
- * bar, and a win means the next level starts at the end of the bar.
- * Nothing ever adds or drops a beat, and nothing sounds on top of
- * Jack's downbeat but Jack's own drums.
+ * tapped yet. The click is deliberately NOT a drum: a hi-hat tick
+ * sounded like an extra drum pulse between the turns, and it doubled
+ * Joel's own hi-hat tap on every step. Bars are exactly 4 beats
+ * (4 quarter-note steps at levels 1–2, 8 eighth-note steps after),
+ * and every handoff happens on a barline: a miss means Jack plays
+ * it again at the end of the bar, and a win means the next level
+ * starts at the end of the bar. Nothing ever adds or drops a beat,
+ * and nothing sounds on top of Jack's downbeat but Jack's own drums.
  */
 
 const copyLevelEl = $('copy-level');
@@ -157,6 +162,7 @@ const copyCat = {
   doneSteps: 0,
   attempts: 0, // misses on the current level
   pendingLevelUp: false, // Joel finished the bar — the next level starts at the barline
+  pendingReplay: false, // "Jack, play it again" was tapped — Jack replays at the barline
   interval: 0,
 };
 
@@ -168,6 +174,7 @@ function stopCopyTimers() {
 function stopCopyPlayback() {
   stopCopyTimers();
   copyCat.phase = 'idle';
+  copyCat.pendingReplay = false;
   stage.setJackPlaying(false);
   stage.clearGlow();
   setTurn('idle');
@@ -258,6 +265,7 @@ function startJackBar() {
   copyCat.stepHits = [];
   copyCat.doneSteps = 0;
   copyCat.pendingLevelUp = false;
+  copyCat.pendingReplay = false;
   stage.setJackPlaying(true);
   setTurn('jack');
   setMessage(
@@ -270,7 +278,7 @@ function startJackBar() {
 /**
  * The one bar clock: one tick per step, forever, until the lesson stops.
  * A tick IS the start of a step — Jack's step-0 drums and Joel's
- * downbeat tick land exactly on the beat, and nothing ever sounds on
+ * downbeat click land exactly on the beat, and nothing ever sounds on
  * top of Jack's downbeat. When the step count reaches the end of the
  * bar, the next bar starts on that very tick: Jack's bar, then Joel's,
  * then Jack's again. A miss or a win never stops the clock — the bar
@@ -293,7 +301,19 @@ function copyClockTick() {
     }
     copyCat.stepHits = [];
     copyCat.doneSteps = 0;
-    if (copyCat.bar === 'jack') {
+    if (copyCat.pendingReplay) {
+      // "Jack, play it again" was tapped mid-lesson: Jack replays his
+      // bar at the barline, on the grid — never mid-bar, where a
+      // restart would sound an extra step 0 off the beat.
+      copyCat.pendingReplay = false;
+      copyCat.bar = 'jack';
+      copyCat.phase = 'watch';
+      stage.setJackPlaying(true);
+      setTurn('jack');
+      setMessage(
+        `Jack plays the ${copyCatBeatName(copyCat.level)} again: ${stepNames(copyCat.pattern[0])} — listen close!`,
+      );
+    } else if (copyCat.bar === 'jack') {
       // Jack's bar is done — Joel's turn starts on this beat.
       copyCat.bar = 'joel';
       copyCat.phase = 'play';
@@ -316,9 +336,12 @@ function copyClockTick() {
   copyCat.stepHits = [];
   if (copyCat.bar === 'jack') playJackStep(copyCat.step);
   else {
-    // Quiet hi-hat tick on the beat — the pulse never stops, and the
-    // downbeat gets its tick just like every other beat.
-    synth.play('hihat', null, 0.2).catch(() => undefined);
+    // Metronome click on the beat — the pulse never stops, and the
+    // downbeat gets an accented click just like every other beat
+    // gets its click. A click, not a hi-hat: a hi-hat tick sounded
+    // like an extra drum pulse between the turns, and it doubled
+    // Joel's own hi-hat tap on every step of his bar.
+    synth.click(copyCat.step === 0).catch(() => undefined);
   }
   renderCopyDots();
 }
@@ -367,8 +390,28 @@ function handleCopyTap(drum) {
   );
 }
 
-copyPlayButton.addEventListener('click', startJackBar);
-copyAgainButton.addEventListener('click', startJackBar);
+/**
+ * "Jack, play it!" / "Jack, play it again": never restart mid-bar —
+ * that sounds an extra step 0 off the grid and shifts the whole
+ * lesson. If the clock is already running, Jack replays at the next
+ * barline; if the lesson is idle, he starts right away.
+ */
+function requestJackReplay() {
+  if (copyCat.pendingLevelUp) return; // the next level is already coming
+  if (copyCat.interval && copyCat.phase !== 'idle') {
+    copyCat.pendingReplay = true;
+    copyCat.phase = 'waiting';
+    stage.setJackPlaying(false);
+    stage.clearGlow();
+    setTurn('jack');
+    setMessage('Jack will play it again at the end of this bar — listen close!');
+    return;
+  }
+  startJackBar();
+}
+
+copyPlayButton.addEventListener('click', requestJackReplay);
+copyAgainButton.addEventListener('click', requestJackReplay);
 
 /* ------------------------------------------------------------ keys + mute */
 
