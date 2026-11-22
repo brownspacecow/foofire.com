@@ -72,6 +72,13 @@
 
         <p class="dq-message" id="message" aria-live="polite">Tap a drum on the kit to make some noise!</p>
 
+        <!-- Sideways is the way to play: on a phone held upright this
+             hint sits above the stage (in the flow, so it can never cover
+             a drum or the menu bar). One tap dismisses it for the session. -->
+        <button type="button" class="dq-rotate-hint" id="rotate-hint" hidden>
+          🔄 Turn your phone sideways for the best view of the kit <span aria-hidden="true">✕</span>
+        </button>
+
         <!-- The 3D stage: top-down view of the drum kit. Tap the drums in 3D. -->
         <div
           id="stage"

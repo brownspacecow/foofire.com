@@ -459,13 +459,41 @@ muteButton.addEventListener('click', () => {
   applyMute(muted);
 });
 
-/* --------------------------------------------------------- fullscreen toggle */
+/* --------------------------------------------------------- fullscreen toggle
+   Phones play this game turned sideways, so going fullscreen also asks
+   the browser to lock the screen to landscape. That only works on
+   Android Chrome, only from this tap, only inside fullscreen — iOS
+   Safari has no orientation lock, so the rotate hint below does the job
+   there instead. Every call is guarded and silent on failure: fullscreen
+   always works even when the lock doesn't. */
 
 const fullscreenButton = $('fullscreen-button');
 const gameEl = document.querySelector('.drum-quest');
 
+function lockOrientationLandscape() {
+  try {
+    const orientation = window.screen && window.screen.orientation;
+    if (orientation && typeof orientation.lock === 'function') {
+      const locked = orientation.lock('landscape');
+      if (locked && typeof locked.catch === 'function') locked.catch(() => undefined);
+    }
+  } catch (error) {
+    /* No orientation lock on this browser; the rotate hint covers it. */
+  }
+}
+
+function unlockOrientation() {
+  try {
+    const orientation = window.screen && window.screen.orientation;
+    if (orientation && typeof orientation.unlock === 'function') orientation.unlock();
+  } catch (error) {
+    /* Nothing to unlock. */
+  }
+}
+
 function applyFullscreenState() {
   const on = Boolean(document.fullscreenElement);
+  if (!on) unlockOrientation();
   fullscreenButton.textContent = on ? '✕' : '⛶';
   fullscreenButton.setAttribute('aria-pressed', String(on));
   fullscreenButton.setAttribute('aria-label', on ? 'Exit fullscreen' : 'Enter fullscreen');
@@ -478,14 +506,63 @@ if (!document.fullscreenEnabled) {
 } else {
   fullscreenButton.addEventListener('click', async () => {
     try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await gameEl.requestFullscreen();
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        unlockOrientation();
+      } else {
+        await gameEl.requestFullscreen();
+        lockOrientationLandscape();
+      }
     } catch (error) {
       /* Fullscreen is a nice-to-have; the game still works without it. */
     }
   });
   document.addEventListener('fullscreenchange', applyFullscreenState);
 }
+
+/* ------------------------------------------------------------ rotate hint
+   On a phone held upright, a small hint above the stage: turn it
+   sideways for the best view of the kit. It lives in the page flow, so
+   it can never cover a drum or the menu bar; one tap dismisses it for
+   the session, and it hides itself the moment the phone turns sideways.
+   Portrait keeps working exactly as now for anyone who ignores it. */
+
+const rotateHintEl = $('rotate-hint');
+const ROTATE_HINT_KEY = 'dq-rotate-hint-dismissed';
+
+function rotateHintDismissed() {
+  try {
+    return window.sessionStorage.getItem(ROTATE_HINT_KEY) === '1';
+  } catch (error) {
+    return false;
+  }
+}
+
+function updateRotateHint() {
+  if (!rotateHintEl) return;
+  const touch = window.matchMedia('(pointer: coarse)').matches;
+  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  rotateHintEl.hidden = !(touch && portrait && !rotateHintDismissed());
+}
+
+rotateHintEl.addEventListener('click', () => {
+  try {
+    window.sessionStorage.setItem(ROTATE_HINT_KEY, '1');
+  } catch (error) {
+    /* Private mode or no storage; hiding it for now is enough. */
+  }
+  rotateHintEl.hidden = true;
+});
+
+// Turning the phone re-measures the stage (the resize event usually
+// fires too, but orientationchange is the explicit signal) and hides
+// the hint the moment the phone is sideways.
+window.addEventListener('resize', updateRotateHint);
+window.addEventListener('orientationchange', () => {
+  stage.resize();
+  updateRotateHint();
+});
+updateRotateHint();
 
 /* ------------------------------------------------------------------- init */
 
