@@ -8,6 +8,9 @@
  * floor tom, crash + ride cymbals) and Joel behind it, red mohawk and all.
  * Tap a drum in 3D to hit it; the head squashes, the cymbal wobbles,
  * the rim flashes and Joel's stick strikes. No flat pads anywhere.
+ * Thumb-first: the camera is close and low, every drum has an invisible
+ * hit sphere ~1.6x its size, and the game is designed for two thumbs
+ * in phone portrait — no precise tapping, no hover, no double-tap zoom.
  * ---------------------------------------------------------------------- */
 
 import * as THREE from 'three';
@@ -47,8 +50,19 @@ export function createStage(container, options = {}) {
   scene.fog = new THREE.Fog(0x0a0418, 14, 30);
 
   const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 120);
-  const CAM_BASE = new THREE.Vector3(0, 2.8, 5.6);
-  let camBaseY = CAM_BASE.y;
+  // Thumb-first framing: close, low, and a little top-down, so the kit
+  // fills the frame and the drums are big enough for two thumbs in
+  // portrait. Joel is still visible behind the kit, but the drums are
+  // the stars. Phones get a wider lens instead of a pulled-back camera.
+  const CAM_BASE = new THREE.Vector3(0, 2.3, 4.2);
+  const LOOK_BASE = new THREE.Vector3(0, 0.9, 0.3);
+  const CAM_ZOOM = new THREE.Vector3(0, 2.1, 3.7);
+  const LOOK_ZOOM = new THREE.Vector3(0, 0.9, 0.35);
+  let zoomed = false;
+  const camTarget = CAM_BASE.clone();
+  const lookTarget = LOOK_BASE.clone();
+  const tmpPos = new THREE.Vector3();
+  let fovTarget = 46;
   camera.position.copy(CAM_BASE);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -61,6 +75,7 @@ export function createStage(container, options = {}) {
   renderer.domElement.setAttribute('aria-hidden', 'true');
   renderer.domElement.style.display = 'block';
   renderer.domElement.style.touchAction = 'manipulation';
+  renderer.domElement.style.userSelect = 'none';
   container.appendChild(renderer.domElement);
 
   const MATS = new Map();
@@ -219,6 +234,26 @@ export function createStage(container, options = {}) {
   const drums = {};
   const hitMeshes = [];
 
+  // Invisible thumb-sized hit targets: a tap that lands *near* a drum
+  // should hit it. Each sphere is ~1.6x the drum, raycast like the drum
+  // itself, and renders nothing (opacity 0 + no colour write).
+  const hitMat = new THREE.MeshBasicMaterial({
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  hitMat.colorWrite = false;
+  function addHitTarget(id, x, y, z, radius) {
+    const target = new THREE.Mesh(new THREE.SphereGeometry(radius, 12, 8), hitMat);
+    target.position.set(x, y, z);
+    target.castShadow = false;
+    target.receiveShadow = false;
+    target.userData.drumId = id;
+    scene.add(target);
+    hitMeshes.push(target);
+    return target;
+  }
+
   function registerDrum(id, group, { heads = [], wobble = null } = {}) {
     // Heads share one glow material — except a head with a painted texture
     // (the kick front), which keeps its map and gets a cloned glow material.
@@ -336,50 +371,53 @@ export function createStage(container, options = {}) {
   registerDrum('kick', kick, { heads: [kickFront] });
   drums.kick.ring.position.set(0, 0, 0.32);
   drums.kick.ring.scale.setScalar(0.55);
+  addHitTarget('kick', 0, 0.55, 0.85, 0.88);
 
-  // --- Snare: left front, tilted toward Joel. ---
+  // --- Snare: left front, tilted toward Joel. Enlarged so a thumb lands it. ---
   const snare = new THREE.Group();
-  snare.position.set(-0.82, 0.82, 0.5);
+  snare.position.set(-0.88, 0.8, 0.5);
   snare.rotation.set(-0.14, 0, 0.1);
   scene.add(snare);
-  mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.2, 40), shellRed, 0, 0, 0, snare);
-  const snareHead = mesh(new THREE.CircleGeometry(0.31, 40), whiteHead, 0, 0.11, 0, snare);
+  mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.2, 40), shellRed, 0, 0, 0, snare);
+  const snareHead = mesh(new THREE.CircleGeometry(0.34, 40), whiteHead, 0, 0.11, 0, snare);
   snareHead.rotation.x = -Math.PI / 2;
-  mesh(new THREE.TorusGeometry(0.33, 0.025, 12, 40), chrome, 0, 0.11, 0, snare).rotation.x = Math.PI / 2;
-  pole(-0.82, 0.5, 0.82);
-  tripod(-0.82, 0.5);
+  mesh(new THREE.TorusGeometry(0.36, 0.025, 12, 40), chrome, 0, 0.11, 0, snare).rotation.x = Math.PI / 2;
+  pole(-0.88, 0.5, 0.8);
+  tripod(-0.88, 0.5);
   registerDrum('snare', snare, { heads: [snareHead] });
   drums.snare.ring.position.set(0, 0.16, 0);
   drums.snare.ring.rotation.x = -Math.PI / 2;
-  drums.snare.ring.scale.setScalar(0.36);
+  drums.snare.ring.scale.setScalar(0.4);
+  addHitTarget('snare', -0.88, 0.8, 0.5, 0.58);
 
-  // --- Hi-hat: far left, two brass cymbals on a stand. ---
+  // --- Hi-hat: far left, two brass cymbals on a stand. Enlarged ~25%. ---
   const hihat = new THREE.Group();
-  hihat.position.set(-1.42, 0.95, 0.3);
+  hihat.position.set(-1.42, 0.98, 0.3);
   scene.add(hihat);
-  mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 40), brass, 0, 0, 0, hihat);
-  mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 40), brass, 0, 0.05, 0, hihat);
-  pole(-1.42, 0.3, 0.95);
+  mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 40), brass, 0, 0, 0, hihat);
+  mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 40), brass, 0, 0.05, 0, hihat);
+  pole(-1.42, 0.3, 0.98);
   tripod(-1.42, 0.3);
   registerDrum('hihat', hihat, { wobble: hihat });
   drums.hihat.ring.position.set(0, 0.12, 0);
   drums.hihat.ring.rotation.x = -Math.PI / 2;
-  drums.hihat.ring.scale.setScalar(0.34);
+  drums.hihat.ring.scale.setScalar(0.4);
+  addHitTarget('hihat', -1.42, 0.98, 0.3, 0.62);
 
-  // --- Rack toms: two angled toms over the kick. ---
+  // --- Rack toms: two angled toms over the kick. Enlarged ~25%. ---
   function rackTom(x, tiltZ) {
     const tom = new THREE.Group();
-    tom.position.set(x, 1.22, 0.05);
+    tom.position.set(x, 1.16, 0.05);
     tom.rotation.set(0.38, 0, tiltZ);
     scene.add(tom);
-    mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.34, 32), shellRed, 0, 0, 0, tom);
-    const head = mesh(new THREE.CircleGeometry(0.22, 32), whiteHead, 0, 0.18, 0, tom);
+    mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.34, 32), shellRed, 0, 0, 0, tom);
+    const head = mesh(new THREE.CircleGeometry(0.28, 32), whiteHead, 0, 0.18, 0, tom);
     head.rotation.x = -Math.PI / 2;
-    mesh(new THREE.TorusGeometry(0.24, 0.02, 10, 32), chrome, 0, 0.18, 0, tom).rotation.x = Math.PI / 2;
+    mesh(new THREE.TorusGeometry(0.3, 0.02, 10, 32), chrome, 0, 0.18, 0, tom).rotation.x = Math.PI / 2;
     return tom;
   }
-  const tomL = rackTom(-0.4, 0.16);
-  const tomR = rackTom(0.4, -0.16);
+  const tomL = rackTom(-0.42, 0.16);
+  const tomR = rackTom(0.42, -0.16);
   const tomHeads = [];
   tomL.traverse((c) => {
     if (c.isMesh && c.geometry && c.geometry.type === 'CircleGeometry') tomHeads.push(c);
@@ -387,22 +425,22 @@ export function createStage(container, options = {}) {
   tomR.traverse((c) => {
     if (c.isMesh && c.geometry && c.geometry.type === 'CircleGeometry') tomHeads.push(c);
   });
-  // Floor tom, right side.
+  // Floor tom, right side. Enlarged ~25% too.
   const floorTom = new THREE.Group();
-  floorTom.position.set(0.98, 0.5, 0.1);
+  floorTom.position.set(1.02, 0.5, 0.1);
   scene.add(floorTom);
-  mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.5, 40), shellRed, 0, 0, 0, floorTom);
-  const floorHead = mesh(new THREE.CircleGeometry(0.28, 40), whiteHead, 0, 0.26, 0, floorTom);
+  mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.5, 40), shellRed, 0, 0, 0, floorTom);
+  const floorHead = mesh(new THREE.CircleGeometry(0.32, 40), whiteHead, 0, 0.26, 0, floorTom);
   floorHead.rotation.x = -Math.PI / 2;
-  mesh(new THREE.TorusGeometry(0.3, 0.025, 12, 40), chrome, 0, 0.26, 0, floorTom).rotation.x = Math.PI / 2;
+  mesh(new THREE.TorusGeometry(0.34, 0.025, 12, 40), chrome, 0, 0.26, 0, floorTom).rotation.x = Math.PI / 2;
   for (let i = 0; i < 3; i += 1) {
     const angle = (i / 3) * Math.PI * 2;
     mesh(
       new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8),
       chrome,
-      Math.cos(angle) * 0.28,
+      Math.cos(angle) * 0.32,
       -0.3,
-      Math.sin(angle) * 0.28,
+      Math.sin(angle) * 0.32,
       floorTom,
     );
   }
@@ -414,11 +452,15 @@ export function createStage(container, options = {}) {
   tomGroup.add(floorTom);
   scene.add(tomGroup);
   registerDrum('tom', tomGroup, { heads: tomHeads });
-  drums.tom.ring.position.set(0, 1.45, 0.1);
+  drums.tom.ring.position.set(0, 1.4, 0.1);
   drums.tom.ring.rotation.x = -Math.PI / 2;
-  drums.tom.ring.scale.setScalar(0.5);
+  drums.tom.ring.scale.setScalar(0.55);
+  addHitTarget('tom', -0.42, 1.16, 0.05, 0.48);
+  addHitTarget('tom', 0.42, 1.16, 0.05, 0.48);
+  addHitTarget('tom', 1.02, 0.5, 0.1, 0.54);
 
-  // --- Cymbals: crash left-high, ride right-high (ride plays crash too). ---
+  // --- Cymbals: crash left, ride right (ride plays crash too). Brought
+  // lower and closer so they sit in thumb reach, not far up in a corner. ---
   function cymbal(x, y, z, radius, tiltZ, drumId) {
     const group = new THREE.Group();
     group.position.set(x, y, z);
@@ -430,17 +472,21 @@ export function createStage(container, options = {}) {
     tripod(x, z);
     return group;
   }
-  const crashGroup = cymbal(-1.3, 2.0, -0.15, 0.44, 0.22, 'crash');
-  const rideGroup = cymbal(1.32, 1.9, -0.15, 0.5, -0.2, 'crash');
+  const crashGroup = cymbal(-1.22, 1.72, 0.0, 0.48, 0.22, 'crash');
+  const rideGroup = cymbal(1.28, 1.62, 0.0, 0.54, -0.2, 'crash');
   // Ride shares the crash entry: tapping it plays the crash.
   const crashRingGroup = new THREE.Group();
   crashRingGroup.add(crashGroup);
   crashRingGroup.add(rideGroup);
   scene.add(crashRingGroup);
   registerDrum('crash', crashRingGroup, { wobble: crashGroup });
-  drums.crash.ring.position.set(-1.3, 2.08, -0.15);
+  drums.crash.ring.position.set(-1.22, 1.8, 0.0);
   drums.crash.ring.rotation.x = -Math.PI / 2;
-  drums.crash.ring.scale.setScalar(0.48);
+  drums.crash.ring.scale.setScalar(0.52);
+  // Cymbals get the biggest hit zones of all — they were the tiny
+  // far-away targets before.
+  addHitTarget('crash', -1.22, 1.72, 0.0, 0.78);
+  addHitTarget('crash', 1.28, 1.62, 0.0, 0.86);
   // Ride wobbles with the crash.
   drums.crash.rideGroup = rideGroup;
   drums.crash.rideBase = rideGroup.rotation.clone();
@@ -539,17 +585,19 @@ export function createStage(container, options = {}) {
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }),
     );
-    sprite.scale.set(0.85, 0.27, 1);
+    sprite.scale.set(0.72, 0.23, 1);
     sprite.position.set(x, y, z);
     scene.add(sprite);
     return sprite;
   }
-  makeLabel(DRUM_LABELS.kick, 0, 1.5, 1.05);
-  makeLabel(DRUM_LABELS.snare, -0.82, 1.32, 0.62);
-  makeLabel(DRUM_LABELS.hihat, -1.42, 1.42, 0.42);
-  makeLabel(DRUM_LABELS.tom, 0, 1.85, 0.15);
-  makeLabel(DRUM_LABELS.crash, -1.3, 2.5, -0.05);
-  makeLabel('RIDE', 1.32, 2.42, -0.05);
+  // Labels sit in the gaps above/beside their drums, never on a head,
+  // and they are sprites — never raycast targets, so they can't block a tap.
+  makeLabel(DRUM_LABELS.kick, 0, 1.38, 1.08);
+  makeLabel(DRUM_LABELS.snare, -0.95, 1.26, 0.68);
+  makeLabel(DRUM_LABELS.hihat, -1.5, 1.44, 0.42);
+  makeLabel(DRUM_LABELS.tom, 0, 2.02, 0.1);
+  makeLabel(DRUM_LABELS.crash, -1.22, 2.2, -0.05);
+  makeLabel('RIDE', 1.28, 2.1, -0.05);
 
   /* -------------------------------------------------- hits, glow, sticks */
   const clock = new THREE.Clock();
@@ -621,13 +669,22 @@ export function createStage(container, options = {}) {
     renderer.setSize(width, height, false);
     const aspect = width / height;
     camera.aspect = aspect;
-    // On a narrow phone the kit is wider than the view: pull the camera
-    // back and open the lens up so the whole kit still fits.
-    camera.fov = aspect < 0.8 ? 56 : 46;
-    camera.position.z = CAM_BASE.z + Math.max(0, 1.1 - aspect) * 3.6;
-    camBaseY = CAM_BASE.y + Math.max(0, 1.1 - aspect) * 0.5;
-    camera.position.y = camBaseY;
+    // Phone portrait: widen the lens a little instead of pulling the
+    // camera back — the kit stays close and thumb-sized, and the outer
+    // drums (hi-hat, ride) stay inside the frame.
+    const baseFov = aspect < 1.0 ? 56 : aspect < 1.2 ? 50 : 46;
+    // Zoom moves the camera, not the lens: keep the wide lens so the
+    // zoomed close-up still shows the whole width of the kit.
+    fovTarget = baseFov;
+    camTarget.copy(zoomed ? CAM_ZOOM : CAM_BASE);
+    lookTarget.copy(zoomed ? LOOK_ZOOM : LOOK_BASE);
+    camera.fov = fovTarget;
     camera.updateProjectionMatrix();
+  }
+
+  function setZoomed(next) {
+    zoomed = Boolean(next);
+    resize();
   }
   window.addEventListener('resize', resize);
   resize();
@@ -649,14 +706,17 @@ export function createStage(container, options = {}) {
     elapsed += dt;
     const now = elapsed;
 
-    // Camera: fixed cinematic 3/4 angle, very subtle idle sway.
-    if (reducedMotion) {
-      camera.position.x = 0;
-    } else {
-      camera.position.x = Math.sin(now * 0.3) * 0.09;
-      camera.position.y += (camBaseY + Math.sin(now * 0.5) * 0.04 - camera.position.y) * 0.02;
+    // Camera: eases toward its target (normal or zoomed) with a very
+    // subtle idle sway. The sway is an offset, not a drift.
+    tmpPos.copy(camTarget);
+    if (!reducedMotion) {
+      tmpPos.x += Math.sin(now * 0.3) * 0.07;
+      tmpPos.y += Math.sin(now * 0.5) * 0.03;
     }
-    camera.lookAt(0, 1.0, -0.2);
+    camera.position.lerp(tmpPos, reducedMotion ? 1 : 0.08);
+    camera.fov += (fovTarget - camera.fov) * (reducedMotion ? 1 : 0.08);
+    camera.updateProjectionMatrix();
+    camera.lookAt(lookTarget);
 
     // Joel bobs gently; a quick nod on every hit.
     const nodAge = now - headNodAt;
@@ -701,5 +761,5 @@ export function createStage(container, options = {}) {
   }
   animate();
 
-  return { hit, setGlow, clearGlow, resize };
+  return { hit, setGlow, clearGlow, resize, setZoomed, isZoomed: () => zoomed };
 }
