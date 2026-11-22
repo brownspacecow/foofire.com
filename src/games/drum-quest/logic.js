@@ -182,6 +182,14 @@ export function copyCatLoopMs(level) {
   return copyCatLength(level) * copyCatStepMs(level);
 }
 
+/** Milliseconds for one full Jack-plus-Joel cycle: two bars, no more.
+ *  Level 1 is 8 quarter-note steps (8000ms at 60 BPM); from level 3
+ *  it is 16 eighth-note steps. If a cycle ever measures longer than
+ *  this, a beat has crept in somewhere. */
+export function copyCatCycleMs(level) {
+  return 2 * copyCatLoopMs(level);
+}
+
 /**
  * Check one tap against the step Joel is on.
  * `hitDrums` is the list of drums already hit in the current step.

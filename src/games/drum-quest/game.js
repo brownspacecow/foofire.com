@@ -4,10 +4,11 @@
  *
  * Jack plays REAL beats: one bar of a groove, with drums landing
  * together the way a real beat does (kick + hi-hat, snare + hi-hat).
- * The flow never stops — Jack's bar runs straight into Joel's bar on
- * the next beat, a quiet hi-hat tick keeps the pulse alive while Joel
- * plays, and a miss means Jack takes the beat straight back on the
- * next beat. No count-in, no pauses, no failing.
+ * The flow never stops — one clock drives every bar, Jack's bar runs
+ * into Joel's bar at the barline, a quiet hi-hat tick keeps the pulse
+ * alive while Joel plays, a miss means Jack plays it again at the
+ * end of the bar, and a win means the next level starts at the end
+ * of the bar. No count-in, no pauses, no failing, no extra beat.
  * ---------------------------------------------------------------------- */
 
 import {
@@ -126,12 +127,16 @@ metronomeButton.addEventListener('click', async () => {
 
 /* ------------------------------------------------------- Copy Cat — Jack's lesson
  *
- * One bar, on a loop, forever. Jack plays the groove (watch), then the
- * very next beat is Joel's turn (play) — the pulse never stops. A quiet
- * hi-hat tick marks every beat of Joel's bar so the beat is always
- * there even if he hasn't tapped yet. If Joel misses, Jack takes the
- * beat straight back on the next beat. If Joel plays the whole bar,
- * Jack cheers and the next level's groove starts one beat later.
+ * One bar, on a loop, forever, on ONE clock. Jack plays the groove
+ * (watch), then the very next bar is Joel's turn (play) — the pulse
+ * never stops. A quiet hi-hat tick marks every beat of Joel's bar,
+ * downbeat included, so the beat is always there even if he hasn't
+ * tapped yet. Bars are exactly 4 beats (4 quarter-note steps at
+ * levels 1–2, 8 eighth-note steps after), and every handoff happens
+ * on a barline: a miss means Jack plays it again at the end of the
+ * bar, and a win means the next level starts at the end of the bar.
+ * Nothing ever adds or drops a beat, and nothing sounds on top of
+ * Jack's downbeat but Jack's own drums.
  */
 
 const copyLevelEl = $('copy-level');
@@ -145,20 +150,19 @@ const copyAgainButton = $('copy-again-button');
 const copyCat = {
   level: 1,
   pattern: [],
-  phase: 'idle', // idle | watch (Jack plays) | play (Joel plays)
+  phase: 'idle', // idle | watch (Jack plays) | play (Joel plays) | waiting (bar finishing after a miss or a win)
+  bar: 'jack', // which bar the single clock is in: Jack's, then Joel's, then Jack's…
   step: 0,
   stepHits: [],
   doneSteps: 0,
   attempts: 0, // misses on the current level
+  pendingLevelUp: false, // Joel finished the bar — the next level starts at the barline
   interval: 0,
-  timeout: 0,
 };
 
 function stopCopyTimers() {
   if (copyCat.interval) window.clearInterval(copyCat.interval);
-  if (copyCat.timeout) window.clearTimeout(copyCat.timeout);
   copyCat.interval = 0;
-  copyCat.timeout = 0;
 }
 
 function stopCopyPlayback() {
@@ -240,57 +244,83 @@ function playJackStep(index) {
   renderCopyDots();
 }
 
-/** Jack's bar: the groove plays, step by step, then Joel's bar starts on the next beat. */
+/** Jack's bar starts now, on this beat: step 0 plays at once, then one
+ *  clock (copyClockTick) drives every step after it. The clock never
+ *  stops mid-lesson — bars are exactly N steps, and every handoff
+ *  happens on a barline, so the pulse stays a steady 4/4. */
 function startJackBar() {
   // Copy Cat needs the whole kit in frame — zoom back out if needed.
   if (stage.isZoomed && stage.isZoomed()) zoomButton.click();
   stopCopyTimers();
+  copyCat.bar = 'jack';
   copyCat.phase = 'watch';
   copyCat.step = 0;
   copyCat.stepHits = [];
   copyCat.doneSteps = 0;
+  copyCat.pendingLevelUp = false;
   stage.setJackPlaying(true);
   setTurn('jack');
   setMessage(
     `Jack plays the ${copyCatBeatName(copyCat.level)}: ${stepNames(copyCat.pattern[0])} — listen close!`,
   );
   playJackStep(0);
-  const stepMs = copyCatStepMs(copyCat.level);
-  copyCat.interval = window.setInterval(() => {
-    copyCat.step += 1;
-    if (copyCat.step >= copyCat.pattern.length) {
-      startJoelBar();
-      return;
-    }
-    playJackStep(copyCat.step);
-  }, stepMs);
+  copyCat.interval = window.setInterval(copyClockTick, copyCatStepMs(copyCat.level));
 }
 
-/** Joel's bar: same groove, same speed. A quiet tick keeps the pulse alive. */
-function startJoelBar() {
-  stopCopyTimers();
-  copyCat.phase = 'play';
-  copyCat.step = 0;
-  copyCat.stepHits = [];
-  copyCat.doneSteps = 0;
-  stage.setJackPlaying(false);
-  stage.clearGlow();
-  setTurn('you');
-  setMessage('Your turn! Play the beat back on your drums — same groove, same speed.');
-  renderCopyDots();
-  const stepMs = copyCatStepMs(copyCat.level);
-  copyCat.interval = window.setInterval(() => {
-    // Quiet hi-hat tick on every beat — the pulse never stops.
-    synth.play('hihat', null, 0.2).catch(() => undefined);
-    copyCat.step += 1;
-    copyCat.stepHits = [];
-    if (copyCat.step >= copyCat.pattern.length) {
-      // Bar over without a full play-through: Jack takes it straight back.
-      startJackBar();
+/**
+ * The one bar clock: one tick per step, forever, until the lesson stops.
+ * A tick IS the start of a step — Jack's step-0 drums and Joel's
+ * downbeat tick land exactly on the beat, and nothing ever sounds on
+ * top of Jack's downbeat. When the step count reaches the end of the
+ * bar, the next bar starts on that very tick: Jack's bar, then Joel's,
+ * then Jack's again. A miss or a win never stops the clock — the bar
+ * simply runs out to the barline, and Jack (or the next level) starts
+ * there, on the grid.
+ */
+function copyClockTick() {
+  const barLength = copyCat.pattern.length;
+  copyCat.step += 1;
+  if (copyCat.step >= barLength) {
+    // Barline: the next bar starts on this tick, never a step late.
+    copyCat.step = 0;
+    if (copyCat.pendingLevelUp) {
+      copyCat.pendingLevelUp = false;
+      copyCat.level += 1;
+      // New level, new tempo: startCopyLevel re-arms the clock at the
+      // new step length, right here on the barline.
+      startCopyLevel();
       return;
     }
-    renderCopyDots();
-  }, stepMs);
+    copyCat.stepHits = [];
+    copyCat.doneSteps = 0;
+    if (copyCat.bar === 'jack') {
+      // Jack's bar is done — Joel's turn starts on this beat.
+      copyCat.bar = 'joel';
+      copyCat.phase = 'play';
+      stage.setJackPlaying(false);
+      stage.clearGlow();
+      setTurn('you');
+      setMessage('Your turn! Play the beat back on your drums — same groove, same speed.');
+    } else {
+      // Joel's bar is done (or he missed) — Jack takes it back on this beat.
+      copyCat.bar = 'jack';
+      copyCat.phase = 'watch';
+      stage.setJackPlaying(true);
+      setTurn('jack');
+      setMessage(
+        `Jack plays the ${copyCatBeatName(copyCat.level)}: ${stepNames(copyCat.pattern[0])} — listen close!`,
+      );
+    }
+  }
+  // A new step starts: yesterday's taps don't carry over.
+  copyCat.stepHits = [];
+  if (copyCat.bar === 'jack') playJackStep(copyCat.step);
+  else {
+    // Quiet hi-hat tick on the beat — the pulse never stops, and the
+    // downbeat gets its tick just like every other beat.
+    synth.play('hihat', null, 0.2).catch(() => undefined);
+  }
+  renderCopyDots();
 }
 
 function handleCopyTap(drum) {
@@ -298,16 +328,11 @@ function handleCopyTap(drum) {
   const result = checkCopyCatTap(copyCat.pattern, copyCat.step, copyCat.stepHits, drum);
   if (result === 'wrong') {
     copyCat.attempts += 1;
-    setMessage('Not quite — Jack takes it straight back on the next beat, listen close!');
-    // No long wait: Jack is back in on the very next beat.
-    stopCopyTimers();
-    copyCat.phase = 'idle';
-    copyCat.stepHits = [];
-    copyCat.doneSteps = 0;
-    stage.setJackPlaying(false);
-    stage.clearGlow();
+    // The clock keeps running: this bar finishes out to the barline,
+    // then Jack plays it again — always on the beat, never off the grid.
+    copyCat.phase = 'waiting';
     setTurn('jack');
-    copyCat.timeout = window.setTimeout(startJackBar, copyCatStepMs(copyCat.level));
+    setMessage('Not quite — Jack will play it again at the end of this bar, listen close!');
     return;
   }
   copyCat.stepHits.push(drum);
@@ -320,12 +345,13 @@ function handleCopyTap(drum) {
   renderCopyDots();
   if (result !== 'complete') return;
 
-  // Complete! Jack cheers, and the next level's groove starts one beat later.
+  // Complete! Jack cheers right away — but the next level's groove
+  // starts at the barline, on the grid, never a beat early or late.
   const stars = starsForAttempts(copyCat.attempts + 1);
   copyStarsEl.textContent = starString(stars);
   copyStarsEl.setAttribute('aria-label', `${stars} of 3 stars`);
-  stopCopyTimers();
-  copyCat.phase = 'idle';
+  copyCat.phase = 'waiting';
+  copyCat.pendingLevelUp = true;
   stage.setJackPlaying(false);
   stage.clearGlow();
   stage.jackCheer();
@@ -333,15 +359,12 @@ function handleCopyTap(drum) {
   const finishedLevel = copyCat.level;
   submitScore(GAME_ID, finishedLevel);
   updateBestLine();
+  setTurn('jack');
   setMessage(
     stars === 3
       ? `Perfect! ${starString(stars)} Jack is so proud — level ${finishedLevel} nailed on the first try!`
       : `You did it! ${starString(stars)} Jack is cheering for you — level ${finishedLevel} done!`,
   );
-  copyCat.timeout = window.setTimeout(() => {
-    copyCat.level = finishedLevel + 1;
-    startCopyLevel();
-  }, copyCatStepMs(copyCat.level));
 }
 
 copyPlayButton.addEventListener('click', startJackBar);
