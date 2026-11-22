@@ -26,27 +26,31 @@ export const drumByKey = (key) => {
 
 export const COPY_CAT_MIN_LENGTH = 2;
 export const COPY_CAT_MAX_LENGTH = 8;
-export const COPY_CAT_START_BPM = 70;
+export const COPY_CAT_START_BPM = 60;
+export const COPY_CAT_BPM_STEP = 3;
 export const COPY_CAT_MAX_BPM = 120;
 
-/** Drums a pattern may use at a given level: tom joins from level 5. */
+/**
+ * Drums a pattern may use at a given level. Jack starts with just kick
+ * and snare, adds the hi-hat from level 3, and the tom from level 6 —
+ * so the first beats are genuinely simple.
+ */
 export function copyCatDrums(level) {
-  return level >= 5 ? ['kick', 'snare', 'hihat', 'tom'] : ['kick', 'snare', 'hihat'];
+  if (level >= 6) return ['kick', 'snare', 'hihat', 'tom'];
+  if (level >= 3) return ['kick', 'snare', 'hihat'];
+  return ['kick', 'snare'];
 }
 
-/** Pattern length grows one hit every two levels: 2, 2, 3, 3, … up to 8. */
+/** Pattern length: 2 hits at level 1, 3 at level 2, then +1 every two levels, up to 8. */
 export function copyCatLength(level) {
   const safe = Math.max(1, Math.floor(level) || 1);
-  return Math.min(
-    COPY_CAT_MAX_LENGTH,
-    COPY_CAT_MIN_LENGTH + Math.floor((safe - 1) / 2),
-  );
+  return Math.min(COPY_CAT_MAX_LENGTH, COPY_CAT_MIN_LENGTH + Math.floor(safe / 2));
 }
 
-/** Tempo starts at 70 BPM and climbs 5 BPM a level, up to 120. */
+/** Tempo starts at 60 BPM and climbs 3 BPM a level, up to 120. */
 export function copyCatTempo(level) {
   const safe = Math.max(1, Math.floor(level) || 1);
-  return Math.min(COPY_CAT_MAX_BPM, COPY_CAT_START_BPM + (safe - 1) * 5);
+  return Math.min(COPY_CAT_MAX_BPM, COPY_CAT_START_BPM + (safe - 1) * COPY_CAT_BPM_STEP);
 }
 
 /** Milliseconds between pattern hits at a level (quarter notes). */
@@ -55,13 +59,27 @@ export function copyCatStepMs(level) {
 }
 
 /**
- * Build a pattern for a level. No drum repeats back-to-back, so the pattern
- * always feels like a beat instead of a stuck key. `rand` is injectable so
- * tests can use a fixed sequence.
+ * Jack's first beats, fixed and very simple — a 7-year-old should be able
+ * to hum them after hearing them once. Level 1 is just Kick, Snare.
+ */
+export const JACK_FIRST_BEATS = {
+  1: ['kick', 'snare'],
+  2: ['kick', 'snare', 'kick'],
+  3: ['kick', 'hihat', 'snare'],
+};
+
+/**
+ * Build a pattern for a level. The first three levels are Jack's fixed
+ * simple beats; later levels are random from the level's drum pool. No
+ * drum repeats back-to-back, so the pattern always feels like a beat
+ * instead of a stuck key. `rand` is injectable so tests can use a fixed
+ * sequence.
  */
 export function generatePattern(level, rand = Math.random) {
-  const pool = copyCatDrums(level);
-  const length = copyCatLength(level);
+  const safe = Math.max(1, Math.floor(level) || 1);
+  if (JACK_FIRST_BEATS[safe]) return [...JACK_FIRST_BEATS[safe]];
+  const pool = copyCatDrums(safe);
+  const length = copyCatLength(safe);
   const pattern = [];
   let previous = null;
   for (let i = 0; i < length; i += 1) {
@@ -76,6 +94,14 @@ export function generatePattern(level, rand = Math.random) {
     previous = pick;
   }
   return pattern;
+}
+
+/**
+ * Milliseconds for one full Jack loop: the pattern, then a two-beat
+ * pause before he plays it again.
+ */
+export function copyCatLoopMs(level) {
+  return copyCatLength(level) * copyCatStepMs(level) + 2 * copyCatStepMs(level);
 }
 
 /**

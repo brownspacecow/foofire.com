@@ -7,9 +7,11 @@
  * A stage with a real-looking kit (kick, snare, hi-hat, two rack toms,
  * floor tom, crash + ride cymbals) seen in FIRST PERSON, like other drum
  * simulator games: you sit on the stool behind the kit, two drumsticks
- * in the foreground, and the drums fill the frame. Tap a drum in 3D to
- * hit it; the head squashes, the cymbal wobbles, the rim flashes and
- * your stick strikes. No flat pads anywhere.
+ * in the foreground, and the drums fill the frame. Across the kit sits
+ * Jack, your drum teacher, with his own demo pad — he plays a simple
+ * beat, you play it back. Tap a drum in 3D to hit it; the head squashes,
+ * the cymbal wobbles, the rim flashes and your stick strikes. No flat
+ * pads anywhere.
  * Thumb-first: the camera is close and low, every drum has an invisible
  * hit sphere ~1.6x its size, and the game is designed for two thumbs
  * in phone portrait — no precise tapping, no hover, no double-tap zoom.
@@ -574,6 +576,89 @@ export function createStage(container, options = {}) {
   makeLabel(DRUM_LABELS.crash, 0.45, 2.05, 0.5);
   makeLabel('RIDE', -0.45, 2.05, 0.5);
 
+  /* --------------------------------------------------- Jack, the teacher */
+  // Jack sits across the kit from you, on the far side of the stage, so
+  // he is visible in first person between the cymbals: a friendly
+  // instructor with his own little demo pad. When he plays a beat, HIS
+  // sticks strike HIS pad (and your matching drum lights up) — it is
+  // always obvious it is Jack playing, not your sticks. He is built
+  // from the same simple primitives as the kit, facing back toward the
+  // stool (-z), so his face is toward the camera.
+  const jack = new THREE.Group();
+  jack.position.set(0, 0, 3.4);
+  scene.add(jack);
+  // Stool.
+  mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.08, 24), darkMetal, 0, 0.56, 0, jack);
+  mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.56, 12), chrome, 0, 0.28, 0, jack);
+  // Body: warm orange shirt, so he reads as a different person from you.
+  const jackShirt = mat(0xff8c42, { roughness: 0.75 });
+  mesh(new THREE.CylinderGeometry(0.27, 0.31, 0.6, 24), jackShirt, 0, 1.05, 0, jack);
+  // Head, hair, cap, and a face on the -z side (toward the camera).
+  const jackHead = new THREE.Group();
+  jackHead.position.set(0, 1.56, 0);
+  jack.add(jackHead);
+  mesh(new THREE.SphereGeometry(0.24, 32, 24), skin, 0, 0, 0, jackHead);
+  // Brown hair on top, and a teal cap with a brim pointing at you.
+  const jackHair = mesh(new THREE.SphereGeometry(0.245, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), mat(0x5b3a29, { roughness: 0.85 }), 0, 0.02, 0, jackHead);
+  jackHair.scale.set(1, 0.9, 1);
+  mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.07, 24), mat(0x2ec4b6, { roughness: 0.7 }), 0, 0.2, 0, jackHead);
+  const jackBrim = mesh(new THREE.BoxGeometry(0.3, 0.03, 0.18), mat(0x2ec4b6, { roughness: 0.7 }), 0, 0.17, -0.26, jackHead);
+  jackBrim.castShadow = false;
+  for (const side of [-1, 1]) {
+    mesh(new THREE.SphereGeometry(0.032, 12, 8), mat(0x1a1022, { roughness: 0.3 }), side * 0.09, 0.03, -0.21, jackHead).castShadow = false;
+    mesh(new THREE.SphereGeometry(0.04, 12, 8), mat(0xf08fa4, { roughness: 0.6 }), side * 0.16, -0.07, -0.19, jackHead).castShadow = false;
+  }
+  // Smile: a thin dark arc facing the camera.
+  const jackSmile = mesh(new THREE.TorusGeometry(0.07, 0.013, 8, 24, Math.PI), mat(0x1a1022, { roughness: 0.5 }), 0, -0.08, -0.21, jackHead);
+  jackSmile.rotation.x = Math.PI;
+  jackSmile.rotation.y = Math.PI;
+  jackSmile.castShadow = false;
+  makeLabel('JACK', 0, 2.18, 3.4);
+  // Jack's demo pad: a small blue drum on a stand in front of him,
+  // in the gap between your rack toms so you can see it.
+  const jackPad = new THREE.Group();
+  jackPad.position.set(0, 0.95, 2.65);
+  scene.add(jackPad);
+  mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.14, 32), mat(0x2b6cb0, { roughness: 0.3, metalness: 0.3 }), 0, 0, 0, jackPad);
+  const jackPadHead = mesh(new THREE.CircleGeometry(0.26, 32), whiteHead, 0, 0.08, 0, jackPad);
+  jackPadHead.rotation.x = -Math.PI / 2;
+  pole(0, 2.65, 0.9);
+  tripod(0, 2.65);
+  // Jack's arms: shoulder pivots, hands and sticks reaching forward
+  // and down toward his pad (which sits at -z from him).
+  function makeJackArm(side) {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * 0.3, 1.32, -0.05);
+    jack.add(pivot);
+    mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.42, 12), jackShirt, 0, -0.18, -0.08, pivot);
+    mesh(new THREE.SphereGeometry(0.06, 12, 8), skin, 0, -0.38, -0.2, pivot);
+    const stick = mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.55, 8), wood, 0, -0.48, -0.32, pivot);
+    stick.rotation.x = 1.5;
+    stick.rotation.z = side * -0.1;
+    return { group: pivot, restX: 0, strikeAt: -10 };
+  }
+  const jackLeft = makeJackArm(-1);
+  const jackRight = makeJackArm(1);
+  let jackPlaying = false;
+  let jackCheerAt = -10;
+
+  /** Jack plays one hit on his demo pad — his stick, not yours. */
+  function jackHit(drumId) {
+    const arm = STRIKE_ARM[drumId];
+    if (arm === 'left') jackLeft.strikeAt = elapsed;
+    else jackRight.strikeAt = elapsed;
+    jackPadHead.scale.set(1.12, 1.12, 1);
+  }
+
+  function setJackPlaying(on) {
+    jackPlaying = Boolean(on);
+  }
+
+  /** Jack celebrates: both sticks up and a little hop. */
+  function jackCheer() {
+    jackCheerAt = elapsed;
+  }
+
   /* -------------------------------------------------- hits, glow, sticks */
   const clock = new THREE.Clock();
   let elapsed = 0;
@@ -704,6 +789,24 @@ export function createStage(container, options = {}) {
     // Your sticks swing on every hit; the kick pedal presses on a kick.
     fpvStickSwing(fpvLeft, now);
     fpvStickSwing(fpvRight, now);
+
+    // Jack: while he is teaching, his head bobs to the beat; on a
+    // strike his stick swings down onto his demo pad, and the pad head
+    // squash eases back. On a cheer he hops with both sticks up.
+    const cheerAge = now - jackCheerAt;
+    if (cheerAge >= 0 && cheerAge < 0.9) {
+      jack.position.y = 0.16 * Math.sin((cheerAge / 0.9) * Math.PI);
+      jackLeft.group.rotation.x = -0.9;
+      jackRight.group.rotation.x = -0.9;
+    } else {
+      jack.position.y = 0;
+      jackHead.position.y = 1.56 + (jackPlaying && !reducedMotion ? Math.sin(now * 4) * 0.02 : 0);
+      jackHead.rotation.x = jackPlaying && !reducedMotion ? 0.06 * Math.sin(now * 4) : 0;
+      fpvStickSwing(jackLeft, now);
+      fpvStickSwing(jackRight, now);
+    }
+    const padScale = jackPadHead.scale.x;
+    if (padScale > 1) jackPadHead.scale.set(Math.max(1, padScale - dt * 2.5), Math.max(1, padScale - dt * 2.5), 1);
     const pressAge = now - pedalPressAt;
     kickPedal.rotation.x =
       0.25 + (pressAge >= 0 && pressAge < 0.25 ? 0.18 * Math.sin((pressAge / 0.25) * Math.PI) : 0);
@@ -738,5 +841,5 @@ export function createStage(container, options = {}) {
   }
   animate();
 
-  return { hit, setGlow, clearGlow, resize, setZoomed, isZoomed: () => zoomed };
+  return { hit, setGlow, clearGlow, resize, setZoomed, isZoomed: () => zoomed, jackHit, setJackPlaying, jackCheer };
 }

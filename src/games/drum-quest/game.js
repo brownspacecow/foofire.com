@@ -1,8 +1,9 @@
 /* -------------------------------------------------------------------------
- * Drum Quest — Free Play, Copy Cat and Beat Builder, played on a 3D
- * Three.js drum kit (see scene.js). Tap a drum in 3D, or use keys A/S/D/F/G.
- * No failing anywhere: a wrong tap in Copy Cat just replays the pattern,
- * and Free Play and Beat Builder never score at all.
+ * Drum Quest — Free Play, Jack's Copy Cat and Beat Builder, played on a
+ * 3D Three.js drum kit (see scene.js). Tap a drum in 3D, or use keys
+ * A/S/D/F/G. No failing anywhere: in Jack's lesson a wrong tap just
+ * means Jack plays the beat again, and Free Play and Beat Builder never
+ * score at all.
  * ---------------------------------------------------------------------- */
 
 import {
@@ -15,6 +16,7 @@ import {
   copyCatLength,
   copyCatStepMs,
   copyCatTempo,
+  drumById,
   drumByKey,
   emptyGrid,
   generatePattern,
@@ -86,7 +88,13 @@ function showMode(next) {
     $(`panel-${panel}`).hidden = panel !== next;
   }
   if (next === 'free') setMessage('Tap a drum on the kit to make some noise!');
-  if (next === 'copy') setMessage('Press “Play the pattern”, then copy it back!');
+  if (next === 'copy') {
+    setMessage('Jack is ready! Listen to his beat, then play it back.');
+    // Jack starts the beat on his own once you come to his lesson.
+    if (copyCat.phase === 'idle') {
+      copyCat.timers.push(window.setTimeout(playCopyPattern, 500));
+    }
+  }
   if (next === 'builder') setMessage('Tap the squares to build a beat, then press play!');
 }
 
@@ -128,7 +136,15 @@ metronomeButton.addEventListener('click', async () => {
   metronomeTimer = window.setInterval(tick, stepMs);
 });
 
-/* ---------------------------------------------------------------- Copy Cat */
+/* ------------------------------------------------------- Copy Cat — Jack's lesson
+ *
+ * Jack plays a very simple beat on his demo pad, then Joel plays it
+ * back. The beat is ongoing: Jack plays, Joel tries, and if Joel gets
+ * it wrong Jack just plays it again — as many times as it takes, with
+ * no fail and no penalty beyond the stars. Only a full correct
+ * play-through finishes the level, Jack cheers, and the next level
+ * starts with a new simple beat.
+ */
 
 const copyLevelEl = $('copy-level');
 const copyStarsEl = $('copy-stars');
@@ -140,7 +156,7 @@ const copyAgainButton = $('copy-again-button');
 const copyCat = {
   level: 1,
   pattern: [],
-  phase: 'idle', // idle | watch | play
+  phase: 'idle', // idle | watch (Jack plays) | play (Joel tries)
   taps: [],
   attempts: 0, // misses on the current level
   timers: [],
@@ -149,7 +165,8 @@ const copyCat = {
 function stopCopyPlayback() {
   for (const timer of copyCat.timers) window.clearTimeout(timer);
   copyCat.timers = [];
-  if (copyCat.phase === 'watch') copyCat.phase = 'idle';
+  copyCat.phase = 'idle';
+  stage.setJackPlaying(false);
   stage.clearGlow();
 }
 
@@ -165,6 +182,9 @@ function renderCopyDots(activeIndex = -1) {
   }
 }
 
+const patternNames = (pattern) =>
+  pattern.map((id) => (drumById(id) || { label: id }).label).join(' … ');
+
 function startCopyLevel() {
   copyCat.pattern = generatePattern(copyCat.level);
   copyCat.phase = 'idle';
@@ -173,18 +193,27 @@ function startCopyLevel() {
   copyLevelEl.textContent = String(copyCat.level);
   copyStarsEl.textContent = '☆☆☆';
   copyStarsEl.setAttribute('aria-label', '0 of 3 stars');
+  const joins =
+    copyCat.level >= 6
+      ? 'the tom joins in! · '
+      : copyCat.level >= 3
+        ? 'the hi-hat joins in! · '
+        : '';
+  const pace = copyCatTempo(copyCat.level) <= 70 ? 'nice and slow' : 'a little quicker';
   copyInfoEl.textContent =
-    `Level ${copyCat.level} · ${copyCatLength(copyCat.level)} hits · ` +
-    `${copyCat.level >= 5 ? 'tom joins in! · ' : ''}` +
-    `nice and ${copyCatTempo(copyCat.level) <= 80 ? 'slow' : 'brisk'} (${copyCatTempo(copyCat.level)} BPM)`;
+    `Level ${copyCat.level} · Jack plays ${copyCatLength(copyCat.level)} hits · ${joins}` +
+    `${pace} (${copyCatTempo(copyCat.level)} BPM)`;
   renderCopyDots();
   copyPlayButton.disabled = false;
   copyAgainButton.disabled = true;
-  setMessage('Press “Play the pattern” and listen close!');
+  setMessage('Jack is ready! Press “Jack, play it!” and listen close!');
 }
 
+/**
+ * One Jack pass: Jack plays the pattern on his demo pad — his sticks,
+ * not yours — your matching drum lights up, then it is your turn.
+ */
 function playCopyPattern() {
-  if (copyCat.phase === 'watch') return;
   // Copy Cat needs the whole kit in frame — zoom back out if needed.
   if (stage.isZoomed && stage.isZoomed()) zoomButton.click();
   stopCopyPlayback();
@@ -193,14 +222,22 @@ function playCopyPattern() {
   copyPlayButton.disabled = true;
   copyAgainButton.disabled = true;
   renderCopyDots();
-  setMessage('Listen… watch the drums light up…');
+  stage.setJackPlaying(true);
+  setMessage(`Jack plays: ${patternNames(copyCat.pattern)} — listen close!`);
   const stepMs = copyCatStepMs(copyCat.level);
+  // A count-in click on beat 1, so the beat never feels like it stops.
+  copyCat.timers.push(
+    window.setTimeout(() => {
+      synth.click(true).catch(() => undefined);
+    }, 100),
+  );
   copyCat.pattern.forEach((drum, index) => {
     copyCat.timers.push(
       window.setTimeout(() => {
         stage.clearGlow();
         stage.setGlow(drum, true);
-        hitDrum(drum);
+        stage.jackHit(drum);
+        synth.play(drum).catch(() => undefined);
         renderCopyDots(index);
       }, 500 + index * stepMs),
     );
@@ -209,10 +246,11 @@ function playCopyPattern() {
     window.setTimeout(() => {
       copyCat.phase = 'play';
       stage.clearGlow();
+      stage.setJackPlaying(false);
       renderCopyDots();
       copyPlayButton.disabled = false;
       copyAgainButton.disabled = false;
-      setMessage('Your turn! Tap the same drums in the same order.');
+      setMessage('Your turn! Play it back on your drums — Jack will play it again if you miss.');
     }, 500 + copyCat.pattern.length * stepMs + 250),
   );
 }
@@ -224,39 +262,42 @@ function handleCopyTap(drum) {
     copyCat.attempts += 1;
     copyCat.taps = [];
     renderCopyDots();
-    setMessage('Oops, not quite! Listen again — you\'ve got this.');
-    // Idle (not 'watch') so the scheduled replay is not blocked by the guard
-    // in playCopyPattern.
+    setMessage('Not quite — Jack will play it again, listen close!');
+    // The beat keeps going: Jack plays it again, and Joel gets
+    // another shot, as many times as it takes.
     copyCat.phase = 'idle';
-    copyCat.timers.push(window.setTimeout(playCopyPattern, 1100));
+    copyCat.timers.push(window.setTimeout(playCopyPattern, 1400));
     return;
   }
   copyCat.taps.push(drum);
   renderCopyDots();
   if (result === 'correct') return;
 
-  // Complete!
+  // Complete! Jack cheers, and the next level starts with a new beat.
   const stars = starsForAttempts(copyCat.attempts + 1);
   copyStarsEl.textContent = starString(stars);
   copyStarsEl.setAttribute('aria-label', `${stars} of 3 stars`);
   copyCat.phase = 'idle';
   copyPlayButton.disabled = true;
   copyAgainButton.disabled = true;
+  stage.setJackPlaying(false);
+  stage.jackCheer();
   synth.cheer().catch(() => undefined);
   const finishedLevel = copyCat.level;
   submitScore(GAME_ID, finishedLevel);
   updateBestLine();
   setMessage(
     stars === 3
-      ? `Perfect! ${starString(stars)} Level ${finishedLevel} nailed on the first try!`
-      : `You did it! ${starString(stars)} Level ${finishedLevel} done!`,
+      ? `Perfect! ${starString(stars)} Jack is so proud — level ${finishedLevel} nailed on the first try!`
+      : `You did it! ${starString(stars)} Jack is cheering for you — level ${finishedLevel} done!`,
   );
   copyCat.timers.push(
     window.setTimeout(() => {
       copyCat.level = finishedLevel + 1;
       startCopyLevel();
-      setMessage(`Level ${copyCat.level}! A little longer, a little faster. You can do it!`);
-    }, 2200),
+      setMessage(`Level ${copyCat.level}! Jack has a new beat for you — listen close!`);
+      playCopyPattern();
+    }, 2400),
   );
 }
 
@@ -467,7 +508,7 @@ muteButton.addEventListener('click', () => {
 function updateBestLine() {
   const best = getBest(GAME_ID);
   $('best-line').textContent =
-    best > 0 ? `Best Copy Cat level yet: ${best} ⭐` : 'Your best Copy Cat level will show up here.';
+    best > 0 ? `Best level with Jack yet: ${best} ⭐` : 'Your best level with Jack will show up here.';
 }
 
 applyMute(readMuted());

@@ -8,6 +8,7 @@ import {
   clampTempo,
   copyCatDrums,
   copyCatLength,
+  copyCatLoopMs,
   copyCatStepMs,
   copyCatTempo,
   drumById,
@@ -38,27 +39,42 @@ test('drum lookup works by id and by keyboard key', () => {
   assert.equal(drumByKey('z'), null);
 });
 
-test('copy cat length grows one hit every two levels, capped at 8', () => {
+test('copy cat length: 2 hits at level 1, 3 at level 2, capped at 8', () => {
   assert.equal(copyCatLength(1), 2);
-  assert.equal(copyCatLength(2), 2);
+  assert.equal(copyCatLength(2), 3);
   assert.equal(copyCatLength(3), 3);
   assert.equal(copyCatLength(5), 4);
   assert.equal(copyCatLength(13), 8);
   assert.equal(copyCatLength(99), 8);
 });
 
-test('copy cat tempo starts at 70 BPM and caps at 120', () => {
-  assert.equal(copyCatTempo(1), 70);
-  assert.equal(copyCatTempo(2), 75);
-  assert.equal(copyCatTempo(11), 120);
+test('copy cat tempo starts at 60 BPM, climbs 3 a level, and caps at 120', () => {
+  assert.equal(copyCatTempo(1), 60);
+  assert.equal(copyCatTempo(2), 63);
+  assert.equal(copyCatTempo(11), 90);
   assert.equal(copyCatTempo(99), 120);
-  assert.equal(copyCatStepMs(1), Math.round(60000 / 70));
+  assert.equal(copyCatStepMs(1), 1000);
 });
 
-test('tom only joins the pattern pool from level 5', () => {
-  assert.deepEqual(copyCatDrums(1), ['kick', 'snare', 'hihat']);
-  assert.deepEqual(copyCatDrums(4), ['kick', 'snare', 'hihat']);
-  assert.deepEqual(copyCatDrums(5), ['kick', 'snare', 'hihat', 'tom']);
+test('Jack starts with kick and snare only; hi-hat joins at 3, tom at 6', () => {
+  assert.deepEqual(copyCatDrums(1), ['kick', 'snare']);
+  assert.deepEqual(copyCatDrums(2), ['kick', 'snare']);
+  assert.deepEqual(copyCatDrums(3), ['kick', 'snare', 'hihat']);
+  assert.deepEqual(copyCatDrums(5), ['kick', 'snare', 'hihat']);
+  assert.deepEqual(copyCatDrums(6), ['kick', 'snare', 'hihat', 'tom']);
+});
+
+test("Jack's first three beats are fixed and very simple", () => {
+  assert.deepEqual(generatePattern(1), ['kick', 'snare']);
+  assert.deepEqual(generatePattern(2), ['kick', 'snare', 'kick']);
+  assert.deepEqual(generatePattern(3), ['kick', 'hihat', 'snare']);
+  // Early patterns use only kick and snare at levels 1-2.
+  for (const drum of generatePattern(2)) assert.ok(['kick', 'snare'].includes(drum));
+});
+
+test('a Jack loop is the pattern plus a two-beat pause', () => {
+  // Level 1: 2 hits at 60 BPM (1000ms each) + 2 beats pause = 4000ms.
+  assert.equal(copyCatLoopMs(1), 4000);
 });
 
 test('generated patterns have the right length and never repeat a drum', () => {
