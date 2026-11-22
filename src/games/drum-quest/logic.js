@@ -190,21 +190,57 @@ export function copyCatCycleMs(level) {
   return 2 * copyCatLoopMs(level);
 }
 
+/** True when every drum in a step has been hit. */
+export function stepIsDone(step, hits) {
+  return step.every((drum) => (hits || []).includes(drum));
+}
+
 /**
- * Check one tap against the step Joel is on.
- * `hitDrums` is the list of drums already hit in the current step.
- * Returns 'wrong' when the drum is not in this step (or was already
- * hit), 'correct' when the tap is right but the step still needs more
- * drums, 'step' when the step is now complete but the bar is not done,
- * or 'complete' when the last step of the bar is complete.
+ * Check one tap against the bar Joel is playing.
+ * `hitsByStep` is one list of drums hit per step, kept for the whole bar
+ * — a tap is never judged by the clock's current step alone, because a
+ * 7-year-old's hands don't land exactly on the clock:
+ * - A tap credits the earliest step next to the one he is on (the step
+ *   before, his step, or the next step) that still needs that drum.
+ *   So a hi-hat meant for step 0 still counts when the clock has just
+ *   ticked to step 1, a snare tapped a beat early counts for the next
+ *   step, and finishing a step early then playing the next step's drums
+ *   counts too.
+ * - A tap on a drum that is only in steps already done — a double-tap,
+ *   or an extra tap on a finished step, even a couple of steps back —
+ *   is 'ignored': he hears his drum, he just doesn't lose the bar
+ *   for it.
+ * - Only a tap on a drum in NO nearby step, and in no finished step
+ *   either, is 'wrong': a genuinely wrong drum, like the crash on a
+ *   level that has no crash, or a drum two steps too early.
+ * The matched step records the hit, so a later tap on the same drum
+ * counts for the next step that still needs it. Returns 'ignored',
+ * 'wrong', 'correct' (step still needs more drums), 'step' (a step is
+ * now complete but the bar is not done), or 'complete' (every step
+ * of the bar is now complete).
  */
-export function checkCopyCatTap(pattern, stepIndex, hitDrums, drumId) {
-  const step = pattern[stepIndex];
-  if (!step || !step.includes(drumId)) return 'wrong';
-  if (hitDrums.includes(drumId)) return 'wrong';
-  const done = hitDrums.length + 1 === step.length;
-  if (!done) return 'correct';
-  return stepIndex + 1 === pattern.length ? 'complete' : 'step';
+export function checkCopyCatTap(pattern, stepIndex, hitsByStep, drumId) {
+  const nearby = [stepIndex - 1, stepIndex, stepIndex + 1];
+  let seenInStep = false;
+  for (const i of nearby) {
+    const step = pattern[i];
+    if (!step || !step.includes(drumId)) continue;
+    seenInStep = true;
+    const hits = hitsByStep[i] || (hitsByStep[i] = []);
+    if (hits.includes(drumId)) continue;
+    hits.push(drumId);
+    if (!stepIsDone(step, hits)) return 'correct';
+    const allDone = pattern.every((s, j) => stepIsDone(s, hitsByStep[j]));
+    return allDone ? 'complete' : 'step';
+  }
+  // No step next to this one still needs the drum. It was either
+  // already hit in a nearby step, or it belongs to a step that is
+  // already done — an extra tap either way, ignored, never failed.
+  if (seenInStep) return 'ignored';
+  if (pattern.some((s, j) => s.includes(drumId) && stepIsDone(s, hitsByStep[j]))) {
+    return 'ignored';
+  }
+  return 'wrong';
 }
 
 /** Stars for finishing a groove: 3 on the first try, 2 on the second, 1 after. */
