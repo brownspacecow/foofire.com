@@ -12,30 +12,46 @@ export function midiToFreq(m) {
   return 440 * Math.pow(2, (m - 69) / 12);
 }
 
-// ---- the dungeon loop: an original 4-bar A-minor tune ----
-// 32 eighth-note steps at 132 BPM (one loop ≈ 7.3 s).
+// ---- the dungeon loop: an original 8-bar A-minor tune ----
+// 64 eighth-note steps at 132 BPM (one loop ≈ 14.5 s).
 // Deliberately, unmistakably minor: the melody leans hard on the minor
-// 3rd (C) and minor 6th (F), the bass walks Am–F–Dm–E, and bar 4 uses
-// the harmonic-minor raised 7th (G#) as a leading tone back to A.
+// 3rd (C) and minor 6th (F), the bass walks Am–F–Dm–E, and bars 4 and 8
+// use the harmonic-minor raised 7th (G#) as a leading tone back to A.
 // No major 3rd (C#) or major 6th (F#) anywhere in the melody.
+// Bars 1–4 are the tune players already know. Bars 5–8 answer it: bar 5
+// lifts into a higher register, bar 6 turns darker with a long
+// descending line, bar 7 climbs back, and bar 8 cadences home to A so
+// the loop point (bar 8 → bar 1, both on A) is seamless.
 // melody: square-wave lead. bass: triangle-wave roots.
 // hat: 1 on off-beat steps (soft noise ticks), 0 elsewhere.
 export const MUSIC = {
   bpm: 132,
-  steps: 32,
+  steps: 64,
   melody: [
     69, 72, 76, 72, 69, 72, 69, 67, // bar 1 (Am): A C E C | A C A G
     65, 69, 72, 77, 76, 72, 69, 65, // bar 2 (F):  F A C F | E C A F
     62, 65, 69, 74, 72, 69, 65, 62, // bar 3 (Dm): D F A D | C A F D
     64, 68, 71, 76, 71, 68, 69, null, // bar 4 (E→Am): E G# B E | B G# A .
+    76, 81, 84, 81, 79, 76, 72, 69, // bar 5 (Am): E A C A | G E C A — lift
+    77, 76, 74, 72, 71, 69, 67, 65, // bar 6 (F):  F E D C | B A G F — darker descent
+    62, 65, 69, 72, 74, 77, 76, 74, // bar 7 (Dm): D F A C | D F E D — climb back
+    64, 68, 71, 76, 79, 76, 72, 69, // bar 8 (E→Am): E G# B E | G E C A — home
   ],
   bass: [
     45, null, 45, null, 45, null, 45, null, // bar 1: A
     41, null, 41, null, 41, null, 41, null, // bar 2: F
     38, null, 38, null, 38, null, 38, null, // bar 3: D
     40, null, 40, null, 40, null, 45, null, // bar 4: E, walk up to A
+    45, null, 45, null, 45, null, 45, null, // bar 5: A
+    41, null, 41, null, 41, null, 41, null, // bar 6: F
+    38, null, 38, null, 38, null, 38, null, // bar 7: D
+    40, null, 40, null, 40, null, 45, null, // bar 8: E, walk up to A
   ],
   hat: [
+    0, 1, 0, 1, 0, 1, 0, 1,
+    0, 1, 0, 1, 0, 1, 0, 1,
+    0, 1, 0, 1, 0, 1, 0, 1,
+    0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
