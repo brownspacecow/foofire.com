@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------
  * Drum Quest — Free Play and Jack's Copy Cat, played on a 3D Three.js
- * drum kit (see scene.js). Tap a drum in 3D, or use keys A/S/D/F/G.
+ * drum kit (see scene.js). Tap a drum in 3D, or use keys A/S/D/F/G/H.
  *
  * Jack plays REAL beats: one bar of a groove, with drums landing
  * together the way a real beat does (kick + hi-hat, snare + hi-hat).

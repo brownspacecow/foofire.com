@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  DRUMS,
   JACK_BEATS,
   checkCopyCatTap,
   copyCatBeatName,
@@ -25,10 +26,35 @@ const makeRand = (values) => {
 test('drum lookup works by id and by keyboard key', () => {
   assert.equal(drumById('kick').label, 'Kick');
   assert.equal(drumById('crash').key, 'g');
+  assert.equal(drumById('ride').label, 'Ride');
+  assert.equal(drumById('ride').key, 'h');
   assert.equal(drumById('nope'), null);
   assert.equal(drumByKey('A').id, 'kick');
   assert.equal(drumByKey('s').id, 'snare');
+  assert.equal(drumByKey('H').id, 'ride');
   assert.equal(drumByKey('z'), null);
+});
+
+test('every drum has a unique id, key and colour', () => {
+  const ids = DRUMS.map((drum) => drum.id);
+  const keys = DRUMS.map((drum) => drum.key);
+  const colors = DRUMS.map((drum) => drum.color);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(new Set(keys).size, keys.length);
+  assert.equal(new Set(colors).size, colors.length);
+  // The ride is its own drum, not an alias of the crash.
+  assert.notEqual(drumById('ride'), drumById('crash'));
+  assert.notEqual(drumById('ride').key, drumById('crash').key);
+  assert.notEqual(drumById('ride').color, drumById('crash').color);
+});
+
+test('the ride is Free Play only — never in any of Jack\u2019s beats or pools', () => {
+  for (const level of [1, 2, 3, 5, 6, 9, 99]) {
+    assert.ok(!copyCatDrums(level).includes('ride'));
+  }
+  for (const level of Object.keys(JACK_BEATS)) {
+    assert.ok(!generatePattern(Number(level)).flat().includes('ride'));
+  }
 });
 
 test('a bar is 4 quarter-note steps at levels 1-2, 8 eighth-note steps after', () => {
