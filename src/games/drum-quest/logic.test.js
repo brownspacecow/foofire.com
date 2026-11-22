@@ -5,6 +5,7 @@ import {
   JACK_BEATS,
   checkCopyCatTap,
   copyCatBeatName,
+  copyCatCycleMs,
   copyCatDrums,
   copyCatLength,
   copyCatLoopMs,
@@ -112,6 +113,16 @@ test('a Jack bar is the groove with no pause after it', () => {
   // Level 1: 4 quarter-note steps at 60 BPM = 4000ms, and that is the loop.
   assert.equal(copyCatLoopMs(1), 4000);
   assert.equal(copyCatLoopMs(3), 8 * copyCatStepMs(3));
+});
+
+test('a full Jack-plus-Joel cycle is exactly two 4/4 bars — no extra beat', () => {
+  // Level 1: 4 quarter-note steps a bar at 60 BPM — Jack's bar (4s)
+  // plus Joel's bar (4s) is 8 steps, 8000ms, and nothing else.
+  assert.equal(copyCatCycleMs(1), 8000);
+  assert.equal(copyCatCycleMs(1), 2 * copyCatLoopMs(1));
+  // Level 3: 8 eighth-note steps a bar — 16 steps a cycle, two 4/4 bars.
+  assert.equal(copyCatCycleMs(3), 16 * copyCatStepMs(3));
+  assert.equal(copyCatCycleMs(3), 2 * copyCatLoopMs(3));
 });
 
 test('generated grooves keep the hi-hat on time and kick/snare on their beats', () => {
