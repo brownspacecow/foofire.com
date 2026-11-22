@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Joel, a boy with a red mohawk, grinning behind a colourful drum kit under the words Drum Quest">
+  <defs>
+    <linearGradient id="stage" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c1532"/>
+      <stop offset="1" stop-color="#1a1022"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#stage)"/>
+  <circle cx="150" cy="90" r="120" fill="#f4c95d" opacity="0.12"/>
+  <circle cx="1060" cy="110" r="140" fill="#f08fa4" opacity="0.12"/>
+  <circle cx="600" cy="600" r="180" fill="#7fd8c6" opacity="0.08"/>
+
+  <text x="600" y="110" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="bold" fill="#f4c95d">DRUM QUEST</text>
+  <text x="600" y="158" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#f9eddf">Tap it. Copy it. Build it.</text>
+
+  <!-- Joel -->
+  <g>
+    <circle cx="600" cy="300" r="78" fill="#f2c29b"/>
+    <path d="M532 268 L520 218 L548 242 L558 200 L580 232 L592 192 L610 228 L630 196 L640 234 L664 212 L654 268 Z" fill="#e63946"/>
+    <circle cx="572" cy="292" r="9" fill="#1a1022"/>
+    <circle cx="628" cy="292" r="9" fill="#1a1022"/>
+    <circle cx="575" cy="289" r="3" fill="#ffffff"/>
+    <circle cx="631" cy="289" r="3" fill="#ffffff"/>
+    <circle cx="552" cy="316" r="11" fill="#f08fa4" opacity="0.7"/>
+    <circle cx="648" cy="316" r="11" fill="#f08fa4" opacity="0.7"/>
+    <path d="M566 322 Q600 356 634 322" fill="none" stroke="#7a3b2e" stroke-width="6" stroke-linecap="round"/>
+    <rect x="584" y="326" width="14" height="14" rx="2" fill="#ffffff"/>
+    <rect x="602" y="326" width="14" height="14" rx="2" fill="#ffffff"/>
+  </g>
+
+  <!-- Drum kit -->
+  <g stroke="#1a1022" stroke-width="6">
+    <ellipse cx="420" cy="520" rx="110" ry="42" fill="#f4c95d"/>
+    <ellipse cx="420" cy="508" rx="110" ry="42" fill="#ffe9a8"/>
+    <ellipse cx="780" cy="520" rx="110" ry="42" fill="#7fd8c6"/>
+    <ellipse cx="780" cy="508" rx="110" ry="42" fill="#c2f0e6"/>
+    <circle cx="600" cy="540" r="86" fill="#ff6b5e"/>
+    <circle cx="600" cy="540" r="86" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="6 8" opacity="0.6"/>
+    <circle cx="600" cy="540" r="52" fill="#e63946"/>
+    <ellipse cx="330" cy="420" rx="90" ry="26" fill="#b6a3ff"/>
+    <ellipse cx="870" cy="420" rx="90" ry="26" fill="#f08fa4"/>
+  </g>
+  <line x1="330" y1="420" x2="330" y2="520" stroke="#1a1022" stroke-width="6"/>
+  <line x1="870" y1="420" x2="870" y2="520" stroke="#1a1022" stroke-width="6"/>
+
+  <!-- Drumsticks -->
+  <line x1="520" y1="360" x2="430" y2="480" stroke="#f2c29b" stroke-width="10" stroke-linecap="round"/>
+  <line x1="680" y1="360" x2="770" y2="480" stroke="#f2c29b" stroke-width="10" stroke-linecap="round"/>
+
+  <text x="600" y="650" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="24" fill="#c9b6c9">Free Play · Copy Cat · Beat Builder</text>
+</svg>
