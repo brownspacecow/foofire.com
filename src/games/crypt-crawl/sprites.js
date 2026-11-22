@@ -527,6 +527,27 @@ Object.assign(SPRITES, {
     '................',
     '................',
   ]),
+  // The Hollow King, Lord of the Crypt — the TRUE final boss. A dark
+  // crowned skull (W) with glowing red eyes and crown (R), wreathed in
+  // a tattered shadow robe (g). Only 3 fill colours + black outline.
+  'boss-hollow-king': rows([
+    '....R...R...R...',
+    '...kRk.kRk.kRk..',
+    '...kkkkkkkkkk...',
+    '...kWWWWWWWWk...',
+    '...kWWWWWWWWk...',
+    '...kWRRWWRRWk...',
+    '...kWWWWWWWWk...',
+    '...kWkWWWWkWk...',
+    '....kWWWWWWk....',
+    '...kggggggggk...',
+    '..kggggggggggk..',
+    '..kggkggggkggk..',
+    '..kggggggggggk..',
+    '..kggkggggkggk..',
+    '..kg.k.gg.k.gk..',
+    '................',
+  ]),
   // ---- relic extras (others reuse the tile sprites) ----
   // Hearty Stew — orange pot (O), orange-red soup (r), white steam (W).
   'relic-stew': rows([

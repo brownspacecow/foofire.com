@@ -313,6 +313,102 @@
         box-shadow: 4px 4px 0 #000000;
       }
 
+      .achievements-btn {
+        width: 100%;
+        margin-top: 0.7rem;
+        padding: 1rem;
+        border: 4px solid #000000;
+        background: #7C7C7C;
+        color: #000000;
+        font-family: var(--font-pixel);
+        font-size: 0.6rem;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 #000000;
+      }
+
+      .achievements-btn:hover {
+        background: #F8B800;
+      }
+
+      /* ---- achievements panel ---- */
+      .overlay-card.achievements-card {
+        width: min(94%, 34rem);
+        max-height: 86vh;
+        overflow-y: auto;
+      }
+
+      .achievements-card h3 {
+        margin: 1.1rem 0 0.5rem;
+        font-family: var(--font-pixel);
+        font-size: 0.65rem;
+        color: #F8B800;
+        line-height: 1.6;
+      }
+
+      .ach-wins {
+        display: grid;
+        grid-template-columns: 1.4fr repeat(3, 1fr);
+        gap: 0.3rem;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+
+      .ach-head {
+        font-size: 0.65rem;
+        color: #BCBCBC;
+        text-transform: uppercase;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .ach-hero { color: #FCFCFC; font-weight: 700; }
+
+      .ach-cell {
+        text-align: center;
+        padding: 0.3rem 0;
+        border: 2px solid #4A4A4A;
+        color: #7C7C7C;
+      }
+
+      .ach-cell.won { border-color: #F8B800; color: #F8B800; font-weight: 800; }
+
+      .ach-relics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+      }
+
+      .ach-relic {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.5rem;
+        border: 2px solid #4A4A4A;
+        color: #7C7C7C;
+        font-size: 0.85rem;
+        text-align: left;
+      }
+
+      .ach-relic.got { border-color: #F8B800; color: #FCFCFC; }
+      .ach-relic .pixel-sprite { width: 1.4rem; height: 1.4rem; }
+      .ach-q { width: 1.4rem; text-align: center; font-weight: 800; }
+
+      .ach-mile {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid #4A4A4A;
+        text-align: left;
+        font-size: 0.9rem;
+      }
+
+      .ach-mile strong { color: #FCFCFC; }
+      .ach-mile small { display: block; color: #BCBCBC; font-size: 0.8rem; }
+      .ach-mile .ach-state { color: #7C7C7C; font-weight: 800; }
+      .ach-mile.got .ach-state { color: #F8B800; }
+
       /* ---- play screen ---- */
       .crypt-hud {
         display: flex;
@@ -451,6 +547,39 @@
         font-weight: 700;
       }
 
+      /* The Hollow King shows his rotating weakness and the crushing-blow
+         countdown right on the monster card. */
+      .monster-extra {
+        display: block;
+        margin-top: 0.35rem;
+        font-family: var(--font-pixel);
+        font-size: 0.5rem;
+        color: #F8B800;
+        line-height: 1.6;
+      }
+
+      .monster-extra[hidden] { display: none; }
+
+      .monster-extra .pixel-sprite {
+        width: 1rem;
+        height: 1rem;
+        display: inline-block;
+        vertical-align: -0.2rem;
+      }
+
+      .monster-extra.crush { color: #FF6B5E; }
+
+      /* The turn before the crushing blow, the monster card pulses red. */
+      .monster-card.crush-warning {
+        border-color: #E40058;
+        animation: crush-pulse 0.6s steps(2) infinite;
+      }
+
+      @keyframes crush-pulse {
+        0%, 100% { box-shadow: 0 0 0 rgba(228, 0, 88, 0); }
+        50% { box-shadow: 0 0 22px rgba(228, 0, 88, 0.7); }
+      }
+
       .board-wrap {
         position: relative;
         border: 4px solid #F8B800;
@@ -536,6 +665,7 @@
       .float-text.heal { color: #00B800; }
       .float-text.gold { color: #F8B800; }
       .float-text.block { color: #3CBCFC; }
+      .float-text.weak { color: #F8B800; }
 
       /* SLAIN! — big centred pixel text over the board. */
       .float-text.slain {
@@ -868,6 +998,37 @@
         background: #000010;
       }
 
+      /* ---- The Hollow King: the crypt goes dark and scary ---- */
+      /* Near-black backdrop, dark red vignette around the board, red
+         accents on the monster card, and a slow dark flicker. The fake
+         final boss gets none of this — the contrast is the point. */
+      .crypt-game.final-boss { background: #000000; }
+      .crypt-game.final-boss:fullscreen { background: #000000; }
+
+      .crypt-game.final-boss .crypt-frame { border-color: #E40058; }
+
+      .crypt-game.final-boss .monster-card {
+        border-color: #E40058;
+        box-shadow: 0 0 24px rgba(228, 0, 88, 0.45);
+      }
+
+      .crypt-game.final-boss .board-wrap {
+        border-color: #E40058;
+        box-shadow: inset 0 0 60px rgba(228, 0, 88, 0.35), 4px 4px 0 #000000;
+        animation: final-flicker 2.4s steps(6) infinite;
+      }
+
+      @keyframes final-flicker {
+        0%, 100% { box-shadow: inset 0 0 60px rgba(228, 0, 88, 0.35), 4px 4px 0 #000000; }
+        50% { box-shadow: inset 0 0 90px rgba(228, 0, 88, 0.6), 4px 4px 0 #000000; }
+      }
+
+      .crypt-game.final-boss .game-tip { color: #F83800; }
+
+      .overlay-card.victory {
+        box-shadow: 6px 6px 0 #000000, 0 0 40px rgba(248, 184, 0, 0.35);
+      }
+
       @media (max-width: 640px) {
         .hero-grid { grid-template-columns: repeat(2, 1fr); }
         .hero-detail { flex-direction: column; text-align: center; }
@@ -883,6 +1044,10 @@
            does a short stepped fade. The SLAIN! text and scream still play. */
         .monster-card.dying .monster-emoji { animation: none; opacity: 0; }
         .soul { display: none; }
+        /* The Hollow King stays dark and red, but nothing pulses or
+           flickers — the warning border and countdown text still show. */
+        .crypt-game.final-boss .board-wrap,
+        .monster-card.crush-warning { animation: none; }
       }
     </style>
     <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
@@ -946,6 +1111,7 @@
             <button class="back-btn" id="back-button" type="button">BACK</button>
             <button class="descend-btn" id="descend-button" type="button">⬇ DESCEND</button>
           </div>
+          <button class="achievements-btn" id="achievements-button" type="button">🏆 ACHIEVEMENTS (0/37)</button>
         </div>
 
         <!-- ======== PLAY ======== -->
@@ -980,6 +1146,8 @@
             <div class="monster-info">
               <span class="monster-name" id="monster-name">Squeaky Slime</span>
               <div class="monster-meter"><span id="monster-fill" style="width: 100%"></span></div>
+              <span class="monster-extra" id="monster-weak" hidden></span>
+              <span class="monster-extra crush" id="monster-crush" hidden></span>
             </div>
             <span class="monster-hp" id="monster-hp">18 / 18</span>
           </div>
@@ -1001,7 +1169,8 @@
             can hop over one tile that doesn't match, once per chain! Beat the monster to
             descend. Between floors, spend your gold at the Crypt Shop! A boss waits
             every 5th floor. If there are no moves left, the crypt
-            shuffles the tiles for free.
+            shuffles the tiles for free. Rumour says something REALLY big waits at the
+            bottom of the crypt...
           </p>
           <p id="hud-best" class="game-tip"></p>
           <p id="status" class="sr-only" role="status" aria-live="polite">Crypt Crawl is ready.</p>
@@ -1042,6 +1211,42 @@
             <p id="over-best"></p>
             <button id="play-again-button" type="button">Crawl again</button>
             <button class="secondary" id="quit-button" type="button">Back to games</button>
+          </div>
+        </div>
+
+        <!-- Fake victory (floor 15) — the "final" boss that isn't -->
+        <div class="overlay" id="fakewin-overlay" hidden>
+          <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="fakewin-title">
+            <h2 id="fakewin-title">YOU WIN!</h2>
+            <p id="fakewin-text">The crypt is saved! King Crumb has crumbled. Time to go home a hero!</p>
+            <button id="fakewin-button" type="button">Hooray!</button>
+          </div>
+        </div>
+
+        <!-- True victory (floor 20) — the Hollow King, beaten -->
+        <div class="overlay" id="victory-overlay" hidden>
+          <div class="overlay-card victory" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+            <h2 id="victory-title">YOU BEAT THE CRYPT!</h2>
+            <p>The Hollow King crumbles to dust. The crypt is yours, hero!</p>
+            <div class="over-stats">
+              <div><span>Floor reached</span><strong id="win-floor">20</strong></div>
+              <div><span>Monsters slain</span><strong id="win-kills">0</strong></div>
+              <div><span>Gold collected</span><strong id="win-gold">0</strong></div>
+              <div><span>Score</span><strong id="win-score">0</strong></div>
+            </div>
+            <p id="win-best"></p>
+            <button id="keep-delving-button" type="button">Keep delving</button>
+            <button class="secondary" id="new-run-button" type="button">New run</button>
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="overlay" id="achievements-overlay" hidden>
+          <div class="overlay-card achievements-card" role="dialog" aria-modal="true" aria-labelledby="achievements-title">
+            <h2 id="achievements-title">🏆 Achievements</h2>
+            <p id="achievements-progress">0 / 37 achievements</p>
+            <div id="achievements-list"></div>
+            <button id="achievements-close" type="button">Close</button>
           </div>
         </div>
       </section>

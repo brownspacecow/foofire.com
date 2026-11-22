@@ -62,18 +62,62 @@ export function isBossFloor(floor) {
   return floor % 5 === 0;
 }
 
-/** Monster for a floor. HP/attack scale with floor; difficulty shifts attack. */
+/** Monster for a floor. HP/attack scale with floor; difficulty shifts attack.
+ *  Two floors are special:
+ *  - Floor 15 is the FAKE final boss: King Crumb, with normal floor-15
+ *    boss stats — the gag is in the presentation, not the numbers.
+ *  - Floor 20 is the TRUE final boss: the Hollow King, with custom stats
+ *    (HP 120, attack 6 + difficulty mod). He never repeats — floors 25+
+ *    are normal bosses again. */
 export function monsterForFloor(floor, difficultyId = 'normal') {
   const diff = DIFFICULTIES[difficultyId] || DIFFICULTIES.normal;
+  if (floor === 20) {
+    return {
+      name: 'The Hollow King, Lord of the Crypt',
+      sprite: 'boss-hollow-king',
+      hp: 120, maxHp: 120,
+      attack: Math.max(1, 6 + diff.attackMod),
+      isBoss: true, isTrueFinal: true,
+    };
+  }
   const boss = isBossFloor(floor);
   const pick = boss
     ? BOSS_POOL[Math.floor(floor / 5 - 1) % BOSS_POOL.length]
     : MONSTER_POOL[(floor - 1) % MONSTER_POOL.length];
+  if (floor === 15) {
+    return {
+      name: 'King Crumb, the FINAL Boss (definitely)',
+      sprite: 'boss-crumb',
+      hp: 12 + floor * 4, maxHp: 12 + floor * 4,
+      attack: Math.max(1, 1 + Math.ceil(floor / 3) + diff.attackMod),
+      isBoss: true, isFakeFinal: true,
+    };
+  }
   const hp = boss ? 12 + floor * 4 : 10 + floor * 5;
   const attack = boss
     ? Math.max(1, 1 + Math.ceil(floor / 3) + diff.attackMod)
     : Math.max(1, 1 + Math.ceil(floor / 2) + diff.attackMod);
   return { ...pick, hp, maxHp: hp, attack, isBoss: boss };
+}
+
+/** The Hollow King's rotating weakness: sword → shield → potion, each
+ *  lasting two boss turns. Never coin. `turn` is the number of boss
+ *  turns (player matches) completed so far. */
+export const WEAKNESS_TYPES = ['sword', 'shield', 'potion'];
+export function weaknessForTurn(turn) {
+  return WEAKNESS_TYPES[Math.floor(turn / 2) % WEAKNESS_TYPES.length];
+}
+
+/** Turns until the crushing blow, counting the blow itself as 1: after
+ *  0 turns it is 4 away, after 3 turns it is next. */
+export function crushCountdown(turnsDone) {
+  return 4 - (turnsDone % 4);
+}
+
+/** Is the boss attack about to happen (turn number `turnNo`, 1-based)
+ *  a crushing blow? Every 4th boss turn, for 3x attack. */
+export function isCrushingTurn(turnNo) {
+  return turnNo % 4 === 0;
 }
 
 /** Count how many of a relic the run holds. */
@@ -86,12 +130,15 @@ export function relicCount(relics, id) {
  * `heroId` applies the hero perk; `relics` is an array of relic ids;
  * `firstMatchThisFloor` applies Nettle's perk once per floor.
  * `swordBuff` is the shop's Sharp Sword: +5 damage on a sword match.
+ * `weakType` is the Hollow King's current weakness (null for every other
+ * monster): matches of that type have DOUBLE effect — double damage,
+ * double block, or double healing. Coin is never a weakness.
  * Chain bonus: any match of 5+ tiles earns +1 gold per tile beyond 4,
  * whatever the tile type — long chains pay for the shop. It is reported
  * separately as `chainBonus` so the game can show it as its own float.
  * Returns { damage, block, heal, gold, chainBonus, score }.
  */
-export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor = false, swordBuff = false) {
+export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor = false, swordBuff = false, weakType = null) {
   const bonus = Math.max(0, len - 3);
   const chainBonus = Math.max(0, len - 4);
   const out = { damage: 0, block: 0, heal: 0, gold: 0, chainBonus, score: len * 10 };
@@ -101,14 +148,17 @@ export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor 
     if (heroId === 'wren' && len >= 5) out.damage += 1;
     if (heroId === 'joel') out.damage += 1;
     if (heroId === 'nettle' && firstMatchThisFloor) out.damage += 3;
+    if (weakType === 'sword') out.damage *= 2;
     out.score += out.damage * 5;
   } else if (type === 'shield') {
     out.block = 3 + bonus + relicCount(relics, 'sturdy-shield');
     if (heroId === 'bramble') out.block += 1;
+    if (weakType === 'shield') out.block *= 2;
     out.score += out.block * 5;
   } else if (type === 'potion') {
     out.heal = 3 + bonus + relicCount(relics, 'sweet-potion');
     if (heroId === 'pip') out.heal += 1;
+    if (weakType === 'potion') out.heal *= 2;
     out.score += out.heal * 5;
   } else if (type === 'coin') {
     out.gold = len + relicCount(relics, 'lucky-coin');
@@ -173,6 +223,102 @@ export function shopDisabledReason(itemId, p) {
   if (itemId === 'sword' && p.swordBuff) return 'Already sharp!';
   if (p.gold < item.price) return 'Not enough gold';
   return null;
+}
+
+/* ------------------------------------------------------------------ *
+ * Achievements — 37 in total, built from HEROES / DIFFICULTIES /
+ * RELICS so the list never drifts out of sync with the game:
+ * 27 wins (9 heroes x 3 difficulties), 6 relic pick-ups, 1
+ * collect-'em-all, 3 milestones. Unlocking is idempotent and
+ * nothing is ever un-unlocked; progress persists across runs.
+ * ------------------------------------------------------------------ */
+export const ACHIEVEMENTS_KEY = 'foofire-crypt-crawl-achievements';
+
+export function buildAchievements() {
+  const list = [];
+  for (const h of HEROES) {
+    for (const d of Object.values(DIFFICULTIES)) {
+      list.push({
+        id: `win-${h.id}-${d.id}`,
+        section: 'wins',
+        name: `Crypt Conqueror: ${h.name} (${d.name})`,
+        desc: `Beat the Hollow King as ${h.name} on ${d.name}.`,
+      });
+    }
+  }
+  for (const r of RELICS) {
+    list.push({
+      id: `relic-${r.id}`,
+      section: 'relics',
+      name: `Relic Hunter: ${r.name}`,
+      desc: `Collect the ${r.name} relic.`,
+      relicId: r.id,
+    });
+  }
+  list.push({ id: 'relics-all', section: 'relics', name: 'Relic Master', desc: 'Collect all 6 relics.' });
+  list.push({ id: 'first-boss', section: 'milestones', name: 'First Blood', desc: 'Beat your first boss — clear floor 5.' });
+  list.push({ id: 'first-win', section: 'milestones', name: 'Crypt Conqueror', desc: 'Beat the Hollow King for the first time.' });
+  list.push({ id: 'win-hard', section: 'milestones', name: 'Hardcore Delver', desc: 'Beat the Hollow King on Hard.' });
+  return list;
+}
+export const ACHIEVEMENTS = buildAchievements();
+
+/** Fresh achievement state: unlocked ids + every relic type collected
+ *  at least once (across runs — that is what `relics-all` watches). */
+export function emptyAchievementState() {
+  return { v: 1, unlocked: [], relics: [] };
+}
+
+/** Load from a storage-like ({ getItem }). Tolerant of missing keys,
+ *  corrupt JSON, and wrong shapes — anything unreadable loads as empty. */
+export function loadAchievements(storage) {
+  try {
+    const raw = storage.getItem(ACHIEVEMENTS_KEY);
+    if (!raw) return emptyAchievementState();
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return emptyAchievementState();
+    return {
+      v: 1,
+      unlocked: Array.isArray(parsed.unlocked) ? parsed.unlocked.filter((x) => typeof x === 'string') : [],
+      relics: Array.isArray(parsed.relics) ? parsed.relics.filter((x) => typeof x === 'string') : [],
+    };
+  } catch (e) {
+    return emptyAchievementState();
+  }
+}
+
+export function saveAchievements(storage, data) {
+  try {
+    storage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(data));
+  } catch (e) { /* ignore */ }
+}
+
+/**
+ * Record an event and return { state, fresh } — the new achievement
+ * state plus the ids newly unlocked by this event (empty when nothing
+ * new). Pure: works on a plain state object, no storage, no DOM.
+ * Events: { type: 'win', heroId, difficultyId },
+ * { type: 'relic', relicId }, { type: 'boss', floor }.
+ */
+export function recordAchievementEvent(prev, event) {
+  const unlocked = new Set(prev.unlocked || []);
+  const relics = new Set(prev.relics || []);
+  const fresh = [];
+  const add = (id) => {
+    if (!unlocked.has(id)) { unlocked.add(id); fresh.push(id); }
+  };
+  if (event.type === 'win') {
+    add(`win-${event.heroId}-${event.difficultyId}`);
+    add('first-win');
+    if (event.difficultyId === 'hard') add('win-hard');
+  } else if (event.type === 'relic') {
+    add(`relic-${event.relicId}`);
+    relics.add(event.relicId);
+    if (RELICS.every((r) => relics.has(r.id))) add('relics-all');
+  } else if (event.type === 'boss') {
+    if (event.floor === 5) add('first-boss');
+  }
+  return { state: { v: 1, unlocked: [...unlocked], relics: [...relics] }, fresh };
 }
 
 export function randomTile(rng = Math.random) {
@@ -412,11 +558,17 @@ if (typeof document !== 'undefined') {
     monster: null, board: [], relics: [], firstMatchThisFloor: true, swordBuff: false,
     dragging: false, path: [], pathType: null, paused: false, over: false,
     settling: false, dying: false, best: 0, bestGold: 0,
+    finalTurns: 0, // boss turns completed vs the Hollow King (weakness + crush clock)
   };
   try {
     state.best = Number(localStorage.getItem(BEST_KEY) || 0);
     state.bestGold = Number(localStorage.getItem(BEST_GOLD_KEY) || 0);
   } catch (e) { /* ignore */ }
+
+  // ---- achievements (persist across runs) ----
+  let achState = loadAchievements(localStorage);
+  let achQueue = []; // achievement ids waiting for their celebration banner
+  let achCelebrating = false;
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -457,7 +609,7 @@ if (typeof document !== 'undefined') {
   nameInput.value = state.heroName;
   nameInput.addEventListener('input', () => { state.heroName = nameInput.value.trim() || randomName(); });
   $('#relic-count').textContent = '0/50';
-  renderHeroes(); renderDetail(); renderDifficulty();
+  renderHeroes(); renderDetail(); renderDifficulty(); renderAchievementsButton();
 
   // ---- board ----
   // Tile buttons are built ONCE per board and reused. The old code called
@@ -660,6 +812,25 @@ if (typeof document !== 'undefined') {
       $('#monster-fill').style.width = `${Math.max(0, (m.hp / m.maxHp) * 100)}%`;
       $('#monster-card').classList.toggle('boss', m.isBoss);
     }
+    // The Hollow King shows his rotating weakness and the crushing-blow
+    // countdown right on the monster card, so the player can strategise.
+    const weakEl = $('#monster-weak');
+    const crushEl = $('#monster-crush');
+    const card = $('#monster-card');
+    if (m && m.isTrueFinal) {
+      const weak = weaknessForTurn(state.finalTurns);
+      weakEl.innerHTML = `Weak to: ${spriteSVG(TILE_SPRITE[weak])} ${TILE_LABEL[weak]}`;
+      weakEl.hidden = false;
+      const crushIn = crushCountdown(state.finalTurns);
+      crushEl.textContent = crushIn === 1 ? 'CRUSHING BLOW NEXT!' : `Crushing blow in ${crushIn}`;
+      crushEl.hidden = false;
+      // The turn before the crush, the card pulses red as a warning.
+      card.classList.toggle('crush-warning', crushIn === 1);
+    } else {
+      weakEl.hidden = true;
+      crushEl.hidden = true;
+      card.classList.remove('crush-warning');
+    }
   }
   function floatText(text, kind) {
     // 'slain' is the one float that must still show under reduced motion
@@ -682,22 +853,119 @@ if (typeof document !== 'undefined') {
   }
   function setStatus(text) { $('#status').textContent = text; }
 
+  // ---- achievements ----
+  // Record an event, persist, and queue any fresh unlocks for their
+  // celebration. The celebration itself only fires once the player is
+  // back on the board (see showNextAchievement) — never over an
+  // overlay, so a win celebration is never hidden behind the relic
+  // picker or the shop.
+  function awardAchievements(event) {
+    const result = recordAchievementEvent(achState, event);
+    if (!result.fresh.length) return;
+    achState = result.state;
+    saveAchievements(localStorage, achState);
+    renderAchievementsButton();
+    achQueue.push(...result.fresh);
+  }
+
+  function anyOverlayOpen() {
+    return ['shop-modal', 'relic-modal', 'fakewin-overlay', 'victory-overlay', 'gameover-overlay', 'achievements-overlay']
+      .some((id) => !document.getElementById(id).hidden);
+  }
+
+  // One celebration at a time, ~1.7s apart (the banner shows 1.6s).
+  // Waits while any overlay is open; if the player leaves for the
+  // setup screen, the queued celebrations are dropped — the unlocks
+  // themselves are already saved and visible in the panel.
+  function showNextAchievement() {
+    if (achCelebrating || !achQueue.length) return;
+    if (state.screen !== 'play') { achQueue = []; return; }
+    if (anyOverlayOpen()) return;
+    achCelebrating = true;
+    const id = achQueue.shift();
+    const a = ACHIEVEMENTS.find((x) => x.id === id);
+    banner(`🏆 Achievement unlocked: ${a ? a.name : id}!`);
+    sfx.relic();
+    setTimeout(() => { achCelebrating = false; showNextAchievement(); }, 1700);
+  }
+
+  function renderAchievementsButton() {
+    const have = ACHIEVEMENTS.filter((a) => achState.unlocked.includes(a.id)).length;
+    $('#achievements-button').textContent = `🏆 ACHIEVEMENTS (${have}/${ACHIEVEMENTS.length})`;
+  }
+
+  function renderAchievements() {
+    const got = new Set(achState.unlocked);
+    const have = ACHIEVEMENTS.filter((a) => got.has(a.id)).length;
+    $('#achievements-progress').textContent = `${have} / ${ACHIEVEMENTS.length} achievements`;
+    const diffs = Object.values(DIFFICULTIES);
+    let html = '<h3>Victories — beat the Hollow King</h3><div class="ach-wins">';
+    html += '<span></span>' + diffs.map((d) => `<span class="ach-head">${d.name}</span>`).join('');
+    for (const h of HEROES) {
+      html += `<span class="ach-hero">${h.name}</span>`;
+      for (const d of diffs) {
+        const won = got.has(`win-${h.id}-${d.id}`);
+        html += `<span class="ach-cell${won ? ' won' : ''}">${won ? '✓' : '·'}</span>`;
+      }
+    }
+    html += '</div>';
+    html += '<h3>Relics — collect them all</h3><div class="ach-relics">';
+    for (const r of RELICS) {
+      const has = got.has(`relic-${r.id}`);
+      html += `<span class="ach-relic${has ? ' got' : ''}">${has ? spriteSVG(r.sprite) : '<span class="ach-q">?</span>'}<span>${r.name}</span></span>`;
+    }
+    const master = got.has('relics-all');
+    html += `<span class="ach-relic${master ? ' got' : ''}">${master ? '🏆' : '<span class="ach-q">?</span>'}<span>Relic Master</span></span>`;
+    html += '</div>';
+    html += '<h3>Milestones</h3>';
+    for (const id of ['first-boss', 'first-win', 'win-hard']) {
+      const a = ACHIEVEMENTS.find((x) => x.id === id);
+      const has = got.has(id);
+      html += `<div class="ach-mile${has ? ' got' : ''}"><span><strong>${a.name}</strong><small>${a.desc}</small></span><span class="ach-state">${has ? '✓' : '·'}</span></div>`;
+    }
+    $('#achievements-list').innerHTML = html;
+  }
+
+  function showAchievements() {
+    renderAchievements();
+    $('#achievements-overlay').hidden = false;
+    sfx.blip();
+  }
+
   function spawnMonster() {
     state.monster = monsterForFloor(state.floor, state.difficulty);
     state.firstMatchThisFloor = true;
+    state.finalTurns = 0;
+    const gameEl = $('#crypt-game');
+    if (state.monster.isTrueFinal) {
+      // The real final boss: the crypt goes dark and scary.
+      gameEl.classList.add('final-boss');
+      banner('Something ancient wakes below…');
+      setStatus('The Hollow King, Lord of the Crypt, blocks the way. Watch his weakness — and mind the crushing blow!');
+    } else {
+      gameEl.classList.remove('final-boss');
+      if (state.monster.isFakeFinal) {
+        banner('You have reached the FINAL boss... or have you?');
+        setStatus('King Crumb, the FINAL Boss (definitely), blocks the way. Definitely the last one. Probably.');
+      }
+    }
     if (state.monster.isBoss) sfx.boss();
     updateMusic();
     updateHud();
   }
 
-  // Boss floors get the faster, tenser boss loop; regular floors get the
-  // main dungeon tune. startMusic restarts the sequencer only when the
-  // track actually changes, so this is a no-op most floors. Only starts
-  // music while actually playing — if paused, the unpause handler
-  // resumes whichever track was selected.
+  // Boss floors get the faster, tenser boss loop; the Hollow King gets
+  // his own slow, scary loop; regular floors get the main dungeon tune.
+  // startMusic restarts the sequencer only when the track actually
+  // changes, so this is a no-op most floors. Only starts music while
+  // actually playing — if paused, the unpause handler resumes whichever
+  // track was selected.
   function updateMusic() {
     if (state.screen !== 'play' || state.paused || state.over) return;
-    sfx.startMusic(state.monster && state.monster.isBoss ? 'boss' : 'main');
+    const track = !state.monster ? 'main'
+      : state.monster.isTrueFinal ? 'final'
+      : state.monster.isBoss ? 'boss' : 'main';
+    sfx.startMusic(track);
   }
 
   // Gravity + refill, with per-cell fall distances for the drop
@@ -734,7 +1002,10 @@ if (typeof document !== 'undefined') {
     const len = state.path.length;
     // endDrag clears state.path right after this call, so capture it.
     const path = state.path.slice();
-    const fx = matchEffect(type, len, state.heroId, state.relics, state.firstMatchThisFloor, state.swordBuff);
+    // Against the Hollow King, the current weakness doubles its type.
+    const weak = state.monster && state.monster.isTrueFinal
+      ? weaknessForTurn(state.finalTurns) : null;
+    const fx = matchEffect(type, len, state.heroId, state.relics, state.firstMatchThisFloor, state.swordBuff, weak);
     state.firstMatchThisFloor = false;
     state.score += fx.score;
     // The matched tiles pop, then the rest of the board drops in after a
@@ -793,6 +1064,8 @@ if (typeof document !== 'undefined') {
         if (type !== 'coin') sfx.coin();
       }
     }
+    // Hitting the Hollow King's weakness is worth shouting about.
+    if (weak && type === weak) floatText('WEAKNESS!', 'weak');
     updateHud();
     const settleMs = reducedMotion ? 0 : 140;
     setTimeout(() => {
@@ -826,22 +1099,38 @@ if (typeof document !== 'undefined') {
 
   function monsterAttack() {
     if (state.over || state.screen !== 'play' || !state.monster || state.monster.hp <= 0 || state.dying) return;
-    const dmg = biteDamage(state.monster.attack, state.block, state.relics);
-    const blocked = Math.min(state.block, state.monster.attack);
+    const isFinal = !!state.monster.isTrueFinal;
+    // The Hollow King's crushing blow: every 4th boss turn, 3x attack.
+    // Block absorbs it normally — banking block before the blow lands
+    // is the counter-play.
+    const crushing = isFinal && isCrushingTurn(state.finalTurns + 1);
+    const atk = crushing ? state.monster.attack * 3 : state.monster.attack;
+    const dmg = biteDamage(atk, state.block, state.relics);
+    const blocked = Math.min(state.block, atk);
     // Block carries over: a bite only eats what it absorbs, so any
     // leftover block stays for the next bite (and the next floor).
-    state.block = absorbBlock(state.block, state.monster.attack);
+    state.block = absorbBlock(state.block, atk);
     if (dmg > 0) {
       state.hp -= dmg;
-      floatText(`-${dmg} bite!`, 'dmg');
+      floatText(crushing ? `-${dmg} CRUSHING BLOW!` : `-${dmg} bite!`, 'dmg');
       sfx.hurt();
       $('#hero-chip').classList.add('shake');
       setTimeout(() => $('#hero-chip').classList.remove('shake'), 350);
     } else if (blocked > 0) {
-      floatText('Blocked!', 'block');
+      floatText(crushing ? 'Crushing blow blocked!' : 'Blocked!', 'block');
       sfx.pop();
     } else {
-      floatText('Missed!', 'block');
+      floatText(crushing ? 'Crushing blow missed!' : 'Missed!', 'block');
+    }
+    if (isFinal) {
+      // The weakness rotates every 2 boss turns — announce the change.
+      const oldWeak = weaknessForTurn(state.finalTurns);
+      state.finalTurns += 1;
+      const newWeak = weaknessForTurn(state.finalTurns);
+      if (newWeak !== oldWeak) {
+        banner(`The Hollow King is now weak to ${TILE_LABEL[newWeak].toUpperCase()}!`);
+        setStatus(`The Hollow King is now weak to ${TILE_LABEL[newWeak]}!`);
+      }
     }
     updateHud();
     if (state.hp <= 0) gameOver();
@@ -908,11 +1197,17 @@ if (typeof document !== 'undefined') {
   function floorCleared() {
     state.kills += 1;
     state.score += 50 + state.floor * 10;
+    const clearedFloor = state.floor;
     const heal = 3;
     state.hp = Math.min(state.maxHp, state.hp + heal);
     // Block is NOT reset here: leftover block carries to the next floor.
     sfx.clear();
     const wasBoss = state.monster.isBoss;
+    const wasFakeFinal = !!state.monster.isFakeFinal;
+    const wasTrueFinal = !!state.monster.isTrueFinal;
+    if (wasBoss) awardAchievements({ type: 'boss', floor: clearedFloor });
+    // The Hollow King is beaten: the crypt lights back up.
+    if (wasTrueFinal) $('#crypt-game').classList.remove('final-boss');
     banner(`Floor ${state.floor} cleared! +${heal} HP`);
     setStatus(`Floor ${state.floor} cleared! The ${state.monster.name} wobbled away.`);
     state.floor += 1;
@@ -931,12 +1226,82 @@ if (typeof document !== 'undefined') {
     renderBoard();
     updateHud();
     // The next monster only spawns once the player leaves the shop, so
-    // the shop is never a race against a live monster.
-    const descend = () => { spawnMonster(); updateHud(); renderBoard(); };
+    // the shop is never a race against a live monster. Descending is
+    // also when queued achievement celebrations fire — the player is
+    // back on the board and no overlay is open.
+    const descend = () => { spawnMonster(); updateHud(); renderBoard(); showNextAchievement(); };
     // A short beat first, so the player sees the "Floor cleared" banner.
     // Boss floors: relic pick first, then the shop. Other floors: shop.
-    if (wasBoss) setTimeout(() => showRelicChoice(() => showShop(descend)), 700);
-    else setTimeout(() => showShop(descend), 700);
+    // The fake final boss gets its victory gag first; the true final
+    // boss gets the real victory screen first.
+    const continueFlow = () => {
+      if (wasBoss) showRelicChoice(() => showShop(descend));
+      else showShop(descend);
+    };
+    if (wasFakeFinal) setTimeout(() => showFakeVictory(continueFlow), 700);
+    else if (wasTrueFinal) setTimeout(() => showTrueVictory(continueFlow, clearedFloor), 700);
+    else setTimeout(continueFlow, 700);
+  }
+
+  // The fake final boss: a victory gag in two beats. "YOU WIN!" — then
+  // the rumbling. Tapping through resumes the normal flow (relic pick
+  // first, since the fake boss is a boss, then the shop, then floor 16).
+  function showFakeVictory(onDone) {
+    const modal = $('#fakewin-overlay');
+    const title = $('#fakewin-title');
+    const text = $('#fakewin-text');
+    const btn = $('#fakewin-button');
+    title.textContent = 'YOU WIN!';
+    text.textContent = 'The crypt is saved! King Crumb has crumbled. Time to go home a hero!';
+    btn.textContent = 'Hooray!';
+    btn.onclick = () => {
+      title.textContent = '...wait.';
+      text.textContent = 'Do you hear that rumbling? Something is waking up below...';
+      btn.textContent = 'Uh oh.';
+      sfx.boss();
+      btn.onclick = () => {
+        modal.hidden = true;
+        sfx.blip();
+        if (onDone) onDone();
+      };
+    };
+    modal.hidden = false;
+    sfx.clear();
+    setStatus('You win! The crypt is saved! ...wait. Do you hear that rumbling?');
+  }
+
+  // The TRUE final boss, beaten: the real victory screen. "Keep delving"
+  // resumes the normal flow (relic pick, then shop, then floor 21 — the
+  // endless game goes on, and the Hollow King does not repeat). "New
+  // run" goes back to the setup screen, like the game-over flow.
+  function showTrueVictory(onKeepDelving, clearedFloor) {
+    // The Hollow King is beaten: record the win (hero x difficulty),
+    // plus first-win / win-hard when they apply. The celebration
+    // banners wait until the player is back on the board (descend).
+    awardAchievements({ type: 'win', heroId: state.heroId, difficultyId: state.difficulty });
+    const modal = $('#victory-overlay');
+    $('#win-floor').textContent = clearedFloor;
+    $('#win-kills').textContent = state.kills;
+    $('#win-gold').textContent = state.gold;
+    $('#win-score').textContent = state.score;
+    $('#win-best').textContent = `Best floor: ${state.best} · Best gold: ${state.bestGold}`;
+    modal.hidden = false;
+    sfx.clear();
+    setStatus(`You beat the crypt! You defeated the Hollow King on floor ${clearedFloor}.`);
+    $('#keep-delving-button').onclick = () => {
+      modal.hidden = true;
+      sfx.blip();
+      if (onKeepDelving) onKeepDelving();
+    };
+    $('#new-run-button').onclick = () => {
+      modal.hidden = true;
+      $('#play-screen').hidden = true;
+      $('#setup-screen').hidden = false;
+      state.screen = 'setup';
+      $('#relic-count').textContent = '0/50';
+      achQueue = [];
+      renderHeroes(); renderDetail(); renderAchievementsButton();
+    };
   }
 
   // The shop player's spendable state, read from / written back to state.
@@ -1005,6 +1370,7 @@ if (typeof document !== 'undefined') {
       b.innerHTML = `<span class="relic-emoji" aria-hidden="true">${spriteSVG(r.sprite)}</span><strong>${r.name}</strong><span>${r.desc}</span>`;
       b.addEventListener('click', () => {
         state.relics.push(r.id);
+        awardAchievements({ type: 'relic', relicId: r.id });
         if (r.id === 'hearty-stew') { state.maxHp += 5; state.hp = Math.min(state.maxHp, state.hp + 5); }
         modal.hidden = true;
         sfx.relic();
@@ -1020,7 +1386,9 @@ if (typeof document !== 'undefined') {
 
   function gameOver() {
     state.over = true;
+    achQueue = []; // any queued celebrations are dropped, not shown dead
     state.swordBuff = false; // a bought buff never survives into a new run
+    $('#crypt-game').classList.remove('final-boss');
     sfx.stopMusic();
     sfx.over();
     const floorReached = state.floor;
@@ -1047,12 +1415,13 @@ if (typeof document !== 'undefined') {
     const diff = DIFFICULTIES[state.difficulty];
     state.maxHp = diff.hp + (state.heroId === 'moss' ? 10 : 0);
     state.hp = state.maxHp; state.block = 0; state.gold = 0; state.score = 0;
-    state.floor = 1; state.kills = 0; state.relics = []; state.swordBuff = false; state.over = false; state.paused = false; state.dying = false;
+    state.floor = 1; state.kills = 0; state.relics = []; state.swordBuff = false; state.over = false; state.paused = false; state.dying = false; state.finalTurns = 0;
     const hero = HEROES.find((h) => h.id === state.heroId);
     $('#hero-chip').innerHTML = `${spriteSVG(hero.sprite)} ${state.heroName} · ${hero.name}`;
     $('#setup-screen').hidden = true;
     $('#play-screen').hidden = false;
     $('#gameover-overlay').hidden = true;
+    $('#crypt-game').classList.remove('final-boss');
     state.screen = 'play';
     newBoard(); renderBoard(); spawnMonster(); updateHud();
     setStatus(`Floor 1: a ${state.monster.name} blocks the way. Drag through 3 or more matching tiles!`);
@@ -1060,6 +1429,12 @@ if (typeof document !== 'undefined') {
     sfx.startMusic();
   }
   $('#descend-button').addEventListener('click', startRun);
+  $('#achievements-button').addEventListener('click', showAchievements);
+  $('#achievements-close').addEventListener('click', () => {
+    $('#achievements-overlay').hidden = true;
+    sfx.blip();
+    renderAchievementsButton();
+  });
   $('#back-button').addEventListener('click', () => { window.location.href = '../../../games.html'; });
   $('#play-again-button').addEventListener('click', () => {
     $('#gameover-overlay').hidden = true;
@@ -1067,7 +1442,8 @@ if (typeof document !== 'undefined') {
     $('#setup-screen').hidden = false;
     state.screen = 'setup';
     $('#relic-count').textContent = '0/50';
-    renderHeroes(); renderDetail();
+    achQueue = [];
+    renderHeroes(); renderDetail(); renderAchievementsButton();
   });
   $('#quit-button').addEventListener('click', () => { window.location.href = '../../../games.html'; });
 

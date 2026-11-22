@@ -89,6 +89,38 @@ export const BOSS_MUSIC = {
   ],
 };
 
+// ---- the TRUE final boss loop: epic and scary ----
+// Same shape as the boss loop (32 eighth-note steps, 4 bars) but much
+// slower and heavier: 108 BPM with a low droning triangle bass (A1,
+// dipping to F1 and E1), a square melody that leans on dissonant
+// intervals — minor 2nds (A/Bb) and tritones (A/Eb) — and sparse, heavy
+// noise hits on the downbeats instead of a constant hat. Still A minor
+// at heart, still original, still square/triangle/noise only. The
+// melody ends on A so the loop point (bar 4 → bar 1) is seamless.
+// One loop ≈ 8.9 s.
+export const FINAL_BOSS_MUSIC = {
+  bpm: 108,
+  steps: 32,
+  melody: [
+    69, 70, 69, 68, 69, 70, 69, 63, // bar 1: A Bb A G# | A Bb A Eb
+    69, 70, 72, 70, 69, 68, 69, null, // bar 2: A Bb C Bb | A G# A .
+    75, 74, 75, 70, 69, 70, 68, 69, // bar 3: Eb D Eb Bb | A Bb G# A
+    64, 68, 71, 75, 74, 70, 69, null, // bar 4: E G# B Eb | D Bb A .
+  ],
+  bass: [
+    33, 33, 33, 33, 33, 33, 33, 33, // bar 1: A1 drone
+    33, 33, 33, 33, 33, 33, 33, 33, // bar 2: A1 drone
+    29, 29, 29, 29, 29, 29, 29, 29, // bar 3: F1, darker
+    28, 28, 28, 28, 28, 28, 33, 33, // bar 4: E1, walk up to A
+  ],
+  hat: [
+    1, 0, 0, 0, 1, 0, 0, 0,
+    1, 0, 0, 0, 1, 0, 0, 0,
+    1, 0, 0, 0, 1, 0, 0, 0,
+    1, 0, 0, 0, 1, 0, 0, 0,
+  ],
+};
+
 // ---- SFX as pure data: each note is { m (MIDI), t (offset s), d (dur s),
 // w ('square'|'triangle'), v (volume) }, { noise: true, t, d, v, f },
 // or a pitch slide { slide: true, m0 (start MIDI), m1 (end MIDI),
@@ -230,9 +262,10 @@ export class Chiptune {
     this.musicTimer = null;
     this.nextStepTime = 0;
     this.step = 0;
-    // Which loop should be playing: 'main' or 'boss'. `playingMusic` is
-    // the table the running sequencer is actually playing (set at start,
-    // so a track switch always restarts the sequencer cleanly).
+    // Which loop should be playing: 'main', 'boss', or 'final' (the true
+    // final boss). `playingMusic` is the table the running sequencer is
+    // actually playing (set at start, so a track switch always restarts
+    // the sequencer cleanly).
     this.track = 'main';
     this.playingTrack = null;
     this.playingMusic = null;
@@ -412,11 +445,11 @@ export class Chiptune {
   }
 
   // ---- background music: lookahead step sequencer ----
-  // `track` is 'main' or 'boss'. Calling startMusic with a track while
-  // the other one is playing restarts the sequencer on the new track —
-  // never two loops at once. Calling it with no argument (unpause /
-  // unmute) resumes whichever track was selected, and is a no-op when
-  // that track is already playing.
+  // `track` is 'main', 'boss', or 'final'. Calling startMusic with a
+  // track while another one is playing restarts the sequencer on the new
+  // track — never two loops at once. Calling it with no argument
+  // (unpause / unmute) resumes whichever track was selected, and is a
+  // no-op when that track is already playing.
   get stepDur() {
     const table = this.playingMusic || MUSIC;
     return 60 / table.bpm / 2; // eighth notes
@@ -432,7 +465,8 @@ export class Chiptune {
     this.ensureCtx();
     if (!this.ctx) return;
     this.playingTrack = this.track;
-    this.playingMusic = this.track === 'boss' ? BOSS_MUSIC : MUSIC;
+    this.playingMusic = this.track === 'boss' ? BOSS_MUSIC
+      : this.track === 'final' ? FINAL_BOSS_MUSIC : MUSIC;
     this.step = 0;
     this.nextStepTime = this.ctx.currentTime + 0.06;
     this.musicTimer = setInterval(() => this.scheduleMusic(), 25);
