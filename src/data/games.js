@@ -96,7 +96,7 @@ export const games = [
     category: 'music',
     title: 'Drum Quest',
     description:
-      "Joel's 3D drum game for kids learning to play: tap the drums on a real-looking Three.js drum kit in Free Play, copy the beat in Copy Cat, and build your own beat in Beat Builder. No failing, no accounts — just drums.",
+      "Joel's 3D drum game for kids learning to play: sit behind the kit in first-person view and tap the drums in Free Play, copy the beat in Copy Cat, and build your own beat in Beat Builder. No failing, no accounts — just drums.",
     image: './public/screenshots/drum-quest.svg',
     path: './src/games/drum-quest/index.html',
   },
