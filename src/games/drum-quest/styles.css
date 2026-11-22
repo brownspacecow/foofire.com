@@ -22,6 +22,22 @@
   padding: 0 1rem 7rem;
 }
 
+/* No horizontal scrolling, ever. The bar sizing below fixes the real
+   offender — the fixed menu bar was wider than narrow phones — and this
+   is only a backstop so no stray pixel can let the page slide sideways.
+   `clip`, not `hidden`, so the sticky site header keeps working. */
+html,
+body {
+  overflow-x: hidden;
+}
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
 /* Fullscreen: the game fills the screen, hero out of the way, stage as
    tall as the screen allows, menu bar still pinned to the bottom. */
 .drum-quest:fullscreen {
@@ -382,8 +398,28 @@
     display: inline;
   }
 
+  /* Tighten the fixed bar so it fits phones down to ~390px wide. */
+  .dq-bar {
+    gap: 0.4rem;
+    padding: 0.6rem 0.5rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .dq-bar .dq-mode {
-    padding: 0.6rem 0.8rem;
+    padding: 0.6rem 0.7rem;
+  }
+}
+
+@media (max-width: 380px) {
+  /* Narrowest phones: the mode buttons go icon-only — just the drum and
+     the teacher's hat, with their aria-labels still naming them — so the
+     whole bar fits with room to spare and nothing slides sideways. The
+     zoom / mute / fullscreen buttons stay full-size at 48px. */
+  .dq-bar {
+    gap: 0.35rem;
+  }
+
+  .dq-mode-short {
+    display: none;
   }
 }
 
