@@ -165,6 +165,20 @@ export function isCrushingTurn(turnNo) {
   return turnNo % 4 === 0;
 }
 
+/** Low-health vignette state, from the HP fraction (max HP varies by
+ *  hero — Moss has +10 — so the fraction, never a fixed HP number).
+ *  Above 1/3 max HP: hidden. At or below 1/3: 'low', strength grows
+ *  0 → 1 as HP falls to 0. At or below 1/6: 'crit', a stronger, faster
+ *  pulse. `strength` is continuous across the low/crit boundary (0 at
+ *  1/3, 0.5 at 1/6, 1 at 0 HP) so the vignette never jumps.
+ *  Returns { visible, level: 'none' | 'low' | 'crit', strength }. */
+export function lowHpState(hp, maxHp) {
+  const frac = maxHp > 0 ? Math.max(0, hp) / maxHp : 0;
+  if (frac > 1 / 3) return { visible: false, level: 'none', strength: 0 };
+  const strength = Math.min(1, (1 / 3 - frac) / (1 / 3));
+  return { visible: true, level: frac <= 1 / 6 ? 'crit' : 'low', strength };
+}
+
 /** Count how many of a relic the run holds. */
 export function relicCount(relics, id) {
   return relics.filter((r) => r === id).length;
@@ -877,6 +891,23 @@ if (typeof document !== 'undefined') {
       crushEl.hidden = true;
       card.classList.remove('crush-warning');
     }
+    updateLowHp();
+  }
+
+  // ---- low-health vignette ----
+  // Red edges creep in as HP falls. Hidden on the setup screen, on
+  // game over, and anywhere but a live run; updateHud calls this after
+  // every match, bite, heal, and shop purchase, so it stays live.
+  function updateLowHp() {
+    const el = $('#low-hp-vignette');
+    const s = (state.over || state.screen !== 'play')
+      ? { visible: false, level: 'none', strength: 0 }
+      : lowHpState(state.hp, state.maxHp);
+    el.classList.toggle('low', s.level === 'low');
+    el.classList.toggle('crit', s.level === 'crit');
+    // Base opacity grows with strength so the edges deepen as HP falls;
+    // the pulse animation throbs around that base (see the CSS).
+    el.style.setProperty('--lowhp-opacity', s.visible ? String(0.45 + 0.55 * s.strength) : '0');
   }
   function floatText(text, kind) {
     // 'slain' is the one float that must still show under reduced motion
@@ -1363,6 +1394,7 @@ if (typeof document !== 'undefined') {
       state.screen = 'setup';
       $('#relic-count').textContent = '0/50';
       achQueue = [];
+      updateLowHp(); // back on setup: the red edges go away
       renderHeroes(); renderDetail(); renderAchievementsButton();
     };
   }
@@ -1508,6 +1540,7 @@ if (typeof document !== 'undefined') {
     state.screen = 'setup';
     $('#relic-count').textContent = '0/50';
     achQueue = [];
+    updateLowHp(); // back on setup: the red edges go away
     renderHeroes(); renderDetail(); renderAchievementsButton();
   });
   $('#quit-button').addEventListener('click', () => { window.location.href = '../../../games.html'; });
