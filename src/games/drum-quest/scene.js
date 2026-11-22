@@ -5,16 +5,18 @@
  * ACES tone mapping, one shadow-casting key light, raycast taps.
  *
  * A stage with a real-looking kit (kick, snare, hi-hat, two rack toms,
- * floor tom, crash + ride cymbals) seen in FIRST PERSON, like other drum
- * simulator games: you sit on the stool behind the kit, two drumsticks
- * in the foreground, and the drums fill the frame. Across the kit sits
- * Jack, your drum teacher, with his own demo pad — he plays a simple
- * beat, you play it back. Tap a drum in 3D to hit it; the head squashes,
- * the cymbal wobbles, the rim flashes and your stick strikes. No flat
- * pads anywhere.
- * Thumb-first: the camera is close and low, every drum has an invisible
- * hit sphere ~1.6x its size, and the game is designed for two thumbs
- * in phone portrait — no precise tapping, no hover, no double-tap zoom.
+ * floor tom, crash + ride cymbals) seen from directly ABOVE, like
+ * other online drum sets: the kit is a floor plan on the screen, kick
+ * at the bottom, cymbals across the top, Jack at the top edge. Two
+ * drumsticks come in from the bottom edge — your hands — and swing
+ * down onto the drum you tap. Across the kit sits Jack, your drum
+ * teacher, with his own demo pad — he plays a simple beat, you play
+ * it back. Tap a drum in 3D to hit it; the head squashes, the cymbal
+ * wobbles, the rim flashes and your stick strikes. No flat pads anywhere.
+ * Thumb-first: the camera is high above the kit, every drum has an
+ * invisible hit sphere ~1.6x its size, and the game is designed for
+ * two thumbs in phone portrait — no precise tapping, no hover, no
+ * double-tap zoom.
  * ---------------------------------------------------------------------- */
 
 import * as THREE from 'three';
@@ -53,16 +55,19 @@ export function createStage(container, options = {}) {
   scene.background = new THREE.Color(0x0a0418);
   scene.fog = new THREE.Fog(0x0a0418, 14, 30);
 
-  const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 120);
-  // FIRST-PERSON framing: the camera is the drummer's eyes, sitting on
-  // the stool behind the kit and looking forward and down at it. The
-  // kit fills the frame — cymbals across the top, drums big in the lower
-  // two-thirds where thumbs land. Phones get a wider lens so the whole
-  // kit (hi-hat to ride) stays in frame in portrait.
-  const CAM_BASE = new THREE.Vector3(0, 1.75, -1.35);
-  const LOOK_BASE = new THREE.Vector3(0, 0.9, 1.2);
-  const CAM_ZOOM = new THREE.Vector3(0, 1.55, -0.85);
-  const LOOK_ZOOM = new THREE.Vector3(0, 0.65, 1.0);
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 120);
+  // TOP-DOWN framing: the camera hangs directly above the kit and looks
+  // straight down, like other online drum sets — the kit is a floor plan
+  // on the screen, kick at the bottom, cymbals across the top, Jack at
+  // the top edge. The camera's up vector is +z so the far side of the
+  // stage (+z, Jack's side) is the top of the screen and the stool side
+  // (-z) is the bottom. Phones get a wider lens so the whole kit stays
+  // in frame in portrait, without pulling the camera back.
+  camera.up.set(0, 0, 1);
+  const CAM_BASE = new THREE.Vector3(0, 6.3, 0.7);
+  const LOOK_BASE = new THREE.Vector3(0, 0, 0.45);
+  const CAM_ZOOM = new THREE.Vector3(0, 4.7, 0.6);
+  const LOOK_ZOOM = new THREE.Vector3(0, 0, 0.45);
   let zoomed = false;
   const camTarget = CAM_BASE.clone();
   const lookTarget = LOOK_BASE.clone();
@@ -163,9 +168,9 @@ export function createStage(container, options = {}) {
   );
   rim.rotation.x = Math.PI / 2;
 
-  // Backdrop wall and side curtains — in front of the drummer now
-  // (the FPV camera looks forward, +z), so the wall faces back toward
-  // the stool.
+  // Backdrop wall and side curtains on the far side of the stage (+z,
+  // Jack's side) — mostly out of frame from above, but they give the
+  // room its edges if the view ever widens.
   const backdrop = new THREE.Mesh(
     new THREE.PlaneGeometry(30, 12),
     new THREE.MeshStandardMaterial({ color: 0x120a24, roughness: 1 }),
@@ -355,75 +360,78 @@ export function createStage(container, options = {}) {
     return texture;
   }
 
-  // --- Kick: big, front and centre. In first person the drummer sees
-  // the near head, so the painted "DRUM QUEST" head faces back toward
-  // the stool (-z) and the plain head faces the audience.
+  // --- Kick: big, bottom-centre, closest to the player. Top-down the
+  // shell stands upright so the painted "DRUM QUEST" head faces UP
+  // toward the camera and reads as a circle. The texture is flipped
+  // in-plane (rotation.z = PI) so the words read upright from above,
+  // with the top of the letters toward the top of the screen.
   const kick = new THREE.Group();
-  kick.position.set(0, 0.55, 0.85);
+  kick.position.set(0, 0.55, -0.75);
   scene.add(kick);
-  const kickShell = mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.5, 48), shellRed, 0, 0, 0, kick);
-  kickShell.rotation.x = Math.PI / 2;
+  mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.5, 48), shellRed, 0, 0, 0, kick);
   const kickFront = mesh(
     new THREE.CircleGeometry(0.52, 48),
     new THREE.MeshStandardMaterial({ map: kickHeadTexture(), roughness: 0.55 }),
     0,
+    0.26,
     0,
-    -0.26,
     kick,
   );
-  kickFront.rotation.y = Math.PI;
-  mesh(new THREE.CircleGeometry(0.52, 48), whiteHead, 0, 0, 0.26, kick);
+  kickFront.rotation.set(-Math.PI / 2, 0, Math.PI);
+  mesh(new THREE.CircleGeometry(0.52, 48), whiteHead, 0, -0.26, 0, kick).rotation.x =
+    Math.PI / 2;
   for (const side of [-1, 1]) {
-    const rimT = mesh(new THREE.TorusGeometry(0.55, 0.03, 12, 48), chrome, 0, 0, side * 0.25, kick);
+    const rimT = mesh(new THREE.TorusGeometry(0.55, 0.03, 12, 48), chrome, 0, side * 0.25, 0, kick);
+    rimT.rotation.x = Math.PI / 2;
     rimT.castShadow = false;
     const leg = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.5, 8), chrome, side * 0.5, -0.35, 0.1, kick);
     leg.rotation.z = side * 0.5;
   }
   registerDrum('kick', kick, { heads: [kickFront] });
-  drums.kick.ring.position.set(0, 0, -0.32);
+  drums.kick.ring.position.set(0, 0.32, 0);
+  drums.kick.ring.rotation.x = -Math.PI / 2;
   drums.kick.ring.scale.setScalar(0.55);
-  addHitTarget('kick', 0, 0.55, 0.85, 0.88);
+  addHitTarget('kick', 0, 0.55, -0.75, 0.88);
 
-  // --- Snare: left front from the drummer's seat (screen left), tilted
-  // toward the drummer. Enlarged so a thumb lands it. ---
-  // (First person flips left/right versus the old audience view: world
-  // +x is the drummer's left, world -x his right.)
+  // --- Snare: left-centre from above (world +x is screen left, the
+  // drummer's left), tilted slightly toward the player. Enlarged so a
+  // thumb lands it. ---
   const snare = new THREE.Group();
-  snare.position.set(0.68, 0.8, 0.5);
+  snare.position.set(0.8, 0.8, -0.35);
   snare.rotation.set(-0.14, 0, -0.1);
   scene.add(snare);
   mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.2, 40), shellRed, 0, 0, 0, snare);
   const snareHead = mesh(new THREE.CircleGeometry(0.34, 40), whiteHead, 0, 0.11, 0, snare);
   snareHead.rotation.x = -Math.PI / 2;
   mesh(new THREE.TorusGeometry(0.36, 0.025, 12, 40), chrome, 0, 0.11, 0, snare).rotation.x = Math.PI / 2;
-  pole(0.68, 0.5, 0.8);
-  tripod(0.68, 0.5);
+  pole(0.8, -0.35, 0.8);
+  tripod(0.8, -0.35);
   registerDrum('snare', snare, { heads: [snareHead] });
   drums.snare.ring.position.set(0, 0.16, 0);
   drums.snare.ring.rotation.x = -Math.PI / 2;
   drums.snare.ring.scale.setScalar(0.4);
-  addHitTarget('snare', 0.68, 0.8, 0.5, 0.58);
+  addHitTarget('snare', 0.8, 0.8, -0.35, 0.58);
 
-  // --- Hi-hat: far left from the drummer's seat, two brass cymbals on
-  // a stand. Forward enough to stay in frame in first-person portrait.
+  // --- Hi-hat: far left, two brass cymbals on a stand, head up.
   const hihat = new THREE.Group();
-  hihat.position.set(0.88, 0.95, 0.55);
+  hihat.position.set(1.45, 0.95, -0.05);
   scene.add(hihat);
   mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 40), brass, 0, 0, 0, hihat);
   mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 40), brass, 0, 0.05, 0, hihat);
-  pole(0.88, 0.55, 0.95);
-  tripod(0.88, 0.55);
+  pole(1.45, -0.05, 0.95);
+  tripod(1.45, -0.05);
   registerDrum('hihat', hihat, { wobble: hihat });
   drums.hihat.ring.position.set(0, 0.12, 0);
   drums.hihat.ring.rotation.x = -Math.PI / 2;
   drums.hihat.ring.scale.setScalar(0.4);
-  addHitTarget('hihat', 0.88, 0.95, 0.55, 0.62);
+  addHitTarget('hihat', 1.45, 0.95, -0.05, 0.62);
 
-  // --- Rack toms: two angled toms over the kick. Enlarged ~25%. ---
+  // --- Rack toms: two toms in a row across the top-centre, heads
+  // facing straight up so they read as circles from above. Enlarged.
   function rackTom(x, tiltZ) {
     const tom = new THREE.Group();
-    tom.position.set(x, 1.16, 0.05);
-    tom.rotation.set(0.38, 0, tiltZ);
+    tom.position.set(x, 1.2, 0.6);
+    tom.rotation.set(0, 0, tiltZ);
     scene.add(tom);
     mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.34, 32), shellRed, 0, 0, 0, tom);
     const head = mesh(new THREE.CircleGeometry(0.28, 32), whiteHead, 0, 0.18, 0, tom);
@@ -431,8 +439,8 @@ export function createStage(container, options = {}) {
     mesh(new THREE.TorusGeometry(0.3, 0.02, 10, 32), chrome, 0, 0.18, 0, tom).rotation.x = Math.PI / 2;
     return tom;
   }
-  const tomL = rackTom(-0.42, 0.16);
-  const tomR = rackTom(0.42, -0.16);
+  const tomL = rackTom(-0.45, 0.16);
+  const tomR = rackTom(0.45, -0.16);
   const tomHeads = [];
   tomL.traverse((c) => {
     if (c.isMesh && c.geometry && c.geometry.type === 'CircleGeometry') tomHeads.push(c);
@@ -440,10 +448,10 @@ export function createStage(container, options = {}) {
   tomR.traverse((c) => {
     if (c.isMesh && c.geometry && c.geometry.type === 'CircleGeometry') tomHeads.push(c);
   });
-  // Floor tom, right side from the drummer's seat, pulled in and
-  // forward so it stays in frame in first person.
+  // Floor tom, right-centre from above (world -x is screen right),
+  // head up.
   const floorTom = new THREE.Group();
-  floorTom.position.set(-0.8, 0.5, 0.35);
+  floorTom.position.set(-0.9, 0.5, -0.3);
   scene.add(floorTom);
   mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.5, 40), shellRed, 0, 0, 0, floorTom);
   const floorHead = mesh(new THREE.CircleGeometry(0.32, 40), whiteHead, 0, 0.26, 0, floorTom);
@@ -468,16 +476,17 @@ export function createStage(container, options = {}) {
   tomGroup.add(floorTom);
   scene.add(tomGroup);
   registerDrum('tom', tomGroup, { heads: tomHeads });
-  drums.tom.ring.position.set(0, 1.4, 0.1);
+  drums.tom.ring.position.set(0, 1.45, 0.6);
   drums.tom.ring.rotation.x = -Math.PI / 2;
   drums.tom.ring.scale.setScalar(0.55);
-  addHitTarget('tom', -0.42, 1.16, 0.05, 0.48);
-  addHitTarget('tom', 0.42, 1.16, 0.05, 0.48);
-  addHitTarget('tom', -0.8, 0.5, 0.35, 0.54);
+  // Tom hit spheres are a touch bigger than before so the smallest
+  // drums still clear 80px on a phone in top-down view.
+  addHitTarget('tom', -0.45, 1.2, 0.6, 0.55);
+  addHitTarget('tom', 0.45, 1.2, 0.6, 0.55);
+  addHitTarget('tom', -0.9, 0.5, -0.3, 0.58);
 
-  // --- Cymbals: crash left, ride right from the drummer's seat (ride
-  // plays crash too). Forward and a little higher so both stay in
-  // frame across the top in first-person portrait. ---
+  // --- Cymbals: crash top-left, ride top-right, flat brass circles
+  // lying in the horizontal plane.
   function cymbal(x, y, z, radius, tiltZ, drumId) {
     const group = new THREE.Group();
     group.position.set(x, y, z);
@@ -489,54 +498,55 @@ export function createStage(container, options = {}) {
     tripod(x, z);
     return group;
   }
-  const crashGroup = cymbal(0.68, 1.85, 0.5, 0.48, -0.22, 'crash');
-  const rideGroup = cymbal(-0.7, 1.85, 0.5, 0.54, 0.2, 'crash');
+  const crashGroup = cymbal(1.25, 1.85, 0.85, 0.48, -0.22, 'crash');
+  const rideGroup = cymbal(-1.25, 1.85, 0.85, 0.54, 0.2, 'crash');
   // Ride shares the crash entry: tapping it plays the crash.
   const crashRingGroup = new THREE.Group();
   crashRingGroup.add(crashGroup);
   crashRingGroup.add(rideGroup);
   scene.add(crashRingGroup);
   registerDrum('crash', crashRingGroup, { wobble: crashGroup });
-  drums.crash.ring.position.set(0.68, 1.93, 0.5);
+  drums.crash.ring.position.set(1.25, 1.93, 0.85);
   drums.crash.ring.rotation.x = -Math.PI / 2;
   drums.crash.ring.scale.setScalar(0.52);
   // Cymbals get the biggest hit zones of all — they were the tiny
   // far-away targets before.
-  addHitTarget('crash', 0.68, 1.85, 0.5, 0.78);
-  addHitTarget('crash', -0.7, 1.85, 0.5, 0.86);
+  addHitTarget('crash', 1.25, 1.85, 0.85, 0.78);
+  addHitTarget('crash', -1.25, 1.85, 0.85, 0.86);
   // Ride wobbles with the crash.
   drums.crash.rideGroup = rideGroup;
   drums.crash.rideBase = rideGroup.rotation.clone();
 
-  /* --------------------------------------- first-person drummer */
-  // You ARE Joel now, sitting on the stool behind the kit — so his
-  // body, head and stool are not built at all, or they would block the
-  // view. Only the kick pedal below and the foreground sticks are visible.
-  const kickPedal = mesh(new THREE.BoxGeometry(0.16, 0.03, 0.3), darkMetal, 0.2, 0.14, 0.72, scene);
+  /* --------------------------------------- top-down drummer */
+  // You sit at the bottom edge of the screen, behind the kick — so
+  // your body, head and stool are not built at all, or they would block
+  // the view. Only the kick pedal below the kick and the sticks coming
+  // in from the bottom edge are visible.
+  const kickPedal = mesh(new THREE.BoxGeometry(0.16, 0.03, 0.3), darkMetal, 0.2, 0.14, -1.2, scene);
   kickPedal.rotation.x = 0.25;
 
-  /* ------------------------------------------- first-person sticks */
-  // Your hands, in the foreground at the bottom of the frame: two
-  // sticks angled in from the left and right, tips hovering over the
-  // kit. They swing down to strike whichever drum is hit — left stick
-  // for the snare/hi-hat side, right stick for the tom/crash side.
-  // They are never raycast targets, so they can't block a tap.
-  function makeFpvStick(side) {
+  /* ------------------------------------------------- top-down sticks */
+  // Your hands, at the bottom edge of the frame: two sticks angled in
+  // from the bottom-left and bottom-right, tips hovering over the kit.
+  // They swing down onto whichever drum is hit — left stick for the
+  // snare/hi-hat side, right stick for the tom/crash side. The pivot
+  // rotates around x so a strike drives the tip straight down onto the
+  // head. They are never raycast targets, so they can't block a tap.
+  function makeTopStick(side) {
     const pivot = new THREE.Group();
-    // World +x is the drummer's left (screen left), so the left stick
-    // (side -1) sits at +x. Pivots sit forward of the camera and close
-    // to the middle, or the sticks fall outside the portrait frame.
-    pivot.position.set(side * -0.25, 1.35, -0.45);
+    // World +x is screen left, so the left stick (side -1) sits at +x.
+    // Pivots sit at the bottom edge of the frame, close to the middle,
+    // or the sticks fall outside the portrait frame.
+    pivot.position.set(side * -0.55, 1.55, -1.85);
     scene.add(pivot);
     const hand = mesh(new THREE.SphereGeometry(0.07, 12, 8), skin, 0, 0, 0, pivot);
     hand.castShadow = false;
-    const stick = mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.75, 8), wood, 0, -0.1, 0.32, pivot);
-    stick.rotation.x = 1.9;
-    stick.rotation.z = side * -0.12;
+    const stick = mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.8, 8), wood, 0, -0.08, 0.4, pivot);
+    stick.rotation.x = Math.PI / 2 - 0.35;
     return { group: pivot, restX: 0, strikeAt: -10 };
   }
-  const fpvLeft = makeFpvStick(-1);
-  const fpvRight = makeFpvStick(1);
+  const stickLeft = makeTopStick(-1);
+  const stickRight = makeTopStick(1);
 
   /* ------------------------------------------------------- drum labels */
   function makeLabel(text, x, y, z) {
@@ -567,25 +577,26 @@ export function createStage(container, options = {}) {
     scene.add(sprite);
     return sprite;
   }
-  // Labels sit in the gaps above/beside their drums, never on a head,
-  // and they are sprites — never raycast targets, so they can't block a tap.
-  makeLabel(DRUM_LABELS.kick, 0, 1.38, 1.08);
-  makeLabel(DRUM_LABELS.snare, 0.72, 1.26, 0.68);
-  makeLabel(DRUM_LABELS.hihat, 0.95, 1.4, 0.65);
-  makeLabel(DRUM_LABELS.tom, 0, 1.78, 0.1);
-  makeLabel(DRUM_LABELS.crash, 0.45, 2.05, 0.5);
-  makeLabel('RIDE', -0.45, 2.05, 0.5);
+  // Labels sit in the gaps beside their drums, never on a head, at a
+  // low height so they don't drift far from their drum in top-down.
+  // They are sprites — never raycast targets, so they can't block a tap.
+  makeLabel(DRUM_LABELS.kick, 0, 1.05, -1.5);
+  makeLabel(DRUM_LABELS.snare, 0.85, 1.05, -0.8);
+  makeLabel(DRUM_LABELS.hihat, 1.55, 1.05, -0.55);
+  makeLabel(DRUM_LABELS.tom, 0, 1.05, 1.15);
+  makeLabel(DRUM_LABELS.crash, 1.25, 1.05, 1.5);
+  makeLabel('RIDE', -1.25, 1.05, 1.5);
 
   /* --------------------------------------------------- Jack, the teacher */
-  // Jack sits across the kit from you, on the far side of the stage, so
-  // he is visible in first person between the cymbals: a friendly
-  // instructor with his own little demo pad. When he plays a beat, HIS
-  // sticks strike HIS pad (and your matching drum lights up) — it is
-  // always obvious it is Jack playing, not your sticks. He is built
-  // from the same simple primitives as the kit, facing back toward the
-  // stool (-z), so his face is toward the camera.
+  // Jack sits at the top edge of the frame, beyond the kit, so he is
+  // visible in top-down view: a friendly instructor with his own little
+  // demo pad. When he plays a beat, HIS sticks strike HIS pad (and your
+  // matching drum lights up) — it is always obvious it is Jack playing,
+  // not your sticks. He is built from the same simple primitives as the
+  // kit, facing back toward the player (-z), so his face is toward the
+  // bottom of the screen.
   const jack = new THREE.Group();
-  jack.position.set(0, 0, 3.4);
+  jack.position.set(0, 0, 2.5);
   scene.add(jack);
   // Stool.
   mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.08, 24), darkMetal, 0, 0.56, 0, jack);
@@ -613,17 +624,17 @@ export function createStage(container, options = {}) {
   jackSmile.rotation.x = Math.PI;
   jackSmile.rotation.y = Math.PI;
   jackSmile.castShadow = false;
-  makeLabel('JACK', 0, 2.18, 3.4);
+  makeLabel('JACK', 0, 1.2, 2.85);
   // Jack's demo pad: a small blue drum on a stand in front of him,
-  // in the gap between your rack toms so you can see it.
+  // in the gap between the cymbals and Jack himself so you can see it.
   const jackPad = new THREE.Group();
-  jackPad.position.set(0, 0.95, 2.65);
+  jackPad.position.set(0, 0.95, 2.0);
   scene.add(jackPad);
   mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.14, 32), mat(0x2b6cb0, { roughness: 0.3, metalness: 0.3 }), 0, 0, 0, jackPad);
   const jackPadHead = mesh(new THREE.CircleGeometry(0.26, 32), whiteHead, 0, 0.08, 0, jackPad);
   jackPadHead.rotation.x = -Math.PI / 2;
-  pole(0, 2.65, 0.9);
-  tripod(0, 2.65);
+  pole(0, 2.0, 0.9);
+  tripod(0, 2.0);
   // Jack's arms: shoulder pivots, hands and sticks reaching forward
   // and down toward his pad (which sits at -z from him).
   function makeJackArm(side) {
@@ -668,8 +679,8 @@ export function createStage(container, options = {}) {
   function strike(drumId) {
     const arm = STRIKE_ARM[drumId];
     const now = elapsed;
-    if (arm === 'left') fpvLeft.strikeAt = now;
-    else if (arm === 'right') fpvRight.strikeAt = now;
+    if (arm === 'left') stickLeft.strikeAt = now;
+    else if (arm === 'right') stickRight.strikeAt = now;
     else if (arm === 'foot') {
       pedalPressAt = now;
       kickDipAt = now;
@@ -732,9 +743,10 @@ export function createStage(container, options = {}) {
     renderer.setSize(width, height, false);
     const aspect = width / height;
     camera.aspect = aspect;
-    // First person on a phone: a wide lens so the whole kit (hi-hat to
-    // ride) stays in frame in portrait, without pulling the camera back.
-    const baseFov = aspect < 1.0 ? 68 : aspect < 1.2 ? 62 : 58;
+    // Top-down on a phone: a wide lens so the whole kit (hi-hat to
+    // ride, kick to Jack) stays in frame in portrait, without pulling
+    // the camera back.
+    const baseFov = aspect < 1.0 ? 55 : aspect < 1.2 ? 52 : 50;
     // Zoom moves the camera, not the lens: keep the wide lens so the
     // zoomed close-up still shows the whole width of the kit.
     fovTarget = baseFov;
@@ -752,9 +764,9 @@ export function createStage(container, options = {}) {
   resize();
 
   /* --------------------------------------------------------- animate */
-  // First-person sticks: a quick down-strike, then back up, sin curve
+  // Top-down sticks: a quick down-strike, then back up, sin curve
   // over 0.3s. The pivot rotates +x to drive the tip down toward the kit.
-  function fpvStickSwing(stick, now) {
+  function stickSwing(stick, now) {
     const age = now - stick.strikeAt;
     if (age < 0 || age > 0.3) {
       stick.group.rotation.x += (stick.restX - stick.group.rotation.x) * 0.2;
@@ -787,8 +799,8 @@ export function createStage(container, options = {}) {
     camera.lookAt(lookTarget);
 
     // Your sticks swing on every hit; the kick pedal presses on a kick.
-    fpvStickSwing(fpvLeft, now);
-    fpvStickSwing(fpvRight, now);
+    stickSwing(stickLeft, now);
+    stickSwing(stickRight, now);
 
     // Jack: while he is teaching, his head bobs to the beat; on a
     // strike his stick swings down onto his demo pad, and the pad head
@@ -802,8 +814,8 @@ export function createStage(container, options = {}) {
       jack.position.y = 0;
       jackHead.position.y = 1.56 + (jackPlaying && !reducedMotion ? Math.sin(now * 4) * 0.02 : 0);
       jackHead.rotation.x = jackPlaying && !reducedMotion ? 0.06 * Math.sin(now * 4) : 0;
-      fpvStickSwing(jackLeft, now);
-      fpvStickSwing(jackRight, now);
+      stickSwing(jackLeft, now);
+      stickSwing(jackRight, now);
     }
     const padScale = jackPadHead.scale.x;
     if (padScale > 1) jackPadHead.scale.set(Math.max(1, padScale - dt * 2.5), Math.max(1, padScale - dt * 2.5), 1);
