@@ -195,6 +195,35 @@ body {
   color: var(--dq-gold);
 }
 
+/* Turn-your-phone hint: a pill in the page flow above the stage, so it
+   can never cover a drum or the menu bar. Shown only on touch devices
+   held upright (see updateRotateHint in game.js); hidden in landscape
+   as a backstop even if the script hasn't run yet. */
+.dq-rotate-hint {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 1rem;
+  border: 2px solid var(--dq-gold);
+  border-radius: 999px;
+  background: rgba(244, 201, 93, 0.12);
+  color: var(--dq-gold);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (orientation: landscape) {
+  .dq-rotate-hint {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------------ stage */
 
 .dq-stage {
@@ -420,6 +449,33 @@ body {
 
   .dq-mode-short {
     display: none;
+  }
+}
+
+/* Phones turned sideways: the kit is the game, so the hero gets out of
+   the way and the stage takes the height the screen has. The message
+   shrinks to one line, the panels still scroll below as usual, and the
+   fixed menu bar stays put — nothing scrolls sideways. In fullscreen
+   the stage is capped so it fits entirely above the menu bar. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .dq-hero {
+    display: none;
+  }
+
+  .dq-message {
+    min-height: 1.6em;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .dq-stage {
+    height: calc(100dvh - 160px);
+    min-height: 280px;
+  }
+
+  .drum-quest:fullscreen .dq-stage {
+    height: calc(100dvh - 170px);
+    min-height: 260px;
   }
 }
 

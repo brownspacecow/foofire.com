@@ -754,10 +754,11 @@ export function createStage(container, options = {}) {
     renderer.setSize(width, height, false);
     const aspect = width / height;
     camera.aspect = aspect;
-    // Top-down on a phone: a wide lens so the whole kit (hi-hat to
-    // ride, kick to Jack) stays in frame in portrait, without pulling
-    // the camera back.
-    const baseFov = aspect < 1.0 ? 55 : aspect < 1.2 ? 52 : 50;
+    // One wide lens at every aspect: the kit's vertical span (kick label
+    // to JACK's label) needs it. FOV 50 clipped Jack's label off the top
+    // in landscape — and on desktop — while 55 keeps the whole kit, Jack
+    // and every label in frame, portrait and landscape alike.
+    const baseFov = 55;
     // Zoom moves the camera, not the lens: keep the wide lens so the
     // zoomed close-up still shows the whole width of the kit.
     fovTarget = baseFov;
