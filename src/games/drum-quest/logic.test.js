@@ -16,6 +16,7 @@ import {
   generatePattern,
   starsForAttempts,
   starString,
+  stepIsDone,
 } from './logic.js';
 
 /* A fixed pseudo-random source so generated-groove tests are deterministic. */
@@ -142,18 +143,82 @@ test('copy cat tap checking works step by step, drums together', () => {
     ['hihat'],
     ['snare', 'hihat'],
   ];
+  // Fresh per-step hits for every check — the checker records the hit.
+  const fresh = () => pattern.map(() => []);
   // Step 1 needs kick and hi-hat, in either order.
-  assert.equal(checkCopyCatTap(pattern, 0, [], 'kick'), 'correct');
-  assert.equal(checkCopyCatTap(pattern, 0, ['kick'], 'hihat'), 'step');
-  assert.equal(checkCopyCatTap(pattern, 0, [], 'hihat'), 'correct');
-  assert.equal(checkCopyCatTap(pattern, 0, ['hihat'], 'kick'), 'step');
-  // A drum that is not in this step is wrong, and so is a repeat.
-  assert.equal(checkCopyCatTap(pattern, 0, [], 'snare'), 'wrong');
-  assert.equal(checkCopyCatTap(pattern, 0, ['kick'], 'kick'), 'wrong');
+  let hits = fresh();
+  assert.equal(checkCopyCatTap(pattern, 0, hits, 'kick'), 'correct');
+  assert.deepEqual(hits[0], ['kick']);
+  assert.equal(checkCopyCatTap(pattern, 0, hits, 'hihat'), 'step');
+  assert.deepEqual(hits[0], ['kick', 'hihat']);
+  hits = fresh();
+  assert.equal(checkCopyCatTap(pattern, 0, hits, 'hihat'), 'correct');
+  assert.equal(checkCopyCatTap(pattern, 0, hits, 'kick'), 'step');
+  // A drum that is in no nearby step is wrong…
+  assert.equal(checkCopyCatTap(pattern, 0, fresh(), 'snare'), 'wrong');
+  // …but a repeat of a drum already hit is ignored, not failed.
+  assert.equal(checkCopyCatTap(pattern, 0, [['kick'], [], []], 'kick'), 'ignored');
   // The last step of the bar completes the groove.
-  assert.equal(checkCopyCatTap(pattern, 2, ['snare'], 'hihat'), 'complete');
+  hits = [[ 'kick', 'hihat'], ['hihat'], ['snare']];
+  assert.equal(checkCopyCatTap(pattern, 2, hits, 'hihat'), 'complete');
   // No step past the end.
-  assert.equal(checkCopyCatTap(pattern, 3, [], 'kick'), 'wrong');
+  assert.equal(checkCopyCatTap(pattern, 3, fresh(), 'kick'), 'wrong');
+});
+
+test('a tap counts for the step it meant, even across a step boundary', () => {
+  // Level 1 Rock Beat: kick+hi-hat, hi-hat, snare+hi-hat, hi-hat.
+  const pattern = generatePattern(1);
+  const fresh = () => pattern.map(() => []);
+  // Straddle: kick landed in step 0, the clock ticked, hi-hat lands in
+  // step 1's window — it still counts for step 0, which it completes.
+  let hits = [['kick'], [], [], []];
+  assert.equal(checkCopyCatTap(pattern, 1, hits, 'hihat'), 'step');
+  assert.deepEqual(hits[0], ['kick', 'hihat']);
+  // Early: snare tapped in step 1's window, 100ms before step 2 —
+  // it counts for step 2.
+  hits = [['kick', 'hihat'], ['hihat'], [], []];
+  assert.equal(checkCopyCatTap(pattern, 1, hits, 'snare'), 'correct');
+  assert.deepEqual(hits[2], ['snare']);
+  // Late: step 1's hi-hat missed, tapped during step 2's window —
+  // it counts for step 1.
+  hits = [['kick', 'hihat'], [], ['snare'], []];
+  assert.equal(checkCopyCatTap(pattern, 2, hits, 'hihat'), 'step');
+  assert.deepEqual(hits[1], ['hihat']);
+  // Playing ahead: step 0 is done, so step 1's hi-hat tapped while
+  // the clock is still on step 0 counts for step 1.
+  hits = [['kick', 'hihat'], [], [], []];
+  assert.equal(checkCopyCatTap(pattern, 0, hits, 'hihat'), 'step');
+  assert.deepEqual(hits[1], ['hihat']);
+  // A late tap can finish the bar even when it is not the last step
+  // on the clock: only step 1 is still open, and this hi-hat is it.
+  hits = [['kick', 'hihat'], [], ['snare', 'hihat'], ['hihat']];
+  assert.equal(checkCopyCatTap(pattern, 2, hits, 'hihat'), 'complete');
+  assert.ok(stepIsDone(pattern[1], hits[1]));
+});
+
+test('extra taps are ignored, never failed', () => {
+  const pattern = generatePattern(1);
+  // Double-tap: kick twice in step 0 — the second one is ignored.
+  let hits = [['kick'], [], [], []];
+  assert.equal(checkCopyCatTap(pattern, 0, hits, 'kick'), 'ignored');
+  assert.deepEqual(hits, [['kick'], [], [], []]);
+  // A drum from a step that is already done is ignored too.
+  hits = [['kick', 'hihat'], ['hihat'], [], []];
+  assert.equal(checkCopyCatTap(pattern, 1, hits, 'kick'), 'ignored');
+  // …even on the step right after it finished.
+  assert.equal(checkCopyCatTap(pattern, 2, hits, 'kick'), 'ignored');
+});
+
+test('a genuinely wrong drum still fails the attempt', () => {
+  const pattern = generatePattern(1);
+  const fresh = () => pattern.map(() => []);
+  // Crash, tom and ride are in no step at level 1 — and none of them
+  // is in a step next to step 0 either.
+  assert.equal(checkCopyCatTap(pattern, 0, fresh(), 'crash'), 'wrong');
+  assert.equal(checkCopyCatTap(pattern, 0, fresh(), 'tom'), 'wrong');
+  assert.equal(checkCopyCatTap(pattern, 0, fresh(), 'ride'), 'wrong');
+  // Snare two steps away is wrong too: it belongs to no nearby step.
+  assert.equal(checkCopyCatTap(pattern, 0, fresh(), 'snare'), 'wrong');
 });
 
 test('stars reward a first-try finish and soften after retries', () => {

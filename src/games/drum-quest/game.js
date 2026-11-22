@@ -25,6 +25,7 @@ import {
   generatePattern,
   starsForAttempts,
   starString,
+  stepIsDone,
 } from './logic.js';
 import { DrumSynth } from './sound.js';
 import { createStage } from './scene.js';
@@ -158,8 +159,7 @@ const copyCat = {
   phase: 'idle', // idle | watch (Jack plays) | play (Joel plays) | waiting (bar finishing after a miss or a win)
   bar: 'jack', // which bar the single clock is in: Jack's, then Joel's, then Jack's…
   step: 0,
-  stepHits: [],
-  doneSteps: 0,
+  hitsByStep: [], // one list of drums hit per step, kept for the whole bar
   attempts: 0, // misses on the current level
   pendingLevelUp: false, // Joel finished the bar — the next level starts at the barline
   pendingReplay: false, // "Jack, play it again" was tapped — Jack replays at the barline
@@ -197,7 +197,7 @@ function renderCopyDots() {
   for (let i = 0; i < copyCat.pattern.length; i += 1) {
     const dot = document.createElement('span');
     dot.className = 'dq-dot';
-    if (i < copyCat.doneSteps) dot.classList.add('is-done');
+    if (stepIsDone(copyCat.pattern[i], copyCat.hitsByStep[i])) dot.classList.add('is-done');
     if (i === copyCat.step && copyCat.phase !== 'idle') dot.classList.add('is-now');
     dot.setAttribute('aria-hidden', 'true');
     copyDotsEl.appendChild(dot);
@@ -211,8 +211,7 @@ function setupCopyLevel() {
   copyCat.pattern = generatePattern(copyCat.level);
   copyCat.phase = 'idle';
   copyCat.step = 0;
-  copyCat.stepHits = [];
-  copyCat.doneSteps = 0;
+  copyCat.hitsByStep = copyCat.pattern.map(() => []);
   copyCat.attempts = 0;
   copyLevelEl.textContent = String(copyCat.level);
   copyStarsEl.textContent = '☆☆☆';
@@ -262,8 +261,7 @@ function startJackBar() {
   copyCat.bar = 'jack';
   copyCat.phase = 'watch';
   copyCat.step = 0;
-  copyCat.stepHits = [];
-  copyCat.doneSteps = 0;
+  copyCat.hitsByStep = copyCat.pattern.map(() => []);
   copyCat.pendingLevelUp = false;
   copyCat.pendingReplay = false;
   stage.setJackPlaying(true);
@@ -299,8 +297,7 @@ function copyClockTick() {
       startCopyLevel();
       return;
     }
-    copyCat.stepHits = [];
-    copyCat.doneSteps = 0;
+    copyCat.hitsByStep = copyCat.pattern.map(() => []);
     if (copyCat.pendingReplay) {
       // "Jack, play it again" was tapped mid-lesson: Jack replays his
       // bar at the barline, on the grid — never mid-bar, where a
@@ -332,8 +329,9 @@ function copyClockTick() {
       );
     }
   }
-  // A new step starts: yesterday's taps don't carry over.
-  copyCat.stepHits = [];
+  // A new step starts — but the hits stay for the whole bar, so a tap
+  // that lands just across a boundary still counts for the step it
+  // meant (see checkCopyCatTap). Nothing is forgotten until the barline.
   if (copyCat.bar === 'jack') playJackStep(copyCat.step);
   else {
     // Metronome click on the beat — the pulse never stops, and the
@@ -348,7 +346,14 @@ function copyClockTick() {
 
 function handleCopyTap(drum) {
   if (copyCat.phase !== 'play') return;
-  const result = checkCopyCatTap(copyCat.pattern, copyCat.step, copyCat.stepHits, drum);
+  const result = checkCopyCatTap(copyCat.pattern, copyCat.step, copyCat.hitsByStep, drum);
+  if (result === 'ignored') {
+    // An extra tap on a drum he already hit — a double-tap, or a drum
+    // from a step that is already done. He hears his drum; he just
+    // doesn't lose the bar for it.
+    renderCopyDots();
+    return;
+  }
   if (result === 'wrong') {
     copyCat.attempts += 1;
     // The clock keeps running: this bar finishes out to the barline,
@@ -358,13 +363,13 @@ function handleCopyTap(drum) {
     setMessage('Not quite — Jack will play it again at the end of this bar, listen close!');
     return;
   }
-  copyCat.stepHits.push(drum);
   if (result === 'correct') {
     renderCopyDots();
     return;
   }
-  // 'step': this step is done — the beat clock moves on. 'complete': the bar is done.
-  copyCat.doneSteps += 1;
+  // 'step': a step is now complete. 'complete': every step of the bar
+  // is complete, even if the last one finished was not the last step
+  // on the clock — a late tap can finish an earlier step.
   renderCopyDots();
   if (result !== 'complete') return;
 
