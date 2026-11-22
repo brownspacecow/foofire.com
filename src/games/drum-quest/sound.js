@@ -2,8 +2,9 @@
  * Drum Quest — drum sounds, synthesized live with Web Audio.
  * No audio files, no samples. Kick is a sine pitch drop, snare is noise
  * plus a body tone, hi-hat is filtered noise, tom is a pitched sine, and
- * crash is a longer noise wash. Same ideas as rhythm-break's kit, kept
- * small enough for one kid-sized game.
+ * crash is a longer noise wash, and ride is a metallic ping with a
+ * longer sustain. Same ideas as rhythm-break's kit, kept small enough
+ * for one kid-sized game.
  * ---------------------------------------------------------------------- */
 
 export class DrumSynth {
@@ -64,6 +65,9 @@ export class DrumSynth {
         break;
       case 'crash':
         this._crash(time, gain);
+        break;
+      case 'ride':
+        this._ride(time, gain);
         break;
       default:
         break;
@@ -225,5 +229,47 @@ export class DrumSynth {
     source.connect(high);
     high.connect(env);
     env.connect(this.master);
+  }
+
+  /**
+   * Ride cymbal: a metallic ping, clearly different from the crash.
+   * Inharmonic partials ring out with a long sustain, and only a short,
+   * quiet stick tick of noise — no big noise wash like the crash.
+   */
+  _ride(time, gain = 1) {
+    const ctx = this.ctx;
+    // Bell-like partials of a ride: a low fundamental plus inharmonic
+    // overtones that shimmer instead of washing out.
+    const partials = [
+      [412, 0.16],
+      [587, 0.1],
+      [823, 0.08],
+      [1187, 0.05],
+      [1643, 0.03],
+    ];
+    for (const [freq, level] of partials) {
+      const osc = ctx.createOscillator();
+      const env = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0.0001, time);
+      env.gain.exponentialRampToValueAtTime(level * gain, time + 0.005);
+      env.gain.exponentialRampToValueAtTime(0.0001, time + 1.9);
+      osc.connect(env);
+      env.connect(this.master);
+      osc.start(time);
+      osc.stop(time + 1.95);
+    }
+    // Just the stick tick on the metal, then the ring takes over.
+    const tick = this._noiseSource(time, 0.03);
+    const high = ctx.createBiquadFilter();
+    high.type = 'highpass';
+    high.frequency.value = 6000;
+    const tickGain = ctx.createGain();
+    tickGain.gain.setValueAtTime(0.12 * gain, time);
+    tickGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.03);
+    tick.connect(high);
+    high.connect(tickGain);
+    tickGain.connect(this.master);
   }
 }

@@ -27,6 +27,7 @@ export const DRUM_COLORS = {
   hihat: '#7fd8c6',
   tom: '#b6a3ff',
   crash: '#f08fa4',
+  ride: '#ff9f43',
 };
 
 const DRUM_LABELS = {
@@ -35,15 +36,17 @@ const DRUM_LABELS = {
   hihat: 'HI-HAT · D',
   tom: 'TOM · F',
   crash: 'CRASH · G',
+  ride: 'RIDE · H',
 };
 
-/* Left stick hits the snare side, right stick the tom/crash side. */
+/* Left stick hits the snare side, right stick the tom/crash/ride side. */
 const STRIKE_ARM = {
   kick: 'foot',
   snare: 'left',
   hihat: 'left',
   tom: 'right',
   crash: 'right',
+  ride: 'right',
 };
 
 export function createStage(container, options = {}) {
@@ -309,7 +312,10 @@ export function createStage(container, options = {}) {
       wobbleBase: wobble ? wobble.rotation.clone() : null,
       ring,
       hitAt: -10,
-      glowing: false,
+      // One-shot glow timestamp: set when Jack's demo lights this drum.
+      // The ring flashes once from this moment, then goes dark — it
+      // never stays lit and never pulses.
+      glowAt: -10,
     };
     group.traverse((child) => {
       if (child.isMesh) {
@@ -498,24 +504,26 @@ export function createStage(container, options = {}) {
     tripod(x, z);
     return group;
   }
+  // Crash top-left, ride top-right: each is its own drum, with its own
+  // glow ring, wobble and hit target. (The ride used to share the crash
+  // entry, so tapping it played the crash — that was the bug.)
   const crashGroup = cymbal(1.25, 1.85, 0.85, 0.48, -0.22, 'crash');
-  const rideGroup = cymbal(-1.25, 1.85, 0.85, 0.54, 0.2, 'crash');
-  // Ride shares the crash entry: tapping it plays the crash.
-  const crashRingGroup = new THREE.Group();
-  crashRingGroup.add(crashGroup);
-  crashRingGroup.add(rideGroup);
-  scene.add(crashRingGroup);
-  registerDrum('crash', crashRingGroup, { wobble: crashGroup });
+  registerDrum('crash', crashGroup, { wobble: crashGroup });
   drums.crash.ring.position.set(1.25, 1.93, 0.85);
   drums.crash.ring.rotation.x = -Math.PI / 2;
   drums.crash.ring.scale.setScalar(0.52);
   // Cymbals get the biggest hit zones of all — they were the tiny
   // far-away targets before.
   addHitTarget('crash', 1.25, 1.85, 0.85, 0.78);
-  addHitTarget('crash', -1.25, 1.85, 0.85, 0.86);
-  // Ride wobbles with the crash.
-  drums.crash.rideGroup = rideGroup;
-  drums.crash.rideBase = rideGroup.rotation.clone();
+
+  const rideGroup = cymbal(-1.25, 1.85, 0.85, 0.54, 0.2, 'ride');
+  registerDrum('ride', rideGroup, { wobble: rideGroup });
+  drums.ride.ring.position.set(-1.25, 1.93, 0.85);
+  drums.ride.ring.rotation.x = -Math.PI / 2;
+  drums.ride.ring.scale.setScalar(0.58);
+  addHitTarget('ride', -1.25, 1.85, 0.85, 0.86);
+  // The two cymbal hit spheres are 2.5 apart with radii 0.78 + 0.86,
+  // so a tap on one can never land on the other.
 
   /* --------------------------------------- top-down drummer */
   // You sit at the bottom edge of the screen, behind the kick — so
@@ -585,7 +593,7 @@ export function createStage(container, options = {}) {
   makeLabel(DRUM_LABELS.hihat, 1.55, 1.05, -0.55);
   makeLabel(DRUM_LABELS.tom, 0, 1.05, 1.15);
   makeLabel(DRUM_LABELS.crash, 1.25, 1.05, 1.5);
-  makeLabel('RIDE', -1.25, 1.05, 1.5);
+  makeLabel(DRUM_LABELS.ride, -1.25, 1.05, 1.5);
 
   /* --------------------------------------------------- Jack, the teacher */
   // Jack sits at the top edge of the frame, beyond the kit, so he is
@@ -694,17 +702,20 @@ export function createStage(container, options = {}) {
     strike(drumId);
   }
 
+  // One-shot glow: lighting a drum flashes its ring once, exactly on the
+  // hit, and it fades out by itself within 0.35s. Nothing here stays lit
+  // or pulses — during Jack's demo each step's drums flash once and go
+  // dark before the next step, so you can always tell which drum he
+  // just played. The player's own taps use the same flash via hit().
   function setGlow(drumId, on) {
     const drum = drums[drumId];
     if (!drum) return;
-    drum.glowing = on;
-    drum.ring.visible = on;
+    drum.glowAt = on ? elapsed : -10;
   }
 
   function clearGlow() {
     for (const drum of Object.values(drums)) {
-      drum.glowing = false;
-      drum.ring.visible = false;
+      drum.glowAt = -10;
     }
   }
 
@@ -829,12 +840,15 @@ export function createStage(container, options = {}) {
       const squash = age >= 0 && age < 0.22 ? 1 + 0.1 * (1 - age / 0.22) : 1;
       for (const head of drum.heads) head.scale.set(squash, squash, 1);
       const flash = age >= 0 && age < 0.35 ? 0.85 * (1 - age / 0.35) : 0;
-      const glow = drum.glowing ? 0.45 + 0.25 * Math.sin(now * 6) : 0;
-      for (const glowMat of drum.glowMats) glowMat.emissiveIntensity = Math.max(flash, glow);
-      if (drum.glowing) drum.ring.material.opacity = 0.45 + 0.3 * Math.sin(now * 6);
-      else if (flash > 0) {
+      // Jack's demo glow is a one-shot flash too: bright at the hit,
+      // faded out within 0.35s, then dark until the next hit. No pulsing.
+      const glowAge = now - drum.glowAt;
+      const glowFlash = glowAge >= 0 && glowAge < 0.35 ? 0.85 * (1 - glowAge / 0.35) : 0;
+      const lit = Math.max(flash, glowFlash);
+      for (const glowMat of drum.glowMats) glowMat.emissiveIntensity = lit;
+      if (lit > 0) {
         drum.ring.visible = true;
-        drum.ring.material.opacity = flash;
+        drum.ring.material.opacity = lit;
       } else {
         drum.ring.visible = false;
       }
@@ -842,10 +856,6 @@ export function createStage(container, options = {}) {
         const wobble = age >= 0 && age < 1.2 ? Math.sin(now * 20) * 0.1 * Math.exp(-3.5 * age) : 0;
         drum.wobble.rotation.z = drum.wobbleBase.z + wobble;
         drum.wobble.rotation.x = drum.wobbleBase.x + wobble * 0.5;
-      }
-      if (drum.rideGroup && drum.rideBase) {
-        const wobble = age >= 0 && age < 1.2 ? Math.sin(now * 20 + 1) * 0.08 * Math.exp(-3.5 * age) : 0;
-        drum.rideGroup.rotation.z = drum.rideBase.z + wobble;
       }
     }
 

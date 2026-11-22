@@ -9,13 +9,15 @@
  * are 4 quarter-note steps; from level 3 the bar is 8 eighth-note steps.
  * ---------------------------------------------------------------------- */
 
-/** The five drums, in kit order. `key` is the keyboard key for each pad. */
+/** The six drums, in kit order. `key` is the keyboard key for each pad. */
 export const DRUMS = [
   { id: 'kick', label: 'Kick', emoji: '🥁', key: 'a', color: '#ff6b5e' },
   { id: 'snare', label: 'Snare', emoji: '🪘', key: 's', color: '#f4c95d' },
   { id: 'hihat', label: 'Hi-Hat', emoji: '🎩', key: 'd', color: '#7fd8c6' },
   { id: 'tom', label: 'Tom', emoji: '🥁', key: 'f', color: '#b6a3ff' },
   { id: 'crash', label: 'Crash', emoji: '✨', key: 'g', color: '#f08fa4' },
+  // Ride is Free Play only: it never appears in Jack's beats or pools.
+  { id: 'ride', label: 'Ride', emoji: '🔔', key: 'h', color: '#ff9f43' },
 ];
 
 export const DRUM_IDS = DRUMS.map((drum) => drum.id);
