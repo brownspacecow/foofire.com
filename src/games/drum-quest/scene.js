@@ -312,7 +312,10 @@ export function createStage(container, options = {}) {
       wobbleBase: wobble ? wobble.rotation.clone() : null,
       ring,
       hitAt: -10,
-      glowing: false,
+      // One-shot glow timestamp: set when Jack's demo lights this drum.
+      // The ring flashes once from this moment, then goes dark — it
+      // never stays lit and never pulses.
+      glowAt: -10,
     };
     group.traverse((child) => {
       if (child.isMesh) {
@@ -699,17 +702,20 @@ export function createStage(container, options = {}) {
     strike(drumId);
   }
 
+  // One-shot glow: lighting a drum flashes its ring once, exactly on the
+  // hit, and it fades out by itself within 0.35s. Nothing here stays lit
+  // or pulses — during Jack's demo each step's drums flash once and go
+  // dark before the next step, so you can always tell which drum he
+  // just played. The player's own taps use the same flash via hit().
   function setGlow(drumId, on) {
     const drum = drums[drumId];
     if (!drum) return;
-    drum.glowing = on;
-    drum.ring.visible = on;
+    drum.glowAt = on ? elapsed : -10;
   }
 
   function clearGlow() {
     for (const drum of Object.values(drums)) {
-      drum.glowing = false;
-      drum.ring.visible = false;
+      drum.glowAt = -10;
     }
   }
 
@@ -834,12 +840,15 @@ export function createStage(container, options = {}) {
       const squash = age >= 0 && age < 0.22 ? 1 + 0.1 * (1 - age / 0.22) : 1;
       for (const head of drum.heads) head.scale.set(squash, squash, 1);
       const flash = age >= 0 && age < 0.35 ? 0.85 * (1 - age / 0.35) : 0;
-      const glow = drum.glowing ? 0.45 + 0.25 * Math.sin(now * 6) : 0;
-      for (const glowMat of drum.glowMats) glowMat.emissiveIntensity = Math.max(flash, glow);
-      if (drum.glowing) drum.ring.material.opacity = 0.45 + 0.3 * Math.sin(now * 6);
-      else if (flash > 0) {
+      // Jack's demo glow is a one-shot flash too: bright at the hit,
+      // faded out within 0.35s, then dark until the next hit. No pulsing.
+      const glowAge = now - drum.glowAt;
+      const glowFlash = glowAge >= 0 && glowAge < 0.35 ? 0.85 * (1 - glowAge / 0.35) : 0;
+      const lit = Math.max(flash, glowFlash);
+      for (const glowMat of drum.glowMats) glowMat.emissiveIntensity = lit;
+      if (lit > 0) {
         drum.ring.visible = true;
-        drum.ring.material.opacity = flash;
+        drum.ring.material.opacity = lit;
       } else {
         drum.ring.visible = false;
       }
