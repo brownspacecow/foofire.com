@@ -7,7 +7,7 @@ Tagline: **Games for kids.**
 ## Features
 
 - Three.js games that run entirely in the browser
-- Game portal with a library of 20 playable games, with search and category filters
+- Game portal with a library of 21 playable games, with search and category filters
 - Dark, mobile-first responsive UI
 - Local high scores saved in the browser (top five per game)
 - Dedicated legal disclaimer page
@@ -18,7 +18,7 @@ Tagline: **Games for kids.**
 src/
   main.js          # Portal: featured games + Games-page search/filter
   scores.js        # High-scores page
-  data/games.js    # The 20 games: id, category, title, description, image, path
+  data/games.js    # The 21 games: id, category, title, description, image, path
   utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
   vendor/
     three.module.js  # Shared Three.js r169, used by Earwarts + Keep.
@@ -45,6 +45,7 @@ src/
     the-grin/       # The Grin: four-stage bullet-hell boss fight
     phrase-pad/     # Phrase Pad: pocket touch synth, no wrong notes
     rhythm-break/   # Soft Reset: two-minute rhythm break
+    drum-quest/     # Drum Quest: kid-sized drum kit, Copy Cat, Beat Builder
 public/
   data/
     muddle-keep/   # rooms, creatures, spells, traps, heroes, levels (JSON)

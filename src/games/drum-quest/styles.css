@@ -1,0 +1,488 @@
+/* Drum Quest — big, bright and thumb-friendly. Pads and grid cells are
+   sized for a 7-year-old on a phone, and everything works without the
+   animations for players who prefer reduced motion. */
+
+.drum-quest {
+  --dq-ink: #f9eddf;
+  --dq-muted: #c9b6c9;
+  --dq-bg: #1a1022;
+  --dq-bg-soft: #2a1930;
+  --dq-line: rgba(249, 237, 223, 0.16);
+  --dq-gold: #f4c95d;
+  --dq-rose: #f08fa4;
+  --dq-teal: #7fd8c6;
+  --dq-lilac: #b6a3ff;
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.drum-quest [hidden] {
+  display: none !important;
+}
+
+.drum-quest h1,
+.drum-quest h2 {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  letter-spacing: -0.01em;
+}
+
+.dq-kicker {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dq-gold);
+}
+
+/* ------------------------------------------------------------------- hero */
+
+.dq-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.5fr);
+  align-items: center;
+  gap: 2rem;
+  margin: 0 -1rem;
+  padding: clamp(2rem, 5vw, 3.2rem) clamp(1.25rem, 4vw, 3rem);
+  border-bottom: 4px solid var(--ink);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(244, 201, 93, 0.22), transparent 45%),
+    radial-gradient(circle at 82% 10%, rgba(240, 143, 164, 0.2), transparent 42%),
+    linear-gradient(155deg, #2c1532 0%, #3c1b31 48%, #1a1022 100%);
+}
+
+.dq-hero-copy {
+  max-width: 36rem;
+}
+
+.dq-hero h1 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: clamp(2.4rem, 7vw, 3.6rem);
+  line-height: 1;
+  color: var(--dq-ink);
+}
+
+.dq-lede {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--dq-ink);
+}
+
+.dq-best {
+  margin: 0.9rem 0 0;
+  font-weight: 700;
+  color: var(--dq-gold);
+}
+
+.dq-hero-joel svg {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* ------------------------------------------------------------------ modes */
+
+.dq-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.dq-mode,
+.dq-button {
+  min-height: 48px;
+  padding: 0.6rem 1.1rem;
+  border: 2px solid var(--dq-line);
+  border-radius: 999px;
+  background: var(--dq-bg-soft);
+  color: var(--dq-ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.dq-mode:hover,
+.dq-button:hover {
+  border-color: var(--dq-gold);
+}
+
+.dq-mode.is-active,
+.dq-button.primary {
+  background: var(--dq-gold);
+  border-color: var(--dq-gold);
+  color: #1a1022;
+}
+
+.dq-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dq-icon {
+  min-width: 48px;
+  min-height: 48px;
+  margin-left: auto;
+  border: 2px solid var(--dq-line);
+  border-radius: 12px;
+  background: var(--dq-bg-soft);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.dq-message {
+  min-height: 1.6em;
+  margin: 0.75rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--dq-gold);
+}
+
+/* ----------------------------------------------------------------- panels */
+
+.dq-panel {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  border: 2px solid var(--dq-line);
+  border-radius: 20px;
+  background: var(--dq-bg-soft);
+}
+
+.dq-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dq-panel h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: var(--dq-ink);
+}
+
+.dq-sub {
+  margin: 0.25rem 0 0;
+  color: var(--dq-muted);
+}
+
+.dq-hint {
+  margin: 1rem 0 0;
+  color: var(--dq-muted);
+  line-height: 1.5;
+}
+
+.dq-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+/* ------------------------------------------------------------------- pads */
+
+.dq-pads {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.dq-pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 132px;
+  padding: 1rem 0.5rem 0.75rem;
+  border: 3px solid var(--pad-color, var(--dq-gold));
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--pad-color, #f4c95d) 22%, #1a1022);
+  color: var(--dq-ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, background-color 0.08s ease, box-shadow 0.08s ease;
+}
+
+.dq-pad:active,
+.dq-pad.is-hit {
+  transform: scale(0.94);
+  background: var(--pad-color, var(--dq-gold));
+  box-shadow: 0 0 0 4px rgba(249, 237, 223, 0.35), 0 0 28px var(--pad-color, var(--dq-gold));
+}
+
+.dq-pad-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.dq-pad-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.dq-pad-key {
+  display: inline-block;
+  min-width: 1.6rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--dq-line);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------------- metronome */
+
+.dq-metronome {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dq-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border: 3px solid var(--dq-gold);
+  border-radius: 50%;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--dq-gold);
+}
+
+/* --------------------------------------------------------------- copy cat */
+
+.dq-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.dq-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 2px solid var(--dq-line);
+  border-radius: 14px;
+}
+
+.dq-stat-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dq-muted);
+}
+
+.dq-stat strong {
+  font-size: 1.4rem;
+  color: var(--dq-gold);
+}
+
+.dq-copy-info {
+  margin: 1rem 0 0.5rem;
+  font-weight: 700;
+  color: var(--dq-ink);
+}
+
+.dq-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  min-height: 1.4rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.dq-dot {
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 2px solid var(--dq-gold);
+  border-radius: 50%;
+  background: transparent;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+
+.dq-dot.is-done {
+  background: var(--dq-gold);
+}
+
+.dq-dot.is-now {
+  transform: scale(1.35);
+  background: var(--dq-rose);
+  border-color: var(--dq-rose);
+}
+
+/* ------------------------------------------------------------ beat builder */
+
+.dq-tempo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 12rem;
+}
+
+.dq-tempo label {
+  font-weight: 700;
+  color: var(--dq-ink);
+}
+
+.dq-tempo input[type="range"] {
+  width: 100%;
+  accent-color: var(--dq-gold);
+}
+
+.dq-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.dq-preset-blurb {
+  margin: 0.6rem 0 0;
+  color: var(--dq-muted);
+}
+
+.dq-grid {
+  margin-top: 1rem;
+}
+
+.dq-grid-row {
+  display: grid;
+  grid-template-columns: 5.5rem repeat(8, minmax(0, 1fr));
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.dq-grid-head {
+  margin-bottom: 0.25rem;
+}
+
+.dq-grid-number {
+  text-align: center;
+  font-weight: 700;
+  color: var(--dq-muted);
+}
+
+.dq-grid-number.is-beat {
+  color: var(--dq-gold);
+  font-size: 1.1rem;
+}
+
+.dq-grid-label {
+  font-weight: 800;
+  color: var(--dq-ink);
+}
+
+.dq-cell {
+  min-height: 44px;
+  padding: 0;
+  border: 2px solid var(--dq-line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 0.1s ease, transform 0.1s ease;
+}
+
+.dq-cell:hover {
+  border-color: var(--dq-gold);
+}
+
+.dq-cell.is-on {
+  border-color: var(--dq-gold);
+  background: var(--dq-gold);
+}
+
+.dq-cell.is-now {
+  outline: 3px solid var(--dq-rose);
+  outline-offset: 1px;
+}
+
+.dq-cell.is-on.is-now {
+  background: var(--dq-rose);
+  border-color: var(--dq-rose);
+}
+
+.dq-saved {
+  min-height: 1.4em;
+  margin: 0.75rem 0 0;
+  color: var(--dq-teal);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ footer */
+
+.dq-credit {
+  margin: 1.5rem 0 0;
+  color: var(--dq-muted);
+  line-height: 1.5;
+}
+
+.dq-back {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------- responsive */
+
+@media (max-width: 720px) {
+  .dq-hero {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .dq-hero-joel svg {
+    max-width: 180px;
+  }
+
+  .dq-pads {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dq-pad {
+    min-height: 112px;
+  }
+
+  .dq-grid-row {
+    grid-template-columns: 4.25rem repeat(8, minmax(0, 1fr));
+  }
+
+  .dq-cell {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 420px) {
+  .dq-pads {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dq-pad-key {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dq-pad,
+  .dq-dot,
+  .dq-cell {
+    transition: none;
+  }
+}

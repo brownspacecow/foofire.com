@@ -92,6 +92,15 @@ export const games = [
     path: './src/games/rhythm-break/index.html',
   },
   {
+    id: 'drum-quest',
+    category: 'music',
+    title: 'Drum Quest',
+    description:
+      "Joel's drum game for kids learning to play: bang the big kit in Free Play, copy the beat in Copy Cat, and build your own beat in Beat Builder. No failing, no accounts — just drums.",
+    image: './public/screenshots/drum-quest.svg',
+    path: './src/games/drum-quest/index.html',
+  },
+  {
     id: 'escape-earth',
     category: 'adventure',
     title: "Escape Earth: Survive Grandma's House",

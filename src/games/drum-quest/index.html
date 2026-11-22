@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Drum Quest | Foofire Games</title>
+    <meta
+      name="description"
+      content="Drum Quest is a drum game for kids learning to play: tap a big drum kit in Free Play, copy the beat in Copy Cat, and build your own beat in Beat Builder. Free, no downloads, no failing."
+    />
+    <meta property="og:title" content="Drum Quest | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Tap a big drum kit, copy the beat, and build your own. A drum game for kids learning to play — no failing, no accounts."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/drum-quest/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#1a1022" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="drum-quest">
+        <section class="dq-hero" aria-labelledby="dq-title">
+          <div class="dq-hero-copy">
+            <p class="dq-kicker">Joel's drum game · for kids learning to play</p>
+            <h1 id="dq-title">Drum Quest</h1>
+            <p class="dq-lede">
+              Bang the big drums, copy the beat, then build a beat of your own.
+              There is no way to fail here — a missed beat just means you get to
+              hear it again.
+            </p>
+            <p class="dq-best" id="best-line"></p>
+          </div>
+          <div class="dq-hero-joel" aria-hidden="true">
+            <svg viewBox="0 0 220 220" role="img" aria-label="Joel grinning behind his drum kit">
+              <circle cx="110" cy="118" r="62" fill="#f2c29b" />
+              <path d="M62 92 L52 52 L74 70 L82 38 L100 62 L110 30 L122 60 L140 36 L146 68 L168 52 L158 92 Z" fill="#e63946" />
+              <circle cx="88" cy="112" r="7" fill="#1a1022" />
+              <circle cx="132" cy="112" r="7" fill="#1a1022" />
+              <circle cx="88" cy="110" r="2.5" fill="#fff" />
+              <circle cx="132" cy="110" r="2.5" fill="#fff" />
+              <circle cx="72" cy="132" r="9" fill="#f08fa4" opacity="0.7" />
+              <circle cx="148" cy="132" r="9" fill="#f08fa4" opacity="0.7" />
+              <path d="M82 140 Q110 168 138 140" fill="none" stroke="#7a3b2e" stroke-width="5" stroke-linecap="round" />
+              <rect x="96" y="143" width="12" height="12" rx="2" fill="#fff" />
+              <rect x="112" y="143" width="12" height="12" rx="2" fill="#fff" />
+              <path d="M96 143 h28" stroke="#7a3b2e" stroke-width="2" />
+              <ellipse cx="52" cy="196" rx="34" ry="16" fill="#f4c95d" stroke="#1a1022" stroke-width="4" />
+              <ellipse cx="168" cy="196" rx="34" ry="16" fill="#f4c95d" stroke="#1a1022" stroke-width="4" />
+              <circle cx="110" cy="200" r="26" fill="#ff6b5e" stroke="#1a1022" stroke-width="4" />
+              <circle cx="110" cy="200" r="26" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 6" opacity="0.6" />
+              <rect x="106" y="172" width="8" height="18" rx="3" fill="#f2c29b" />
+            </svg>
+          </div>
+        </section>
+
+        <nav class="dq-modes" aria-label="Game modes">
+          <button type="button" class="dq-mode is-active" data-mode="free" aria-pressed="true">
+            🥁 Free Play
+          </button>
+          <button type="button" class="dq-mode" data-mode="copy" aria-pressed="false">
+            🐵 Copy Cat
+          </button>
+          <button type="button" class="dq-mode" data-mode="builder" aria-pressed="false">
+            🧱 Beat Builder
+          </button>
+          <button type="button" class="dq-icon" id="mute-button" aria-label="Mute sound" aria-pressed="false">
+            🔊
+          </button>
+        </nav>
+
+        <p class="dq-message" id="message" aria-live="polite">Tap a drum to make some noise!</p>
+
+        <!-- ------------------------------------------------------- Free Play -->
+        <section class="dq-panel" id="panel-free" aria-labelledby="free-title">
+          <div class="dq-panel-head">
+            <div>
+              <h2 id="free-title">Free Play</h2>
+              <p class="dq-sub">Five big drums. Tap them, or use the keys on a keyboard.</p>
+            </div>
+            <div class="dq-metronome">
+              <span class="dq-count" id="beat-count" aria-label="Metronome beat">–</span>
+              <button type="button" class="dq-button" id="metronome-button" aria-pressed="false">
+                ▶ Count 1-2-3-4
+              </button>
+            </div>
+          </div>
+
+          <div class="dq-pads" id="pads" role="group" aria-label="Drum kit">
+            <button type="button" class="dq-pad" data-drum="kick" style="--pad-color: #ff6b5e" aria-label="Kick drum, key A">
+              <span class="dq-pad-emoji" aria-hidden="true">🥁</span>
+              <span class="dq-pad-name">Kick</span>
+              <span class="dq-pad-key">A</span>
+            </button>
+            <button type="button" class="dq-pad" data-drum="snare" style="--pad-color: #f4c95d" aria-label="Snare drum, key S">
+              <span class="dq-pad-emoji" aria-hidden="true">🪘</span>
+              <span class="dq-pad-name">Snare</span>
+              <span class="dq-pad-key">S</span>
+            </button>
+            <button type="button" class="dq-pad" data-drum="hihat" style="--pad-color: #7fd8c6" aria-label="Hi-hat, key D">
+              <span class="dq-pad-emoji" aria-hidden="true">🎩</span>
+              <span class="dq-pad-name">Hi-Hat</span>
+              <span class="dq-pad-key">D</span>
+            </button>
+            <button type="button" class="dq-pad" data-drum="tom" style="--pad-color: #b6a3ff" aria-label="Tom drum, key F">
+              <span class="dq-pad-emoji" aria-hidden="true">🥁</span>
+              <span class="dq-pad-name">Tom</span>
+              <span class="dq-pad-key">F</span>
+            </button>
+            <button type="button" class="dq-pad" data-drum="crash" style="--pad-color: #f08fa4" aria-label="Crash cymbal, key G">
+              <span class="dq-pad-emoji" aria-hidden="true">✨</span>
+              <span class="dq-pad-name">Crash</span>
+              <span class="dq-pad-key">G</span>
+            </button>
+          </div>
+
+          <p class="dq-hint">
+            Try this: Kick, Kick, Snare, Snare — that's the start of a rock beat!
+            Turn on the count and try to hit a drum on every number.
+          </p>
+        </section>
+
+        <!-- -------------------------------------------------------- Copy Cat -->
+        <section class="dq-panel" id="panel-copy" aria-labelledby="copy-title" hidden>
+          <div class="dq-panel-head">
+            <div>
+              <h2 id="copy-title">Copy Cat</h2>
+              <p class="dq-sub">Watch and listen, then play the pattern back on the drums.</p>
+            </div>
+            <div class="dq-stats">
+              <div class="dq-stat">
+                <span class="dq-stat-label">Level</span>
+                <strong id="copy-level">1</strong>
+              </div>
+              <div class="dq-stat">
+                <span class="dq-stat-label">Stars</span>
+                <strong id="copy-stars" aria-label="0 of 3 stars">☆☆☆</strong>
+              </div>
+            </div>
+          </div>
+
+          <p class="dq-copy-info" id="copy-info">Level 1 · 2 hits · nice and slow (70 BPM)</p>
+          <div class="dq-dots" id="copy-dots" aria-label="Pattern progress"></div>
+
+          <div class="dq-actions">
+            <button type="button" class="dq-button primary" id="copy-play-button">▶ Play the pattern</button>
+            <button type="button" class="dq-button" id="copy-again-button" disabled>Hear it again</button>
+          </div>
+
+          <p class="dq-hint">
+            The drums light up as the pattern plays. When it's your turn, tap the
+            same drums in the same order. The tom joins in from level 5.
+          </p>
+        </section>
+
+        <!-- ----------------------------------------------------- Beat Builder -->
+        <section class="dq-panel" id="panel-builder" aria-labelledby="builder-title" hidden>
+          <div class="dq-panel-head">
+            <div>
+              <h2 id="builder-title">Beat Builder</h2>
+              <p class="dq-sub">Tap the squares to build one bar of music, then press play and loop it.</p>
+            </div>
+            <div class="dq-tempo">
+              <label for="tempo-slider">Speed <strong id="tempo-value">90 BPM</strong></label>
+              <input type="range" id="tempo-slider" min="60" max="120" step="1" value="90" />
+            </div>
+          </div>
+
+          <div class="dq-presets" role="group" aria-label="Beat presets">
+            <button type="button" class="dq-button" data-preset="rock">🥁 Rock Beat</button>
+            <button type="button" class="dq-button" data-preset="boom-boom-clap">👏 Boom-Boom-Clap</button>
+            <button type="button" class="dq-button" data-preset="jungle-stomp">🌿 Jungle Stomp</button>
+          </div>
+          <p class="dq-preset-blurb" id="preset-blurb">Pick a beat to start from, or build your own from scratch.</p>
+
+          <div class="dq-grid" id="builder-grid" role="group" aria-label="Beat grid, 8 steps"></div>
+
+          <div class="dq-actions">
+            <button type="button" class="dq-button primary" id="builder-play-button">▶ Play my beat</button>
+            <button type="button" class="dq-button" id="builder-clear-button">Clear</button>
+          </div>
+          <p class="dq-saved" id="builder-saved" aria-live="polite"></p>
+        </section>
+
+        <p class="dq-credit">
+          All drum sounds are made live in your browser — no recordings, no downloads.
+          Your best Copy Cat level and your saved beat stay on this device.
+          <a href="../../../scores.html">See your high scores</a>
+        </p>
+        <a href="../../../games.html" class="dq-back">&larr; Back to games</a>
+      </div>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
