@@ -693,6 +693,18 @@
       .float-text.block { color: #3CBCFC; }
       .float-text.weak { color: #F8B800; }
 
+      /* A long float (the chain bonus) rises and fades over 2.4s. */
+      .float-text.long { animation-duration: 2.4s; }
+
+      /* Last turn: the persistent record under the monster card. */
+      .last-turn {
+        margin: 0.55rem auto 0;
+        max-width: 42rem;
+        text-align: center;
+        color: #FCFCFC;
+        font-size: 0.85rem;
+      }
+
       /* SLAIN! — big centred pixel text over the board. */
       .float-text.slain {
         left: 50%;
@@ -1184,6 +1196,14 @@
             </div>
             <span class="monster-hp" id="monster-hp">18 / 18</span>
           </div>
+
+          <!-- Last turn: a lasting record of what the last match and bite
+               did. The floats vanish in ~1s (and never show at all under
+               reduced motion), so this line is the only place the turn's
+               numbers stay visible. It lives in the play screen, so it
+               hides with the HUD on setup and survives the shop/relic
+               overlays between floors. -->
+          <p class="last-turn" id="last-turn" aria-live="polite">Last turn: —</p>
 
           <div class="board-wrap">
             <div id="board" role="application" aria-label="Tile board. Drag through 3 or more matching tiles."></div>
