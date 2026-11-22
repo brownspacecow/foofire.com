@@ -185,6 +185,8 @@ function startCopyLevel() {
 
 function playCopyPattern() {
   if (copyCat.phase === 'watch') return;
+  // Copy Cat needs the whole kit in frame — zoom back out if needed.
+  if (stage.isZoomed && stage.isZoomed()) zoomButton.click();
   stopCopyPlayback();
   copyCat.phase = 'watch';
   copyCat.taps = [];
@@ -438,6 +440,21 @@ function applyMute(muted) {
   muteButton.setAttribute('aria-pressed', String(muted));
   muteButton.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
 }
+
+/* ------------------------------------------------------------ zoom toggle */
+
+const zoomButton = $('zoom-button');
+
+zoomButton.addEventListener('click', () => {
+  const zoomed = zoomButton.getAttribute('aria-pressed') !== 'true';
+  stage.setZoomed(zoomed);
+  zoomButton.textContent = zoomed ? '🔎' : '🔍';
+  zoomButton.setAttribute('aria-pressed', String(zoomed));
+  zoomButton.setAttribute(
+    'aria-label',
+    zoomed ? 'Zoom out to the full kit' : 'Zoom in on the kit',
+  );
+});
 
 muteButton.addEventListener('click', () => {
   const muted = muteButton.getAttribute('aria-pressed') !== 'true';
