@@ -1,7 +1,9 @@
-/* Drum Quest — the 3D stage is the game. The HUD below it stays small:
-   mode tabs, a message line, and the Copy Cat / Beat Builder panels.
-   Everything is sized for a 7-year-old on a phone, and the stage
-   animation calms down for players who prefer reduced motion. */
+/* Drum Quest — the 3D stage is the game. The menu is a fixed bar pinned
+   to the bottom of the screen: same buttons, same order, same size in
+   every mode, active state by colour only, so nothing ever hops. The
+   stage and the panels scroll above it. Everything is sized for a
+   7-year-old on a phone, and the stage animation calms down for players
+   who prefer reduced motion. */
 
 .drum-quest {
   --dq-ink: #f9eddf;
@@ -16,7 +18,25 @@
   position: relative;
   max-width: 1040px;
   margin: 0 auto;
-  padding: 0 1rem 3rem;
+  /* Room for the fixed menu bar at the bottom, so it never covers content. */
+  padding: 0 1rem 7rem;
+}
+
+/* Fullscreen: the game fills the screen, hero out of the way, stage as
+   tall as the screen allows, menu bar still pinned to the bottom. */
+.drum-quest:fullscreen {
+  max-width: none;
+  overflow-y: auto;
+  background: #1a1022;
+}
+
+.drum-quest:fullscreen .dq-hero {
+  display: none;
+}
+
+.drum-quest:fullscreen .dq-stage {
+  height: calc(100dvh - 200px);
+  min-height: 420px;
 }
 
 .drum-quest [hidden] {
@@ -71,14 +91,38 @@
   color: var(--dq-gold);
 }
 
-/* ------------------------------------------------------------------ modes */
+/* ------------------------------------------------------- fixed menu bar
+   Pinned to the bottom of the screen, always present, always the same:
+   two mode buttons on the left, zoom / mute / fullscreen on the right.
+   Nothing in here changes size, padding, or position when a mode is
+   picked — the active button only changes colour. */
 
-.dq-modes {
+.dq-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.5rem;
   align-items: center;
-  margin: 1.5rem 0 0.5rem;
+  padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  background: rgba(26, 16, 34, 0.97);
+  border-top: 2px solid var(--dq-line);
+}
+
+.dq-bar-spacer {
+  flex: 1 1 auto;
+}
+
+.dq-bar .dq-mode,
+.dq-bar .dq-icon {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.dq-mode-short {
+  display: none;
 }
 
 .dq-mode,
@@ -126,16 +170,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-#zoom-button {
-  margin-left: auto;
-}
-
-.dq-icon + .dq-icon {
-  margin-left: 0.6rem;
-}
-
 .dq-message {
-  min-height: 1.6em;
+  /* Two lines tall, always — the message never pushes the stage down. */
+  min-height: 3.2em;
   margin: 0.75rem 0 0;
   font-size: 1.15rem;
   font-weight: 700;
@@ -265,6 +302,29 @@
   color: var(--dq-ink);
 }
 
+/* Whose turn it is — colour only, the pill never moves or resizes. */
+.dq-turn {
+  margin: 1rem 0 0;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--dq-line);
+  font-weight: 800;
+  text-align: center;
+  color: var(--dq-muted);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.dq-turn.is-jack {
+  border-color: var(--dq-teal);
+  color: var(--dq-teal);
+}
+
+.dq-turn.is-you {
+  border-color: var(--dq-gold);
+  background: var(--dq-gold);
+  color: #1a1022;
+}
+
 .dq-dots {
   display: flex;
   flex-wrap: wrap;
@@ -292,106 +352,6 @@
   border-color: var(--dq-rose);
 }
 
-/* ------------------------------------------------------------ beat builder */
-
-.dq-tempo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  min-width: 12rem;
-}
-
-.dq-tempo label {
-  font-weight: 700;
-  color: var(--dq-ink);
-}
-
-.dq-tempo input[type="range"] {
-  width: 100%;
-  accent-color: var(--dq-gold);
-}
-
-.dq-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 1.25rem;
-}
-
-.dq-preset-blurb {
-  margin: 0.6rem 0 0;
-  color: var(--dq-muted);
-}
-
-.dq-grid {
-  margin-top: 1rem;
-}
-
-.dq-grid-row {
-  display: grid;
-  grid-template-columns: 5.5rem repeat(8, minmax(0, 1fr));
-  gap: 0.4rem;
-  align-items: center;
-  margin-bottom: 0.4rem;
-}
-
-.dq-grid-head {
-  margin-bottom: 0.25rem;
-}
-
-.dq-grid-number {
-  text-align: center;
-  font-weight: 700;
-  color: var(--dq-muted);
-}
-
-.dq-grid-number.is-beat {
-  color: var(--dq-gold);
-  font-size: 1.1rem;
-}
-
-.dq-grid-label {
-  font-weight: 800;
-  color: var(--dq-ink);
-}
-
-.dq-cell {
-  min-height: 44px;
-  padding: 0;
-  border: 2px solid var(--dq-line);
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: background-color 0.1s ease, transform 0.1s ease;
-}
-
-.dq-cell:hover {
-  border-color: var(--dq-gold);
-}
-
-.dq-cell.is-on {
-  border-color: var(--dq-gold);
-  background: var(--dq-gold);
-}
-
-.dq-cell.is-now {
-  outline: 3px solid var(--dq-rose);
-  outline-offset: 1px;
-}
-
-.dq-cell.is-on.is-now {
-  background: var(--dq-rose);
-  border-color: var(--dq-rose);
-}
-
-.dq-saved {
-  min-height: 1.4em;
-  margin: 0.75rem 0 0;
-  color: var(--dq-teal);
-  font-weight: 700;
-}
-
 /* ------------------------------------------------------------------ footer */
 
 .dq-credit {
@@ -414,19 +374,21 @@
     height: clamp(420px, 62vh, 560px);
   }
 
-  .dq-grid-row {
-    grid-template-columns: 4.25rem repeat(8, minmax(0, 1fr));
+  .dq-mode-long {
+    display: none;
   }
 
-  .dq-cell {
-    /* Thumb-sized, like the rest of the HUD. */
-    min-height: 48px;
+  .dq-mode-short {
+    display: inline;
+  }
+
+  .dq-bar .dq-mode {
+    padding: 0.6rem 0.8rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dq-dot,
-  .dq-cell {
+  .dq-dot {
     transition: none;
   }
 }

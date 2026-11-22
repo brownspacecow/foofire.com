@@ -1,11 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BUILDER_STEPS,
-  BEAT_PRESETS,
-  builderStepMs,
+  JACK_BEATS,
   checkCopyCatTap,
-  clampTempo,
+  copyCatBeatName,
   copyCatDrums,
   copyCatLength,
   copyCatLoopMs,
@@ -13,18 +11,12 @@ import {
   copyCatTempo,
   drumById,
   drumByKey,
-  emptyGrid,
   generatePattern,
-  gridToEvents,
-  isGridEmpty,
-  isValidGrid,
-  loadPreset,
   starsForAttempts,
   starString,
-  toggleCell,
 } from './logic.js';
 
-/* A fixed pseudo-random source so pattern tests are deterministic. */
+/* A fixed pseudo-random source so generated-groove tests are deterministic. */
 const makeRand = (values) => {
   let i = 0;
   return () => values[i++ % values.length];
@@ -39,12 +31,10 @@ test('drum lookup works by id and by keyboard key', () => {
   assert.equal(drumByKey('z'), null);
 });
 
-test('copy cat length: 2 hits at level 1, 3 at level 2, capped at 8', () => {
-  assert.equal(copyCatLength(1), 2);
-  assert.equal(copyCatLength(2), 3);
-  assert.equal(copyCatLength(3), 3);
-  assert.equal(copyCatLength(5), 4);
-  assert.equal(copyCatLength(13), 8);
+test('a bar is 4 quarter-note steps at levels 1-2, 8 eighth-note steps after', () => {
+  assert.equal(copyCatLength(1), 4);
+  assert.equal(copyCatLength(2), 4);
+  assert.equal(copyCatLength(3), 8);
   assert.equal(copyCatLength(99), 8);
 });
 
@@ -53,46 +43,80 @@ test('copy cat tempo starts at 60 BPM, climbs 3 a level, and caps at 120', () =>
   assert.equal(copyCatTempo(2), 63);
   assert.equal(copyCatTempo(11), 90);
   assert.equal(copyCatTempo(99), 120);
+  // Level 1 steps are quarter notes (1000ms); level 3 steps are eighth notes.
   assert.equal(copyCatStepMs(1), 1000);
+  assert.equal(copyCatStepMs(3), Math.round(60000 / 66 / 2));
 });
 
-test('Jack starts with kick and snare only; hi-hat joins at 3, tom at 6', () => {
-  assert.deepEqual(copyCatDrums(1), ['kick', 'snare']);
-  assert.deepEqual(copyCatDrums(2), ['kick', 'snare']);
-  assert.deepEqual(copyCatDrums(3), ['kick', 'snare', 'hihat']);
-  assert.deepEqual(copyCatDrums(5), ['kick', 'snare', 'hihat']);
-  assert.deepEqual(copyCatDrums(6), ['kick', 'snare', 'hihat', 'tom']);
+test('Jack starts with kick, snare and hi-hat; crash joins at 5, tom at 6', () => {
+  assert.deepEqual(copyCatDrums(1), ['kick', 'snare', 'hihat']);
+  assert.deepEqual(copyCatDrums(4), ['kick', 'snare', 'hihat']);
+  assert.deepEqual(copyCatDrums(5), ['kick', 'snare', 'hihat', 'crash']);
+  assert.deepEqual(copyCatDrums(6), ['kick', 'snare', 'hihat', 'tom', 'crash']);
 });
 
-test("Jack's first three beats are fixed and very simple", () => {
-  assert.deepEqual(generatePattern(1), ['kick', 'snare']);
-  assert.deepEqual(generatePattern(2), ['kick', 'snare', 'kick']);
-  assert.deepEqual(generatePattern(3), ['kick', 'hihat', 'snare']);
-  // Early patterns use only kick and snare at levels 1-2.
-  for (const drum of generatePattern(2)) assert.ok(['kick', 'snare'].includes(drum));
-});
-
-test('a Jack loop is the pattern plus a two-beat pause', () => {
-  // Level 1: 2 hits at 60 BPM (1000ms each) + 2 beats pause = 4000ms.
-  assert.equal(copyCatLoopMs(1), 4000);
-});
-
-test('generated patterns have the right length and never repeat a drum', () => {
-  const pattern = generatePattern(5, makeRand([0, 0.3, 0.6, 0.9, 0.1, 0.4, 0.7, 0.2]));
-  assert.equal(pattern.length, copyCatLength(5));
-  for (let i = 1; i < pattern.length; i += 1) {
-    assert.notEqual(pattern[i], pattern[i - 1]);
+test("Jack's first six beats are fixed, named, real grooves", () => {
+  assert.equal(copyCatBeatName(1), 'Rock Beat');
+  assert.equal(copyCatBeatName(2), 'Boom-Boom-Clap');
+  assert.equal(copyCatBeatName(5), 'Crash Intro');
+  assert.equal(copyCatBeatName(6), 'Tom Fill');
+  // Level 1 is a real rock groove: kick + hi-hat, hi-hat, snare + hi-hat, hi-hat.
+  assert.deepEqual(generatePattern(1), [
+    ['kick', 'hihat'],
+    ['hihat'],
+    ['snare', 'hihat'],
+    ['hihat'],
+  ]);
+  // Level 5 opens with a crash on beat 1.
+  assert.deepEqual(generatePattern(5)[0], ['crash', 'kick', 'hihat']);
+  // Level 6 has a tom in it.
+  assert.ok(generatePattern(6).flat().includes('tom'));
+  // Every fixed beat is one bar of steps of real drums.
+  for (const level of Object.keys(JACK_BEATS)) {
+    const pattern = generatePattern(Number(level));
+    assert.equal(pattern.length, copyCatLength(Number(level)));
+    for (const step of pattern) {
+      assert.ok(step.length >= 1);
+      for (const drum of step) assert.ok(copyCatDrums(Number(level)).includes(drum));
+    }
   }
-  for (const drum of pattern) assert.ok(copyCatDrums(5).includes(drum));
 });
 
-test('copy cat tap checking reports correct, complete and wrong', () => {
-  const pattern = ['kick', 'snare', 'kick'];
-  assert.equal(checkCopyCatTap(pattern, [], 'kick'), 'correct');
-  assert.equal(checkCopyCatTap(pattern, ['kick'], 'snare'), 'correct');
-  assert.equal(checkCopyCatTap(pattern, ['kick', 'snare'], 'kick'), 'complete');
-  assert.equal(checkCopyCatTap(pattern, [], 'snare'), 'wrong');
-  assert.equal(checkCopyCatTap(pattern, ['kick', 'snare', 'kick'], 'kick'), 'wrong');
+test('a Jack bar is the groove with no pause after it', () => {
+  // Level 1: 4 quarter-note steps at 60 BPM = 4000ms, and that is the loop.
+  assert.equal(copyCatLoopMs(1), 4000);
+  assert.equal(copyCatLoopMs(3), 8 * copyCatStepMs(3));
+});
+
+test('generated grooves keep the hi-hat on time and kick/snare on their beats', () => {
+  const pattern = generatePattern(9, makeRand([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9]));
+  assert.equal(pattern.length, 8);
+  // Hi-hat on every step, kick on beats 1 and 3, snare on 2 and 4.
+  for (const step of pattern) assert.ok(step.includes('hihat'));
+  assert.ok(pattern[0].includes('kick'));
+  assert.ok(pattern[4].includes('kick'));
+  assert.ok(pattern[2].includes('snare'));
+  assert.ok(pattern[6].includes('snare'));
+});
+
+test('copy cat tap checking works step by step, drums together', () => {
+  const pattern = [
+    ['kick', 'hihat'],
+    ['hihat'],
+    ['snare', 'hihat'],
+  ];
+  // Step 1 needs kick and hi-hat, in either order.
+  assert.equal(checkCopyCatTap(pattern, 0, [], 'kick'), 'correct');
+  assert.equal(checkCopyCatTap(pattern, 0, ['kick'], 'hihat'), 'step');
+  assert.equal(checkCopyCatTap(pattern, 0, [], 'hihat'), 'correct');
+  assert.equal(checkCopyCatTap(pattern, 0, ['hihat'], 'kick'), 'step');
+  // A drum that is not in this step is wrong, and so is a repeat.
+  assert.equal(checkCopyCatTap(pattern, 0, [], 'snare'), 'wrong');
+  assert.equal(checkCopyCatTap(pattern, 0, ['kick'], 'kick'), 'wrong');
+  // The last step of the bar completes the groove.
+  assert.equal(checkCopyCatTap(pattern, 2, ['snare'], 'hihat'), 'complete');
+  // No step past the end.
+  assert.equal(checkCopyCatTap(pattern, 3, [], 'kick'), 'wrong');
 });
 
 test('stars reward a first-try finish and soften after retries', () => {
@@ -102,66 +126,4 @@ test('stars reward a first-try finish and soften after retries', () => {
   assert.equal(starsForAttempts(9), 1);
   assert.equal(starString(3), '★★★');
   assert.equal(starString(1), '★☆☆');
-});
-
-test('rock preset is kick on 1 and 3, snare on 2 and 4, hi-hat every step', () => {
-  const grid = loadPreset('rock');
-  assert.deepEqual(grid.kick, [true, false, false, false, true, false, false, false]);
-  assert.deepEqual(grid.snare, [false, false, true, false, false, false, true, false]);
-  assert.deepEqual(grid.hihat, Array(BUILDER_STEPS).fill(true));
-  // Loading a preset twice gives independent grids.
-  const again = loadPreset('rock');
-  again.kick[0] = false;
-  assert.equal(loadPreset('rock').kick[0], true);
-  assert.equal(BEAT_PRESETS.rock.grid.kick[0], true);
-});
-
-test('boom-boom-clap and jungle stomp presets are real, distinct beats', () => {
-  const boom = loadPreset('boom-boom-clap');
-  assert.deepEqual(boom.kick, [true, true, false, false, true, false, false, false]);
-  assert.equal(isGridEmpty(boom), false);
-
-  const jungle = loadPreset('jungle-stomp');
-  assert.deepEqual(jungle.hihat, [false, true, false, true, false, true, false, true]);
-  assert.notDeepEqual(jungle, boom);
-  assert.equal(loadPreset('no-such-preset').kick.every(Boolean), false);
-});
-
-test('toggling a cell flips it and leaves the rest alone', () => {
-  const grid = emptyGrid();
-  const toggled = toggleCell(grid, 'snare', 2);
-  assert.equal(toggled.snare[2], true);
-  assert.equal(toggled.snare[3], false);
-  assert.equal(grid.snare[2], false); // the original grid is untouched
-  assert.equal(toggleCell(toggled, 'snare', 2).snare[2], false);
-  // Bad rows and steps are ignored, not crashes.
-  assert.deepEqual(toggleCell(grid, 'crash', 0), grid);
-  assert.deepEqual(toggleCell(grid, 'kick', 8), grid);
-  assert.deepEqual(toggleCell(grid, 'kick', -1), grid);
-});
-
-test('grid events come out in step order with the right drums', () => {
-  const events = gridToEvents(loadPreset('rock'));
-  assert.equal(events.length, 2 + 2 + 8);
-  assert.deepEqual(events[0], { step: 0, drum: 'kick' });
-  assert.deepEqual(events[1], { step: 0, drum: 'hihat' });
-  assert.ok(events.every((event, i) => i === 0 || event.step >= events[i - 1].step));
-  assert.equal(isGridEmpty(emptyGrid()), true);
-  assert.equal(isGridEmpty(loadPreset('rock')), false);
-});
-
-test('builder step time is an eighth note and tempo clamps to 60–120', () => {
-  assert.equal(builderStepMs(120), 250);
-  assert.equal(builderStepMs(60), 500);
-  assert.equal(clampTempo(30), 60);
-  assert.equal(clampTempo(200), 120);
-  assert.equal(clampTempo(90), 90);
-});
-
-test('saved grids validate by shape only', () => {
-  assert.equal(isValidGrid(loadPreset('rock')), true);
-  assert.equal(isValidGrid(emptyGrid()), true);
-  assert.equal(isValidGrid(null), false);
-  assert.equal(isValidGrid({ kick: [true] }), false);
-  assert.equal(isValidGrid({ kick: Array(8).fill(true), snare: Array(8).fill(false), hihat: Array(8).fill('yes') }), false);
 });

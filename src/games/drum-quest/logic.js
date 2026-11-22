@@ -1,7 +1,12 @@
 /* -------------------------------------------------------------------------
  * Drum Quest — pure game logic (no DOM, no audio).
- * Everything in here is testable with node --test: pattern generation,
- * Copy Cat levels and scoring, and the Beat Builder grid + presets.
+ * Everything in here is testable with node --test: real drum grooves for
+ * Jack's lesson, Copy Cat levels and scoring.
+ *
+ * A groove is a list of STEPS, one bar. Each step is a list of drums hit
+ * together on that beat — a real beat has the kick and hi-hat landing at
+ * the same time, the snare and hi-hat together, and so on. Levels 1–2
+ * are 4 quarter-note steps; from level 3 the bar is 8 eighth-note steps.
  * ---------------------------------------------------------------------- */
 
 /** The five drums, in kit order. `key` is the keyboard key for each pad. */
@@ -22,101 +27,177 @@ export const drumByKey = (key) => {
   return DRUMS.find((drum) => drum.key === lower) || null;
 };
 
-/* ---------------------------------------------------------------- Copy Cat */
+/* ------------------------------------------------------------ Jack's beats
+ *
+ * Every level is a real groove, not a random single-hit sequence. Steps
+ * are written as the drums that land together on that beat:
+ *   K = kick, S = snare, H = hi-hat, T = tom, C = crash
+ * Level 1 is the simplest real rock beat there is: kick and hi-hat on
+ * beat 1, hi-hat on the off-beats, snare and hi-hat on beat 3.
+ */
 
-export const COPY_CAT_MIN_LENGTH = 2;
-export const COPY_CAT_MAX_LENGTH = 8;
+const K = 'kick';
+const S = 'snare';
+const H = 'hihat';
+const T = 'tom';
+const C = 'crash';
+
+/** Named grooves, one per level. `steps` is the bar; `name` is shown to Joel. */
+export const JACK_BEATS = {
+  1: {
+    name: 'Rock Beat',
+    steps: [
+      [K, H],
+      [H],
+      [S, H],
+      [H],
+    ],
+  },
+  2: {
+    name: 'Boom-Boom-Clap',
+    steps: [
+      [K, H],
+      [K],
+      [S, H],
+      [H],
+    ],
+  },
+  3: {
+    name: 'Hi-Hat Hop',
+    steps: [
+      [K, H],
+      [H],
+      [S, H],
+      [H],
+      [K, H],
+      [H],
+      [S, H],
+      [H],
+    ],
+  },
+  4: {
+    name: 'Jungle Stomp',
+    steps: [
+      [K, H],
+      [H],
+      [S],
+      [H],
+      [K],
+      [H],
+      [S, H],
+      [H],
+    ],
+  },
+  5: {
+    name: 'Crash Intro',
+    steps: [
+      [C, K, H],
+      [H],
+      [S, H],
+      [H],
+      [K, H],
+      [H],
+      [S, H],
+      [H],
+    ],
+  },
+  6: {
+    name: 'Tom Fill',
+    steps: [
+      [K, H],
+      [H],
+      [S, H],
+      [H],
+      [K, H],
+      [T],
+      [S, H],
+      [T, H],
+    ],
+  },
+};
+
+/** Drums a generated groove may use at a given level. Crash joins at 5, tom at 6. */
+export function copyCatDrums(level) {
+  if (level >= 6) return ['kick', 'snare', 'hihat', 'tom', 'crash'];
+  if (level >= 5) return ['kick', 'snare', 'hihat', 'crash'];
+  if (level >= 3) return ['kick', 'snare', 'hihat'];
+  return ['kick', 'snare', 'hihat'];
+}
+
+/** Steps in a bar: 4 quarter notes at levels 1–2, 8 eighth notes after. */
+export function copyCatLength(level) {
+  const safe = Math.max(1, Math.floor(level) || 1);
+  return safe <= 2 ? 4 : 8;
+}
+
+/** Tempo starts at 60 BPM and climbs 3 BPM a level, up to 120. */
 export const COPY_CAT_START_BPM = 60;
 export const COPY_CAT_BPM_STEP = 3;
 export const COPY_CAT_MAX_BPM = 120;
 
-/**
- * Drums a pattern may use at a given level. Jack starts with just kick
- * and snare, adds the hi-hat from level 3, and the tom from level 6 —
- * so the first beats are genuinely simple.
- */
-export function copyCatDrums(level) {
-  if (level >= 6) return ['kick', 'snare', 'hihat', 'tom'];
-  if (level >= 3) return ['kick', 'snare', 'hihat'];
-  return ['kick', 'snare'];
-}
-
-/** Pattern length: 2 hits at level 1, 3 at level 2, then +1 every two levels, up to 8. */
-export function copyCatLength(level) {
-  const safe = Math.max(1, Math.floor(level) || 1);
-  return Math.min(COPY_CAT_MAX_LENGTH, COPY_CAT_MIN_LENGTH + Math.floor(safe / 2));
-}
-
-/** Tempo starts at 60 BPM and climbs 3 BPM a level, up to 120. */
 export function copyCatTempo(level) {
   const safe = Math.max(1, Math.floor(level) || 1);
   return Math.min(COPY_CAT_MAX_BPM, COPY_CAT_START_BPM + (safe - 1) * COPY_CAT_BPM_STEP);
 }
 
-/** Milliseconds between pattern hits at a level (quarter notes). */
+/** Milliseconds per step: quarter notes at levels 1–2, eighth notes after. */
 export function copyCatStepMs(level) {
-  return Math.round(60000 / copyCatTempo(level));
+  const tempo = copyCatTempo(level);
+  return level <= 2 ? Math.round(60000 / tempo) : Math.round(60000 / tempo / 2);
+}
+
+/** Name of the groove Jack teaches at a level. */
+export function copyCatBeatName(level) {
+  const safe = Math.max(1, Math.floor(level) || 1);
+  return JACK_BEATS[safe] ? JACK_BEATS[safe].name : 'Rock Beat';
 }
 
 /**
- * Jack's first beats, fixed and very simple — a 7-year-old should be able
- * to hum them after hearing them once. Level 1 is just Kick, Snare.
- */
-export const JACK_FIRST_BEATS = {
-  1: ['kick', 'snare'],
-  2: ['kick', 'snare', 'kick'],
-  3: ['kick', 'hihat', 'snare'],
-};
-
-/**
- * Build a pattern for a level. The first three levels are Jack's fixed
- * simple beats; later levels are random from the level's drum pool. No
- * drum repeats back-to-back, so the pattern always feels like a beat
- * instead of a stuck key. `rand` is injectable so tests can use a fixed
- * sequence.
+ * Build a groove for a level. The first six levels are Jack's fixed real
+ * beats; later levels are generated grooves in the same shape — hi-hat
+ * keeping time, kick on beats 1 and 3, snare on 2 and 4, with a tom or
+ * crash thrown in now and then. `rand` is injectable so tests can use a
+ * fixed sequence.
  */
 export function generatePattern(level, rand = Math.random) {
   const safe = Math.max(1, Math.floor(level) || 1);
-  if (JACK_FIRST_BEATS[safe]) return [...JACK_FIRST_BEATS[safe]];
-  const pool = copyCatDrums(safe);
-  const length = copyCatLength(safe);
-  const pattern = [];
-  let previous = null;
-  for (let i = 0; i < length; i += 1) {
-    let pick = pool[Math.floor(rand() * pool.length)];
-    // Never the same drum twice in a row (unless the pool has one drum).
-    let guard = 0;
-    while (pick === previous && pool.length > 1 && guard < 10) {
-      pick = pool[Math.floor(rand() * pool.length)];
-      guard += 1;
-    }
-    pattern.push(pick);
-    previous = pick;
+  if (JACK_BEATS[safe]) return JACK_BEATS[safe].steps.map((step) => [...step]);
+  const steps = [];
+  for (let i = 0; i < 8; i += 1) {
+    const step = [H];
+    if (i === 0 || i === 4) step.unshift(K);
+    else if (i === 2 || i === 6) step.unshift(S);
+    else if (rand() < 0.18) step.unshift(K);
+    if (i === 0 && rand() < 0.3) step.unshift(C);
+    if (i === 7 && rand() < 0.35) step.push(T);
+    steps.push(step);
   }
-  return pattern;
+  return steps;
 }
 
-/**
- * Milliseconds for one full Jack loop: the pattern, then a two-beat
- * pause before he plays it again.
- */
+/** Milliseconds for one full bar of the groove — no pause after it. */
 export function copyCatLoopMs(level) {
-  return copyCatLength(level) * copyCatStepMs(level) + 2 * copyCatStepMs(level);
+  return copyCatLength(level) * copyCatStepMs(level);
 }
 
 /**
- * Check one tap against the pattern so far.
- * Returns 'complete' when the whole pattern was matched, 'correct' when the
- * tap was right but the pattern is not finished, or 'wrong' on a miss.
+ * Check one tap against the step Joel is on.
+ * `hitDrums` is the list of drums already hit in the current step.
+ * Returns 'wrong' when the drum is not in this step (or was already
+ * hit), 'correct' when the tap is right but the step still needs more
+ * drums, 'step' when the step is now complete but the bar is not done,
+ * or 'complete' when the last step of the bar is complete.
  */
-export function checkCopyCatTap(pattern, tapsSoFar, drumId) {
-  const nextIndex = tapsSoFar.length;
-  if (nextIndex >= pattern.length) return 'wrong';
-  if (pattern[nextIndex] !== drumId) return 'wrong';
-  return nextIndex + 1 === pattern.length ? 'complete' : 'correct';
+export function checkCopyCatTap(pattern, stepIndex, hitDrums, drumId) {
+  const step = pattern[stepIndex];
+  if (!step || !step.includes(drumId)) return 'wrong';
+  if (hitDrums.includes(drumId)) return 'wrong';
+  const done = hitDrums.length + 1 === step.length;
+  if (!done) return 'correct';
+  return stepIndex + 1 === pattern.length ? 'complete' : 'step';
 }
 
-/** Stars for finishing a pattern: 3 on the first try, 2 on the second, 1 after. */
+/** Stars for finishing a groove: 3 on the first try, 2 on the second, 1 after. */
 export function starsForAttempts(attempts) {
   if (attempts <= 1) return 3;
   if (attempts === 2) return 2;
@@ -124,126 +205,3 @@ export function starsForAttempts(attempts) {
 }
 
 export const starString = (stars) => '★'.repeat(stars) + '☆'.repeat(Math.max(0, 3 - stars));
-
-/* -------------------------------------------------------------- Beat Builder */
-
-export const BUILDER_STEPS = 8;
-export const BUILDER_ROWS = ['kick', 'snare', 'hihat'];
-export const BUILDER_MIN_BPM = 60;
-export const BUILDER_MAX_BPM = 120;
-
-/** An empty 8-step grid: every row is eight off cells. */
-export function emptyGrid() {
-  const grid = {};
-  for (const row of BUILDER_ROWS) grid[row] = Array(BUILDER_STEPS).fill(false);
-  return grid;
-}
-
-const gridFromSteps = (stepsByRow) => {
-  const grid = emptyGrid();
-  for (const [row, steps] of Object.entries(stepsByRow)) {
-    if (!BUILDER_ROWS.includes(row)) continue;
-    for (const step of steps) {
-      if (Number.isInteger(step) && step >= 0 && step < BUILDER_STEPS) {
-        grid[row][step] = true;
-      }
-    }
-  }
-  return grid;
-};
-
-/**
- * Presets. Steps are 0-based eighth notes in one bar:
- * steps 0 and 4 are beats 1 and 3, steps 2 and 6 are beats 2 and 4.
- */
-export const BEAT_PRESETS = {
-  rock: {
-    id: 'rock',
-    name: 'Rock Beat',
-    blurb: 'Kick on 1 and 3, snare on 2 and 4, hi-hat all the way.',
-    grid: gridFromSteps({
-      kick: [0, 4],
-      snare: [2, 6],
-      hihat: [0, 1, 2, 3, 4, 5, 6, 7],
-    }),
-  },
-  'boom-boom-clap': {
-    id: 'boom-boom-clap',
-    name: 'Boom-Boom-Clap',
-    blurb: 'Two kicks, then a clap of the snare. Say it while you play it!',
-    grid: gridFromSteps({
-      kick: [0, 1, 4],
-      snare: [2, 6],
-      hihat: [0, 2, 4, 6],
-    }),
-  },
-  'jungle-stomp': {
-    id: 'jungle-stomp',
-    name: 'Jungle Stomp',
-    blurb: 'A bouncy off-beat stomp. The hi-hat hops between the beats.',
-    grid: gridFromSteps({
-      kick: [0, 3, 4],
-      snare: [2, 6],
-      hihat: [1, 3, 5, 7],
-    }),
-  },
-};
-
-export const presetById = (id) => BEAT_PRESETS[id] || null;
-
-/** A copy of a preset grid, so editing never mutates the preset itself. */
-export function loadPreset(id) {
-  const preset = presetById(id);
-  if (!preset) return emptyGrid();
-  const grid = emptyGrid();
-  for (const row of BUILDER_ROWS) grid[row] = [...preset.grid[row]];
-  return grid;
-}
-
-/** Flip one cell. Out-of-range rows/steps leave the grid unchanged. */
-export function toggleCell(grid, row, step) {
-  const next = emptyGrid();
-  for (const r of BUILDER_ROWS) next[r] = [...(grid[r] || [])];
-  if (!BUILDER_ROWS.includes(row)) return next;
-  if (!Number.isInteger(step) || step < 0 || step >= BUILDER_STEPS) return next;
-  next[row][step] = !next[row][step];
-  return next;
-}
-
-/** Flatten a grid into the hits of one bar, in step order. */
-export function gridToEvents(grid) {
-  const events = [];
-  for (let step = 0; step < BUILDER_STEPS; step += 1) {
-    for (const row of BUILDER_ROWS) {
-      if (grid[row] && grid[row][step]) events.push({ step, drum: row });
-    }
-  }
-  return events;
-}
-
-/** True when no cell in the grid is on. */
-export function isGridEmpty(grid) {
-  return BUILDER_ROWS.every((row) => !(grid[row] || []).some(Boolean));
-}
-
-/** Milliseconds per eighth-note step at a tempo. */
-export function builderStepMs(bpm) {
-  const safe = Math.max(BUILDER_MIN_BPM, Math.min(BUILDER_MAX_BPM, bpm || 90));
-  return Math.round(60000 / safe / 2);
-}
-
-/** Clamp a tempo into the slider range. */
-export function clampTempo(bpm) {
-  return Math.max(BUILDER_MIN_BPM, Math.min(BUILDER_MAX_BPM, Math.round(bpm) || 90));
-}
-
-/** True when a saved grid has the right shape to load. */
-export function isValidGrid(value) {
-  if (!value || typeof value !== 'object') return false;
-  return BUILDER_ROWS.every(
-    (row) =>
-      Array.isArray(value[row]) &&
-      value[row].length === BUILDER_STEPS &&
-      value[row].every((cell) => typeof cell === 'boolean'),
-  );
-}
