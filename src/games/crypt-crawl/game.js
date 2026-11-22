@@ -86,11 +86,15 @@ export function relicCount(relics, id) {
  * `heroId` applies the hero perk; `relics` is an array of relic ids;
  * `firstMatchThisFloor` applies Nettle's perk once per floor.
  * `swordBuff` is the shop's Sharp Sword: +5 damage on a sword match.
- * Returns { damage, block, heal, gold, score }.
+ * Chain bonus: any match of 5+ tiles earns +1 gold per tile beyond 4,
+ * whatever the tile type — long chains pay for the shop. It is reported
+ * separately as `chainBonus` so the game can show it as its own float.
+ * Returns { damage, block, heal, gold, chainBonus, score }.
  */
 export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor = false, swordBuff = false) {
   const bonus = Math.max(0, len - 3);
-  const out = { damage: 0, block: 0, heal: 0, gold: 0, score: len * 10 };
+  const chainBonus = Math.max(0, len - 4);
+  const out = { damage: 0, block: 0, heal: 0, gold: 0, chainBonus, score: len * 10 };
   if (type === 'sword') {
     out.damage = 3 + bonus + relicCount(relics, 'sharp-sword');
     if (swordBuff) out.damage += 5;
@@ -111,6 +115,10 @@ export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor 
     if (heroId === 'biscuit') out.heal = Math.floor(len / 4);
     out.score += out.gold * 10;
   }
+  // Chain bonus gold, on top of whatever the match already pays, for
+  // every tile type — and it scores like other gold (+10 per gold).
+  out.gold += chainBonus;
+  out.score += chainBonus * 10;
   return out;
 }
 
@@ -769,11 +777,21 @@ if (typeof document !== 'undefined') {
       floatText(`+${healed} HP`, 'heal');
       sfx.heal();
     }
-    if (type === 'coin' && fx.gold > 0) {
+    // Gold is awarded for any match now, not just coins: the chain bonus
+    // pays gold for long sword/shield/potion chains too. The coin float
+    // shows the base treasure only, so the chain bonus float next to it
+    // always adds up to the total gold earned.
+    if (fx.gold > 0) {
       state.gold += fx.gold;
-      floatText(`+${fx.gold} gold`, 'gold');
-      if (fx.heal > 0) { state.hp = Math.min(state.maxHp, state.hp + fx.heal); floatText(`+${fx.heal} HP snack!`, 'heal'); }
-      sfx.coin();
+      if (type === 'coin') {
+        floatText(`+${fx.gold - fx.chainBonus} gold`, 'gold');
+        if (fx.heal > 0) { state.hp = Math.min(state.maxHp, state.hp + fx.heal); floatText(`+${fx.heal} HP snack!`, 'heal'); }
+        sfx.coin();
+      }
+      if (fx.chainBonus > 0) {
+        floatText(`CHAIN BONUS +${fx.chainBonus} gold`, 'gold');
+        if (type !== 'coin') sfx.coin();
+      }
     }
     updateHud();
     const settleMs = reducedMotion ? 0 : 140;
