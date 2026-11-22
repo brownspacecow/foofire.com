@@ -244,6 +244,57 @@ export function absorbBlock(block, attack) {
   return Math.max(0, block - attack);
 }
 
+const TILE_PLURAL = { sword: 'swords', shield: 'shields', potion: 'potions', coin: 'coins' };
+
+/**
+ * The persistent "Last turn" line: one short record of the turn that
+ * just happened, built from the real numbers. `match` is
+ * { type, len, fx, healed, weak } where `fx` is a matchEffect result,
+ * `healed` is the HP actually gained (potions and Biscuit's coin snack
+ * cap at full HP), and `weak` means the match hit the Hollow King's
+ * current weakness. `bite` is null until the monster answers, or
+ * { monsterName, attack, blocked, taken, crushing } — or
+ * { slain: true, boss } when the match killed it. The chain-bonus
+ * float vanishes in ~1s and never shows at all under reduced motion,
+ * so this line is the only lasting record of what a turn did.
+ */
+export function lastTurnText(match, bite = null) {
+  const { type, len, fx, healed = 0, weak = false } = match;
+  const parts = [`${len} ${TILE_PLURAL[type]}`];
+  if (type === 'sword') parts.push(`${fx.damage} damage`);
+  if (type === 'shield') parts.push(`+${fx.block} block`);
+  if (type === 'potion') parts.push(`+${healed} HP`);
+  if (type === 'coin') {
+    parts.push(fx.chainBonus > 0
+      ? `+${fx.gold} gold (incl. +${fx.chainBonus} chain bonus)`
+      : `+${fx.gold} gold`);
+    if (fx.heal > 0) parts.push(`+${healed} HP`);
+  } else if (fx.chainBonus > 0) {
+    parts.push(`+${fx.chainBonus} gold chain bonus`);
+  }
+  if (weak) parts.push('weakness ×2');
+  parts.push(`+${fx.score} pts`);
+  let line = `Last turn: ${parts.join(' · ')}`;
+  if (bite) {
+    if (bite.slain) {
+      line += bite.boss ? ' — BOSS SLAIN!' : ' — SLAIN!';
+    } else if (bite.crushing) {
+      line += bite.taken > 0
+        ? ` — CRUSHING BLOW ${bite.attack}, blocked ${bite.blocked}, you take ${bite.taken}`
+        : bite.blocked > 0
+          ? ` — Crushing blow ${bite.attack}, blocked ${bite.blocked}`
+          : ' — Crushing blow missed!';
+    } else if (bite.taken > 0) {
+      line += ` — ${bite.monsterName} bites ${bite.attack}, blocked ${bite.blocked}, you take ${bite.taken}`;
+    } else if (bite.blocked > 0) {
+      line += ` — ${bite.monsterName} bites ${bite.attack}, blocked ${bite.blocked}`;
+    } else {
+      line += ` — ${bite.monsterName} bites, missed!`;
+    }
+  }
+  return line;
+}
+
 /**
  * The Crypt Shop — what gold buys between floors. Fixed stock, fixed
  * prices, so kids always know what things cost. Relics are NOT sold
@@ -619,11 +670,21 @@ if (typeof document !== 'undefined') {
     dragging: false, path: [], pathType: null, paused: false, over: false,
     settling: false, dying: false, best: 0, bestGold: 0,
     finalTurns: 0, // boss turns completed vs the Hollow King (weakness + crush clock)
+    turnId: 0, // turn counter, so a late bite can't label the wrong turn
   };
   try {
     state.best = Number(localStorage.getItem(BEST_KEY) || 0);
     state.bestGold = Number(localStorage.getItem(BEST_GOLD_KEY) || 0);
   } catch (e) { /* ignore */ }
+
+  // ---- last-turn record ----
+  // The persistent line under the monster card. `turnMatch` is the
+  // match record for the turn in flight; the bite (or the SLAIN!
+  // ending) is appended to it when it lands. Only turn results ever
+  // write this line — never status, tips, or banners.
+  let turnMatch = null;
+  let turnLine = 'Last turn: —';
+  function renderLastTurn() { $('#last-turn').textContent = turnLine; }
 
   // ---- achievements (persist across runs) ----
   let achState = loadAchievements(localStorage);
@@ -909,7 +970,7 @@ if (typeof document !== 'undefined') {
     // the pulse animation throbs around that base (see the CSS).
     el.style.setProperty('--lowhp-opacity', s.visible ? String(0.45 + 0.55 * s.strength) : '0');
   }
-  function floatText(text, kind) {
+  function floatText(text, kind, ms = 1100) {
     // 'slain' is the one float that must still show under reduced motion
     // (it sits still instead of floating up); every other float is motion.
     if (reducedMotion && kind !== 'slain') return;
@@ -919,8 +980,11 @@ if (typeof document !== 'undefined') {
     const area = $('#float-layer');
     el.style.left = kind === 'slain' ? '50%' : `${20 + Math.random() * 60}%`;
     area.appendChild(el);
+    // A long float (the chain bonus) rises and fades over its whole life
+    // instead of vanishing after the 1s animation — see .float-text.long.
+    if (ms > 1100) el.classList.add('long');
     if (reducedMotion) el.style.animation = 'none';
-    setTimeout(() => el.remove(), 1100);
+    setTimeout(() => el.remove(), ms);
   }
   function banner(text) {
     const b = $('#banner');
@@ -1102,6 +1166,7 @@ if (typeof document !== 'undefined') {
     const fx = matchEffect(type, len, state.heroId, state.relics, state.firstMatchThisFloor, state.swordBuff, weak);
     state.firstMatchThisFloor = false;
     state.score += fx.score;
+    let healed = 0; // HP actually gained this match (potions / Biscuit's snack cap at full HP)
     // The matched tiles pop, then the rest of the board drops in after a
     // short beat. New drags are blocked while the board is settling so a
     // player cannot grab tiles that are about to fall away.
@@ -1137,7 +1202,7 @@ if (typeof document !== 'undefined') {
       sfx.heal();
     }
     if (type === 'potion' && fx.heal > 0) {
-      const healed = Math.min(fx.heal, state.maxHp - state.hp);
+      healed = Math.min(fx.heal, state.maxHp - state.hp);
       state.hp += healed;
       floatText(`+${healed} HP`, 'heal');
       sfx.heal();
@@ -1150,16 +1215,25 @@ if (typeof document !== 'undefined') {
       state.gold += fx.gold;
       if (type === 'coin') {
         floatText(`+${fx.gold - fx.chainBonus} gold`, 'gold');
-        if (fx.heal > 0) { state.hp = Math.min(state.maxHp, state.hp + fx.heal); floatText(`+${fx.heal} HP snack!`, 'heal'); }
+        if (fx.heal > 0) { healed = Math.min(fx.heal, state.maxHp - state.hp); state.hp += healed; floatText(`+${fx.heal} HP snack!`, 'heal'); }
         sfx.coin();
       }
       if (fx.chainBonus > 0) {
-        floatText(`CHAIN BONUS +${fx.chainBonus} gold`, 'gold');
+        // The bonus float says what it does to the score (+10 per bonus
+        // gold) and stays up 2.5s so there is time to read it.
+        floatText(`CHAIN BONUS +${fx.chainBonus} gold · +${fx.chainBonus * 10} pts`, 'gold', 2500);
         if (type !== 'coin') sfx.coin();
       }
     }
     // Hitting the Hollow King's weakness is worth shouting about.
     if (weak && type === weak) floatText('WEAKNESS!', 'weak');
+    // Record this turn for the persistent "Last turn" line. The bite
+    // (or the SLAIN! ending) is appended to it when it lands.
+    state.turnId += 1;
+    const turnId = state.turnId;
+    turnMatch = { type, len, fx, healed, weak: !!(weak && type === weak) };
+    turnLine = lastTurnText(turnMatch, null);
+    renderLastTurn();
     updateHud();
     const settleMs = reducedMotion ? 0 : 140;
     setTimeout(() => {
@@ -1186,12 +1260,12 @@ if (typeof document !== 'undefined') {
         // later if the board just shuffled, so the player sees the new
         // board before the bite lands.
         const attackMs = reducedMotion ? 420 : shuffled ? 720 : 560;
-        setTimeout(monsterAttack, attackMs);
+        setTimeout(() => monsterAttack(turnId), attackMs);
       }
     }, settleMs);
   }
 
-  function monsterAttack() {
+  function monsterAttack(turnId = null) {
     if (state.over || state.screen !== 'play' || !state.monster || state.monster.hp <= 0 || state.dying) return;
     const isFinal = !!state.monster.isTrueFinal;
     // The Hollow King's crushing blow: every 4th boss turn, 3x attack.
@@ -1225,6 +1299,13 @@ if (typeof document !== 'undefined') {
         banner(`The Hollow King is now weak to ${TILE_LABEL[newWeak].toUpperCase()}!`);
         setStatus(`The Hollow King is now weak to ${TILE_LABEL[newWeak]}!`);
       }
+    }
+    // Append the bite to the "Last turn" line — but only if no newer
+    // match has resolved since this bite was scheduled, so a late bite
+    // never labels the wrong turn.
+    if (turnMatch && (turnId === null || turnId === state.turnId)) {
+      turnLine = lastTurnText(turnMatch, { monsterName: state.monster.name, attack: atk, blocked, taken: dmg, crushing });
+      renderLastTurn();
     }
     updateHud();
     if (state.hp <= 0) gameOver();
@@ -1260,6 +1341,11 @@ if (typeof document !== 'undefined') {
     if (boss) card.classList.add('dying-boss');
     sfx.scream(boss);
     floatText(boss ? 'BOSS SLAIN!' : 'SLAIN!', 'slain');
+    // The turn ends with the slaying, not a bite.
+    if (turnMatch) {
+      turnLine = lastTurnText(turnMatch, { slain: true, boss });
+      renderLastTurn();
+    }
     if (!reducedMotion) {
       // Quick white flash on the board, and a board shake for bosses.
       boardEl.animate(
@@ -1520,6 +1606,7 @@ if (typeof document !== 'undefined') {
     $('#gameover-overlay').hidden = true;
     $('#crypt-game').classList.remove('final-boss');
     state.screen = 'play';
+    turnMatch = null; turnLine = 'Last turn: —'; renderLastTurn();
     newBoard(); renderBoard(); spawnMonster(); updateHud();
     setStatus(`Floor 1: a ${state.monster.name} blocks the way. Drag through 3 or more matching tiles!`);
     sfx.clear();
