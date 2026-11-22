@@ -41,35 +41,80 @@ export const RELICS = [
   { id: 'sweet-potion', name: 'Sweet Potion', sprite: 'tile-potion', desc: '+1 healing from potions' },
 ];
 
-const MONSTER_POOL = [
-  { name: 'Squeaky Slime', sprite: 'monster-slime' },
-  { name: 'Wobbly Bat', sprite: 'monster-bat' },
-  { name: 'Ticklish Spider', sprite: 'monster-spider' },
-  { name: 'Rattly Skeleton', sprite: 'monster-skeleton' },
-  { name: 'Grumpy Mushroom', sprite: 'monster-mushroom' },
-  { name: 'Sneezy Ghost', sprite: 'monster-ghost' },
-  { name: 'Bouncy Blob', sprite: 'monster-blob' },
-  { name: 'Sleepy Snake', sprite: 'monster-snake' },
+export const MONSTER_POOL = [
+  { id: 'slime', name: 'Squeaky Slime', sprite: 'monster-slime' },
+  { id: 'bat', name: 'Wobbly Bat', sprite: 'monster-bat' },
+  { id: 'spider', name: 'Ticklish Spider', sprite: 'monster-spider' },
+  { id: 'skeleton', name: 'Rattly Skeleton', sprite: 'monster-skeleton' },
+  { id: 'mushroom', name: 'Grumpy Mushroom', sprite: 'monster-mushroom' },
+  { id: 'ghost', name: 'Sneezy Ghost', sprite: 'monster-ghost' },
+  { id: 'blob', name: 'Bouncy Blob', sprite: 'monster-blob' },
+  { id: 'snake', name: 'Sleepy Snake', sprite: 'monster-snake' },
+  { id: 'gremlin', name: 'Giggly Gremlin', sprite: 'monster-gremlin' },
+  { id: 'duck', name: 'Dizzy Duck', sprite: 'monster-duck' },
+  { id: 'chipmunk', name: 'Cheeky Chipmunk', sprite: 'monster-chipmunk' },
+  { id: 'porcupine', name: 'Prickly Porcupine', sprite: 'monster-porcupine' },
+  { id: 'jellyfish', name: 'Jumpy Jellyfish', sprite: 'monster-jellyfish' },
+  { id: 'snail', name: 'Snoring Snail', sprite: 'monster-snail' },
+  { id: 'worm', name: 'Wiggly Worm', sprite: 'monster-worm' },
+  { id: 'gnome', name: 'Grumpy Gnome', sprite: 'monster-gnome' },
+  { id: 'bee', name: 'Buzzy Bee', sprite: 'monster-bee' },
+  { id: 'caterpillar', name: 'Cuddly Caterpillar', sprite: 'monster-caterpillar' },
+  { id: 'frog', name: 'Hoppy Frog', sprite: 'monster-frog' },
+  { id: 'mole', name: 'Moody Mole', sprite: 'monster-mole' },
+  { id: 'squirrel', name: 'Sassy Squirrel', sprite: 'monster-squirrel' },
+  { id: 'dormouse', name: 'Dozy Dormouse', sprite: 'monster-dormouse' },
+  { id: 'crab', name: 'Crabby Crab', sprite: 'monster-crab' },
+  { id: 'shadow', name: 'Shy Shadow', sprite: 'monster-shadow' },
 ];
-const BOSS_POOL = [
-  { name: 'King Crumb the Cake Golem', sprite: 'boss-crumb' },
-  { name: 'Queen Wobble the Jelly Giant', sprite: 'boss-wobble' },
-  { name: 'Sir Snores-a-Lot', sprite: 'boss-snores' },
-  { name: 'The Great Grumbly Pumpkin', sprite: 'boss-pumpkin' },
+export const BOSS_POOL = [
+  { id: 'crumb', name: 'King Crumb the Cake Golem', sprite: 'boss-crumb' },
+  { id: 'wobble', name: 'Queen Wobble the Jelly Giant', sprite: 'boss-wobble' },
+  { id: 'snores', name: 'Sir Snores-a-Lot', sprite: 'boss-snores' },
+  { id: 'pumpkin', name: 'The Great Grumbly Pumpkin', sprite: 'boss-pumpkin' },
 ];
+// Boss floors draw from this deck — every boss except King Crumb, who
+// appears ONLY as the fake final boss on floor 15, so the gag stays a
+// surprise.
+export const BOSS_DECK = BOSS_POOL.filter((b) => b.id !== 'crumb');
 
 export function isBossFloor(floor) {
   return floor % 5 === 0;
 }
 
+/** Shuffle a list into a fresh deck (Fisher-Yates). Pure: the input is
+ *  never mutated. `rand` is injectable so tests can use a seeded roll. */
+export function shuffleDeck(items, rand = Math.random) {
+  const deck = items.slice();
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = deck[i];
+    deck[i] = deck[j];
+    deck[j] = tmp;
+  }
+  return deck;
+}
+
+/** Draw the next item from a deck. When the deck is empty (or missing),
+ *  reshuffle the full pool into a fresh deck first, so a monster can
+ *  only repeat after every other monster in the pool has appeared.
+ *  Returns [item, remainingDeck]. Pure. */
+export function drawFromDeck(deck, pool, rand = Math.random) {
+  let d = deck && deck.length ? deck : shuffleDeck(pool, rand);
+  const item = d[0];
+  return [item, d.slice(1)];
+}
+
 /** Monster for a floor. HP/attack scale with floor; difficulty shifts attack.
- *  Two floors are special:
+ *  `pick` is the pool entry drawn from the run's deck (see spawnMonster);
+ *  when omitted, the old deterministic cycle is used instead (kept for
+ *  tests). Two floors are special:
  *  - Floor 15 is the FAKE final boss: King Crumb, with normal floor-15
  *    boss stats — the gag is in the presentation, not the numbers.
  *  - Floor 20 is the TRUE final boss: the Hollow King, with custom stats
  *    (HP 120, attack 6 + difficulty mod). He never repeats — floors 25+
  *    are normal bosses again. */
-export function monsterForFloor(floor, difficultyId = 'normal') {
+export function monsterForFloor(floor, difficultyId = 'normal', pick = null) {
   const diff = DIFFICULTIES[difficultyId] || DIFFICULTIES.normal;
   if (floor === 20) {
     return {
@@ -81,9 +126,9 @@ export function monsterForFloor(floor, difficultyId = 'normal') {
     };
   }
   const boss = isBossFloor(floor);
-  const pick = boss
+  const entry = pick || (boss
     ? BOSS_POOL[Math.floor(floor / 5 - 1) % BOSS_POOL.length]
-    : MONSTER_POOL[(floor - 1) % MONSTER_POOL.length];
+    : MONSTER_POOL[(floor - 1) % MONSTER_POOL.length]);
   if (floor === 15) {
     return {
       name: 'King Crumb, the FINAL Boss (definitely)',
@@ -97,7 +142,7 @@ export function monsterForFloor(floor, difficultyId = 'normal') {
   const attack = boss
     ? Math.max(1, 1 + Math.ceil(floor / 3) + diff.attackMod)
     : Math.max(1, 1 + Math.ceil(floor / 2) + diff.attackMod);
-  return { ...pick, hp, maxHp: hp, attack, isBoss: boss };
+  return { ...entry, hp, maxHp: hp, attack, isBoss: boss };
 }
 
 /** The Hollow King's rotating weakness: sword → shield → potion, each
@@ -556,6 +601,7 @@ if (typeof document !== 'undefined') {
     screen: 'setup', heroId: 'pip', difficulty: 'normal', heroName: randomName(),
     hp: 25, maxHp: 25, block: 0, gold: 0, score: 0, floor: 1, kills: 0,
     monster: null, board: [], relics: [], firstMatchThisFloor: true, swordBuff: false,
+    monsterDeck: [], bossDeck: [], // shuffled decks: no monster repeats until the deck runs out
     dragging: false, path: [], pathType: null, paused: false, over: false,
     settling: false, dying: false, best: 0, bestGold: 0,
     finalTurns: 0, // boss turns completed vs the Hollow King (weakness + crush clock)
@@ -932,8 +978,25 @@ if (typeof document !== 'undefined') {
     sfx.blip();
   }
 
+  // Monsters are dealt from shuffled decks, not picked at random: a
+  // monster can only repeat after every other monster in its pool has
+  // appeared. Floors 15 and 20 are fixed (fake + true final boss) and
+  // draw nothing. The decks live in state for the whole run — "Keep
+  // delving" after the true victory keeps dealing from them.
   function spawnMonster() {
-    state.monster = monsterForFloor(state.floor, state.difficulty);
+    let pick = null;
+    if (state.floor !== 15 && state.floor !== 20) {
+      if (isBossFloor(state.floor)) {
+        const drawn = drawFromDeck(state.bossDeck, BOSS_DECK);
+        state.bossDeck = drawn[1];
+        pick = drawn[0];
+      } else {
+        const drawn = drawFromDeck(state.monsterDeck, MONSTER_POOL);
+        state.monsterDeck = drawn[1];
+        pick = drawn[0];
+      }
+    }
+    state.monster = monsterForFloor(state.floor, state.difficulty, pick);
     state.firstMatchThisFloor = true;
     state.finalTurns = 0;
     const gameEl = $('#crypt-game');
@@ -1416,6 +1479,8 @@ if (typeof document !== 'undefined') {
     state.maxHp = diff.hp + (state.heroId === 'moss' ? 10 : 0);
     state.hp = state.maxHp; state.block = 0; state.gold = 0; state.score = 0;
     state.floor = 1; state.kills = 0; state.relics = []; state.swordBuff = false; state.over = false; state.paused = false; state.dying = false; state.finalTurns = 0;
+    state.monsterDeck = shuffleDeck(MONSTER_POOL);
+    state.bossDeck = shuffleDeck(BOSS_DECK);
     const hero = HEROES.find((h) => h.id === state.heroId);
     $('#hero-chip').innerHTML = `${spriteSVG(hero.sprite)} ${state.heroName} · ${hero.name}`;
     $('#setup-screen').hidden = true;
