@@ -12,26 +12,21 @@ export function midiToFreq(m) {
   return 440 * Math.pow(2, (m - 69) / 12);
 }
 
-// ---- the dungeon loop: an original 16-bar A-minor tune ----
-// 128 eighth-note steps at 132 BPM (one loop ≈ 29 s).
+// ---- the dungeon loop: an original 8-bar A-minor tune ----
+// 64 eighth-note steps at 132 BPM (one loop ≈ 14.5 s).
 // Deliberately, unmistakably minor: the melody leans hard on the minor
-// 3rd (C) and minor 6th (F), the bass walks Am–F–Dm–E, and bars 4, 8,
-// 12 and 16 use the harmonic-minor raised 7th (G#) as a leading tone
-// back to A. No major 3rd (C#) or major 6th (F#) anywhere in the melody.
+// 3rd (C) and minor 6th (F), the bass walks Am–F–Dm–E, and bars 4 and 8
+// use the harmonic-minor raised 7th (G#) as a leading tone back to A.
+// No major 3rd (C#) or major 6th (F#) anywhere in the melody.
 // Bars 1–4 are the tune players already know. Bars 5–8 answer it: bar 5
 // lifts into a higher register, bar 6 turns darker with a long
-// descending line, bar 7 climbs back, and bar 8 cadences home to A.
-// Bars 9–16 are a third section, a bridge: bars 9–12 wander somewhere
-// new (C–G–F–E in the bass, melody drifting through G and B over the
-// C and G chords, then a dark descent over F and a G# turn over E),
-// bars 13–14 climb back up high over Am and F, bar 15 descends over Dm,
-// and bar 16 cadences home to A so the loop point (bar 16 → bar 1,
-// both on A) is seamless.
+// descending line, bar 7 climbs back, and bar 8 cadences home to A so
+// the loop point (bar 8 → bar 1, both on A) is seamless.
 // melody: square-wave lead. bass: triangle-wave roots.
 // hat: 1 on off-beat steps (soft noise ticks), 0 elsewhere.
 export const MUSIC = {
   bpm: 132,
-  steps: 128,
+  steps: 64,
   melody: [
     69, 72, 76, 72, 69, 72, 69, 67, // bar 1 (Am): A C E C | A C A G
     65, 69, 72, 77, 76, 72, 69, 65, // bar 2 (F):  F A C F | E C A F
@@ -41,14 +36,6 @@ export const MUSIC = {
     77, 76, 74, 72, 71, 69, 67, 65, // bar 6 (F):  F E D C | B A G F — darker descent
     62, 65, 69, 72, 74, 77, 76, 74, // bar 7 (Dm): D F A C | D F E D — climb back
     64, 68, 71, 76, 79, 76, 72, 69, // bar 8 (E→Am): E G# B E | G E C A — home
-    72, 79, 84, 79, 76, 79, 72, 69, // bar 9 (C):  E G C G | E G E A — bridge opens
-    67, 71, 74, 79, 74, 71, 67, 64, // bar 10 (G): G B D G | D B G E
-    77, 76, 74, 72, 71, 69, 67, 65, // bar 11 (F): F E D C | B A G F — dark descent
-    64, 68, 71, 76, 79, 76, 71, 68, // bar 12 (E): E G# B E | G E B G# — turn
-    81, 79, 76, 72, 76, 79, 81, 84, // bar 13 (Am): A G E C | E G A C — climb back up
-    84, 81, 79, 77, 76, 79, 81, 84, // bar 14 (F): C A G F | E G A C — high
-    84, 81, 79, 77, 76, 74, 72, 69, // bar 15 (Dm): C A G F | E D C A — descend
-    76, 79, 81, 84, 79, 76, 72, 69, // bar 16 (E→Am): E G A C | G E C A — home
   ],
   bass: [
     45, null, 45, null, 45, null, 45, null, // bar 1: A
@@ -59,24 +46,8 @@ export const MUSIC = {
     41, null, 41, null, 41, null, 41, null, // bar 6: F
     38, null, 38, null, 38, null, 38, null, // bar 7: D
     40, null, 40, null, 40, null, 45, null, // bar 8: E, walk up to A
-    48, null, 48, null, 48, null, 48, null, // bar 9: C
-    43, null, 43, null, 43, null, 43, null, // bar 10: G
-    41, null, 41, null, 41, null, 41, null, // bar 11: F
-    40, null, 40, null, 40, null, 45, null, // bar 12: E, walk up to A
-    45, null, 45, null, 45, null, 45, null, // bar 13: A
-    41, null, 41, null, 41, null, 41, null, // bar 14: F
-    38, null, 38, null, 38, null, 38, null, // bar 15: D
-    40, null, 40, null, 40, null, 45, null, // bar 16: E, walk up to A
   ],
   hat: [
-    0, 1, 0, 1, 0, 1, 0, 1,
-    0, 1, 0, 1, 0, 1, 0, 1,
-    0, 1, 0, 1, 0, 1, 0, 1,
-    0, 1, 0, 1, 0, 1, 0, 1,
-    0, 1, 0, 1, 0, 1, 0, 1,
-    0, 1, 0, 1, 0, 1, 0, 1,
-    0, 1, 0, 1, 0, 1, 0, 1,
-    0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
     0, 1, 0, 1, 0, 1, 0, 1,
