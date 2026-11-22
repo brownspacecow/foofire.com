@@ -1030,10 +1030,92 @@
         max-width: none;
         width: 100%;
         height: 100%;
+        height: 100dvh;
         margin: 0;
         padding: 0.5rem;
         overflow-y: auto;
         background: #000010;
+      }
+
+      /* ---- How to play ---- */
+      .overlay-card.help-card {
+        max-height: 86vh;
+        max-height: 86dvh;
+        overflow-y: auto;
+      }
+
+      .help-text {
+        text-align: left;
+        font-size: 1rem;
+        line-height: 1.55;
+      }
+
+      /* ---- Portrait fullscreen: one screen, no scrolling ----
+         The long instructions left the play screen (they live on the
+         setup screen and in the help overlay now), and the play screen
+         becomes a flex column that fills the viewport. The board takes
+         whatever space is left after the HUD, monster card, last-turn
+         line, and relics row — it is sized to the smaller of the
+         available width and the available height, so it can never push
+         the page taller than the screen. Landscape keeps the old
+         behaviour (scroll) — the game is laid out for portrait. */
+      @media (orientation: portrait) {
+        .crypt-game:fullscreen { overflow: hidden; }
+
+        .crypt-game:fullscreen #setup-screen {
+          max-height: 100%;
+          overflow-y: auto;
+        }
+
+        .crypt-game:fullscreen #play-screen:not([hidden]) {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          min-height: 0;
+        }
+
+        .crypt-game:fullscreen .board-wrap {
+          flex: 1 1 0;
+          min-height: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          container-type: size;
+        }
+
+        .crypt-game:fullscreen #board {
+          min-width: 0;
+          width: min(100%, calc(100dvh - 340px));
+        }
+
+        /* Where container queries are supported, size the board to the
+           exact space left in the board wrap (its height minus the
+           wrap's own padding and border) instead of the estimate. */
+        @supports (width: 100cqh) {
+          .crypt-game:fullscreen #board {
+            width: min(100%, calc(100cqh - 24px));
+          }
+        }
+
+        /* Relics never wrap to a second row in fullscreen — they scroll
+           sideways instead, so the row can't grow taller. */
+        .crypt-game:fullscreen .relics-row {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+        }
+
+        /* Short portrait screens: tighten the chrome so tiles stay
+           big enough to drag. */
+        @media (max-height: 720px) {
+          .crypt-game:fullscreen .crypt-hud { padding: 0.4rem 0.6rem; }
+          .crypt-game:fullscreen .icon-button { width: 2.2rem; height: 2.2rem; }
+          .crypt-game:fullscreen .monster-card { padding: 0.5rem 0.8rem; }
+          .crypt-game:fullscreen .monster-emoji { width: 2.6rem; height: 2.6rem; }
+          .crypt-game:fullscreen .monster-extra { font-size: 0.45rem; margin-top: 0.2rem; }
+          .crypt-game:fullscreen .last-turn { font-size: 0.75rem; margin-top: 0.3rem; }
+          .crypt-game:fullscreen .relics-row { padding: 0.3rem 0.6rem; }
+          .crypt-game:fullscreen .board-wrap { padding: 0.3rem; }
+        }
       }
 
       /* ---- The Hollow King: the crypt goes dark and scary ---- */
@@ -1157,6 +1239,8 @@
             <button class="descend-btn" id="descend-button" type="button">⬇ DESCEND</button>
           </div>
           <button class="achievements-btn" id="achievements-button" type="button">🏆 ACHIEVEMENTS (0/37)</button>
+          <button class="achievements-btn" id="howto-button" type="button">❓ HOW TO PLAY</button>
+          <p id="hud-best" class="game-tip"></p>
         </div>
 
         <!-- ======== PLAY ======== -->
@@ -1180,6 +1264,7 @@
               <span class="stat-label">Score</span><strong id="hud-score">0</strong>
             </div>
             <div class="hud-actions">
+              <button class="icon-button" id="help-button" type="button" aria-label="How to play">?</button>
               <button class="icon-button" id="pause-button" type="button" aria-label="Pause game" aria-pressed="false">❚❚</button>
               <button class="icon-button" id="fullscreen-button" type="button" aria-label="Play in full screen" aria-pressed="false">⛶</button>
               <button class="icon-button" id="mute-button" type="button" aria-label="Mute sounds" aria-pressed="false">🔊</button>
@@ -1214,18 +1299,6 @@
 
           <div class="relics-row" id="relics-row"></div>
           <p class="paused-note" id="paused-note" hidden>Paused — tap ▶ to keep crawling.</p>
-          <p class="game-tip" id="game-tip">
-            Drag through 3+ matching tiles — swords hurt the monster, shields block its bite,
-            potions heal you, coins are treasure! Longer paths are stronger, and chains of 5+
-            tiles earn bonus gold! Drag back along
-            your path to undo it and pick a different route. Mom sneaks diagonally, and Dad
-            can hop over one tile that doesn't match, once per chain! Beat the monster to
-            descend. Between floors, spend your gold at the Crypt Shop! A boss waits
-            every 5th floor. If there are no moves left, the crypt
-            shuffles the tiles for free. Rumour says something REALLY big waits at the
-            bottom of the crypt...
-          </p>
-          <p id="hud-best" class="game-tip"></p>
           <p id="status" class="sr-only" role="status" aria-live="polite">Crypt Crawl is ready.</p>
         </div>
 
@@ -1300,6 +1373,17 @@
             <p id="achievements-progress">0 / 37 achievements</p>
             <div id="achievements-list"></div>
             <button id="achievements-close" type="button">Close</button>
+          </div>
+        </div>
+
+        <!-- How to play — the one copy of the instructions. The setup
+             screen's HOW TO PLAY button and the play HUD's "?" button
+             both open it; opening it mid-run pauses the game. -->
+        <div class="overlay" id="help-overlay" hidden>
+          <div class="overlay-card help-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
+            <h2 id="help-title">How to play</h2>
+            <p class="help-text">Drag through 3+ matching tiles — swords hurt the monster, shields block its bite, potions heal you, coins are treasure! Longer paths are stronger, and chains of 5+ tiles hit even harder! Drag back along your path to undo it and pick a different route. Mom sneaks diagonally, and Dad can hop over one tile that doesn't match, once per chain! Beat the monster to descend. Between floors, spend your gold at the Crypt Shop! A boss waits every 5th floor. If there are no moves left, the crypt shuffles the tiles for free. Rumour says something REALLY big waits at the bottom of the crypt...</p>
+            <button id="help-close" type="button">Got it!</button>
           </div>
         </div>
       </section>

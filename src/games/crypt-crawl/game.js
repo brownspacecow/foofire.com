@@ -192,9 +192,13 @@ export function relicCount(relics, id) {
  * `weakType` is the Hollow King's current weakness (null for every other
  * monster): matches of that type have DOUBLE effect — double damage,
  * double block, or double healing. Coin is never a weakness.
- * Chain bonus: any match of 5+ tiles earns +1 gold per tile beyond 4,
- * whatever the tile type — long chains pay for the shop. It is reported
- * separately as `chainBonus` so the game can show it as its own float.
+ * Chain bonus: any match of 5+ tiles amplifies its own effect by +1 per
+ * tile beyond 4 — more damage, block, or healing, and more gold from
+ * coins. It is reported separately as `chainBonus` so the game can show
+ * it as its own float. The bonus keeps scoring +10 per unit for
+ * non-coin matches: the amplified effect alone scores only +5 per
+ * unit, so without that a long sword/shield/potion chain would score
+ * less than it used to. Coins score the bonus through their gold.
  * Returns { damage, block, heal, gold, chainBonus, score }.
  */
 export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor = false, swordBuff = false, weakType = null) {
@@ -202,7 +206,7 @@ export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor 
   const chainBonus = Math.max(0, len - 4);
   const out = { damage: 0, block: 0, heal: 0, gold: 0, chainBonus, score: len * 10 };
   if (type === 'sword') {
-    out.damage = 3 + bonus + relicCount(relics, 'sharp-sword');
+    out.damage = 3 + bonus + chainBonus + relicCount(relics, 'sharp-sword');
     if (swordBuff) out.damage += 5;
     if (heroId === 'wren' && len >= 5) out.damage += 1;
     if (heroId === 'joel') out.damage += 1;
@@ -210,24 +214,24 @@ export function matchEffect(type, len, heroId, relics = [], firstMatchThisFloor 
     if (weakType === 'sword') out.damage *= 2;
     out.score += out.damage * 5;
   } else if (type === 'shield') {
-    out.block = 3 + bonus + relicCount(relics, 'sturdy-shield');
+    out.block = 3 + bonus + chainBonus + relicCount(relics, 'sturdy-shield');
     if (heroId === 'bramble') out.block += 1;
     if (weakType === 'shield') out.block *= 2;
     out.score += out.block * 5;
   } else if (type === 'potion') {
-    out.heal = 3 + bonus + relicCount(relics, 'sweet-potion');
+    out.heal = 3 + bonus + chainBonus + relicCount(relics, 'sweet-potion');
     if (heroId === 'pip') out.heal += 1;
     if (weakType === 'potion') out.heal *= 2;
     out.score += out.heal * 5;
   } else if (type === 'coin') {
-    out.gold = len + relicCount(relics, 'lucky-coin');
+    out.gold = len + chainBonus + relicCount(relics, 'lucky-coin');
     if (heroId === 'biscuit') out.heal = Math.floor(len / 4);
     out.score += out.gold * 10;
   }
-  // Chain bonus gold, on top of whatever the match already pays, for
-  // every tile type — and it scores like other gold (+10 per gold).
-  out.gold += chainBonus;
-  out.score += chainBonus * 10;
+  // The chain bonus no longer pays gold (except for coins, whose effect
+  // IS gold). It keeps its +10 score per unit on non-coin matches, on
+  // top of the amplified effect's own score — see the comment above.
+  if (type !== 'coin') out.score += chainBonus * 10;
   return out;
 }
 
@@ -261,16 +265,20 @@ const TILE_PLURAL = { sword: 'swords', shield: 'shields', potion: 'potions', coi
 export function lastTurnText(match, bite = null) {
   const { type, len, fx, healed = 0, weak = false } = match;
   const parts = [`${len} ${TILE_PLURAL[type]}`];
-  if (type === 'sword') parts.push(`${fx.damage} damage`);
-  if (type === 'shield') parts.push(`+${fx.block} block`);
-  if (type === 'potion') parts.push(`+${healed} HP`);
+  if (type === 'sword') parts.push(fx.chainBonus > 0
+    ? `${fx.damage} damage (incl. +${fx.chainBonus} chain bonus)`
+    : `${fx.damage} damage`);
+  if (type === 'shield') parts.push(fx.chainBonus > 0
+    ? `+${fx.block} block (incl. +${fx.chainBonus} chain bonus)`
+    : `+${fx.block} block`);
+  if (type === 'potion') parts.push(fx.chainBonus > 0
+    ? `+${healed} HP (incl. +${fx.chainBonus} chain bonus)`
+    : `+${healed} HP`);
   if (type === 'coin') {
     parts.push(fx.chainBonus > 0
       ? `+${fx.gold} gold (incl. +${fx.chainBonus} chain bonus)`
       : `+${fx.gold} gold`);
     if (fx.heal > 0) parts.push(`+${healed} HP`);
-  } else if (fx.chainBonus > 0) {
-    parts.push(`+${fx.chainBonus} gold chain bonus`);
   }
   if (weak) parts.push('weakness ×2');
   parts.push(`+${fx.score} pts`);
@@ -731,6 +739,7 @@ if (typeof document !== 'undefined') {
   nameInput.addEventListener('input', () => { state.heroName = nameInput.value.trim() || randomName(); });
   $('#relic-count').textContent = '0/50';
   renderHeroes(); renderDetail(); renderDifficulty(); renderAchievementsButton();
+  updateHud(); // fills the best-floor line on the setup screen at boot
 
   // ---- board ----
   // Tile buttons are built ONCE per board and reused. The old code called
@@ -1073,6 +1082,29 @@ if (typeof document !== 'undefined') {
     sfx.blip();
   }
 
+  // ---- How to play ----
+  // One copy of the instructions lives in the help overlay; the setup
+  // screen's HOW TO PLAY button and the play HUD's "?" button both open
+  // it. Opening it mid-run pauses the game (the pending bite waits —
+  // see monsterAttack), and closing it resumes exactly where it left
+  // off, paused state included.
+  let helpWasPaused = false;
+  function showHelp() {
+    helpWasPaused = state.paused;
+    if (state.screen === 'play' && !state.over) setPaused(true);
+    $('#help-overlay').hidden = false;
+    sfx.blip();
+  }
+  function hideHelp() {
+    $('#help-overlay').hidden = true;
+    if (state.screen === 'play' && !state.over) setPaused(helpWasPaused);
+    sfx.blip();
+  }
+  // If a floor's reward or ending opens while help is up (the death
+  // flow can start in the beat after a killing match), the new overlay
+  // takes over — help never paints above a modal the player must answer.
+  function hideHelpForModal() { $('#help-overlay').hidden = true; }
+
   // Monsters are dealt from shuffled decks, not picked at random: a
   // monster can only repeat after every other monster in its pool has
   // appeared. Floors 15 and 20 are fixed (fake + true final boss) and
@@ -1207,9 +1239,9 @@ if (typeof document !== 'undefined') {
       floatText(`+${healed} HP`, 'heal');
       sfx.heal();
     }
-    // Gold is awarded for any match now, not just coins: the chain bonus
-    // pays gold for long sword/shield/potion chains too. The coin float
-    // shows the base treasure only, so the chain bonus float next to it
+    // Gold comes only from coin matches now: the chain bonus amplifies
+    // the chained effect instead of paying gold. The coin float shows
+    // the base treasure only, so the chain bonus float next to it
     // always adds up to the total gold earned.
     if (fx.gold > 0) {
       state.gold += fx.gold;
@@ -1218,12 +1250,15 @@ if (typeof document !== 'undefined') {
         if (fx.heal > 0) { healed = Math.min(fx.heal, state.maxHp - state.hp); state.hp += healed; floatText(`+${fx.heal} HP snack!`, 'heal'); }
         sfx.coin();
       }
-      if (fx.chainBonus > 0) {
-        // The bonus float says what it does to the score (+10 per bonus
-        // gold) and stays up 2.5s so there is time to read it.
-        floatText(`CHAIN BONUS +${fx.chainBonus} gold · +${fx.chainBonus * 10} pts`, 'gold', 2500);
-        if (type !== 'coin') sfx.coin();
-      }
+    }
+    // The chain-bonus float names the amplified effect and the score
+    // that amplification earns (5 per damage/block/HP, 10 per gold),
+    // and stays up 2.5s so there is time to read it.
+    if (fx.chainBonus > 0) {
+      if (type === 'sword') floatText(`CHAIN BONUS +${fx.chainBonus} damage · +${fx.chainBonus * 5} pts`, 'dmg', 2500);
+      else if (type === 'shield') floatText(`CHAIN BONUS +${fx.chainBonus} block · +${fx.chainBonus * 5} pts`, 'block', 2500);
+      else if (type === 'potion') floatText(`CHAIN BONUS +${fx.chainBonus} HP · +${fx.chainBonus * 5} pts`, 'heal', 2500);
+      else floatText(`CHAIN BONUS +${fx.chainBonus} gold · +${fx.chainBonus * 10} pts`, 'gold', 2500);
     }
     // Hitting the Hollow King's weakness is worth shouting about.
     if (weak && type === weak) floatText('WEAKNESS!', 'weak');
@@ -1267,6 +1302,9 @@ if (typeof document !== 'undefined') {
 
   function monsterAttack(turnId = null) {
     if (state.over || state.screen !== 'play' || !state.monster || state.monster.hp <= 0 || state.dying) return;
+    // While paused (e.g. the How to Play overlay is open) the bite
+    // waits — it is never skipped, just deferred until the player resumes.
+    if (state.paused) { setTimeout(() => monsterAttack(turnId), 300); return; }
     const isFinal = !!state.monster.isTrueFinal;
     // The Hollow King's crushing blow: every 4th boss turn, 3x attack.
     // Block absorbs it normally — banking block before the blow lands
@@ -1427,6 +1465,7 @@ if (typeof document !== 'undefined') {
   // the rumbling. Tapping through resumes the normal flow (relic pick
   // first, since the fake boss is a boss, then the shop, then floor 16).
   function showFakeVictory(onDone) {
+    hideHelpForModal();
     const modal = $('#fakewin-overlay');
     const title = $('#fakewin-title');
     const text = $('#fakewin-text');
@@ -1455,6 +1494,7 @@ if (typeof document !== 'undefined') {
   // endless game goes on, and the Hollow King does not repeat). "New
   // run" goes back to the setup screen, like the game-over flow.
   function showTrueVictory(onKeepDelving, clearedFloor) {
+    hideHelpForModal();
     // The Hollow King is beaten: record the win (hero x difficulty),
     // plus first-win / win-hard when they apply. The celebration
     // banners wait until the player is back on the board (descend).
@@ -1477,6 +1517,7 @@ if (typeof document !== 'undefined') {
       modal.hidden = true;
       $('#play-screen').hidden = true;
       $('#setup-screen').hidden = false;
+      $('#crypt-game').classList.remove('final-boss');
       state.screen = 'setup';
       $('#relic-count').textContent = '0/50';
       achQueue = [];
@@ -1499,6 +1540,7 @@ if (typeof document !== 'undefined') {
   // and always available, even with 0 gold, so the shop can never block
   // the game.
   function showShop(onDescend) {
+    hideHelpForModal();
     const modal = $('#shop-modal');
     const list = $('#shop-choices');
     $('#shop-gold').textContent = state.gold;
@@ -1539,6 +1581,7 @@ if (typeof document !== 'undefined') {
   let relicDone = null;
 
   function showRelicChoice(onDone) {
+    hideHelpForModal();
     relicDone = onDone || null;
     const pool = [...RELICS].sort(() => Math.random() - 0.5).slice(0, 3);
     const modal = $('#relic-modal');
@@ -1566,6 +1609,7 @@ if (typeof document !== 'undefined') {
   }
 
   function gameOver() {
+    hideHelpForModal();
     state.over = true;
     achQueue = []; // any queued celebrations are dropped, not shown dead
     state.swordBuff = false; // a bought buff never survives into a new run
@@ -1604,6 +1648,7 @@ if (typeof document !== 'undefined') {
     $('#setup-screen').hidden = true;
     $('#play-screen').hidden = false;
     $('#gameover-overlay').hidden = true;
+    $('#help-overlay').hidden = true;
     $('#crypt-game').classList.remove('final-boss');
     state.screen = 'play';
     turnMatch = null; turnLine = 'Last turn: —'; renderLastTurn();
@@ -1614,6 +1659,9 @@ if (typeof document !== 'undefined') {
   }
   $('#descend-button').addEventListener('click', startRun);
   $('#achievements-button').addEventListener('click', showAchievements);
+  $('#help-button').addEventListener('click', showHelp);
+  $('#howto-button').addEventListener('click', showHelp);
+  $('#help-close').addEventListener('click', hideHelp);
   $('#achievements-close').addEventListener('click', () => {
     $('#achievements-overlay').hidden = true;
     sfx.blip();
