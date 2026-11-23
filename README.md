@@ -16,7 +16,7 @@ Tagline: **Games for kids.**
 
 ```text
 src/
-  main.js          # Portal: featured games + Games-page search/filter
+  main.js          # Portal: latest games + Games-page search/filter
   scores.js        # High-scores page
   data/games.js    # The 22 games: id, category, title, description, image, path
   utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
@@ -201,7 +201,7 @@ phones.
 
 1. Create a folder under `src/games/<game-name>/`.
 2. Add an `index.html` that loads three.js (via the esm.sh import map) and your game script.
-3. Add an entry to the `games` array in `src/data/games.js` with the game's `id`, `category` (`adventure`, `racing`, `music`, `arcade` or `cozy`), `title`, `description`, `image`, and `path`. Add `featured: true` only if it should show on the home page.
+3. Add an entry to the `games` array in `src/data/games.js` with the game's `id`, `category` (`adventure`, `racing`, `music`, `arcade` or `cozy`), `title`, `description`, `image`, and `path`. The home page previews the latest seven entries, so append new games to the bottom of the array.
 4. Add a card screenshot to `public/screenshots/`.
 5. Link to the game from `games.html` (handled automatically by `src/main.js`).
 

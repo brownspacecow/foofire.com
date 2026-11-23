@@ -1,7 +1,7 @@
 /**
  * The games shown on the portal and on the high scores page.
  * `id` is the key used for the per-device high score store.
- * `featured` games are the ones shown on the home page; the Games page shows all.
+ * The home page previews the latest entries; the Games page shows all.
  * `category` is one of 'adventure', 'racing', 'music', 'arcade' or 'cozy'
  * and drives the filter chips on the Games page.
  */
@@ -23,7 +23,6 @@ export const games = [
       'Seven vacations, one very small mystery. Explore the weird version of every family trip with Jira and Joel, collect Vacation Memories, investigate the clues, and face the thing that keeps standing just outside the photo.',
     image: './public/screenshots/survive-family-vacation.svg',
     path: './src/games/survive-family-vacation/index.html',
-    featured: true,
   },
   {
     id: 'earwarts',
@@ -42,7 +41,6 @@ export const games = [
       'A pocket touch synth: drag your finger across the neon pad to play in any scale, slide up for brightness, and stack a looping phrase layer by layer. No wrong notes, no downloads.',
     image: './public/screenshots/phrase-pad.svg',
     path: './src/games/phrase-pad/index.html',
-    featured: true,
   },
   {
     id: 'spot-your-friends',
@@ -61,7 +59,6 @@ export const games = [
       'Build a couch-fort wrestling arena out of ten foam pieces, then bump, jump and cartwheel your friend into the lava. Local two-player physics chaos.',
     image: './public/screenshots/rough-housing.webp',
     path: './src/games/rough-housing/index.html',
-    featured: true,
   },
   {
     id: 'roost-rider',
@@ -71,7 +68,6 @@ export const games = [
       'A first-person off-road motorcycle race: three laps, three rivals, big jumps and nitro on a dusty dirt circuit. Preload the lips, land your spins, and keep it pinned.',
     image: './public/screenshots/roost-rider.webp',
     path: './src/games/roost-rider/index.html',
-    featured: true,
   },
   {
     id: 'roof-rider',
@@ -144,7 +140,6 @@ export const games = [
       'Steer the claw and fill your saved Plushie Dex with 100 original characters — including a wild digital circus and some cute-spooky friends.',
     image: './public/screenshots/claw-machine.webp',
     path: './src/games/claw-machine/index.html',
-    featured: true,
     /** Claw Crew tracks a collection, so its board shows progress, not a best. */
     progress: { total: 100, unit: 'plushies' },
   },
@@ -194,7 +189,6 @@ export const games = [
       'Run a backyard fireworks show before curfew. Little fireworks bring the daylight, the big shells only go up at night, and Big Bertha ends the whole street in a white flash. The faster you light her, the bigger your time bonus.',
     image: './public/screenshots/spark-curfew.webp',
     path: './src/games/spark-curfew/index.html',
-    featured: true,
   },
   {
     id: 'bear',
@@ -204,7 +198,6 @@ export const games = [
       'Take care of Bear, a cute black and white Shih Tzu puppy. Feed him, play fetch, and tuck him into bed!',
     image: './public/screenshots/bear.webp',
     path: './src/games/bear/index.html',
-    featured: true,
   },
   {
     id: 'aisle-rush',
