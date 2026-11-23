@@ -17,6 +17,9 @@ const CATEGORY_LABELS = {
   cozy: 'Cozy',
 };
 
+/* The games array is append-ordered, so its tail is the newest work. */
+const LATEST_GAMES_COUNT = 7;
+
 const categoryLabel = (game) => CATEGORY_LABELS[game.category] || 'Game';
 
 const renderGameList = (container, list) => {
@@ -130,10 +133,7 @@ const initLibraryFilter = () => {
 };
 
 const init = () => {
-  renderGameList(
-    gamesGrid,
-    games.filter((game) => game.featured)
-  );
+  renderGameList(gamesGrid, games.slice(-LATEST_GAMES_COUNT).reverse());
 
   // The Games page re-renders through the filter; the home page keeps it simple.
   if (gameCards && searchInput) {
