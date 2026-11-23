@@ -106,8 +106,8 @@ http://localhost:8080/src/games/crypt-crawl/
 ### Aisle Rush '85
 
 An original 1980s supermarket game show. Three teams play a six-question
-grocery round; each correct answer adds ten seconds to that team's Big Sweep
-clock, and everyone starts with 1:00. Then the winner in each team races the
+grocery round; each correct answer adds five seconds to that team's Big Sweep
+clock, and everyone starts with 0:30. Then the winner in each team races the
 aisles for real groceries: giant display items and hidden cash pay the most,
 five of any one product is the limit, and a full 24-item cart has to be
 exchanged at your team's register. The coffee grinder and deli slicer run

@@ -135,8 +135,8 @@ export const STATIONS = [
     action: 'HOLD TO GRIND',
     instruction:
       'Hold the button to grind. Release when the beans hit the green. The sweep clock keeps running.',
-    zone: [0.52, 0.86],
-    perfect: [0.64, 0.74],
+    zone: [0.50, 0.88],
+    perfect: [0.60, 0.78],
     labels: ['UNDER', 'JUST RIGHT', 'OVER'],
     rewards: { perfect: 150, good: 75, miss: 0 },
     results: {
@@ -159,8 +159,8 @@ export const STATIONS = [
     action: 'SLICE',
     instruction:
       'Tap SLICE when the blade sweeps through the green. The sweep clock keeps running.',
-    zone: [0.55, 0.85],
-    perfect: [0.66, 0.74],
+    zone: [0.50, 0.88],
+    perfect: [0.60, 0.78],
     labels: ['THIN', 'JUST RIGHT', 'THICK'],
     rewards: { perfect: 200, good: 100, miss: 0 },
     results: {
@@ -174,9 +174,9 @@ export const STATIONS = [
 export const ROUND_NAMES = ['NAME THAT PRODUCT', 'JINGLE JAM', 'ROUND ROBIN'];
 
 export const ROUND_INTROS = [
-  'Round one! I describe a grocery, you name it. Every correct answer is ten more seconds in the Big Sweep.',
-  'Round two! The jingles are made up, the groceries are not. Ten seconds a pop!',
-  'Round three! Round robin — anything on the shelves is fair game. Ten seconds each!',
+  'Round one! I describe a grocery, you name it. Every correct answer is five more seconds in the Big Sweep.',
+  'Round two! The jingles are made up, the groceries are not. Five seconds a pop!',
+  'Round three! Round robin — anything on the shelves is fair game. Five seconds each!',
 ];
 
 export const QUESTIONS = [
@@ -400,8 +400,8 @@ export const HOST_LINES = {
   title:
     'Welcome to Aisle Rush ’85, the supermarket game show where the groceries are free and the clock is not!',
   team: 'Three teams, one supermarket. Pick your partner, and let’s go shopping!',
-  quiz: 'Answer fast! Every correct answer puts ten more seconds on somebody’s Big Sweep clock.',
-  correct: ['Ten more seconds!', 'Beautiful!', 'That’s the one!', 'Ka-ching!', 'Sharp as a shopping list.'],
+  quiz: 'Answer fast! Every correct answer puts five more seconds on somebody’s Big Sweep clock.',
+  correct: ['Five more seconds!', 'Beautiful!', 'That’s the one!', 'Ka-ching!', 'Sharp as a shopping list.'],
   wrong: ['Ooh, not quite.', 'Oh no! The buzzer.', 'That one goes back on the shelf.'],
   timeout: ['Too slow!', 'And the clock wins that round.', 'Time’s up before the checkout!'],
   sweep:
