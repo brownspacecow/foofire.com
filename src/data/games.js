@@ -206,4 +206,13 @@ export const games = [
     path: './src/games/bear/index.html',
     featured: true,
   },
+  {
+    id: 'aisle-rush',
+    category: 'arcade',
+    title: "Aisle Rush '85",
+    description:
+      'The supermarket game show where the groceries are free and the clock is not. Answer grocery questions to buy sweep time, then race a neon 1980s supermarket for giant bonuses and hidden cash. Win the checkout and chase the $5,000 Bonus Sweep.',
+    image: './public/screenshots/aisle-rush.svg',
+    path: './src/games/aisle-rush/index.html',
+  },
 ];
