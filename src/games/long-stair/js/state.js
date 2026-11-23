@@ -455,6 +455,10 @@ export function finishCampaign(campaign, victory, reason) {
   campaign.completed = victory;
   campaign.overReason = reason;
   campaign.score = computeScore(campaign, victory);
+  campaign.survivors = campaign.party
+    .map((id) => heroById(campaign, id))
+    .filter((hero) => hero && hero.hp > 0)
+    .map((hero) => fullName(hero));
   campaign.dungeon = null;
   campaign.party = [];
 }
