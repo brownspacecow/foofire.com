@@ -7,7 +7,7 @@ Tagline: **Games for kids.**
 ## Features
 
 - Three.js games that run entirely in the browser
-- Game portal with a library of 22 playable games, with search and category filters
+- Game portal with a library of 23 playable games, with search and category filters
 - Dark, mobile-first responsive UI
 - Local high scores saved in the browser (top five per game)
 - Dedicated legal disclaimer page
@@ -18,7 +18,7 @@ Tagline: **Games for kids.**
 src/
   main.js          # Portal: latest games + Games-page search/filter
   scores.js        # High-scores page
-  data/games.js    # The 22 games: id, category, title, description, image, path
+  data/games.js    # The 23 games: id, category, title, description, image, path
   utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
   vendor/
     three.module.js  # Shared Three.js r169, used by Earwarts + Keep.
@@ -41,6 +41,7 @@ src/
     zombie-deer/    # Zombie Deer: Christmas Edition tower defence
     crypt-crawl/    # Crypt Crawl: match-drag-slay puzzle dungeon crawler
     aisle-rush/     # Aisle Rush '85: 80s supermarket game show
+    long-stair/     # The Long Stair: gothic turn-based cellar roguelike
     spooky-santa/   # Spooky Santa: chimney stealth before sunrise
     spark-curfew/   # Spark Curfew: backyard fireworks before curfew
     the-grin/       # The Grin: four-stage bullet-hell boss fight
@@ -136,6 +137,56 @@ src/games/aisle-rush/
   sweep.js     # canvas store, cart, pickups and bonus-clue chase
   content.js   # teams, shelves, quiz questions, bonus clues
   audio.js     # synthesized 80s show band and effects
+```
+
+### The Long Stair
+
+A gothic, Lovecraft-inspired turn-based roguelike. You are the overseer of
+14 Halloway Street: you cannot go down the cellar stair yourself, so you muster
+four heroes from a roster of flawed volunteers and send them into a procedurally
+generated labyrinth with one lamp. Six floors down, something is kneeling at an
+altar, and the house has been feeding it.
+
+- **Roster management.** Six starting heroes and six recruitable volunteers,
+  each with a flaw and a unique ability. The four who travel carry persistent
+  wounds, stress and dreads back up with them. Rest, surgery, confession and
+  laudanum between weeks. Three dreads and a hero is lost to the house for good.
+- **A procedural cellar.** Every floor is a new arrangement of stone rooms and
+  corridors with fog of war, roaming horrors, strongboxes, shrines, paper relics
+  and traps. Lamp oil burns with every step, and some things follow the light.
+- **Turn-based combat.** Heroes act one at a time; horrors telegraph their next
+  move. Strike, guard, use an ability, steady the dying before the last horror
+  falls, or break away. Downed heroes die when the fight ends unless someone
+  stabilises them, and a party wipe costs all four.
+- **Wounds and trauma.** Stress breaks at 100 and leaves a permanent dread;
+  injuries lower stats until treated. A descent is only banked when the party
+  withdraws or finishes it. Two difficulties: Dread and Lamplight.
+
+Autosaves to localStorage. A full campaign is six floors and a boss; the
+high-score table tracks the deepest safe return.
+
+Plain HTML, CSS and ES modules — no build step and no three.js. Serve the repo
+root as above and open:
+
+```text
+http://localhost:8080/src/games/long-stair/
+```
+
+Folder layout:
+
+```text
+src/games/long-stair/
+  index.html
+  styles.css       # gothic house, cellar and combat styling
+  js/
+    main.js        # boot
+    rng.js         # seeded random, dice and shuffles
+    content.js     # heroes, flaws, dreads, injuries, items, horrors, lore
+    dungeon.js     # floor generation, fog of war, roaming, entities
+    state.js       # campaign, roster, stress, wounds, weeks, save/load
+    combat.js      # turn order, intents, abilities, boss phases, results
+    ui.js          # title, house, delve, combat, modals, input
+    audio.js       # quiet synthesized cellar drone and event sounds
 ```
 
 ### Keep

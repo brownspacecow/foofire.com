@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="The Long Stair game screen: a lamplit map of a stone cellar beside a party panel tracking four heroes' health and stress">
+  <defs>
+    <radialGradient id="pageGlow" cx="50%" cy="8%" r="72%">
+      <stop offset="0" stop-color="#c2a064" stop-opacity="0.2"/>
+      <stop offset="0.65" stop-color="#c2a064" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#08070a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lampGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#f1d9a3" stop-opacity="0.32"/>
+      <stop offset="0.5" stop-color="#c2a064" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#c2a064" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fog" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#08070a" stop-opacity="0"/>
+      <stop offset="0.55" stop-color="#08070a" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#08070a" stop-opacity="0.94"/>
+    </linearGradient>
+    <linearGradient id="brassRule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c2a064" stop-opacity="0"/>
+      <stop offset="0.2" stop-color="#c2a064" stop-opacity="0.6"/>
+      <stop offset="0.8" stop-color="#c2a064" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#c2a064" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="wallTile" x="70" y="210" width="32" height="26" patternUnits="userSpaceOnUse">
+      <rect width="30" height="24" fill="#1a1520"/>
+      <rect x="0.5" y="0.5" width="29" height="23" fill="none" stroke="#221b28" stroke-width="1"/>
+      <path d="M0 13H30M15 0V13M7 13V24M23 13V24" stroke="#241d2a" stroke-width="1"/>
+    </pattern>
+    <pattern id="floorTile" x="70" y="210" width="32" height="26" patternUnits="userSpaceOnUse">
+      <rect width="30" height="24" fill="#100d15"/>
+      <rect x="0.5" y="0.5" width="29" height="23" fill="none" stroke="#1d1723" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="675" fill="#08070a"/>
+  <rect width="1200" height="675" fill="url(#pageGlow)"/>
+  <rect x="26" y="24" width="1148" height="627" fill="none" stroke="#3d3441" stroke-width="1"/>
+  <rect x="36" y="34" width="1128" height="607" fill="none" stroke="#241e2a" stroke-width="1"/>
+
+  <!-- masthead -->
+  <text x="60" y="82" font-family="Cinzel, Georgia, serif" font-size="28" letter-spacing="8" fill="#e9dfc9">THE LONG STAIR</text>
+  <text x="60" y="107" font-family="Cinzel, Georgia, serif" font-size="10" letter-spacing="4" fill="#c2a064">14 HALLOWAY STREET · WEEK 3</text>
+  <text x="1140" y="78" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="9" letter-spacing="3" fill="#8c8072">SOUND ON</text>
+  <text x="1140" y="97" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="9" letter-spacing="3" fill="#8c8072">HOW TO PLAY</text>
+  <line x1="60" y1="120" x2="1140" y2="120" stroke="#2a2330" stroke-width="1"/>
+
+  <!-- map panel -->
+  <rect x="48" y="136" width="760" height="444" fill="#0c0a10" stroke="#332a3a" stroke-width="1"/>
+  <text x="70" y="166" font-family="Cinzel, Georgia, serif" font-size="14" letter-spacing="3" fill="#e9dfc9">THE FLOODED STAIR</text>
+  <text x="788" y="165" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="9" letter-spacing="2" fill="#c2a064">FLOOR 2 OF 6</text>
+  <text x="70" y="188" font-family="Cinzel, Georgia, serif" font-size="8" letter-spacing="2" fill="#8c8072">LAMP</text>
+  <rect x="106" y="181" width="120" height="6" fill="#08070a" stroke="#3a3140" stroke-width="1"/>
+  <rect x="107" y="182" width="88" height="4" fill="#c2a064"/>
+  <text x="236" y="188" font-family="Cinzel, Georgia, serif" font-size="9" fill="#c2a064">118</text>
+  <text x="430" y="188" font-family="Cinzel, Georgia, serif" font-size="8" letter-spacing="2" fill="#8c8072">LOOT</text>
+  <text x="472" y="188" font-family="Cinzel, Georgia, serif" font-size="9" fill="#c2a064">46 COIN</text>
+  <text x="788" y="188" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" letter-spacing="2" fill="#8c8072">4 THINGS MOVING</text>
+
+  <!-- map -->
+  <rect x="70" y="210" width="608" height="338" fill="url(#wallTile)"/>
+
+  <!-- rooms -->
+  <rect x="102" y="236" width="126" height="76" fill="url(#floorTile)"/>
+  <rect x="294" y="236" width="190" height="76" fill="url(#floorTile)"/>
+  <rect x="102" y="366" width="158" height="76" fill="url(#floorTile)"/>
+  <rect x="326" y="340" width="158" height="102" fill="url(#floorTile)"/>
+  <rect x="518" y="262" width="126" height="102" fill="url(#floorTile)"/>
+  <rect x="486" y="418" width="158" height="102" fill="url(#floorTile)"/>
+
+  <!-- corridors -->
+  <rect x="230" y="262" width="62" height="24" fill="url(#floorTile)"/>
+  <rect x="134" y="314" width="30" height="52" fill="url(#floorTile)"/>
+  <rect x="262" y="392" width="62" height="24" fill="url(#floorTile)"/>
+  <rect x="358" y="314" width="30" height="26" fill="url(#floorTile)"/>
+  <rect x="486" y="340" width="32" height="24" fill="url(#floorTile)"/>
+  <rect x="486" y="288" width="32" height="24" fill="url(#floorTile)"/>
+  <rect x="550" y="366" width="30" height="52" fill="url(#floorTile)"/>
+
+  <!-- soft lamplight on the floor -->
+  <circle cx="180" cy="404" r="76" fill="url(#lampGlow)"/>
+
+  <!-- things in the dark -->
+  <text x="149" y="282" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#c9a25c">¤</text>
+  <text x="213" y="282" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#8daa9b">§</text>
+  <text x="374" y="283" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#b5474d">?</text>
+  <text x="406" y="409" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#9a86c4">†</text>
+  <text x="438" y="383" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#b5474d">?</text>
+  <text x="117" y="409" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#a2603e">✶</text>
+
+  <!-- fog and the thing that is not on the map -->
+  <rect x="470" y="210" width="208" height="338" fill="url(#fog)"/>
+  <g opacity="0.5">
+    <path d="M596 548 C590 500 584 468 588 438 C592 402 610 386 620 356 C628 332 618 314 604 312 C588 310 576 326 578 348 C580 370 590 384 588 406 C584 438 566 470 568 548 Z" fill="#151016"/>
+    <path d="M604 315 C614 320 618 334 612 350" fill="none" stroke="#2b212a" stroke-width="1.5"/>
+    <ellipse cx="596" cy="335" rx="2.4" ry="1.2" fill="#9a4a4e" opacity="0.65"/>
+    <ellipse cx="606" cy="334" rx="2.4" ry="1.2" fill="#9a4a4e" opacity="0.65"/>
+  </g>
+  <text x="550" y="332" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#d8b879" opacity="0.45">▼</text>
+  <text x="582" y="461" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#b5474d" opacity="0.4">?</text>
+
+  <!-- the party -->
+  <circle cx="180" cy="404" r="24" fill="url(#lampGlow)"/>
+  <text x="180" y="411" text-anchor="middle" font-family="Georgia, serif" font-size="23" fill="#f1d9a3">◉</text>
+
+  <text x="70" y="570" font-family="Georgia, serif" font-size="9" fill="#6f6570">◉ party   ? horror   ▼ stair   ¤ strongbox   † shrine   § paper   ✶ trap</text>
+
+  <!-- party panel -->
+  <rect x="824" y="136" width="328" height="444" fill="#0e0b12" stroke="#332a3a" stroke-width="1"/>
+  <text x="846" y="166" font-family="Cinzel, Georgia, serif" font-size="12" letter-spacing="4" fill="#c2a064">THE PARTY</text>
+  <text x="846" y="182" font-family="Georgia, serif" font-size="9" font-style="italic" fill="#8c8072">four go down. these are the four.</text>
+
+  <!-- Vance -->
+  <rect x="846" y="196" width="286" height="82" fill="#100d15" stroke="#332a39" stroke-width="1"/>
+  <rect x="856" y="206" width="30" height="30" fill="#0a080b" stroke="#4a3c2a" stroke-width="1"/>
+  <text x="871" y="227" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#c2a064">✚</text>
+  <text x="896" y="217" font-family="Cinzel, Georgia, serif" font-size="11" fill="#e9dfc9">Dr. Ilse Vance</text>
+  <text x="896" y="231" font-family="Georgia, serif" font-size="9" fill="#8c8072">The Disgraced Surgeon</text>
+  <text x="1122" y="217" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#c2a064">LV 6</text>
+  <text x="856" y="255" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">HP</text>
+  <rect x="880" y="249" width="190" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="881" y="250" width="138" height="3" fill="#8f343a"/>
+  <text x="1122" y="255" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">24/33</text>
+  <text x="856" y="268" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">STRESS</text>
+  <rect x="893" y="262" width="177" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="894" y="263" width="103" height="3" fill="#7f6ba8"/>
+  <text x="1122" y="268" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">58</text>
+  <text x="896" y="278" font-family="Georgia, serif" font-size="8" fill="#d1a3a3">Cracked Ribs · Morphine Habit</text>
+
+  <!-- Rook -->
+  <rect x="846" y="288" width="286" height="82" fill="#100d15" stroke="#332a39" stroke-width="1"/>
+  <rect x="856" y="298" width="30" height="30" fill="#0a080b" stroke="#4a3c2a" stroke-width="1"/>
+  <text x="871" y="319" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#c2a064">☘</text>
+  <text x="896" y="309" font-family="Cinzel, Georgia, serif" font-size="11" fill="#e9dfc9">Abel Rook</text>
+  <text x="896" y="323" font-family="Georgia, serif" font-size="9" fill="#8c8072">The Drunk Constable</text>
+  <text x="1122" y="309" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#c2a064">LV 5</text>
+  <text x="856" y="347" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">HP</text>
+  <rect x="880" y="341" width="190" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="881" y="342" width="166" height="3" fill="#8f343a"/>
+  <text x="1122" y="347" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">29/34</text>
+  <text x="856" y="360" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">STRESS</text>
+  <rect x="893" y="354" width="177" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="894" y="355" width="72" height="3" fill="#7f6ba8"/>
+  <text x="1122" y="360" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">41</text>
+  <text x="896" y="370" font-family="Georgia, serif" font-size="8" fill="#cbbda5">The Bottle</text>
+
+  <!-- Wren -->
+  <rect x="846" y="380" width="286" height="82" fill="#100d15" stroke="#332a39" stroke-width="1"/>
+  <rect x="856" y="390" width="30" height="30" fill="#0a080b" stroke="#4a3c2a" stroke-width="1"/>
+  <text x="871" y="411" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#c2a064">⚒</text>
+  <text x="896" y="401" font-family="Cinzel, Georgia, serif" font-size="11" fill="#e9dfc9">Elias Wren</text>
+  <text x="896" y="415" font-family="Georgia, serif" font-size="9" fill="#8c8072">The Gravedigger</text>
+  <text x="1122" y="401" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#c2a064">LV 5</text>
+  <text x="856" y="439" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">HP</text>
+  <rect x="880" y="433" width="190" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="881" y="434" width="94" height="3" fill="#8f343a"/>
+  <text x="1122" y="439" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">17/36</text>
+  <text x="856" y="452" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">STRESS</text>
+  <rect x="893" y="446" width="177" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="894" y="447" width="151" height="3" fill="#b06f9f"/>
+  <text x="1122" y="452" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">85</text>
+  <text x="896" y="462" font-family="Georgia, serif" font-size="8" fill="#b8a9d6">The Shakes · Deep Cut · The Weeping</text>
+
+  <!-- Quill -->
+  <rect x="846" y="472" width="286" height="82" fill="#100d15" stroke="#332a39" stroke-width="1"/>
+  <rect x="856" y="482" width="30" height="30" fill="#0a080b" stroke="#4a3c2a" stroke-width="1"/>
+  <text x="871" y="503" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#c2a064">☽</text>
+  <text x="896" y="493" font-family="Cinzel, Georgia, serif" font-size="11" fill="#e9dfc9">Mara Quill</text>
+  <text x="896" y="507" font-family="Georgia, serif" font-size="9" fill="#8c8072">The Spirit Medium</text>
+  <text x="1122" y="493" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#c2a064">LV 4</text>
+  <text x="856" y="531" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">HP</text>
+  <rect x="880" y="525" width="190" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="881" y="526" width="140" height="3" fill="#8f343a"/>
+  <text x="1122" y="531" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">20/27</text>
+  <text x="856" y="544" font-family="Cinzel, Georgia, serif" font-size="7" letter-spacing="1" fill="#8c8072">STRESS</text>
+  <rect x="893" y="538" width="177" height="5" fill="#08070a" stroke="#372f3e" stroke-width="1"/>
+  <rect x="894" y="539" width="103" height="3" fill="#7f6ba8"/>
+  <text x="1122" y="544" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="8" fill="#cbbda5">58</text>
+  <text x="896" y="554" font-family="Georgia, serif" font-size="8" fill="#cbbda5">The Veil Thins</text>
+
+  <text x="846" y="573" font-family="Georgia, serif" font-size="8" font-style="italic" fill="#6f6570">three dreads and they are lost to the house.</text>
+
+  <!-- footer -->
+  <line x1="60" y1="604" x2="1140" y2="604" stroke="#2a2330" stroke-width="1"/>
+  <text x="60" y="636" font-family="Georgia, serif" font-size="16" font-style="italic" fill="#cbbda5">The stair goes down further than the house is tall.</text>
+  <text x="1140" y="633" text-anchor="end" font-family="Cinzel, Georgia, serif" font-size="9" letter-spacing="3" fill="#c2a064">FOOFIRE GAMES</text>
+  <text x="60" y="658" font-family="Cinzel, Georgia, serif" font-size="8" letter-spacing="2" fill="#6f6570">TURN-BASED ROGUELIKE · WOUNDS &amp; DREAD · ONE LAMP</text>
+  <line x1="60" y1="120" x2="1140" y2="120" stroke="url(#brassRule)" stroke-width="1"/>
+</svg>

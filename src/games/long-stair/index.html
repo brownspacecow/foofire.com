@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Long Stair | Foofire Games</title>
+    <meta
+      name="description"
+      content="The Long Stair: a gothic, Lovecraft-inspired turn-based roguelike. Lead four flawed heroes into a cursed cellar, manage their wounds and dread, and find what is kneeling at the altar."
+    />
+    <meta property="og:title" content="The Long Stair | Foofire Games" />
+    <meta
+      property="og:description"
+      content="A turn-based gothic roguelike in your basement. Muster four flawed heroes, clear the cellar, and try to bring them back with their minds intact."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/long-stair/index.html" />
+    <meta property="og:image" content="https://foofire.com/public/screenshots/long-stair.svg" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#08070a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="stair-page">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html" aria-current="page">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-header stair-header">
+        <p class="stair-kicker">A gothic descent · turn-based roguelike</p>
+        <h1>The Long Stair</h1>
+        <p>
+          You cannot go down yourself — the house will not let you. You can fill the lamp, choose
+          four flawed souls from your household, and watch what the cellar makes of them.
+        </p>
+      </section>
+
+      <section class="stair-game" id="stair-game" aria-label="The Long Stair">
+        <div class="stair-bar">
+          <span class="stair-bar-label" id="stair-bar-label">14 Halloway Street · 1893</span>
+          <div class="stair-bar-actions">
+            <button class="bar-button" type="button" data-action="help">How to play</button>
+            <button
+              class="bar-button"
+              type="button"
+              id="mute-button"
+              data-action="mute"
+              aria-pressed="false"
+            >
+              Sound on
+            </button>
+          </div>
+        </div>
+
+        <!-- ============ TITLE ============ -->
+        <div class="title-screen" id="screen-title">
+          <div class="title-ornament" aria-hidden="true">✦</div>
+          <p class="eyebrow">Foofire Games presents</p>
+          <h2 class="stair-title"><span class="title-the">The</span>Long Stair</h2>
+          <p class="stair-tagline">The stair goes down further than the house is tall.</p>
+
+          <div class="title-rule" aria-hidden="true"><i></i><b>✦</b><i></i></div>
+
+          <p class="title-prose">
+            Halloway Street, 1893. The house was cheap. The cellar was not on the deeds. Behind its
+            oak door, twelve brick steps become thirteen, and the thirteenth keeps going.
+          </p>
+          <p class="title-prose">
+            You are the overseer. You have a lamp that lets you see them, a purse that is never
+            enough, and a household of people with nothing left to lose. Send four down. Bring back
+            what you can.
+          </p>
+
+          <div class="title-actions">
+            <button class="big-button" type="button" data-action="new-campaign">
+              Enter the house
+            </button>
+            <button
+              class="secondary-button continue-button"
+              type="button"
+              id="title-continue"
+              data-action="continue"
+              hidden
+            >
+              Continue<span id="title-continue-copy"></span>
+            </button>
+          </div>
+
+          <div class="difficulty">
+            <p class="label">Choose your nerve</p>
+            <div class="difficulty-buttons" role="group" aria-label="Difficulty">
+              <button
+                class="difficulty-button is-selected"
+                type="button"
+                data-action="difficulty"
+                data-id="dread"
+                aria-pressed="true"
+              >
+                Dread<small>Lean and unforgiving. The intended descent.</small>
+              </button>
+              <button
+                class="difficulty-button"
+                type="button"
+                data-action="difficulty"
+                data-id="lamplight"
+                aria-pressed="false"
+              >
+                Lamplight<small>Frailer horrors, a fuller purse. The dark still remembers.</small>
+              </button>
+            </div>
+            <p class="difficulty-copy" id="difficulty-copy">
+              The descent as it was meant to be. Lean, unforgiving, six floors of it.
+            </p>
+          </div>
+
+          <p class="title-best" id="title-best"></p>
+          <p class="content-note">
+            Gothic horror, eerie rather than gory. Autosaves on this device. Six floors, one lamp,
+            no second chances for the fallen.
+          </p>
+          <button class="text-button" type="button" data-action="help">How to play</button>
+        </div>
+
+        <!-- ============ HOUSE ============ -->
+        <div class="house-screen" id="screen-house" hidden>
+          <div class="house-top">
+            <div>
+              <p class="eyebrow">14 Halloway Street</p>
+              <h2 class="screen-title">Week <span id="house-week">1</span></h2>
+              <p class="house-flavour" id="house-flavour"></p>
+            </div>
+            <div class="house-stats" id="house-stats"></div>
+          </div>
+
+          <div class="house-grid">
+            <section class="panel roster-panel">
+              <div class="panel-head">
+                <div>
+                  <h3>The household</h3>
+                  <p>Pick four for the lamp. Everyone down there is carrying something broken.</p>
+                </div>
+                <p class="panel-note">Everyone else rests, heals, or is spent on.</p>
+              </div>
+              <div class="party-slots" id="party-slots"></div>
+              <div class="hero-list" id="hero-list"></div>
+            </section>
+
+            <aside class="house-side">
+              <section class="panel">
+                <h3>At the door</h3>
+                <p class="panel-copy">Word gets around. People come.</p>
+                <div id="candidate-list"></div>
+              </section>
+
+              <section class="panel">
+                <h3>The cupboard</h3>
+                <p class="panel-copy">Everything the house can spare.</p>
+                <div id="shop-list"></div>
+              </section>
+
+              <section class="panel descend-panel">
+                <h3>The stair</h3>
+                <div id="descend-copy"></div>
+                <button class="big-button" type="button" id="descend-button" data-action="descend">
+                  Take the lamp down
+                </button>
+              </section>
+
+              <section class="panel memorial-panel" id="memorial-panel"></section>
+            </aside>
+          </div>
+
+          <div class="house-descend-dock" aria-label="Ready the descent">
+            <span class="dock-copy" id="house-dock-copy"></span>
+            <button class="big-button" type="button" id="quick-descend" data-action="descend">
+              Take the lamp down
+            </button>
+          </div>
+        </div>
+
+        <!-- ============ DELVE ============ -->
+        <div class="delve-screen" id="screen-delve" hidden>
+          <div class="delve-top">
+            <div>
+              <p class="eyebrow" id="floor-name"></p>
+              <h2 class="screen-title" id="floor-depth"></h2>
+            </div>
+            <div class="delve-actions">
+              <button class="secondary-button" type="button" data-action="withdraw">
+                Withdraw
+              </button>
+              <button
+                class="icon-button"
+                type="button"
+                data-action="help"
+                aria-label="How to play"
+              >
+                ?
+              </button>
+            </div>
+          </div>
+
+          <div class="delve-grid">
+            <section class="panel map-panel">
+              <div class="map-hud" id="map-hud"></div>
+              <div class="map-wrap">
+                <div
+                  id="map"
+                  class="map-grid"
+                  role="group"
+                  aria-label="The cellar map. Use the arrow keys or choose an adjacent lit tile."
+                ></div>
+              </div>
+              <p class="map-legend">
+                <span><i class="glyph glyph-party">◉</i> party</span>
+                <span><i class="glyph entity-enemy">?</i> horror</span>
+                <span><i class="glyph entity-boss">Ω</i> the thing</span>
+                <span><i class="glyph entity-stairs">▼</i> stair down</span>
+                <span><i class="glyph entity-cache">¤</i> strongbox</span>
+                <span><i class="glyph entity-shrine">†</i> shrine</span>
+                <span><i class="glyph entity-lore">§</i> paper</span>
+                <span><i class="glyph entity-trap">✶</i> trap</span>
+              </p>
+            </section>
+
+            <aside class="delve-side">
+              <section class="panel party-panel">
+                <h3>The party</h3>
+                <div id="delve-party"></div>
+              </section>
+              <section class="panel log-panel">
+                <h3>The lamp's account</h3>
+                <div class="delve-log" id="delve-log" aria-live="polite"></div>
+              </section>
+            </aside>
+          </div>
+
+          <p class="delve-hint">
+            Click a lit neighbouring tile, or use the arrow keys / WASD. Every step burns lamp oil.
+            Step on <b>▼</b> to descend. <b>Withdraw</b> banks the loot.
+          </p>
+        </div>
+
+        <!-- ============ COMBAT ============ -->
+        <section class="combat" id="combat-stage" hidden aria-label="Combat">
+          <div class="combat-head">
+            <p class="eyebrow">Round <span id="combat-round">1</span></p>
+            <h2 id="combat-title">Something in the dark</h2>
+            <p class="combat-note">Their next move is written on them. Read it before you choose.</p>
+          </div>
+
+          <div class="enemy-row" id="enemy-row"></div>
+
+          <div class="combat-body">
+            <div class="combat-main">
+              <div class="active-panel" id="active-panel"></div>
+              <div class="combat-actions" id="combat-actions"></div>
+              <div class="combat-log" id="combat-log" aria-live="polite"></div>
+            </div>
+            <aside class="combat-side">
+              <h3>The party</h3>
+              <div class="combat-party" id="combat-party"></div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ============ END ============ -->
+        <div class="end-screen" id="screen-end" hidden></div>
+
+        <!-- ============ MODAL ============ -->
+        <div class="modal" id="modal" hidden>
+          <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div id="modal-body"></div>
+          </div>
+        </div>
+
+        <div class="toast" id="game-toast" role="status" aria-live="polite" hidden></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
