@@ -1038,6 +1038,11 @@ if (showEl) {
 
     checkoutNext.hidden = false;
     checkoutNext.focus({ preventScroll: true });
+    checkoutNext.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'nearest',
+      inline: 'nearest',
+    });
     setChip(state.playerWon ? 'BONUS SWEEP NEXT' : "THAT'S THE SHOW");
   }
 
