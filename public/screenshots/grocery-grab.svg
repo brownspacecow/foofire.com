@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-label="A shopping cart full of groceries racing down a supermarket aisle under the words Grocery Grab">
+  <defs>
+    <linearGradient id="store" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241a4d"/>
+      <stop offset="1" stop-color="#120a2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#store)"/>
+  <circle cx="150" cy="90" r="120" fill="#ffd93d" opacity="0.10"/>
+  <circle cx="1060" cy="110" r="140" fill="#2ec4ff" opacity="0.10"/>
+  <circle cx="600" cy="680" r="180" fill="#3ddc84" opacity="0.08"/>
+
+  <text x="600" y="105" text-anchor="middle" font-family="'Press Start 2P', 'Courier New', monospace" font-size="64" font-weight="bold" fill="#ffd93d">GROCERY GRAB</text>
+  <text x="600" y="152" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#fff8e7">Fill the cart. Beat the clock.</text>
+
+  <!-- Shelves -->
+  <g>
+    <rect x="80" y="220" width="240" height="300" fill="#2ec4ff" stroke="#0a0518" stroke-width="6"/>
+    <rect x="880" y="220" width="240" height="300" fill="#a855f7" stroke="#0a0518" stroke-width="6"/>
+    <g fill="#fff8e7">
+      <rect x="100" y="250" width="48" height="56"/><rect x="164" y="250" width="48" height="56"/><rect x="228" y="250" width="48" height="56"/>
+      <rect x="100" y="340" width="48" height="56"/><rect x="164" y="340" width="48" height="56"/><rect x="228" y="340" width="48" height="56"/>
+      <rect x="100" y="430" width="48" height="56"/><rect x="164" y="430" width="48" height="56"/><rect x="228" y="430" width="48" height="56"/>
+      <rect x="900" y="250" width="48" height="56"/><rect x="964" y="250" width="48" height="56"/><rect x="1028" y="250" width="48" height="56"/>
+      <rect x="900" y="340" width="48" height="56"/><rect x="964" y="340" width="48" height="56"/><rect x="1028" y="340" width="48" height="56"/>
+      <rect x="900" y="430" width="48" height="56"/><rect x="964" y="430" width="48" height="56"/><rect x="1028" y="430" width="48" height="56"/>
+    </g>
+  </g>
+
+  <!-- Aisle floor -->
+  <rect x="340" y="220" width="520" height="300" fill="#efe6cf"/>
+
+  <!-- Golden bonus star -->
+  <g>
+    <circle cx="600" cy="290" r="46" fill="#ffd93d" stroke="#ff8a00" stroke-width="6"/>
+    <text x="600" y="306" text-anchor="middle" font-size="44">⭐</text>
+    <text x="600" y="356" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="bold" fill="#241a4d">$25.00!</text>
+  </g>
+
+  <!-- Cart full of groceries -->
+  <g>
+    <!-- wheels -->
+    <circle cx="470" cy="500" r="16" fill="#0a0518"/>
+    <circle cx="730" cy="500" r="16" fill="#0a0518"/>
+    <!-- basket -->
+    <path d="M410 330 L790 330 L750 480 L450 480 Z" fill="#ff2e63" stroke="#0a0518" stroke-width="6"/>
+    <!-- handle -->
+    <line x1="410" y1="330" x2="370" y2="290" stroke="#0a0518" stroke-width="10" stroke-linecap="round"/>
+    <!-- groceries peeking out -->
+    <text x="480" y="330" text-anchor="middle" font-size="64">🥛</text>
+    <text x="580" y="322" text-anchor="middle" font-size="72">🍕</text>
+    <text x="690" y="330" text-anchor="middle" font-size="64">🍎</text>
+    <text x="530" y="300" text-anchor="middle" font-size="56">🍞</text>
+    <text x="640" y="296" text-anchor="middle" font-size="56">🥚</text>
+    <!-- shopper -->
+    <circle cx="390" cy="250" r="34" fill="#ffd9a0" stroke="#0a0518" stroke-width="5"/>
+    <path d="M356 244 A34 34 0 0 1 424 244 L424 232 A34 34 0 0 0 356 232 Z" fill="#2ec4ff"/>
+    <circle cx="378" cy="252" r="4" fill="#0a0518"/><circle cx="402" cy="252" r="4" fill="#0a0518"/>
+    <path d="M378 268 Q390 278 402 268" fill="none" stroke="#0a0518" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Timer chip -->
+  <g>
+    <rect x="880" y="560" width="240" height="80" fill="#0a0518" stroke="#ffd93d" stroke-width="4"/>
+    <text x="1000" y="614" text-anchor="middle" font-family="'Press Start 2P', 'Courier New', monospace" font-size="36" fill="#ffd93d">0:42</text>
+  </g>
+  <g>
+    <rect x="80" y="560" width="240" height="80" fill="#0a0518" stroke="#3ddc84" stroke-width="4"/>
+    <text x="200" y="614" text-anchor="middle" font-family="'Press Start 2P', 'Courier New', monospace" font-size="30" fill="#3ddc84">$18.47</text>
+  </g>
+
+  <text x="600" y="700" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="26" fill="#bcacf0">Quick Sweep · Big Sweep · Golden bonus items</text>
+</svg>

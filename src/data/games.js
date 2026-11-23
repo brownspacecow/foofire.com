@@ -197,6 +197,15 @@ export const games = [
     featured: true,
   },
   {
+    id: 'grocery-grab',
+    category: 'arcade',
+    title: 'Grocery Grab',
+    description:
+      'A timed supermarket dash: push your cart through the aisles, grab everything on your shopping list, hunt the golden bonus items, and check out before the clock runs out.',
+    image: './public/screenshots/grocery-grab.svg',
+    path: './src/games/grocery-grab/index.html',
+  },
+  {
     id: 'bear',
     category: 'cozy',
     title: 'Bear the Puppy',
