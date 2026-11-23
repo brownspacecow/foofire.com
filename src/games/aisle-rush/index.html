@@ -344,7 +344,7 @@
                   <span class="sweep-team" id="sweep-team-name">YOU</span>
                 </div>
                 <div class="hud-grid" id="sweep-hud">
-                  <div class="hud-cell"><span>TIME</span><strong id="hud-time">1:30</strong></div>
+                  <div class="hud-cell"><span>TIME</span><strong id="hud-time">1:00</strong></div>
                   <div class="hud-cell"><span>BANKED</span><strong id="hud-banked">$0</strong></div>
                   <div class="hud-cell"><span>CART</span><strong id="hud-cart">$0</strong></div>
                   <div class="hud-cell space-cell">
@@ -367,16 +367,53 @@
               <div class="canvas-wrap" id="canvas-wrap">
                 <canvas
                   id="sweep-canvas"
-                  aria-label="Supermarket sweep. Steer the cart with WASD or arrow keys, or drag on a touch screen. Drive past shelves to collect groceries and return to your register to bank a full cart."
+                  aria-label="Supermarket sweep. Steer the cart with WASD or arrow keys, or drag on a touch screen. Drive past shelves to collect groceries, stop at the coffee grinder or deli slicer for a station challenge, and return to your register to bank a full cart."
                 ></canvas>
                 <div class="countdown" id="sweep-countdown" hidden aria-hidden="true">3</div>
                 <div class="canvas-banner" id="sweep-banner" hidden></div>
                 <div class="sweep-ticker" id="sweep-ticker" role="status" aria-live="polite"></div>
+
+                <button class="station-prompt" id="station-prompt" type="button" hidden>
+                  <span class="station-prompt-kicker">STATION CHALLENGE</span>
+                  <strong id="station-prompt-name">GRIND THE COFFEE</strong>
+                  <span class="station-prompt-hint">TAP OR PRESS SPACE TO PLAY</span>
+                </button>
+
+                <div
+                  class="station-game"
+                  id="station-game"
+                  role="dialog"
+                  aria-labelledby="station-game-name"
+                  aria-describedby="station-game-copy"
+                  hidden
+                >
+                  <div class="station-card">
+                    <p class="station-kicker">STATION CHALLENGE</p>
+                    <h3 id="station-game-name">GRIND THE COFFEE</h3>
+                    <p class="station-copy" id="station-game-copy">
+                      Hold the button to grind. Release when the beans hit the green. The sweep clock keeps running.
+                    </p>
+                    <div class="station-meter" id="station-meter">
+                      <span class="station-zone" id="station-zone" aria-hidden="true"></span>
+                      <span class="station-perfect" id="station-perfect" aria-hidden="true"></span>
+                      <span class="station-fill" id="station-fill" aria-hidden="true"></span>
+                      <span class="station-marker" id="station-marker" aria-hidden="true"></span>
+                    </div>
+                    <div class="station-meter-labels" id="station-meter-labels" aria-hidden="true">
+                      <span>UNDER</span><span>JUST RIGHT</span><span>OVER</span>
+                    </div>
+                    <button class="station-action" id="station-action" type="button">HOLD TO GRIND</button>
+                    <p class="station-status" id="station-status">THE SWEEP CLOCK IS RUNNING</p>
+                    <p class="station-result" id="station-result" role="status" aria-live="polite" hidden></p>
+                    <button class="station-leave" id="station-leave" type="button">LEAVE THE STATION</button>
+                  </div>
+                </div>
               </div>
 
               <div class="sweep-bottom">
                 <p class="sweep-hint" id="sweep-hint">
-                  Roll past shelves to scoop items. Five of any one product is the show rule.
+                  Roll past shelves to scoop items. Five of any one product is the show rule. The
+                  coffee grinder and deli slicer pay for quick station challenges.
                 </p>
                 <p class="bank-hint">
                   Cart full? <strong>Your register</strong> is the glowing lane in your team colour.
@@ -491,9 +528,10 @@
             <h2 id="howto-title">HOW TO PLAY</h2>
             <ol class="howto-list">
               <li><strong>Pick a team.</strong> Your partner waits at the register. The other two teams are your rivals.</li>
-              <li><strong>Answer six grocery questions.</strong> Every correct answer adds <strong>10 seconds</strong> to that team's Big Sweep clock. Everyone starts with 1:30.</li>
+              <li><strong>Answer six grocery questions.</strong> Every correct answer adds <strong>10 seconds</strong> to that team's Big Sweep clock. Everyone starts with 1:00.</li>
               <li><strong>Drive the Big Sweep.</strong> Use WASD or arrow keys, or drag anywhere on the canvas. Roll past shelves to scoop items into your cart.</li>
               <li><strong>Know the good stuff.</strong> Giant display items are worth $180–$300. Hidden cash is worth up to $500. Poultry, coffee and cleaning products are pricey too.</li>
+              <li><strong>Play the station challenges.</strong> Park at the coffee grinder or the deli slicer and stop the meter in the green for a cash bonus. The Big Sweep clock keeps running while you play.</li>
               <li><strong>Bank a full cart.</strong> You can carry 24 items. Drive into your team-colour register zone to bank the cart and start fresh. Anything left in the cart still counts when time runs out.</li>
               <li><strong>Follow the five-item rule.</strong> Five of any one product, then that shelf is done for you.</li>
               <li><strong>Win the Big Sweep.</strong> The highest checkout total goes to the Bonus Sweep: three clues, 60 seconds, and a $5,000 case of cash waiting at your register.</li>
