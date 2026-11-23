@@ -208,4 +208,13 @@ export const games = [
     image: './public/screenshots/aisle-rush.svg',
     path: './src/games/aisle-rush/index.html',
   },
+  {
+    id: 'long-stair',
+    category: 'adventure',
+    title: 'The Long Stair',
+    description:
+      'A gothic turn-based roguelike in the cellar. Muster four flawed heroes, descend six procedural floors by lamplight, and manage the wounds and dread they bring back up. Something is kneeling at the bottom, and it knows the lamp.',
+    image: './public/screenshots/long-stair.svg',
+    path: './src/games/long-stair/index.html',
+  },
 ];
