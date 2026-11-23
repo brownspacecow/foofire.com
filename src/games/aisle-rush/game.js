@@ -25,7 +25,8 @@ import { prefersReducedMotion } from '../../utils/motion.js';
 const GAME_ID = 'aisle-rush';
 const LEGACY_MUTE_KEY = 'aisle-rush-muted';
 const QUESTION_SECONDS = 10;
-const BASE_TIME = 60;
+const BASE_TIME = 30;
+const TIME_BONUS = 5;
 
 const $ = (id) => document.getElementById(id);
 
@@ -594,10 +595,10 @@ if (showEl) {
       window.cancelAnimationFrame(state.timerRaf);
       cancelTimer(state.cpuTimer);
       disableAnswers();
-      entry.timeBank += 10;
+      entry.timeBank += TIME_BONUS;
       entry.correct += 1;
       hostLine.textContent = `${randomFrom(HOST_LINES.correct)} ${entry.team.name} takes it!`;
-      buzzFeed.textContent = `${name}: “${choice}” ✓ — TEN SECONDS TO ${entry.team.name}!`;
+      buzzFeed.textContent = `${name}: “${choice}” ✓ — FIVE SECONDS TO ${entry.team.name}!`;
       audio.sfx('ding');
       markTime(entry);
       later(() => {
@@ -630,10 +631,10 @@ if (showEl) {
     if (!correct) markAnswer(correctIndex, 'correct');
 
     if (correct) {
-      entry.timeBank += 10;
+      entry.timeBank += TIME_BONUS;
       entry.correct += 1;
       hostLine.textContent = randomFrom(HOST_LINES.correct);
-      buzzFeed.textContent = `YOU: “${choice}” ✓ — TEN MORE SECONDS!`;
+      buzzFeed.textContent = `YOU: “${choice}” ✓ — FIVE MORE SECONDS!`;
       audio.sfx('ding');
       markTime(entry);
     } else {
