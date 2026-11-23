@@ -1,245 +1,201 @@
-/* Drum Quest — the 3D stage is the game. The menu is a fixed bar pinned
-   to the bottom of the screen: same buttons, same order, same size in
-   every mode, active state by colour only, so nothing ever hops. The
-   stage and the panels scroll above it. Everything is sized for a
-   7-year-old on a phone, and the stage animation calms down for players
-   who prefer reduced motion. */
+/* -------------------------------------------------------------------------
+ * Drum Quest — a chunky arcade drum machine on a stage.
+ *
+ * The page is the site's usual dark arcade, but the game itself is a bright
+ * console: big coloured pads you can hit with a thumb, a 3D stage above
+ * them, and one short line of Jack's advice under that. No fixed bars, no
+ * panels of instructions, no mode-specific buttons that hop around.
+ *
+ * Everything below the stage is sized for a 7-year-old on a phone: 44px
+ * minimum touch targets, one clear action per row, and no text you have
+ * to read while playing.
+ * ---------------------------------------------------------------------- */
 
-.drum-quest {
-  --dq-ink: #f9eddf;
-  --dq-muted: #c9b6c9;
-  --dq-bg: #1a1022;
-  --dq-bg-soft: #2a1930;
-  --dq-line: rgba(249, 237, 223, 0.16);
-  --dq-gold: #f4c95d;
-  --dq-rose: #f08fa4;
-  --dq-teal: #7fd8c6;
-  --dq-lilac: #b6a3ff;
-  position: relative;
-  max-width: 1040px;
+.dq {
+  max-width: 1060px;
   margin: 0 auto;
-  /* Room for the fixed menu bar at the bottom, so it never covers content. */
-  padding: 0 1rem 7rem;
+  padding: 0 1rem 3rem;
 }
 
-/* No horizontal scrolling, ever. The bar sizing below fixes the real
-   offender — the fixed menu bar was wider than narrow phones — and this
-   is only a backstop so no stray pixel can let the page slide sideways.
-   `clip`, not `hidden`, so the sticky site header keeps working. */
-html,
-body {
-  overflow-x: hidden;
-}
-
-@supports (overflow: clip) {
-  html,
-  body {
-    overflow-x: clip;
-  }
-}
-
-/* Fullscreen: the game fills the screen, hero out of the way, stage as
-   tall as the screen allows, menu bar still pinned to the bottom. */
-.drum-quest:fullscreen {
-  max-width: none;
-  overflow-y: auto;
-  background: #1a1022;
-}
-
-.drum-quest:fullscreen .dq-hero {
-  display: none;
-}
-
-.drum-quest:fullscreen .dq-stage {
-  height: calc(100dvh - 200px);
-  min-height: 420px;
-}
-
-.drum-quest [hidden] {
+.dq [hidden] {
   display: none !important;
 }
 
-.drum-quest h1,
-.drum-quest h2 {
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
-  letter-spacing: -0.01em;
-}
-
-.dq-kicker {
-  margin: 0;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--dq-gold);
+.dq h1 {
+  margin: 0.35rem 0 0.4rem;
+  font-family: var(--font-pixel);
+  font-size: clamp(1.7rem, 5vw, 2.9rem);
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--accent-soft);
+  text-shadow: 4px 4px 0 var(--ink);
 }
 
 /* ------------------------------------------------------------------- hero */
 
 .dq-hero {
-  margin: 0 -1rem;
-  padding: clamp(1.6rem, 4vw, 2.6rem) clamp(1.25rem, 4vw, 3rem);
-  border-bottom: 4px solid var(--ink);
-  background:
-    radial-gradient(circle at 18% 18%, rgba(244, 201, 93, 0.22), transparent 45%),
-    radial-gradient(circle at 82% 10%, rgba(240, 143, 164, 0.2), transparent 42%),
-    linear-gradient(155deg, #2c1532 0%, #3c1b31 48%, #1a1022 100%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin: 1.4rem 0 1.1rem;
 }
 
-.dq-hero h1 {
-  margin: 0.35rem 0 0.5rem;
-  font-size: clamp(2.4rem, 7vw, 3.6rem);
-  line-height: 1;
-  color: var(--dq-ink);
-}
-
-.dq-lede {
-  max-width: 36rem;
+.dq-kicker {
   margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.5;
-  color: var(--dq-ink);
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.dq-tagline {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.02rem;
 }
 
 .dq-best {
-  margin: 0.9rem 0 0;
-  font-weight: 700;
-  color: var(--dq-gold);
+  margin: 0;
+  font-weight: 800;
+  color: var(--accent-soft);
 }
 
-/* ------------------------------------------------------- fixed menu bar
-   Pinned to the bottom of the screen, always present, always the same:
-   two mode buttons on the left, zoom / mute / fullscreen on the right.
-   Nothing in here changes size, padding, or position when a mode is
-   picked — the active button only changes colour. */
+/* ---------------------------------------------------------------- console */
 
-.dq-bar {
-  position: fixed;
+.dq-console {
+  position: relative;
+  padding: 0.8rem;
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #2d1b5c 0%, #1d1140 52%, #150b31 100%);
+  box-shadow: 10px 10px 0 var(--ink);
+  isolation: isolate;
+}
+
+/* A little rainbow flash along the top, like the site header. */
+.dq-console::before {
+  content: "";
+  position: absolute;
+  top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  z-index: 50;
+  height: 7px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--accent) 0 22px,
+    var(--orange) 22px 44px,
+    var(--accent-soft) 44px 66px,
+    var(--green) 66px 88px,
+    var(--blue) 88px 110px,
+    var(--violet) 110px 132px
+  );
+  pointer-events: none;
+}
+
+.dq-topbar {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
   align-items: center;
-  padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  background: rgba(26, 16, 34, 0.97);
-  border-top: 2px solid var(--dq-line);
+  justify-content: space-between;
+  gap: 0.55rem;
+  padding: 0.5rem 0.1rem 0.7rem;
 }
 
-.dq-bar-spacer {
-  flex: 1 1 auto;
+.dq-tabs {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.22rem;
+  border: 3px solid var(--ink);
+  border-radius: 15px;
+  background: rgba(10, 5, 24, 0.55);
 }
 
-.dq-bar .dq-mode,
-.dq-bar .dq-icon {
-  flex: 0 0 auto;
-  white-space: nowrap;
+.dq-tab {
+  min-height: 44px;
+  padding: 0.45rem 0.95rem;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.dq-mode-short {
+.dq-tab:hover {
+  color: var(--text);
+}
+
+.dq-tab.is-active {
+  background: var(--accent-soft);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.dq-tools {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.dq-tool {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  color: var(--text);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dq-tool:hover {
+  background: var(--border);
+}
+
+.dq-tool svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.dq-tool .dq-icon-off,
+.dq-tool[aria-pressed="true"] .dq-icon-on {
   display: none;
 }
 
-.dq-mode,
-.dq-button {
-  min-height: 48px;
-  padding: 0.6rem 1.1rem;
-  border: 2px solid var(--dq-line);
-  border-radius: 999px;
-  background: var(--dq-bg-soft);
-  color: var(--dq-ink);
-  font: inherit;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.dq-mode:hover,
-.dq-button:hover {
-  border-color: var(--dq-gold);
-}
-
-.dq-mode.is-active,
-.dq-button.primary {
-  background: var(--dq-gold);
-  border-color: var(--dq-gold);
-  color: #1a1022;
-}
-
-.dq-button:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.dq-icon {
-  min-width: 48px;
-  min-height: 48px;
-  border: 2px solid var(--dq-line);
-  border-radius: 12px;
-  background: var(--dq-bg-soft);
-  font-size: 1.3rem;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.dq-message {
-  /* Two lines tall, always — the message never pushes the stage down. */
-  min-height: 3.2em;
-  margin: 0.75rem 0 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--dq-gold);
-}
-
-/* Turn-your-phone hint: a pill in the page flow above the stage, so it
-   can never cover a drum or the menu bar. Shown only on touch devices
-   held upright (see updateRotateHint in game.js); hidden in landscape
-   as a backstop even if the script hasn't run yet. */
-.dq-rotate-hint {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  margin: 0.75rem 0 0;
-  padding: 0.6rem 1rem;
-  border: 2px solid var(--dq-gold);
-  border-radius: 999px;
-  background: rgba(244, 201, 93, 0.12);
-  color: var(--dq-gold);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-@media (orientation: landscape) {
-  .dq-rotate-hint {
-    display: none;
-  }
+.dq-tool[aria-pressed="true"] .dq-icon-off {
+  display: block;
 }
 
 /* ------------------------------------------------------------------ stage */
 
+.dq-stage-wrap {
+  position: relative;
+}
+
 .dq-stage {
   position: relative;
   width: 100%;
-  height: clamp(430px, 62vh, 640px);
-  margin-top: 0.75rem;
+  aspect-ratio: 16 / 10;
+  max-height: 58vh;
   overflow: hidden;
-  background: #0a0418;
-  border: 4px solid var(--ink);
-  box-shadow: 6px 6px 0 var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 60%, #39204a 0%, #120a2a 70%);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: contain;
 }
 
 .dq-stage canvas {
@@ -248,239 +204,696 @@ body {
   height: 100%;
 }
 
-/* ----------------------------------------------------------------- panels */
-
-.dq-panel {
-  margin-top: 1rem;
-  padding: 1.25rem;
-  border: 2px solid var(--dq-line);
-  border-radius: 20px;
-  background: var(--dq-bg-soft);
+/* A soft vignette so the kit sits in the room instead of on a flat box. */
+.dq-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 70px rgba(6, 2, 16, 0.6);
 }
 
-.dq-panel-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-start;
-  justify-content: space-between;
+.dq-stage.is-fallback::after {
+  display: none;
 }
 
-.dq-panel h2 {
+.dq-stage-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  text-align: center;
+  background: radial-gradient(circle at 50% 45%, #3a2150 0%, #150b31 80%);
+}
+
+.dq-stage-fallback p {
   margin: 0;
-  font-size: 1.6rem;
-  color: var(--dq-ink);
-}
-
-.dq-sub {
-  margin: 0.25rem 0 0;
-  color: var(--dq-muted);
-}
-
-.dq-hint {
-  margin: 1rem 0 0;
-  color: var(--dq-muted);
+  color: var(--muted);
+  font-weight: 700;
   line-height: 1.5;
 }
 
-.dq-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 1rem;
+.dq-stage-fallback strong {
+  color: var(--accent-soft);
 }
 
-/* -------------------------------------------------------------- metronome */
-
-.dq-metronome {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.dq-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.2rem;
-  height: 3.2rem;
-  border: 3px solid var(--dq-gold);
-  border-radius: 50%;
-  font-size: 1.7rem;
+.dq-banner {
+  position: absolute;
+  top: 0.7rem;
+  left: 50%;
+  z-index: 3;
+  max-width: calc(100% - 1.4rem);
+  margin: 0;
+  padding: 0.32rem 0.9rem;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border: 2px solid var(--accent-soft);
+  border-radius: 999px;
+  background: rgba(10, 5, 24, 0.82);
+  color: var(--accent-soft);
+  font-size: 0.92rem;
   font-weight: 800;
-  color: var(--dq-gold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-/* --------------------------------------------------------------- copy cat */
-
-.dq-stats {
-  display: flex;
-  gap: 1rem;
+.dq-banner.is-you {
+  border-color: #7fd8c6;
+  color: #9ff0de;
 }
 
-.dq-stat {
+/* ------------------------------------------------------------- celebration */
+
+.dq-celebrate {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 4.5rem;
-  padding: 0.4rem 0.8rem;
-  border: 2px solid var(--dq-line);
-  border-radius: 14px;
-}
-
-.dq-stat-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--dq-muted);
-}
-
-.dq-stat strong {
-  font-size: 1.4rem;
-  color: var(--dq-gold);
-}
-
-.dq-copy-info {
-  margin: 1rem 0 0.5rem;
-  font-weight: 700;
-  color: var(--dq-ink);
-}
-
-/* Whose turn it is — colour only, the pill never moves or resizes. */
-.dq-turn {
-  margin: 1rem 0 0;
-  padding: 0.6rem 1rem;
-  border-radius: 999px;
-  border: 2px solid var(--dq-line);
-  font-weight: 800;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 1rem;
   text-align: center;
-  color: var(--dq-muted);
-  background: rgba(0, 0, 0, 0.25);
+  background: radial-gradient(circle, rgba(10, 5, 24, 0.88) 0%, rgba(10, 5, 24, 0.68) 75%);
 }
 
-.dq-turn.is-jack {
-  border-color: var(--dq-teal);
-  color: var(--dq-teal);
+.dq-celebrate-stars {
+  margin: 0;
+  color: var(--accent-soft);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  letter-spacing: 0.12em;
+  text-shadow: 3px 3px 0 var(--ink);
 }
 
-.dq-turn.is-you {
-  border-color: var(--dq-gold);
-  background: var(--dq-gold);
-  color: #1a1022;
+.dq-celebrate h2 {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: clamp(1rem, 2.6vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text);
 }
 
-.dq-dots {
+.dq-celebrate-text {
+  max-width: 30rem;
+  margin: 0.2rem 0 0.6rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.dq-celebrate-actions {
   display: flex;
   flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------------- pads */
+
+.dq-pads {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+}
+
+.dq-pad {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  min-height: 78px;
+  padding: 0.45rem 0.25rem;
+  border: 3px solid var(--ink);
+  border-radius: 15px;
+  background: var(--pad, #fff);
+  color: #1a1022;
+  font: inherit;
+  font-weight: 900;
+  font-size: 0.98rem;
+  line-height: 1.1;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 5px 0 var(--ink);
+  transition: transform 60ms ease, box-shadow 60ms ease, filter 90ms ease;
+}
+
+.dq-pad::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 2px dashed rgba(26, 16, 34, 0.28);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.dq-pad:hover {
+  filter: brightness(1.07);
+}
+
+.dq-pad:active,
+.dq-pad.is-hit {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--ink);
+  filter: brightness(1.2) saturate(1.1);
+}
+
+.dq-pad.is-hint {
+  filter: brightness(1.12);
+  box-shadow: 0 0 0 4px #fff8e7, 0 5px 0 var(--ink);
+}
+
+.dq-pad.is-wrong {
+  animation: dq-shake 240ms ease;
+}
+
+.dq-pad-key {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  opacity: 0.5;
+}
+
+.dq-pad-name {
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+@keyframes dq-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* ------------------------------------------------------------------- deck */
+
+.dq-deck {
+  display: grid;
   gap: 0.6rem;
-  min-height: 1.4rem;
-  margin: 0.25rem 0 0.5rem;
+  margin-top: 0.7rem;
 }
 
-.dq-dot {
-  width: 1.3rem;
-  height: 1.3rem;
-  border: 2px solid var(--dq-gold);
+.dq-free,
+.dq-learn {
+  padding: 0.7rem 0.8rem;
+  border: 3px solid var(--ink);
+  border-radius: 15px;
+  background: rgba(10, 5, 24, 0.45);
+}
+
+.dq-metro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.dq-button {
+  min-height: 44px;
+  padding: 0.45rem 0.9rem;
+  border: 2px solid var(--ink);
+  border-radius: 11px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.dq-button:hover {
+  background: var(--border);
+}
+
+.dq-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.dq-button.primary {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.dq-button.primary:hover {
+  filter: brightness(1.05);
+}
+
+.dq-button.small {
+  min-height: 38px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.dq-beats {
+  display: flex;
+  gap: 0.34rem;
+  align-items: center;
+}
+
+.dq-beats i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 248, 231, 0.35);
   border-radius: 50%;
-  background: transparent;
-  transition: background-color 0.12s ease, transform 0.12s ease;
+  background: rgba(255, 248, 231, 0.12);
 }
 
-.dq-dot.is-done {
-  background: var(--dq-gold);
+.dq-beats i.is-on {
+  border-color: var(--accent-soft);
+  background: var(--accent-soft);
+  box-shadow: 0 0 10px var(--accent-soft);
 }
 
-.dq-dot.is-now {
-  transform: scale(1.35);
-  background: var(--dq-rose);
-  border-color: var(--dq-rose);
+.dq-beats i.is-on.is-accent {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
 }
 
-/* ------------------------------------------------------------------ footer */
+.dq-tempo {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.dq-tempo b {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.dq-step {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dq-step:hover {
+  border-color: var(--accent-soft);
+}
+
+.dq-tip {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.dq-tip strong {
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------------ learn */
+
+.dq-lesson-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.7rem;
+}
+
+.dq-lesson-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.dq-lesson-title span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dq-lesson-title b {
+  color: var(--accent-soft);
+}
+
+.dq-lesson-title strong {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.dq-stars {
+  margin-left: auto;
+  color: var(--accent-soft);
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+}
+
+.dq-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.36rem;
+  margin-top: 0.55rem;
+}
+
+.dq-step-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid rgba(255, 248, 231, 0.2);
+  border-radius: 9px;
+  background: rgba(255, 248, 231, 0.05);
+}
+
+.dq-step-chip .dq-dot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.dq-step-chip.is-done {
+  border-color: var(--green);
+  background: rgba(61, 220, 132, 0.16);
+}
+
+.dq-step-chip.is-now {
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 0 3px rgba(255, 217, 61, 0.18);
+  transform: translateY(-1px);
+}
+
+.dq-target {
+  margin: 0.5rem 0 0;
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.dq-drum-chip {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  margin: 0 0.08rem;
+  border-radius: 999px;
+  background: var(--c);
+  color: #1a1022;
+  font-size: 0.85rem;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+/* -------------------------------------------------------------- Jack says */
+
+.dq-say {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0 0.15rem;
+}
+
+.dq-jack {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: #f2c29b;
+}
+
+.dq-say-body {
+  min-width: 0;
+}
+
+.dq-say-body strong {
+  color: var(--accent-soft);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dq-message {
+  min-height: 2.9em;
+  margin: 0.08rem 0 0;
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+/* -------------------------------------------------------------- lesson rail */
+
+.dq-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.dq-level {
+  position: relative;
+  min-width: 36px;
+  height: 36px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dq-level:hover {
+  border-color: var(--accent-soft);
+  color: var(--text);
+}
+
+.dq-level.is-done {
+  border-color: var(--green);
+  color: var(--text);
+}
+
+.dq-level.is-done::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.dq-level.is-active {
+  border-color: var(--accent-soft);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- footer */
 
 .dq-credit {
-  margin: 1.5rem 0 0;
-  color: var(--dq-muted);
-  line-height: 1.5;
+  margin: 1.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .dq-back {
   display: inline-block;
-  margin-top: 0.75rem;
-  font-weight: 700;
+  margin-top: 0.7rem;
+  font-weight: 800;
+}
+
+/* -------------------------------------------------------------- fullscreen */
+
+.dq-console:fullscreen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100vw;
+  height: 100dvh;
+  padding: 0.6rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #150b31;
+}
+
+.dq-console:fullscreen .dq-topbar,
+.dq-console:fullscreen .dq-pads,
+.dq-console:fullscreen .dq-deck {
+  flex: 0 0 auto;
+}
+
+.dq-console:fullscreen .dq-stage-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dq-console:fullscreen .dq-stage {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
 }
 
 /* --------------------------------------------------------------- responsive */
 
 @media (max-width: 720px) {
+  .dq {
+    padding: 0 0.7rem 2.5rem;
+  }
+
+  .dq-console {
+    padding: 0.6rem;
+    border-radius: 18px;
+    box-shadow: 7px 7px 0 var(--ink);
+  }
+
+  .dq-hero {
+    margin: 1rem 0 0.9rem;
+  }
+
+  .dq-tab {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.88rem;
+  }
+
   .dq-stage {
-    /* Taller on phones so the kit fills the screen and thumbs land low. */
-    height: clamp(420px, 62vh, 560px);
+    aspect-ratio: 4 / 3;
+    max-height: 52vh;
   }
 
-  .dq-mode-long {
-    display: none;
+  .dq-pads {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
   }
 
-  .dq-mode-short {
-    display: inline;
+  .dq-pad {
+    min-height: 66px;
   }
 
-  /* Tighten the fixed bar so it fits phones down to ~390px wide. */
-  .dq-bar {
-    gap: 0.4rem;
-    padding: 0.6rem 0.5rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  .dq-pad-name {
+    font-size: 0.95rem;
   }
 
-  .dq-bar .dq-mode {
-    padding: 0.6rem 0.7rem;
+  .dq-stars {
+    margin-left: 0;
+  }
+
+  .dq-message {
+    min-height: 2.6em;
   }
 }
 
 @media (max-width: 380px) {
-  /* Narrowest phones: the mode buttons go icon-only — just the drum and
-     the teacher's hat, with their aria-labels still naming them — so the
-     whole bar fits with room to spare and nothing slides sideways. The
-     zoom / mute / fullscreen buttons stay full-size at 48px. */
-  .dq-bar {
-    gap: 0.35rem;
+  .dq-tab {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.82rem;
   }
 
-  .dq-mode-short {
-    display: none;
+  .dq-tool {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dq-pad {
+    min-height: 60px;
   }
 }
 
-/* Phones turned sideways: the kit is the game, so the hero gets out of
-   the way and the stage takes the height the screen has. The message
-   shrinks to one line, the panels still scroll below as usual, and the
-   fixed menu bar stays put — nothing scrolls sideways. In fullscreen
-   the stage is capped so it fits entirely above the menu bar. */
-@media (orientation: landscape) and (max-height: 500px) {
+/* A phone on its side: keep the stage and all six pads on one screen. */
+@media (orientation: landscape) and (max-height: 560px) {
   .dq-hero {
     display: none;
   }
 
-  .dq-message {
-    min-height: 1.6em;
-    margin-top: 0.5rem;
-    font-size: 1rem;
+  .dq-console {
+    margin-top: 0.6rem;
+  }
+
+  .dq-topbar {
+    padding: 0.25rem 0.1rem 0.45rem;
   }
 
   .dq-stage {
-    height: calc(100dvh - 160px);
-    min-height: 280px;
+    aspect-ratio: auto;
+    height: calc(100dvh - 286px);
+    min-height: 170px;
+    max-height: none;
   }
 
-  .drum-quest:fullscreen .dq-stage {
-    height: calc(100dvh - 170px);
-    min-height: 260px;
+  .dq-pads {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    margin-top: 0.5rem;
+  }
+
+  .dq-pad {
+    min-height: 52px;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.15rem;
+  }
+
+  .dq-pad-name {
+    font-size: 0.82rem;
+  }
+
+  .dq-free,
+  .dq-learn {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .dq-tip,
+  .dq-message {
+    min-height: 0;
+    font-size: 0.85rem;
+  }
+
+  .dq-say {
+    display: none;
+  }
+
+  .dq-jack {
+    width: 38px;
+    height: 38px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dq-dot {
+  .dq-pad,
+  .dq-button,
+  .dq-step {
     transition: none;
+  }
+
+  .dq-pad.is-wrong {
+    animation: none;
   }
 }

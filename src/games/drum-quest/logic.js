@@ -1,26 +1,26 @@
 /* -------------------------------------------------------------------------
  * Drum Quest — pure game logic (no DOM, no audio).
- * Everything in here is testable with node --test: real drum grooves for
- * Jack's lesson, Copy Cat levels and scoring.
  *
- * A groove is a list of STEPS, one bar. Each step is a list of drums hit
- * together on that beat — a real beat has the kick and hi-hat landing at
- * the same time, the snare and hi-hat together, and so on. Levels 1–2
- * are 4 quarter-note steps; from level 3 the bar is 8 eighth-note steps.
+ * Jack teaches real grooves, one step at a time. A step is a list of drums
+ * that land together, because that is how a beat really works: the kick and
+ * hi-hat hit at the same moment, the snare and hi-hat land together on the
+ * back beat. Lessons go from a two-drum heartbeat to a full bar with crash
+ * and toms, and after the eight hand-written lessons Jack improvises new
+ * grooves in the same shape.
+ *
+ * Everything here is testable with node --test.
  * ---------------------------------------------------------------------- */
 
 /** The six drums, in kit order. `key` is the keyboard key for each pad. */
 export const DRUMS = [
-  { id: 'kick', label: 'Kick', emoji: '🥁', key: 'a', color: '#ff6b5e' },
-  { id: 'snare', label: 'Snare', emoji: '🪘', key: 's', color: '#f4c95d' },
-  { id: 'hihat', label: 'Hi-Hat', emoji: '🎩', key: 'd', color: '#7fd8c6' },
-  { id: 'tom', label: 'Tom', emoji: '🥁', key: 'f', color: '#b6a3ff' },
-  { id: 'crash', label: 'Crash', emoji: '✨', key: 'g', color: '#f08fa4' },
-  // Ride is Free Play only: it never appears in Jack's beats or pools.
-  { id: 'ride', label: 'Ride', emoji: '🔔', key: 'h', color: '#ff9f43' },
+  { id: 'kick', label: 'Kick', key: 'a', color: '#ff6b5e' },
+  { id: 'snare', label: 'Snare', key: 's', color: '#f4c95d' },
+  { id: 'hihat', label: 'Hi-Hat', key: 'd', color: '#7fd8c6' },
+  { id: 'tom', label: 'Tom', key: 'f', color: '#b6a3ff' },
+  { id: 'crash', label: 'Crash', key: 'g', color: '#f08fa4' },
+  // The ride is Free Play only: it never appears in Jack's lessons.
+  { id: 'ride', label: 'Ride', key: 'h', color: '#ff9f43' },
 ];
-
-export const DRUM_IDS = DRUMS.map((drum) => drum.id);
 
 export const drumById = (id) => DRUMS.find((drum) => drum.id === id) || null;
 
@@ -29,147 +29,103 @@ export const drumByKey = (key) => {
   return DRUMS.find((drum) => drum.key === lower) || null;
 };
 
-/* ------------------------------------------------------------ Jack's beats
- *
- * Every level is a real groove, not a random single-hit sequence. Steps
- * are written as the drums that land together on that beat:
- *   K = kick, S = snare, H = hi-hat, T = tom, C = crash
- * Level 1 is the simplest real rock beat there is: kick and hi-hat on
- * beat 1, hi-hat on the off-beats, snare and hi-hat on beat 3.
- */
-
 const K = 'kick';
 const S = 'snare';
 const H = 'hihat';
 const T = 'tom';
 const C = 'crash';
 
-/** Named grooves, one per level. `steps` is the bar; `name` is shown to Joel. */
-export const JACK_BEATS = {
-  1: {
+/* ------------------------------------------------------------ the lessons
+ *
+ * Each lesson is one short groove. Steps are the drums that land together.
+ * The order is a real drum teacher's order: find the back beat first, then
+ * keep time on the hi-hat, then add a second kick, then fill around the kit.
+ */
+export const LESSONS = [
+  {
+    name: 'First Beat',
+    tip: 'Kick on 1 and 3, snare on 2 and 4. That is the heartbeat of rock.',
+    steps: [[K], [S], [K], [S]],
+  },
+  {
     name: 'Rock Beat',
-    steps: [
-      [K, H],
-      [H],
-      [S, H],
-      [H],
-    ],
+    tip: 'The hi-hat keeps time while the kick and snare answer each other.',
+    steps: [[K, H], [H], [S, H], [H]],
   },
-  2: {
-    name: 'Boom-Boom-Clap',
-    steps: [
-      [K, H],
-      [K],
-      [S, H],
-      [H],
-    ],
+  {
+    name: 'Double Kick',
+    tip: 'Two kicks in a row give the beat a little push. Hi-hat never stops.',
+    steps: [[K, H], [K], [S, H], [H]],
   },
-  3: {
+  {
     name: 'Hi-Hat Hop',
-    steps: [
-      [K, H],
-      [H],
-      [S, H],
-      [H],
-      [K, H],
-      [H],
-      [S, H],
-      [H],
-    ],
+    tip: 'Same beat, twice as long. Count 1 and 2 and 3 and 4 and.',
+    steps: [[K, H], [H], [S, H], [H], [K, H], [H], [S, H], [H]],
   },
-  4: {
+  {
     name: 'Jungle Stomp',
-    steps: [
-      [K, H],
-      [H],
-      [S],
-      [H],
-      [K],
-      [H],
-      [S, H],
-      [H],
-    ],
+    tip: 'The snare sneaks in without the hi-hat. Leave a little air there.',
+    steps: [[K, H], [H], [S], [H], [K], [H], [S, H], [H]],
   },
-  5: {
-    name: 'Crash Intro',
-    steps: [
-      [C, K, H],
-      [H],
-      [S, H],
-      [H],
-      [K, H],
-      [H],
-      [S, H],
-      [H],
-    ],
+  {
+    name: 'Crash Landing',
+    tip: 'Every bar starts with a crash — the big shiny hello.',
+    steps: [[C, K, H], [H], [S, H], [H], [K, H], [H], [S, H], [H]],
   },
-  6: {
+  {
     name: 'Tom Fill',
-    steps: [
-      [K, H],
-      [H],
-      [S, H],
-      [H],
-      [K, H],
-      [T],
-      [S, H],
-      [T, H],
-    ],
+    tip: 'The last two steps walk across the toms. Big arms, big fun.',
+    steps: [[K, H], [H], [S, H], [H], [K, H], [T], [S, H], [T, H]],
   },
-};
+  {
+    name: 'Big Finish',
+    tip: 'Crash, toms, back to the beat, then crash again. That is a song ending.',
+    steps: [[C, K], [T], [S], [T], [K, H], [H], [S, H], [C]],
+  },
+];
 
-/** Drums a generated groove may use at a given level. Crash joins at 5, tom at 6. */
-export function copyCatDrums(level) {
-  if (level >= 6) return ['kick', 'snare', 'hihat', 'tom', 'crash'];
-  if (level >= 5) return ['kick', 'snare', 'hihat', 'crash'];
-  if (level >= 3) return ['kick', 'snare', 'hihat'];
-  return ['kick', 'snare', 'hihat'];
-}
+/** Hand-written lessons, then endless generated ones. */
+export const LESSON_COUNT = LESSONS.length;
 
-/** Steps in a bar: 4 quarter notes at levels 1–2, 8 eighth notes after. */
-export function copyCatLength(level) {
-  const safe = Math.max(1, Math.floor(level) || 1);
-  return safe <= 2 ? 4 : 8;
-}
-
-/** Tempo starts at 60 BPM and climbs 3 BPM a level, up to 120. */
-export const COPY_CAT_START_BPM = 60;
-export const COPY_CAT_BPM_STEP = 3;
-export const COPY_CAT_MAX_BPM = 120;
-
-export function copyCatTempo(level) {
-  const safe = Math.max(1, Math.floor(level) || 1);
-  return Math.min(COPY_CAT_MAX_BPM, COPY_CAT_START_BPM + (safe - 1) * COPY_CAT_BPM_STEP);
-}
-
-/** Milliseconds per step: quarter notes at levels 1–2, eighth notes after. */
-export function copyCatStepMs(level) {
-  const tempo = copyCatTempo(level);
-  return level <= 2 ? Math.round(60000 / tempo) : Math.round(60000 / tempo / 2);
-}
+const clampLevel = (level) => Math.max(1, Math.floor(Number(level)) || 1);
 
 /** Name of the groove Jack teaches at a level. */
-export function copyCatBeatName(level) {
-  const safe = Math.max(1, Math.floor(level) || 1);
-  return JACK_BEATS[safe] ? JACK_BEATS[safe].name : 'Rock Beat';
+export function lessonName(level) {
+  const safe = clampLevel(level);
+  return LESSONS[safe - 1] ? LESSONS[safe - 1].name : `Jam Session ${safe}`;
+}
+
+/** One short coaching line for the lesson. */
+export function lessonTip(level) {
+  const safe = clampLevel(level);
+  return LESSONS[safe - 1]
+    ? LESSONS[safe - 1].tip
+    : 'Jack made this one up for you. Listen first, then copy it.';
+}
+
+/** How many steps are in the bar at a level. */
+export function lessonLength(level) {
+  const safe = clampLevel(level);
+  return LESSONS[safe - 1] ? LESSONS[safe - 1].steps.length : 8;
 }
 
 /**
- * Build a groove for a level. The first six levels are Jack's fixed real
- * beats; later levels are generated grooves in the same shape — hi-hat
- * keeping time, kick on beats 1 and 3, snare on 2 and 4, with a tom or
- * crash thrown in now and then. `rand` is injectable so tests can use a
- * fixed sequence.
+ * Build a groove for a level. The eight hand-written lessons are real fixed
+ * beats; after that Jack improvises in the same shape — hi-hat keeping time,
+ * kick on 1 and 3, snare on 2 and 4, with a tom or crash thrown in now and
+ * then. `rand` is injectable so tests can use a fixed sequence.
  */
-export function generatePattern(level, rand = Math.random) {
-  const safe = Math.max(1, Math.floor(level) || 1);
-  if (JACK_BEATS[safe]) return JACK_BEATS[safe].steps.map((step) => [...step]);
+export function lessonPattern(level, rand = Math.random) {
+  const safe = clampLevel(level);
+  const fixed = LESSONS[safe - 1];
+  if (fixed) return fixed.steps.map((step) => [...step]);
+
   const steps = [];
   for (let i = 0; i < 8; i += 1) {
     const step = [H];
     if (i === 0 || i === 4) step.unshift(K);
     else if (i === 2 || i === 6) step.unshift(S);
-    else if (rand() < 0.18) step.unshift(K);
+    else if (i === 3 && rand() < 0.2) step.unshift(K);
     if (i === 0 && rand() < 0.3) step.unshift(C);
     if (i === 7 && rand() < 0.35) step.push(T);
     steps.push(step);
@@ -177,17 +133,22 @@ export function generatePattern(level, rand = Math.random) {
   return steps;
 }
 
-/** Milliseconds for one full bar of the groove — no pause after it. */
-export function copyCatLoopMs(level) {
-  return copyCatLength(level) * copyCatStepMs(level);
+/** Demo tempo: slow at first, a little quicker every lesson, capped. */
+const LESSON_START_BPM = 64;
+const LESSON_BPM_STEP = 3;
+const LESSON_MAX_BPM = 104;
+
+export function lessonTempo(level) {
+  return Math.min(
+    LESSON_MAX_BPM,
+    LESSON_START_BPM + (clampLevel(level) - 1) * LESSON_BPM_STEP,
+  );
 }
 
-/** Milliseconds for one full Jack-plus-Joel cycle: two bars, no more.
- *  Level 1 is 8 quarter-note steps (8000ms at 60 BPM); from level 3
- *  it is 16 eighth-note steps. If a cycle ever measures longer than
- *  this, a beat has crept in somewhere. */
-export function copyCatCycleMs(level) {
-  return 2 * copyCatLoopMs(level);
+/** Milliseconds between demo steps: one beat for short bars, an eighth for long ones. */
+export function lessonStepMs(level) {
+  const beat = 60000 / lessonTempo(level);
+  return Math.round(lessonLength(level) > 4 ? beat / 2 : beat);
 }
 
 /** True when every drum in a step has been hit. */
@@ -196,58 +157,29 @@ export function stepIsDone(step, hits) {
 }
 
 /**
- * Check one tap against the bar Joel is playing.
- * `hitsByStep` is one list of drums hit per step, kept for the whole bar
- * — a tap is never judged by the clock's current step alone, because a
- * 7-year-old's hands don't land exactly on the clock:
- * - A tap credits the earliest step next to the one he is on (the step
- *   before, his step, or the next step) that still needs that drum.
- *   So a hi-hat meant for step 0 still counts when the clock has just
- *   ticked to step 1, a snare tapped a beat early counts for the next
- *   step, and finishing a step early then playing the next step's drums
- *   counts too.
- * - A tap on a drum that is only in steps already done — a double-tap,
- *   or an extra tap on a finished step, even a couple of steps back —
- *   is 'ignored': he hears his drum, he just doesn't lose the bar
- *   for it.
- * - Only a tap on a drum in NO nearby step, and in no finished step
- *   either, is 'wrong': a genuinely wrong drum, like the crash on a
- *   level that has no crash, or a drum two steps too early.
- * The matched step records the hit, so a later tap on the same drum
- * counts for the next step that still needs it. Returns 'ignored',
- * 'wrong', 'correct' (step still needs more drums), 'step' (a step is
- * now complete but the bar is not done), or 'complete' (every step
- * of the bar is now complete).
+ * Check one tap on the step the player is copying.
+ * Drums in a step can be hit in any order — two thumbs can land together —
+ * and a repeat tap is harmless ('extra'). Returns 'extra' (not in this step,
+ * or already hit), 'correct' (step still needs more drums) or 'complete'
+ * (this step is finished).
  */
-export function checkCopyCatTap(pattern, stepIndex, hitsByStep, drumId) {
-  const nearby = [stepIndex - 1, stepIndex, stepIndex + 1];
-  let seenInStep = false;
-  for (const i of nearby) {
-    const step = pattern[i];
-    if (!step || !step.includes(drumId)) continue;
-    seenInStep = true;
-    const hits = hitsByStep[i] || (hitsByStep[i] = []);
-    if (hits.includes(drumId)) continue;
-    hits.push(drumId);
-    if (!stepIsDone(step, hits)) return 'correct';
-    const allDone = pattern.every((s, j) => stepIsDone(s, hitsByStep[j]));
-    return allDone ? 'complete' : 'step';
-  }
-  // No step next to this one still needs the drum. It was either
-  // already hit in a nearby step, or it belongs to a step that is
-  // already done — an extra tap either way, ignored, never failed.
-  if (seenInStep) return 'ignored';
-  if (pattern.some((s, j) => s.includes(drumId) && stepIsDone(s, hitsByStep[j]))) {
-    return 'ignored';
-  }
-  return 'wrong';
+export function checkStepTap(step, hits, drumId) {
+  if (!step.includes(drumId)) return 'extra';
+  if (hits.includes(drumId)) return 'extra';
+  hits.push(drumId);
+  return stepIsDone(step, hits) ? 'complete' : 'correct';
 }
 
-/** Stars for finishing a groove: 3 on the first try, 2 on the second, 1 after. */
-export function starsForAttempts(attempts) {
-  if (attempts <= 1) return 3;
-  if (attempts === 2) return 2;
+/** Stars for finishing a lesson: 3 clean, 2 with a couple of slips, 1 after. */
+export function lessonStars(mistakes) {
+  if (mistakes <= 0) return 3;
+  if (mistakes <= 2) return 2;
   return 1;
 }
 
 export const starString = (stars) => '★'.repeat(stars) + '☆'.repeat(Math.max(0, 3 - stars));
+
+/** "Kick + Hi-Hat", for messages and screen readers. */
+export function stepLabel(step) {
+  return step.map((id) => (drumById(id) || { label: id }).label).join(' + ');
+}

@@ -92,6 +92,25 @@ export class DrumSynth {
     osc.stop(now + 0.1);
   }
 
+  /** A tiny happy blip for finishing one step of a lesson. */
+  async blip(step = 0) {
+    await this.ensure();
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const notes = [659.25, 739.99, 830.61, 987.77, 1108.73];
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = notes[step % notes.length];
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.exponentialRampToValueAtTime(0.06, now + 0.008);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    osc.connect(env);
+    env.connect(this.master);
+    osc.start(now);
+    osc.stop(now + 0.16);
+  }
+
   /** A happy little three-note cheer for finishing a pattern. */
   async cheer() {
     await this.ensure();

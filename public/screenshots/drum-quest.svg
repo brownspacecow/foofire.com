@@ -11,7 +11,7 @@
   <circle cx="600" cy="600" r="180" fill="#7fd8c6" opacity="0.08"/>
 
   <text x="600" y="110" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="bold" fill="#f4c95d">DRUM QUEST</text>
-  <text x="600" y="158" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#f9eddf">Tap it. Copy it. Build it.</text>
+  <text x="600" y="158" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#f9eddf">Tap it. Copy Jack's beat.</text>
 
   <!-- Joel -->
   <g>

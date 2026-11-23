@@ -1,579 +1,661 @@
 /* -------------------------------------------------------------------------
- * Drum Quest — Free Play and Jack's Copy Cat, played on a 3D Three.js
- * drum kit (see scene.js). Tap a drum in 3D, or use keys A/S/D/F/G/H.
+ * Drum Quest — Free Play and Learn with Jack.
  *
- * Jack plays REAL beats: one bar of a groove, with drums landing
- * together the way a real beat does (kick + hi-hat, snare + hi-hat).
- * The flow never stops — one clock drives every bar, Jack's bar runs
- * into Joel's bar at the barline, a metronome click keeps the pulse
- * alive while Joel plays, a miss means Jack plays it again at the
- * end of the bar, and a win means the next level starts at the end
- * of the bar. No count-in, no pauses, no failing, no extra beat.
- * The click is a click on purpose: the old keep-time beat was a
- * hi-hat, the same sound as the groove's hi-hat, so it read as an
- * extra drum pulse between the turns — a click can never do that.
+ * Free Play: bash the kit. Every drum sounds instantly, from a tap on the
+ * 3D drum or on one of the six big pads under the stage. A count-in with a
+ * tempo control is there if you want it.
+ *
+ * Learn with Jack: no clock, no failing, no clock watching. Jack counts in,
+ * plays a real groove one step at a time, and then waits — the kit and the
+ * matching pads glow, and the player copies the steps at their own pace.
+ * Wrong drum? It still makes its sound, gives a friendly nudge, and nothing
+ * is lost. Finish the groove and Jack cheers; three stars for a clean run.
+ *
+ * The pads are the primary controls on purpose: the 3D stage is loaded
+ * dynamically, so if WebGL or the Three.js module can't load, the whole
+ * game still works.
  * ---------------------------------------------------------------------- */
 
 import {
-  checkCopyCatTap,
-  copyCatBeatName,
-  copyCatLength,
-  copyCatStepMs,
-  copyCatTempo,
+  DRUMS,
+  LESSON_COUNT,
+  checkStepTap,
   drumById,
   drumByKey,
-  generatePattern,
-  starsForAttempts,
+  lessonName,
+  lessonPattern,
+  lessonStars,
+  lessonStepMs,
+  lessonTempo,
+  lessonTip,
   starString,
   stepIsDone,
+  stepLabel,
 } from './logic.js';
 import { DrumSynth } from './sound.js';
-import { createStage } from './scene.js';
 import { getBest, submitScore } from '../../utils/scores.js';
 import { readMuted, writeMuted } from '../../utils/audio-prefs.js';
 
 const GAME_ID = 'drum-quest';
-const METRONOME_BPM = 80;
+const PROGRESS_KEY = 'dq-progress.v1';
+const FREE_START_BPM = 80;
+const FREE_MIN_BPM = 50;
+const FREE_MAX_BPM = 150;
+const FREE_BPM_STEP = 5;
+const FREE_MESSAGE = 'Tap a drum — on the kit or the big pads. Every tap makes a sound.';
 
 const $ = (id) => document.getElementById(id);
 const synth = new DrumSynth();
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const messageEl = $('message');
-
-const setMessage = (text) => {
-  messageEl.textContent = text;
+const els = {
+  stage: $('stage'),
+  banner: $('stage-banner'),
+  pads: $('pads'),
+  celebrate: $('celebrate'),
+  celebrateStars: $('celebrate-stars'),
+  celebrateTitle: $('celebrate-title'),
+  celebrateText: $('celebrate-text'),
+  nextLesson: $('next-lesson'),
+  againLesson: $('again-lesson'),
+  message: $('message'),
+  best: $('best-line'),
+  deckFree: $('deck-free'),
+  deckLearn: $('deck-learn'),
+  level: $('lesson-level'),
+  name: $('lesson-name'),
+  stars: $('lesson-stars'),
+  replay: $('lesson-replay'),
+  rail: $('lesson-rail'),
+  target: $('lesson-target'),
+  levels: $('lesson-levels'),
+  metronome: $('metronome-button'),
+  beatLights: $('beat-lights'),
+  tempoValue: $('tempo-value'),
+  tempoDown: $('tempo-down'),
+  tempoUp: $('tempo-up'),
+  mute: $('mute-button'),
+  fullscreen: $('fullscreen-button'),
+  console: $('dq-console'),
 };
 
-/* ---------------------------------------------------------------- 3D kit */
+let stage = null;
+let mode = null;
 
-let mode = 'free';
+/* ---------------------------------------------------------------- progress */
 
-async function hitDrum(drum) {
-  stage.hit(drum);
+const clampLevel = (level) => Math.min(99, Math.max(1, Math.floor(Number(level)) || 1));
+
+function loadProgress() {
   try {
-    await synth.play(drum);
+    const parsed = JSON.parse(window.localStorage.getItem(PROGRESS_KEY) || '{}');
+    const stars = {};
+    if (parsed && typeof parsed.stars === 'object' && parsed.stars) {
+      for (const [key, value] of Object.entries(parsed.stars)) {
+        const level = clampLevel(key);
+        const count = Math.min(3, Math.max(1, Math.floor(Number(value)) || 0));
+        if (count) stars[level] = count;
+      }
+    }
+    return { level: clampLevel(parsed && parsed.level), stars };
   } catch (error) {
-    /* Audio needs a first tap on some browsers; the visual still shows. */
+    return { level: 1, stars: {} };
   }
 }
 
-/** A tap on a 3D drum (or a keyboard key): sound + Copy Cat handling. */
-function userHit(drum) {
-  hitDrum(drum);
-  if (mode === 'copy') handleCopyTap(drum);
-}
+const progress = loadProgress();
 
-const stage = createStage($('stage'), {
-  reducedMotion: prefersReducedMotion,
-  onHit: userHit,
-});
-
-/* ------------------------------------------------------------------ modes */
-
-function showMode(next) {
-  stopMetronome();
-  stopCopyPlayback();
-  stage.clearGlow();
-  mode = next;
-  for (const button of document.querySelectorAll('.dq-mode')) {
-    const active = button.dataset.mode === next;
-    button.classList.toggle('is-active', active);
-    button.setAttribute('aria-pressed', String(active));
-  }
-  for (const panel of ['free', 'copy']) {
-    $(`panel-${panel}`).hidden = panel !== next;
-  }
-  if (next === 'free') setMessage('Tap a drum on the kit to make some noise!');
-  if (next === 'copy') {
-    // Jack starts his beat straight away — no pause, no count-in.
-    if (copyCat.phase === 'idle') startJackBar();
+function saveProgress() {
+  try {
+    window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+  } catch (error) {
+    /* Storage can be blocked; the game still plays, it just forgets stars. */
   }
 }
 
-for (const button of document.querySelectorAll('.dq-mode')) {
-  button.addEventListener('click', () => showMode(button.dataset.mode));
+const bestStars = (level) => Number(progress.stars[clampLevel(level)]) || 0;
+
+/* --------------------------------------------------------------------- pads */
+
+const pads = new Map();
+const padTimers = new Map();
+
+function buildPads() {
+  for (const drum of DRUMS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'dq-pad';
+    button.dataset.drum = drum.id;
+    button.style.setProperty('--pad', drum.color);
+    button.setAttribute('aria-label', `${drum.label} — keyboard ${drum.key.toUpperCase()}`);
+
+    const key = document.createElement('span');
+    key.className = 'dq-pad-key';
+    key.setAttribute('aria-hidden', 'true');
+    key.textContent = drum.key.toUpperCase();
+
+    const name = document.createElement('span');
+    name.className = 'dq-pad-name';
+    name.textContent = drum.label;
+
+    button.append(key, name);
+    button.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      event.preventDefault();
+      hit(drum.id);
+    });
+    // Keyboard activation (Enter / Space on a focused pad) arrives as a
+    // click with detail 0. Pointer clicks are already handled above.
+    button.addEventListener('click', (event) => {
+      if (event.detail === 0) hit(drum.id);
+    });
+
+    pads.set(drum.id, button);
+    els.pads.appendChild(button);
+  }
+}
+
+function flashPad(id) {
+  const button = pads.get(id);
+  if (!button) return;
+  button.classList.add('is-hit');
+  window.clearTimeout(padTimers.get(id));
+  padTimers.set(
+    id,
+    window.setTimeout(() => button.classList.remove('is-hit'), 110),
+  );
+}
+
+function shakePad(id) {
+  const button = pads.get(id);
+  if (!button) return;
+  button.classList.remove('is-wrong');
+  // Restart the animation even on a rapid repeat tap.
+  void button.offsetWidth;
+  button.classList.add('is-wrong');
+  window.clearTimeout(padTimers.get(`wrong-${id}`));
+  padTimers.set(
+    `wrong-${id}`,
+    window.setTimeout(() => button.classList.remove('is-wrong'), 260),
+  );
+}
+
+function setPadHints(ids = []) {
+  for (const [id, button] of pads) button.classList.toggle('is-hint', ids.includes(id));
+}
+
+/* --------------------------------------------------------------------- hits */
+
+function hit(drumId) {
+  synth.play(drumId).catch(() => undefined);
+  stage?.hit(drumId);
+  flashPad(drumId);
+  if (mode === 'learn') handleLessonTap(drumId);
 }
 
 /* --------------------------------------------------------------- metronome */
 
-let metronomeTimer = 0;
-let metronomeBeat = 0;
-const beatCountEl = $('beat-count');
-const metronomeButton = $('metronome-button');
+let bpm = FREE_START_BPM;
+const metro = { on: false, timer: 0, beat: 0 };
 
-function stopMetronome() {
-  if (metronomeTimer) window.clearInterval(metronomeTimer);
-  metronomeTimer = 0;
-  metronomeBeat = 0;
-  beatCountEl.textContent = '–';
-  metronomeButton.textContent = '▶ Count 1-2-3-4';
-  metronomeButton.setAttribute('aria-pressed', 'false');
+function renderBeatLights() {
+  const lights = Array.from(els.beatLights.children);
+  lights.forEach((light, index) => {
+    light.classList.toggle('is-on', metro.on && index === metro.beat - 1);
+    light.classList.toggle('is-accent', index === 0);
+  });
+  els.beatLights.setAttribute(
+    'aria-label',
+    metro.on ? `Count is on, beat ${metro.beat} of 4` : 'Count is off',
+  );
 }
 
-metronomeButton.addEventListener('click', async () => {
-  if (metronomeTimer) {
+function metronomeTick() {
+  metro.beat = (metro.beat % 4) + 1;
+  renderBeatLights();
+  synth.click(metro.beat === 1).catch(() => undefined);
+}
+
+function scheduleMetronome() {
+  if (metro.timer) window.clearInterval(metro.timer);
+  metro.timer = window.setInterval(metronomeTick, Math.round(60000 / bpm));
+}
+
+function stopMetronome() {
+  if (metro.timer) window.clearInterval(metro.timer);
+  metro.timer = 0;
+  metro.on = false;
+  metro.beat = 0;
+  els.metronome.textContent = 'Start the count';
+  els.metronome.setAttribute('aria-pressed', 'false');
+  renderBeatLights();
+}
+
+els.metronome.addEventListener('click', () => {
+  if (metro.on) {
     stopMetronome();
     return;
   }
-  await synth.ensure().catch(() => undefined);
-  metronomeButton.textContent = '■ Stop the count';
-  metronomeButton.setAttribute('aria-pressed', 'true');
-  const stepMs = Math.round(60000 / METRONOME_BPM);
-  const tick = () => {
-    metronomeBeat = (metronomeBeat % 4) + 1;
-    beatCountEl.textContent = String(metronomeBeat);
-    synth.click(metronomeBeat === 1).catch(() => undefined);
-  };
-  tick();
-  metronomeTimer = window.setInterval(tick, stepMs);
+  metro.on = true;
+  metro.beat = 0;
+  els.metronome.textContent = 'Stop the count';
+  els.metronome.setAttribute('aria-pressed', 'true');
+  metronomeTick();
+  scheduleMetronome();
 });
 
-/* ------------------------------------------------------- Copy Cat — Jack's lesson
- *
- * One bar, on a loop, forever, on ONE clock. Jack plays the groove
- * (watch), then the very next bar is Joel's turn (play) — the pulse
- * never stops. A metronome click marks every beat of Joel's bar,
- * downbeat included, so the beat is always there even if he hasn't
- * tapped yet. The click is deliberately NOT a drum: a hi-hat tick
- * sounded like an extra drum pulse between the turns, and it doubled
- * Joel's own hi-hat tap on every step. Bars are exactly 4 beats
- * (4 quarter-note steps at levels 1–2, 8 eighth-note steps after),
- * and every handoff happens on a barline: a miss means Jack plays
- * it again at the end of the bar, and a win means the next level
- * starts at the end of the bar. Nothing ever adds or drops a beat,
- * and nothing sounds on top of Jack's downbeat but Jack's own drums.
- */
+function setBpm(next) {
+  bpm = Math.min(FREE_MAX_BPM, Math.max(FREE_MIN_BPM, Math.round(next)));
+  els.tempoValue.textContent = String(bpm);
+  if (metro.on) {
+    metro.beat = 0;
+    scheduleMetronome();
+  }
+}
 
-const copyLevelEl = $('copy-level');
-const copyStarsEl = $('copy-stars');
-const copyInfoEl = $('copy-info');
-const copyDotsEl = $('copy-dots');
-const copyTurnEl = $('copy-turn');
-const copyPlayButton = $('copy-play-button');
-const copyAgainButton = $('copy-again-button');
+els.tempoDown.addEventListener('click', () => setBpm(bpm - FREE_BPM_STEP));
+els.tempoUp.addEventListener('click', () => setBpm(bpm + FREE_BPM_STEP));
 
-const copyCat = {
-  level: 1,
+/* ------------------------------------------------------------------ banner */
+
+function showBanner(text, tone = 'jack') {
+  els.banner.textContent = text;
+  els.banner.classList.toggle('is-you', tone === 'you');
+  els.banner.hidden = false;
+}
+
+function hideBanner() {
+  els.banner.hidden = true;
+}
+
+function setMessage(text) {
+  els.message.textContent = text;
+}
+
+/* ------------------------------------------------------------------ lesson */
+
+const session = {
+  level: clampLevel(progress.level),
   pattern: [],
-  phase: 'idle', // idle | watch (Jack plays) | play (Joel plays) | waiting (bar finishing after a miss or a win)
-  bar: 'jack', // which bar the single clock is in: Jack's, then Joel's, then Jack's…
-  step: 0,
-  hitsByStep: [], // one list of drums hit per step, kept for the whole bar
-  attempts: 0, // misses on the current level
-  pendingLevelUp: false, // Joel finished the bar — the next level starts at the barline
-  pendingReplay: false, // "Jack, play it again" was tapped — Jack replays at the barline
-  interval: 0,
+  index: 0,
+  hits: [],
+  mistakes: 0,
+  phase: 'idle', // idle | demo | play | done
+  token: 0,
 };
 
-function stopCopyTimers() {
-  if (copyCat.interval) window.clearInterval(copyCat.interval);
-  copyCat.interval = 0;
+const waiters = new Map();
+
+function wait(ms, token) {
+  return new Promise((resolve) => {
+    const id = window.setTimeout(() => {
+      waiters.delete(id);
+      resolve(token === session.token);
+    }, ms);
+    waiters.set(id, resolve);
+  });
 }
 
-function stopCopyPlayback() {
-  stopCopyTimers();
-  copyCat.phase = 'idle';
-  copyCat.pendingReplay = false;
-  stage.setJackPlaying(false);
-  stage.clearGlow();
-  setTurn('idle');
-}
-
-/** Whose turn it is — colour only, the pill never moves or resizes. */
-function setTurn(who) {
-  copyTurnEl.classList.toggle('is-jack', who === 'jack');
-  copyTurnEl.classList.toggle('is-you', who === 'you');
-  copyTurnEl.textContent =
-    who === 'jack'
-      ? "🎓 Jack's turn — listen to the beat!"
-      : who === 'you'
-        ? "🥁 Your turn, Joel — play it back!"
-        : '🎓 Jack is ready — pick a level and listen!';
-}
-
-function renderCopyDots() {
-  copyDotsEl.innerHTML = '';
-  for (let i = 0; i < copyCat.pattern.length; i += 1) {
-    const dot = document.createElement('span');
-    dot.className = 'dq-dot';
-    if (stepIsDone(copyCat.pattern[i], copyCat.hitsByStep[i])) dot.classList.add('is-done');
-    if (i === copyCat.step && copyCat.phase !== 'idle') dot.classList.add('is-now');
-    dot.setAttribute('aria-hidden', 'true');
-    copyDotsEl.appendChild(dot);
+function cancelWaits() {
+  for (const [id, resolve] of waiters) {
+    window.clearTimeout(id);
+    resolve(false);
   }
+  waiters.clear();
 }
 
-const stepNames = (step) => step.map((id) => (drumById(id) || { label: id }).label).join(' + ');
-
-/** Set up a level's groove and panel — no playback yet. */
-function setupCopyLevel() {
-  copyCat.pattern = generatePattern(copyCat.level);
-  copyCat.phase = 'idle';
-  copyCat.step = 0;
-  copyCat.hitsByStep = copyCat.pattern.map(() => []);
-  copyCat.attempts = 0;
-  copyLevelEl.textContent = String(copyCat.level);
-  copyStarsEl.textContent = '☆☆☆';
-  copyStarsEl.setAttribute('aria-label', '0 of 3 stars');
-  const joins =
-    copyCat.level >= 6
-      ? 'tom and crash join in! · '
-      : copyCat.level >= 5
-        ? 'crash joins in! · '
-        : copyCat.level >= 3
-          ? 'eight hi-hat steps! · '
-          : '';
-  const pace = copyCatTempo(copyCat.level) <= 70 ? 'nice and slow' : 'a little quicker';
-  copyInfoEl.textContent =
-    `Level ${copyCat.level} · ${copyCatBeatName(copyCat.level)} · ${copyCatLength(copyCat.level)} steps · ${joins}` +
-    `${pace} (${copyCatTempo(copyCat.level)} BPM)`;
-  renderCopyDots();
-  copyPlayButton.disabled = false;
-  copyAgainButton.disabled = false;
-  setTurn('idle');
+function hideCelebration() {
+  els.celebrate.hidden = true;
 }
 
-function startCopyLevel() {
-  setupCopyLevel();
-  startJackBar();
+function stopSession() {
+  cancelWaits();
+  session.token += 1;
+  session.phase = 'idle';
+  stage?.clearHints();
+  setPadHints([]);
+  hideCelebration();
+  hideBanner();
 }
 
-/** Jack plays one step of the groove: his sticks, your drums light up. */
-function playJackStep(index) {
-  stage.clearGlow();
-  for (const drum of copyCat.pattern[index]) {
-    stage.setGlow(drum, true);
-    stage.jackHit(drum);
-    synth.play(drum).catch(() => undefined);
-  }
-  renderCopyDots();
-}
-
-/** Jack's bar starts now, on this beat: step 0 plays at once, then one
- *  clock (copyClockTick) drives every step after it. The clock never
- *  stops mid-lesson — bars are exactly N steps, and every handoff
- *  happens on a barline, so the pulse stays a steady 4/4. */
-function startJackBar() {
-  // Copy Cat needs the whole kit in frame — zoom back out if needed.
-  if (stage.isZoomed && stage.isZoomed()) zoomButton.click();
-  stopCopyTimers();
-  copyCat.bar = 'jack';
-  copyCat.phase = 'watch';
-  copyCat.step = 0;
-  copyCat.hitsByStep = copyCat.pattern.map(() => []);
-  copyCat.pendingLevelUp = false;
-  copyCat.pendingReplay = false;
-  stage.setJackPlaying(true);
-  setTurn('jack');
-  setMessage(
-    `Jack plays the ${copyCatBeatName(copyCat.level)}: ${stepNames(copyCat.pattern[0])} — listen close!`,
+function renderLessonHeader() {
+  els.level.textContent = String(session.level);
+  els.name.textContent = lessonName(session.level);
+  const stars = bestStars(session.level);
+  els.stars.textContent = starString(stars);
+  els.stars.setAttribute(
+    'aria-label',
+    stars ? `${stars} of 3 stars on this level` : 'No stars on this level yet',
   );
-  playJackStep(0);
-  copyCat.interval = window.setInterval(copyClockTick, copyCatStepMs(copyCat.level));
 }
 
-/**
- * The one bar clock: one tick per step, forever, until the lesson stops.
- * A tick IS the start of a step — Jack's step-0 drums and Joel's
- * downbeat click land exactly on the beat, and nothing ever sounds on
- * top of Jack's downbeat. When the step count reaches the end of the
- * bar, the next bar starts on that very tick: Jack's bar, then Joel's,
- * then Jack's again. A miss or a win never stops the clock — the bar
- * simply runs out to the barline, and Jack (or the next level) starts
- * there, on the grid.
- */
-function copyClockTick() {
-  const barLength = copyCat.pattern.length;
-  copyCat.step += 1;
-  if (copyCat.step >= barLength) {
-    // Barline: the next bar starts on this tick, never a step late.
-    copyCat.step = 0;
-    if (copyCat.pendingLevelUp) {
-      copyCat.pendingLevelUp = false;
-      copyCat.level += 1;
-      // New level, new tempo: startCopyLevel re-arms the clock at the
-      // new step length, right here on the barline.
-      startCopyLevel();
-      return;
+function renderRail() {
+  els.rail.replaceChildren();
+  session.pattern.forEach((step, index) => {
+    const chip = document.createElement('div');
+    chip.className = 'dq-step-chip';
+    if (stepIsDone(step, session.hits[index])) chip.classList.add('is-done');
+    if (index === session.index && session.phase !== 'idle' && session.phase !== 'done') {
+      chip.classList.add('is-now');
     }
-    copyCat.hitsByStep = copyCat.pattern.map(() => []);
-    if (copyCat.pendingReplay) {
-      // "Jack, play it again" was tapped mid-lesson: Jack replays his
-      // bar at the barline, on the grid — never mid-bar, where a
-      // restart would sound an extra step 0 off the beat.
-      copyCat.pendingReplay = false;
-      copyCat.bar = 'jack';
-      copyCat.phase = 'watch';
-      stage.setJackPlaying(true);
-      setTurn('jack');
-      setMessage(
-        `Jack plays the ${copyCatBeatName(copyCat.level)} again: ${stepNames(copyCat.pattern[0])} — listen close!`,
-      );
-    } else if (copyCat.bar === 'jack') {
-      // Jack's bar is done — Joel's turn starts on this beat.
-      copyCat.bar = 'joel';
-      copyCat.phase = 'play';
-      stage.setJackPlaying(false);
-      stage.clearGlow();
-      setTurn('you');
-      setMessage('Your turn! Play the beat back on your drums — same groove, same speed.');
-    } else {
-      // Joel's bar is done (or he missed) — Jack takes it back on this beat.
-      copyCat.bar = 'jack';
-      copyCat.phase = 'watch';
-      stage.setJackPlaying(true);
-      setTurn('jack');
-      setMessage(
-        `Jack plays the ${copyCatBeatName(copyCat.level)}: ${stepNames(copyCat.pattern[0])} — listen close!`,
-      );
+    for (const drumId of step) {
+      const dot = document.createElement('span');
+      dot.className = 'dq-dot';
+      dot.style.setProperty('--c', (drumById(drumId) || {}).color || '#fff8e7');
+      chip.appendChild(dot);
     }
-  }
-  // A new step starts — but the hits stay for the whole bar, so a tap
-  // that lands just across a boundary still counts for the step it
-  // meant (see checkCopyCatTap). Nothing is forgotten until the barline.
-  if (copyCat.bar === 'jack') playJackStep(copyCat.step);
-  else {
-    // Metronome click on the beat — the pulse never stops, and the
-    // downbeat gets an accented click just like every other beat
-    // gets its click. A click, not a hi-hat: a hi-hat tick sounded
-    // like an extra drum pulse between the turns, and it doubled
-    // Joel's own hi-hat tap on every step of his bar.
-    synth.click(copyCat.step === 0).catch(() => undefined);
-  }
-  renderCopyDots();
+    els.rail.appendChild(chip);
+  });
 }
 
-function handleCopyTap(drum) {
-  if (copyCat.phase !== 'play') return;
-  const result = checkCopyCatTap(copyCat.pattern, copyCat.step, copyCat.hitsByStep, drum);
-  if (result === 'ignored') {
-    // An extra tap on a drum he already hit — a double-tap, or a drum
-    // from a step that is already done. He hears his drum; he just
-    // doesn't lose the bar for it.
-    renderCopyDots();
+function renderTarget() {
+  els.target.replaceChildren();
+  if (session.phase === 'play') {
+    els.target.append('Now play: ');
+    const step = session.pattern[session.index] || [];
+    step.forEach((drumId, index) => {
+      const drum = drumById(drumId);
+      if (!drum) return;
+      const chip = document.createElement('span');
+      chip.className = 'dq-drum-chip';
+      chip.style.setProperty('--c', drum.color);
+      chip.textContent = drum.label;
+      els.target.appendChild(chip);
+      if (index < step.length - 1) els.target.append(' + ');
+    });
     return;
   }
-  if (result === 'wrong') {
-    copyCat.attempts += 1;
-    // The clock keeps running: this bar finishes out to the barline,
-    // then Jack plays it again — always on the beat, never off the grid.
-    copyCat.phase = 'waiting';
-    setTurn('jack');
-    setMessage('Not quite — Jack will play it again at the end of this bar, listen close!');
+  if (session.phase === 'demo') {
+    els.target.textContent = lessonTip(session.level);
     return;
   }
+  if (session.phase === 'done') {
+    els.target.textContent = 'Lesson complete — lovely drumming!';
+    return;
+  }
+  els.target.textContent = 'Press “Play it again” to hear the beat.';
+}
+
+function renderLevels() {
+  els.levels.replaceChildren();
+  const count = Math.max(LESSON_COUNT, session.level);
+  for (let level = 1; level <= count; level += 1) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'dq-level';
+    button.textContent = String(level);
+    button.title = lessonName(level);
+    button.setAttribute('aria-label', `Lesson ${level}: ${lessonName(level)}`);
+    if (level === session.level) button.classList.add('is-active');
+    if (bestStars(level)) button.classList.add('is-done');
+    button.addEventListener('click', () => beginLesson(level));
+    els.levels.appendChild(button);
+  }
+}
+
+function beginLesson(level) {
+  stopSession();
+  session.level = clampLevel(level);
+  session.pattern = lessonPattern(session.level);
+  session.index = 0;
+  session.hits = session.pattern.map(() => []);
+  session.mistakes = 0;
+  session.phase = 'demo';
+  renderLessonHeader();
+  renderLevels();
+  renderRail();
+  renderTarget();
+  void runDemo();
+}
+
+async function runDemo() {
+  const token = session.token;
+  showBanner('Listen first');
+
+  const beatMs = Math.round(60000 / lessonTempo(session.level));
+  const stepMs = lessonStepMs(session.level);
+
+  for (let count = 1; count <= 4; count += 1) {
+    if (token !== session.token) return;
+    showBanner(`Count in: ${count}`);
+    synth.click(count === 1).catch(() => undefined);
+    const alive = await wait(beatMs, token);
+    if (!alive) return;
+  }
+
+  showBanner('Jack is playing — listen');
+  setMessage('Listen to the beat and watch the drums light up.');
+  for (let index = 0; index < session.pattern.length; index += 1) {
+    if (token !== session.token) return;
+    session.index = index;
+    renderRail();
+    stage?.setHints(session.pattern[index]);
+    for (const drumId of session.pattern[index]) {
+      synth.play(drumId).catch(() => undefined);
+      stage?.jackHit(drumId);
+    }
+    const alive = await wait(stepMs, token);
+    if (!alive) return;
+  }
+  stage?.clearHints();
+  if (token !== session.token) return;
+  beginTurn();
+}
+
+function beginTurn() {
+  session.phase = 'play';
+  session.index = 0;
+  const step = session.pattern[0];
+  setPadHints(step);
+  stage?.setHints(step);
+  renderRail();
+  renderTarget();
+  showBanner(`Your turn: ${stepLabel(step)}`, 'you');
+  setMessage(`Your turn! Play ${stepLabel(step)} — in any order you like.`);
+}
+
+function handleLessonTap(drumId) {
+  if (session.phase !== 'play') return;
+  const step = session.pattern[session.index];
+  const hits = session.hits[session.index];
+  const result = checkStepTap(step, hits, drumId);
+
+  if (result === 'extra') {
+    session.mistakes += 1;
+    shakePad(drumId);
+    const drum = drumById(drumId);
+    setMessage(
+      `${drum ? drum.label : 'That one'} sounds good! This step is ${stepLabel(step)} — play the glowing pads.`,
+    );
+    return;
+  }
+
+  const remaining = step.filter((id) => !hits.includes(id));
+  setPadHints(remaining);
+  stage?.setHints(remaining);
+  synth.blip(session.index).catch(() => undefined);
+  renderRail();
+
   if (result === 'correct') {
-    renderCopyDots();
+    setMessage(`Nice! Still needed: ${stepLabel(remaining)}.`);
     return;
   }
-  // 'step': a step is now complete. 'complete': every step of the bar
-  // is complete, even if the last one finished was not the last step
-  // on the clock — a late tap can finish an earlier step.
-  renderCopyDots();
-  if (result !== 'complete') return;
 
-  // Complete! Jack cheers right away — but the next level's groove
-  // starts at the barline, on the grid, never a beat early or late.
-  const stars = starsForAttempts(copyCat.attempts + 1);
-  copyStarsEl.textContent = starString(stars);
-  copyStarsEl.setAttribute('aria-label', `${stars} of 3 stars`);
-  copyCat.phase = 'waiting';
-  copyCat.pendingLevelUp = true;
-  stage.setJackPlaying(false);
-  stage.clearGlow();
-  stage.jackCheer();
-  synth.cheer().catch(() => undefined);
-  const finishedLevel = copyCat.level;
-  submitScore(GAME_ID, finishedLevel);
+  if (session.index >= session.pattern.length - 1) {
+    finishLesson();
+    return;
+  }
+
+  session.index += 1;
+  const next = session.pattern[session.index];
+  setPadHints(next);
+  stage?.setHints(next);
+  renderRail();
+  renderTarget();
+  showBanner(`Your turn: ${stepLabel(next)}`, 'you');
+  setMessage(`Yes! Next: ${stepLabel(next)}.`);
+}
+
+function finishLesson() {
+  session.phase = 'done';
+  stage?.clearHints();
+  setPadHints([]);
+  hideBanner();
+
+  const level = session.level;
+  const stars = lessonStars(session.mistakes);
+  if (stars > bestStars(level)) progress.stars[level] = stars;
+  progress.level = Math.max(progress.level, level + 1);
+  saveProgress();
+  submitScore(GAME_ID, level);
   updateBestLine();
-  setTurn('jack');
+
+  renderLessonHeader();
+  renderLevels();
+  renderTarget();
+  renderRail();
+
+  els.celebrateStars.textContent = starString(stars);
+  els.celebrateTitle.textContent = stars === 3 ? 'Perfect!' : 'You did it!';
+  els.celebrateText.textContent =
+    stars === 3
+      ? `Level ${level}, ${lessonName(level)} — clean all the way through. Jack is doing a little dance.`
+      : `Level ${level}, ${lessonName(level)} — finished! ${session.mistakes} off-target ${
+          session.mistakes === 1 ? 'tap' : 'taps'
+        } is no problem at all.`;
+  els.nextLesson.textContent = `Next: ${lessonName(level + 1)} →`;
+  els.celebrate.hidden = false;
+
   setMessage(
     stars === 3
-      ? `Perfect! ${starString(stars)} Jack is so proud — level ${finishedLevel} nailed on the first try!`
-      : `You did it! ${starString(stars)} Jack is cheering for you — level ${finishedLevel} done!`,
+      ? 'Perfect drumming! Jack has never heard that beat played so cleanly.'
+      : 'You did it! Every step of the beat, all the way through.',
   );
+  synth.cheer().catch(() => undefined);
+  stage?.celebrate();
 }
 
-/**
- * "Jack, play it!" / "Jack, play it again": never restart mid-bar —
- * that sounds an extra step 0 off the grid and shifts the whole
- * lesson. If the clock is already running, Jack replays at the next
- * barline; if the lesson is idle, he starts right away.
- */
-function requestJackReplay() {
-  if (copyCat.pendingLevelUp) return; // the next level is already coming
-  if (copyCat.interval && copyCat.phase !== 'idle') {
-    copyCat.pendingReplay = true;
-    copyCat.phase = 'waiting';
-    stage.setJackPlaying(false);
-    stage.clearGlow();
-    setTurn('jack');
-    setMessage('Jack will play it again at the end of this bar — listen close!');
+els.nextLesson.addEventListener('click', () => beginLesson(session.level + 1));
+els.againLesson.addEventListener('click', () => beginLesson(session.level));
+els.replay.addEventListener('click', () => {
+  if (mode === 'learn') beginLesson(session.level);
+});
+
+/* -------------------------------------------------------------------- modes */
+
+function setMode(next) {
+  if (mode === next) return;
+  mode = next;
+  for (const tab of document.querySelectorAll('.dq-tab')) {
+    const active = tab.dataset.mode === next;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-pressed', String(active));
+  }
+  els.deckFree.hidden = next !== 'free';
+  els.deckLearn.hidden = next !== 'learn';
+  els.levels.hidden = next !== 'learn';
+
+  if (next === 'free') {
+    stopSession();
+    stopMetronome();
+    setMessage(FREE_MESSAGE);
     return;
   }
-  startJackBar();
+  stopMetronome();
+  beginLesson(session.level);
 }
 
-copyPlayButton.addEventListener('click', requestJackReplay);
-copyAgainButton.addEventListener('click', requestJackReplay);
+for (const tab of document.querySelectorAll('.dq-tab')) {
+  tab.addEventListener('click', () => setMode(tab.dataset.mode));
+}
 
-/* ------------------------------------------------------------ keys + mute */
+/* ------------------------------------------------------------------ best line */
+
+function updateBestLine() {
+  const best = getBest(GAME_ID);
+  els.best.textContent =
+    best > 0 ? `Best lesson so far: ${best} ⭐` : 'Your best lesson will show up here.';
+}
+
+/* ------------------------------------------------------------------ keyboard */
 
 document.addEventListener('keydown', (event) => {
   if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
   const drum = drumByKey(event.key);
   if (!drum) return;
   event.preventDefault();
-  userHit(drum.id);
+  hit(drum.id);
 });
 
-const muteButton = $('mute-button');
+/* -------------------------------------------------------------------- mute */
 
 function applyMute(muted) {
   synth.setMuted(muted);
-  muteButton.textContent = muted ? '🔇' : '🔊';
-  muteButton.setAttribute('aria-pressed', String(muted));
-  muteButton.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
+  els.mute.setAttribute('aria-pressed', String(muted));
+  els.mute.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
 }
 
-/* ------------------------------------------------------------ zoom toggle */
-
-const zoomButton = $('zoom-button');
-
-zoomButton.addEventListener('click', () => {
-  const zoomed = zoomButton.getAttribute('aria-pressed') !== 'true';
-  stage.setZoomed(zoomed);
-  zoomButton.textContent = zoomed ? '🔎' : '🔍';
-  zoomButton.setAttribute('aria-pressed', String(zoomed));
-  zoomButton.setAttribute(
-    'aria-label',
-    zoomed ? 'Zoom out to the full kit' : 'Zoom in on the kit',
-  );
-});
-
-muteButton.addEventListener('click', () => {
-  const muted = muteButton.getAttribute('aria-pressed') !== 'true';
+els.mute.addEventListener('click', () => {
+  const muted = els.mute.getAttribute('aria-pressed') !== 'true';
   writeMuted(muted);
   applyMute(muted);
 });
 
-/* --------------------------------------------------------- fullscreen toggle
-   Phones play this game turned sideways, so going fullscreen also asks
-   the browser to lock the screen to landscape. That only works on
-   Android Chrome, only from this tap, only inside fullscreen — iOS
-   Safari has no orientation lock, so the rotate hint below does the job
-   there instead. Every call is guarded and silent on failure: fullscreen
-   always works even when the lock doesn't. */
-
-const fullscreenButton = $('fullscreen-button');
-const gameEl = document.querySelector('.drum-quest');
-
-function lockOrientationLandscape() {
-  try {
-    const orientation = window.screen && window.screen.orientation;
-    if (orientation && typeof orientation.lock === 'function') {
-      const locked = orientation.lock('landscape');
-      if (locked && typeof locked.catch === 'function') locked.catch(() => undefined);
-    }
-  } catch (error) {
-    /* No orientation lock on this browser; the rotate hint covers it. */
-  }
-}
-
-function unlockOrientation() {
-  try {
-    const orientation = window.screen && window.screen.orientation;
-    if (orientation && typeof orientation.unlock === 'function') orientation.unlock();
-  } catch (error) {
-    /* Nothing to unlock. */
-  }
-}
+/* -------------------------------------------------------------- fullscreen */
 
 function applyFullscreenState() {
   const on = Boolean(document.fullscreenElement);
-  if (!on) unlockOrientation();
-  fullscreenButton.textContent = on ? '✕' : '⛶';
-  fullscreenButton.setAttribute('aria-pressed', String(on));
-  fullscreenButton.setAttribute('aria-label', on ? 'Exit fullscreen' : 'Enter fullscreen');
-  // The stage sizes itself to its box — re-measure now that it filled the screen.
-  window.setTimeout(() => stage.resize(), 60);
+  els.fullscreen.setAttribute('aria-pressed', String(on));
+  els.fullscreen.setAttribute('aria-label', on ? 'Exit fullscreen' : 'Enter fullscreen');
+  // The stage re-measures once it has its new size.
+  window.setTimeout(() => stage?.resize(), 80);
 }
 
 if (!document.fullscreenEnabled) {
-  fullscreenButton.hidden = true;
+  els.fullscreen.hidden = true;
 } else {
-  fullscreenButton.addEventListener('click', async () => {
+  els.fullscreen.addEventListener('click', async () => {
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        unlockOrientation();
-      } else {
-        await gameEl.requestFullscreen();
-        lockOrientationLandscape();
-      }
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await els.console.requestFullscreen();
     } catch (error) {
-      /* Fullscreen is a nice-to-have; the game still works without it. */
+      /* Fullscreen is a nice-to-have; the game is the same without it. */
     }
   });
   document.addEventListener('fullscreenchange', applyFullscreenState);
 }
 
-/* ------------------------------------------------------------ rotate hint
-   On a phone held upright, a small hint above the stage: turn it
-   sideways for the best view of the kit. It lives in the page flow, so
-   it can never cover a drum or the menu bar; one tap dismisses it for
-   the session, and it hides itself the moment the phone turns sideways.
-   Portrait keeps working exactly as now for anyone who ignores it. */
+/* -------------------------------------------------------------- the 3D stage
+ * Loaded late and on its own: the game is fully playable on the pads if
+ * this fails, so a missing WebGL context never takes the drums away.
+ */
 
-const rotateHintEl = $('rotate-hint');
-const ROTATE_HINT_KEY = 'dq-rotate-hint-dismissed';
-
-function rotateHintDismissed() {
+async function initStage() {
   try {
-    return window.sessionStorage.getItem(ROTATE_HINT_KEY) === '1';
+    const { createStage } = await import('./scene.js');
+    stage = createStage(els.stage, { reducedMotion, onHit: hit });
   } catch (error) {
-    return false;
+    console.warn('Drum Quest: the 3D stage could not start — pads only.', error);
+    els.stage.classList.add('is-fallback');
+    const fallback = document.createElement('div');
+    fallback.className = 'dq-stage-fallback';
+    const text = document.createElement('p');
+    text.innerHTML = '<strong>The 3D kit could not load.</strong><br />Every drum still works on the pads below.';
+    fallback.appendChild(text);
+    els.stage.appendChild(fallback);
   }
 }
 
-function updateRotateHint() {
-  if (!rotateHintEl) return;
-  const touch = window.matchMedia('(pointer: coarse)').matches;
-  const portrait = window.matchMedia('(orientation: portrait)').matches;
-  rotateHintEl.hidden = !(touch && portrait && !rotateHintDismissed());
-}
+/* --------------------------------------------------------------------- init */
 
-rotateHintEl.addEventListener('click', () => {
-  try {
-    window.sessionStorage.setItem(ROTATE_HINT_KEY, '1');
-  } catch (error) {
-    /* Private mode or no storage; hiding it for now is enough. */
-  }
-  rotateHintEl.hidden = true;
-});
-
-// Turning the phone re-measures the stage (the resize event usually
-// fires too, but orientationchange is the explicit signal) and hides
-// the hint the moment the phone is sideways.
-window.addEventListener('resize', updateRotateHint);
-window.addEventListener('orientationchange', () => {
-  stage.resize();
-  updateRotateHint();
-});
-updateRotateHint();
-
-/* ------------------------------------------------------------------- init */
-
-function updateBestLine() {
-  const best = getBest(GAME_ID);
-  $('best-line').textContent =
-    best > 0 ? `Best level with Jack yet: ${best} ⭐` : 'Your best level with Jack will show up here.';
-}
-
-applyMute(readMuted());
-applyFullscreenState();
-setupCopyLevel();
+buildPads();
+renderLessonHeader();
+renderLevels();
+renderRail();
+renderTarget();
 updateBestLine();
-showMode('free');
+applyMute(readMuted());
+setMode('free');
+initStage();

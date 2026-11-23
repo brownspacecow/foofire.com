@@ -92,7 +92,7 @@ export const games = [
     category: 'music',
     title: 'Drum Quest',
     description:
-      "Joel's 3D drum game for kids learning to play: look straight down on the kit in a top-down view and tap the drums in Free Play, or learn real beats with Jack the drum teacher. No failing, no accounts — just drums.",
+      "Joel's 3D drum game for kids learning to play: tap a real kit on a lit stage, or use the big colour-coded pads. Bash away in Free Play with a count, or learn real beats with Jack — he plays it, you copy it, and nothing ever fails.",
     image: './public/screenshots/drum-quest.svg',
     path: './src/games/drum-quest/index.html',
   },

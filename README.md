@@ -46,7 +46,7 @@ src/
     the-grin/       # The Grin: four-stage bullet-hell boss fight
     phrase-pad/     # Phrase Pad: pocket touch synth, no wrong notes
     rhythm-break/   # Soft Reset: two-minute rhythm break
-    drum-quest/     # Drum Quest: kid-sized drum kit, Copy Cat, Beat Builder
+    drum-quest/     # Drum Quest: kid-sized 3D drum kit, Free Play, Learn with Jack
 public/
   data/
     muddle-keep/   # rooms, creatures, spells, traps, heroes, levels (JSON)

@@ -1,53 +1,26 @@
 /* -------------------------------------------------------------------------
  * Drum Quest — the 3D stage (Three.js).
- * House pattern, same as ball-pit / bear / claw-machine: importmap
- * "three": "https://esm.sh/three@0.168.0", MeshStandardMaterial,
- * ACES tone mapping, one shadow-casting key light, raycast taps.
  *
- * A stage with a real-looking kit (kick, snare, hi-hat, two rack toms,
- * floor tom, crash + ride cymbals) seen from directly ABOVE, like
- * other online drum sets: the kit is a floor plan on the screen, kick
- * at the bottom, cymbals across the top, Jack at the top edge. Two
- * drumsticks come in from the bottom edge — your hands — and swing
- * down onto the drum you tap. Across the kit sits Jack, your drum
- * teacher, with his own demo pad — he plays a simple beat, you play
- * it back. Tap a drum in 3D to hit it; the head squashes, the cymbal
- * wobbles, the rim flashes and your stick strikes. No flat pads anywhere.
- * Thumb-first: the camera is high above the kit, every drum has an
- * invisible hit sphere ~1.6x its size, and the game is designed for
- * two thumbs in phone portrait — no precise tapping, no hover, no
- * double-tap zoom.
+ * One lit little stage: warm wood, a teal rug, a curtain of string lights,
+ * and a real-looking kit seen from above and behind the drummer's seat.
+ * Every drum is a drum — shells, rims, heads, stands, cymbals — and each
+ * one carries its own colour, matching the big pads under the stage.
+ *
+ * The stage is a view, never a control surface you have to aim at: taps
+ * here work (generous invisible hit balls), but the pads below are the
+ * real controls. That means the whole game still works if WebGL fails,
+ * which is why game.js loads this module dynamically and can live without
+ * it.
+ *
+ * Dynamic effects are all one-shot and short: the head squashes, the rim
+ * flashes, the cymbal wobbles, Jack's teal stick taps the drum he means.
+ * A finished lesson gets a confetti pop.
  * ---------------------------------------------------------------------- */
 
 import * as THREE from 'three';
+import { DRUMS } from './logic.js';
 
-export const DRUM_COLORS = {
-  kick: '#ff6b5e',
-  snare: '#f4c95d',
-  hihat: '#7fd8c6',
-  tom: '#b6a3ff',
-  crash: '#f08fa4',
-  ride: '#ff9f43',
-};
-
-const DRUM_LABELS = {
-  kick: 'KICK · A',
-  snare: 'SNARE · S',
-  hihat: 'HI-HAT · D',
-  tom: 'TOM · F',
-  crash: 'CRASH · G',
-  ride: 'RIDE · H',
-};
-
-/* Left stick hits the snare side, right stick the tom/crash/ride side. */
-const STRIKE_ARM = {
-  kick: 'foot',
-  snare: 'left',
-  hihat: 'left',
-  tom: 'right',
-  crash: 'right',
-  ride: 'right',
-};
+const COLORS = Object.fromEntries(DRUMS.map((drum) => [drum.id, drum.color]));
 
 export function createStage(container, options = {}) {
   const reducedMotion = Boolean(options.reducedMotion);
@@ -55,35 +28,21 @@ export function createStage(container, options = {}) {
 
   /* ------------------------------------------------------------ renderer */
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0418);
-  scene.fog = new THREE.Fog(0x0a0418, 14, 30);
+  scene.background = new THREE.Color(0x0a0518);
+  scene.fog = new THREE.Fog(0x0a0518, 13, 26);
 
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 120);
-  // TOP-DOWN framing: the camera hangs directly above the kit and looks
-  // straight down, like other online drum sets — the kit is a floor plan
-  // on the screen, kick at the bottom, cymbals across the top, Jack at
-  // the top edge. The camera's up vector is +z so the far side of the
-  // stage (+z, Jack's side) is the top of the screen and the stool side
-  // (-z) is the bottom. Phones get a wider lens so the whole kit stays
-  // in frame in portrait, without pulling the camera back.
-  camera.up.set(0, 0, 1);
-  const CAM_BASE = new THREE.Vector3(0, 6.3, 0.7);
-  const LOOK_BASE = new THREE.Vector3(0, 0, 0.45);
-  const CAM_ZOOM = new THREE.Vector3(0, 4.7, 0.6);
-  const LOOK_ZOOM = new THREE.Vector3(0, 0, 0.45);
-  let zoomed = false;
-  const camTarget = CAM_BASE.clone();
-  const lookTarget = LOOK_BASE.clone();
-  const tmpPos = new THREE.Vector3();
-  let fovTarget = 55;
-  camera.position.copy(CAM_BASE);
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 80);
+  const TARGET = new THREE.Vector3(-0.1, 1.02, 0.35);
+  const VIEW_DIR = new THREE.Vector3(0, 0.78, 0.63).normalize();
+  const FIT_RADIUS = 2.12;
+  const cameraBase = new THREE.Vector3();
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.16;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.setAttribute('aria-hidden', 'true');
   renderer.domElement.style.display = 'block';
@@ -91,30 +50,27 @@ export function createStage(container, options = {}) {
   renderer.domElement.style.userSelect = 'none';
   container.appendChild(renderer.domElement);
 
-  const MATS = new Map();
-  function mat(color, opts = {}) {
+  const materials = new Map();
+  function material(color, opts = {}) {
     const key = `${color}|${JSON.stringify(opts)}`;
-    if (!MATS.has(key)) {
-      MATS.set(
+    if (!materials.has(key)) {
+      materials.set(
         key,
-        new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05, ...opts }),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.1, ...opts }),
       );
     }
-    return MATS.get(key);
+    return materials.get(key);
   }
 
-  const chrome = mat(0xd8dce2, { metalness: 1, roughness: 0.18 });
-  const brass = mat(0xd4af37, { metalness: 0.9, roughness: 0.28 });
-  const shellRed = mat(0xd92038, { roughness: 0.22, metalness: 0.35 });
-  const darkMetal = mat(0x2a2a33, { metalness: 0.8, roughness: 0.4 });
-  const skin = mat(0xf2c29b, { roughness: 0.6 });
-  const shirt = mat(0x2ec4b6, { roughness: 0.75 });
-  const pants = mat(0x2b3a67, { roughness: 0.8 });
-  const wood = mat(0xc89b6a, { roughness: 0.6 });
-  const whiteHead = mat(0xf5f0e6, { roughness: 0.55 });
+  const chrome = material(0xdfe4ec, { metalness: 0.85, roughness: 0.2 });
+  const brass = material(0xd9ad58, { metalness: 0.45, roughness: 0.32 });
+  const darkMetal = material(0x2a2735, { metalness: 0.7, roughness: 0.42 });
+  const wood = material(0xcf9d68, { roughness: 0.62 });
+  const cream = material(0xfff7e6, { roughness: 0.5 });
+  const black = material(0x17111f, { roughness: 0.6 });
 
-  function mesh(geometry, material, x = 0, y = 0, z = 0, parent = scene) {
-    const m = new THREE.Mesh(geometry, material);
+  function mesh(geometry, mat, x = 0, y = 0, z = 0, parent = scene) {
+    const m = new THREE.Mesh(geometry, mat);
     m.position.set(x, y, z);
     m.castShadow = true;
     m.receiveShadow = true;
@@ -122,609 +78,618 @@ export function createStage(container, options = {}) {
     return m;
   }
 
-  /* --------------------------------------------------------------- lights */
-  scene.add(new THREE.HemisphereLight(0xcbb8ff, 0x21103f, 0.9));
+  /* -------------------------------------------------------------- textures */
+  function makeCanvas(size = 512) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    return { canvas, ctx: canvas.getContext('2d') };
+  }
 
-  const key = new THREE.SpotLight(0xfff1d6, 140, 30, 0.62, 0.55, 1.4);
-  key.position.set(0, 7.5, 4.5);
+  function woodFloorTexture() {
+    const { canvas, ctx } = makeCanvas(512);
+    ctx.fillStyle = '#3a2438';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let row = 0; row < 8; row += 1) {
+      const y = row * 64;
+      const shade = ['#4a2b3d', '#43263a', '#523244', '#3f2337'][row % 4];
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, y + 2, 512, 60);
+      ctx.strokeStyle = 'rgba(255, 220, 190, 0.05)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(0, y + 10 + i * 11);
+        ctx.bezierCurveTo(150, y + 6 + i * 11, 330, y + 18 + i * 11, 512, y + 9 + i * 11);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(10, 5, 18, 0.5)';
+      ctx.fillRect(row % 2 ? 0 : 256, y, 3, 64);
+      ctx.fillRect(row % 2 ? 340 : 90, y, 3, 64);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(16, 16);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  function backdropTexture() {
+    const { canvas, ctx } = makeCanvas(512);
+    const gradient = ctx.createLinearGradient(0, 0, 0, 512);
+    gradient.addColorStop(0, '#150c2c');
+    gradient.addColorStop(0.55, '#2c1338');
+    gradient.addColorStop(1, '#44203c');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 512, 512);
+    // A warm glow behind the kit, like a stage wash.
+    const glow = ctx.createRadialGradient(256, 330, 20, 256, 330, 300);
+    glow.addColorStop(0, 'rgba(255, 190, 120, 0.42)');
+    glow.addColorStop(0.45, 'rgba(240, 120, 130, 0.16)');
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 512, 512);
+    // Curtain folds.
+    for (let i = 0; i < 14; i += 1) {
+      const x = i * 38;
+      ctx.fillStyle = i % 2 ? 'rgba(10, 4, 20, 0.18)' : 'rgba(255, 200, 190, 0.045)';
+      ctx.fillRect(x, 0, 20, 512);
+    }
+    // String lights.
+    for (let i = 0; i < 15; i += 1) {
+      const x = 24 + i * 33;
+      const y = 90 + Math.sin(i * 0.7) * 26;
+      ctx.fillStyle = 'rgba(255, 226, 150, 0.16)';
+      ctx.beginPath();
+      ctx.arc(x, y, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffe38f';
+      ctx.beginPath();
+      ctx.arc(x, y, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  function kickHeadTexture() {
+    const { canvas, ctx } = makeCanvas(512);
+    ctx.fillStyle = '#fff6e2';
+    ctx.fillRect(0, 0, 512, 512);
+    ctx.strokeStyle = COLORS.kick;
+    ctx.lineWidth = 26;
+    ctx.beginPath();
+    ctx.arc(256, 256, 224, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#2a1b20';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(256, 256, 200, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#2a1b20';
+    ctx.font = 'bold 74px "Courier New", ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('DRUM', 256, 218);
+    ctx.fillText('QUEST', 256, 292);
+    ctx.fillStyle = COLORS.kick;
+    ctx.font = 'bold 62px "Courier New", ui-monospace, monospace';
+    ctx.fillText('★', 256, 372);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  /* ---------------------------------------------------------------- lights */
+  scene.add(new THREE.HemisphereLight(0xffd9b8, 0x1a0f33, 1.05));
+
+  const key = new THREE.SpotLight(0xfff2d6, 150, 34, 0.72, 0.55, 1.3);
+  key.position.set(1.4, 9.5, 5.2);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.near = 1;
-  key.shadow.camera.far = 25;
-  key.shadow.bias = -0.0005;
-  key.target.position.set(0, 0.8, 0);
-  scene.add(key);
-  scene.add(key.target);
+  key.shadow.camera.far = 26;
+  key.shadow.bias = -0.0006;
+  key.target.position.set(0, 0.6, 0);
+  scene.add(key, key.target);
 
-  const pinkGlow = new THREE.PointLight(0xff2e63, 26, 18, 2);
-  pinkGlow.position.set(-4.5, 4.4, 2.5);
-  scene.add(pinkGlow);
+  const pinkRim = new THREE.PointLight(0xff3d7f, 18, 20, 2);
+  pinkRim.position.set(-4.2, 3.6, -2.2);
+  scene.add(pinkRim);
 
-  const blueGlow = new THREE.PointLight(0x2ec4ff, 22, 18, 2);
-  blueGlow.position.set(4.5, 4.2, 2.5);
-  scene.add(blueGlow);
+  const blueRim = new THREE.PointLight(0x3ac4ff, 18, 20, 2);
+  blueRim.position.set(4.2, 3.2, 1.8);
+  scene.add(blueRim);
 
-  /* -------------------------------------------------------- stage + room */
+  const warmFront = new THREE.PointLight(0xffc089, 30, 16, 2);
+  warmFront.position.set(0, 1.9, 4.6);
+  scene.add(warmFront);
+
+  // A soft camera-side fill: metals and the kick's vertical head need the
+  // light that a purely top-down key never gives them.
+  const frontFill = new THREE.DirectionalLight(0xffe8d2, 0.85);
+  frontFill.position.set(0.4, 3.2, 6.5);
+  scene.add(frontFill);
+
+  /* ----------------------------------------------------------- the room */
   const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(60, 60),
-    new THREE.MeshStandardMaterial({ color: 0x17102a, roughness: 0.85 }),
+    new THREE.PlaneGeometry(70, 70),
+    new THREE.MeshStandardMaterial({ map: woodFloorTexture(), roughness: 0.9 }),
   );
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  // Round stage platform with a gold rim.
-  const platform = mesh(
-    new THREE.CylinderGeometry(3.1, 3.25, 0.12, 64),
-    mat(0x2a1530, { roughness: 0.9 }),
-    0,
-    0.06,
-    0.1,
-  );
-  platform.castShadow = false;
-  const rim = mesh(
-    new THREE.TorusGeometry(3.1, 0.035, 12, 80),
-    mat(0xf4c95d, { metalness: 0.8, roughness: 0.3 }),
-    0,
-    0.12,
-    0.1,
-  );
-  rim.rotation.x = Math.PI / 2;
-
-  // Backdrop wall and side curtains on the far side of the stage (+z,
-  // Jack's side) — mostly out of frame from above, but they give the
-  // room its edges if the view ever widens.
   const backdrop = new THREE.Mesh(
-    new THREE.PlaneGeometry(30, 12),
-    new THREE.MeshStandardMaterial({ color: 0x120a24, roughness: 1 }),
+    new THREE.PlaneGeometry(24, 13),
+    new THREE.MeshBasicMaterial({ map: backdropTexture() }),
   );
-  backdrop.position.set(0, 6, 6);
-  backdrop.rotation.y = Math.PI;
-  backdrop.receiveShadow = true;
+  backdrop.position.set(0, 5.2, -6.4);
   scene.add(backdrop);
 
+  // Curtain edges either side of the stage.
   for (const side of [-1, 1]) {
     const curtain = mesh(
-      new THREE.BoxGeometry(1.4, 9, 0.5),
-      mat(0x5c1a24, { roughness: 0.95 }),
-      side * 5.2,
-      4.5,
-      5.2,
+      new THREE.BoxGeometry(1.5, 10, 0.5),
+      material(0x4a1830, { roughness: 0.95 }),
+      side * 6.4,
+      4.8,
+      -4.2,
     );
     curtain.castShadow = false;
   }
 
-  // Translucent light cones from the spot fixtures.
-  function lightCone(color, x, z, tiltZ) {
-    const cone = new THREE.Mesh(
-      new THREE.ConeGeometry(1.5, 7, 24, 1, true),
-      new THREE.MeshBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0.05,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      }),
-    );
-    cone.position.set(x, 3.6, z);
-    cone.rotation.z = tiltZ;
-    cone.rotation.x = 0.12;
-    scene.add(cone);
-    return cone;
-  }
-  lightCone(0xff2e63, -3.4, 1.2, 0.42);
-  lightCone(0x2ec4ff, 3.4, 1.2, -0.42);
+  // Round stage: dark wood riser, teal rug, gold rim.
+  const riser = mesh(
+    new THREE.CylinderGeometry(3.35, 3.5, 0.16, 72),
+    material(0x2c1824, { roughness: 0.85 }),
+    0,
+    0.08,
+    0.3,
+  );
+  riser.castShadow = false;
+  const rug = mesh(
+    new THREE.CylinderGeometry(3.05, 3.05, 0.03, 72),
+    material(0x14484b, { roughness: 0.95 }),
+    0,
+    0.17,
+    0.3,
+  );
+  rug.castShadow = false;
+  const rugInner = mesh(
+    new THREE.TorusGeometry(2.55, 0.018, 6, 96),
+    material(0xf4c95d, { metalness: 0.5, roughness: 0.4 }),
+    0,
+    0.19,
+    0.3,
+  );
+  rugInner.rotation.x = Math.PI / 2;
+  rugInner.castShadow = false;
+  const rugRim = mesh(
+    new THREE.TorusGeometry(3.05, 0.035, 8, 96),
+    material(0xf4c95d, { metalness: 0.7, roughness: 0.32 }),
+    0,
+    0.19,
+    0.3,
+  );
+  rugRim.rotation.x = Math.PI / 2;
+  rugRim.castShadow = false;
 
-  // Spot fixtures up in the rigging.
-  for (const side of [-1, 1]) {
-    mesh(new THREE.BoxGeometry(0.5, 0.35, 0.5), darkMetal, side * 3.4, 7.1, 1.2);
-    const lens = mesh(
-      new THREE.SphereGeometry(0.14, 16, 12),
-      new THREE.MeshStandardMaterial({
-        color: 0xfff1d6,
-        emissive: side < 0 ? 0xff2e63 : 0x2ec4ff,
-        emissiveIntensity: 2.2,
-        roughness: 0.3,
-      }),
-      side * 3.4,
-      6.9,
-      1.2,
-    );
-    lens.castShadow = false;
-  }
-
-  // Little gold fairy lights across the backdrop, ahead of the drummer.
-  const fairyGeo = new THREE.SphereGeometry(0.045, 8, 6);
-  const fairyMat = new THREE.MeshBasicMaterial({ color: 0xf4c95d });
-  for (let i = 0; i < 26; i += 1) {
-    const x = -5.4 + i * 0.45;
-    const y = 4.6 + Math.sin(i * 0.9) * 0.35;
-    const light = new THREE.Mesh(fairyGeo, fairyMat);
-    light.position.set(x, y, 5.9);
-    scene.add(light);
-  }
-
-  /* ------------------------------------------------------------ drum kit */
-  // Registry: every playable drum gets a group, squashable head meshes,
-  // a wobble group (cymbals), a glow ring, and the meshes raycasting hits.
+  /* --------------------------------------------------------- drum registry
+   * One entry per *logical* drum (all three toms answer to 'tom'), holding
+   * everything the animation loop needs to move: heads to squash, materials
+   * to glow, rings on the floor, cymbals to wobble.
+   */
   const drums = {};
   const hitMeshes = [];
 
-  // Invisible thumb-sized hit targets: a tap that lands *near* a drum
-  // should hit it. Each sphere is ~1.6x the drum, raycast like the drum
-  // itself, and renders nothing (opacity 0 + no colour write).
-  const hitMat = new THREE.MeshBasicMaterial({
+  function registerDrum(id, { centers, heads = [], glowMats = [], wobbles = [], rings = [], discs = [] }) {
+    drums[id] = {
+      id,
+      centers,
+      heads,
+      glowMats,
+      wobbles: wobbles.map((group) => ({ group, base: group.rotation.clone() })),
+      rings,
+      discs,
+      hitAt: -10,
+      hintOn: false,
+    };
+  }
+
+  // Invisible spheres give every drum a generous thumb-sized target.
+  const hitMaterial = new THREE.MeshBasicMaterial({
     transparent: true,
     opacity: 0,
     depthWrite: false,
   });
-  hitMat.colorWrite = false;
-  function addHitTarget(id, x, y, z, radius) {
-    const target = new THREE.Mesh(new THREE.SphereGeometry(radius, 12, 8), hitMat);
-    target.position.set(x, y, z);
-    target.castShadow = false;
-    target.receiveShadow = false;
-    target.userData.drumId = id;
-    scene.add(target);
-    hitMeshes.push(target);
-    return target;
+  hitMaterial.colorWrite = false;
+  function addHitSphere(id, x, y, z, radius) {
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(radius, 10, 8), hitMaterial);
+    sphere.position.set(x, y, z);
+    sphere.userData.drumId = id;
+    scene.add(sphere);
+    hitMeshes.push(sphere);
   }
 
-  function registerDrum(id, group, { heads = [], wobble = null } = {}) {
-    // Heads share one glow material — except a head with a painted texture
-    // (the kick front), which keeps its map and gets a cloned glow material.
-    const glowMats = [];
-    for (const head of heads) {
-      if (head.material && head.material.map) {
-        head.material = head.material.clone();
-        head.material.emissive = new THREE.Color(DRUM_COLORS[id]);
-        head.material.emissiveIntensity = 0;
-        glowMats.push(head.material);
-      }
-    }
-    const plainHeads = heads.filter((head) => !head.material.map);
-    const headMat = new THREE.MeshStandardMaterial({
-      color: 0xf5f0e6,
-      roughness: 0.55,
-      emissive: new THREE.Color(DRUM_COLORS[id]),
+  function headMaterial(id) {
+    return new THREE.MeshStandardMaterial({
+      color: 0xfff7e6,
+      roughness: 0.48,
+      metalness: 0.02,
+      emissive: new THREE.Color(COLORS[id]),
       emissiveIntensity: 0,
     });
-    for (const head of plainHeads) head.material = headMat;
-    glowMats.push(headMat);
+  }
+
+  // A ring that floats on the drum head and flashes when it is played.
+  function makeRing(id, { x, y, z, radius, flat = true }) {
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.95, 1.12, 48),
+      new THREE.RingGeometry(radius * 0.82, radius * 1.04, 48),
       new THREE.MeshBasicMaterial({
-        color: 0xf4c95d,
+        color: COLORS[id],
         transparent: true,
         opacity: 0,
         side: THREE.DoubleSide,
         depthWrite: false,
       }),
     );
+    ring.position.set(x, y, z);
+    if (flat) ring.rotation.x = -Math.PI / 2;
     ring.visible = false;
-    group.add(ring);
-    drums[id] = {
-      id,
-      group,
-      heads,
-      glowMats,
-      wobble,
-      wobbleBase: wobble ? wobble.rotation.clone() : null,
-      ring,
-      hitAt: -10,
-      // One-shot glow timestamp: set when Jack's demo lights this drum.
-      // The ring flashes once from this moment, then goes dark — it
-      // never stays lit and never pulses.
-      glowAt: -10,
-    };
-    group.traverse((child) => {
-      if (child.isMesh) {
-        child.userData.drumId = id;
-        hitMeshes.push(child);
-      }
-    });
-    return drums[id];
+    scene.add(ring);
+    return ring;
   }
 
-  function pole(x, z, height, parent = scene) {
-    return mesh(new THREE.CylinderGeometry(0.03, 0.03, height, 12), chrome, x, height / 2, z, parent);
+  // A faint coloured disc on the rug under every drum — a map from pad to kit.
+  function makeFloorDisc(id, { x, z, radius }) {
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(radius, 40),
+      new THREE.MeshBasicMaterial({
+        color: COLORS[id],
+        transparent: true,
+        opacity: 0.16,
+        depthWrite: false,
+      }),
+    );
+    disc.position.set(x, 0.2, z);
+    disc.rotation.x = -Math.PI / 2;
+    scene.add(disc);
+    return disc;
   }
 
-  function tripod(x, z, y = 0) {
+  /* ---------------------------------------------------------------- stands */
+  function stand(x, z, topY, { legs = 0.55, radius = 0.03 } = {}) {
+    const pole = mesh(new THREE.CylinderGeometry(radius, radius, topY, 12), chrome, x, topY / 2, z);
+    pole.castShadow = false;
     for (let i = 0; i < 3; i += 1) {
-      const angle = (i / 3) * Math.PI * 2 + 0.5;
-      const leg = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.55, 8), chrome, 0, 0, 0);
-      leg.position.set(x + Math.cos(angle) * 0.16, y + 0.16, z + Math.sin(angle) * 0.16);
-      leg.rotation.z = Math.cos(angle) * 0.5;
-      leg.rotation.x = -Math.sin(angle) * 0.5;
+      const angle = (i / 3) * Math.PI * 2 + 0.45;
+      const legGroup = new THREE.Group();
+      legGroup.position.set(x, 0.12, z);
+      legGroup.rotation.y = angle;
+      scene.add(legGroup);
+      const leg = mesh(new THREE.CylinderGeometry(0.022, 0.022, legs, 8), chrome, 0, 0, 0.16, legGroup);
+      leg.rotation.x = -0.4;
+      leg.castShadow = false;
     }
   }
 
-  // Kick drum front-head art: white head, red ring, "DRUM QUEST" + star.
-  function kickHeadTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#f5f0e6';
-    ctx.fillRect(0, 0, 256, 256);
-    ctx.strokeStyle = '#d92038';
-    ctx.lineWidth = 14;
-    ctx.beginPath();
-    ctx.arc(128, 128, 112, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = '#d92038';
-    ctx.font = 'bold 34px "Courier New", ui-monospace, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('DRUM', 128, 96);
-    ctx.fillText('QUEST', 128, 134);
-    ctx.font = 'bold 44px "Courier New", ui-monospace, monospace';
-    ctx.fillText('★', 128, 184);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
-  }
+  /* ------------------------------------------------------------- the drums */
 
-  // --- Kick: big, bottom-centre, closest to the player. Top-down the
-  // shell stands upright so the painted "DRUM QUEST" head faces UP
-  // toward the camera and reads as a circle. The texture is flipped
-  // in-plane (rotation.z = PI) so the words read upright from above,
-  // with the top of the letters toward the top of the screen.
-  const kick = new THREE.Group();
-  kick.position.set(0, 0.55, -0.75);
-  scene.add(kick);
-  mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.5, 48), shellRed, 0, 0, 0, kick);
-  const kickFront = mesh(
-    new THREE.CircleGeometry(0.52, 48),
-    new THREE.MeshStandardMaterial({ map: kickHeadTexture(), roughness: 0.55 }),
-    0,
-    0.26,
-    0,
-    kick,
-  );
-  kickFront.rotation.set(-Math.PI / 2, 0, Math.PI);
-  mesh(new THREE.CircleGeometry(0.52, 48), whiteHead, 0, -0.26, 0, kick).rotation.x =
-    Math.PI / 2;
+  // --- Kick: centre, big, front head painted "DRUM QUEST".
+  const kickGroup = new THREE.Group();
+  kickGroup.position.set(0, 0.8, 0.5);
+  scene.add(kickGroup);
+  const kickMat = material(COLORS.kick, { roughness: 0.3, metalness: 0.35 });
+  const kickBody = mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.56, 56), kickMat, 0, 0, 0, kickGroup);
+  kickBody.rotation.x = Math.PI / 2;
+  const kickHeadMat = new THREE.MeshStandardMaterial({
+    map: kickHeadTexture(),
+    roughness: 0.5,
+    emissive: new THREE.Color(COLORS.kick),
+    emissiveIntensity: 0,
+  });
+  const kickFront = mesh(new THREE.CircleGeometry(0.585, 56), kickHeadMat, 0, 0, 0.285, kickGroup);
+  const kickBack = mesh(new THREE.CircleGeometry(0.585, 48), cream, 0, 0, -0.285, kickGroup);
+  kickBack.rotation.y = Math.PI;
+  for (const z of [-0.28, 0.28]) {
+    const hoop = mesh(new THREE.TorusGeometry(0.62, 0.035, 10, 56), chrome, 0, 0, z, kickGroup);
+    hoop.castShadow = false;
+  }
+  // Spurs either side, and a pedal at the front.
   for (const side of [-1, 1]) {
-    const rimT = mesh(new THREE.TorusGeometry(0.55, 0.03, 12, 48), chrome, 0, side * 0.25, 0, kick);
-    rimT.rotation.x = Math.PI / 2;
-    rimT.castShadow = false;
-    const leg = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.5, 8), chrome, side * 0.5, -0.35, 0.1, kick);
-    leg.rotation.z = side * 0.5;
+    const spur = mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.5, 8), chrome, side * 0.55, -0.42, 0.18, kickGroup);
+    spur.rotation.z = side * 0.55;
+    spur.castShadow = false;
   }
-  registerDrum('kick', kick, { heads: [kickFront] });
-  drums.kick.ring.position.set(0, 0.32, 0);
-  drums.kick.ring.rotation.x = -Math.PI / 2;
-  drums.kick.ring.scale.setScalar(0.55);
-  addHitTarget('kick', 0, 0.55, -0.75, 0.88);
+  const pedal = mesh(new THREE.BoxGeometry(0.2, 0.05, 0.42), darkMetal, 0.28, 0.04, 1.14);
+  pedal.rotation.x = -0.18;
+  const pedalFoot = mesh(new THREE.BoxGeometry(0.19, 0.03, 0.16), black, 0.28, 0.09, 1.3);
+  pedalFoot.rotation.x = -0.3;
 
-  // --- Snare: left-centre from above (world +x is screen left, the
-  // drummer's left), tilted slightly toward the player. Enlarged so a
-  // thumb lands it. ---
-  const snare = new THREE.Group();
-  snare.position.set(0.8, 0.8, -0.35);
-  snare.rotation.set(-0.14, 0, -0.1);
-  scene.add(snare);
-  mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.2, 40), shellRed, 0, 0, 0, snare);
-  const snareHead = mesh(new THREE.CircleGeometry(0.34, 40), whiteHead, 0, 0.11, 0, snare);
-  snareHead.rotation.x = -Math.PI / 2;
-  mesh(new THREE.TorusGeometry(0.36, 0.025, 12, 40), chrome, 0, 0.11, 0, snare).rotation.x = Math.PI / 2;
-  pole(0.8, -0.35, 0.8);
-  tripod(0.8, -0.35);
-  registerDrum('snare', snare, { heads: [snareHead] });
-  drums.snare.ring.position.set(0, 0.16, 0);
-  drums.snare.ring.rotation.x = -Math.PI / 2;
-  drums.snare.ring.scale.setScalar(0.4);
-  addHitTarget('snare', 0.8, 0.8, -0.35, 0.58);
-
-  // --- Hi-hat: far left, two brass cymbals on a stand, head up.
-  const hihat = new THREE.Group();
-  hihat.position.set(1.45, 0.95, -0.05);
-  scene.add(hihat);
-  mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 40), brass, 0, 0, 0, hihat);
-  mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 40), brass, 0, 0.05, 0, hihat);
-  pole(1.45, -0.05, 0.95);
-  tripod(1.45, -0.05);
-  registerDrum('hihat', hihat, { wobble: hihat });
-  drums.hihat.ring.position.set(0, 0.12, 0);
-  drums.hihat.ring.rotation.x = -Math.PI / 2;
-  drums.hihat.ring.scale.setScalar(0.4);
-  addHitTarget('hihat', 1.45, 0.95, -0.05, 0.62);
-
-  // --- Rack toms: two toms in a row across the top-centre, heads
-  // facing straight up so they read as circles from above. Enlarged.
-  function rackTom(x, tiltZ) {
-    const tom = new THREE.Group();
-    tom.position.set(x, 1.2, 0.6);
-    tom.rotation.set(0, 0, tiltZ);
-    scene.add(tom);
-    mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.34, 32), shellRed, 0, 0, 0, tom);
-    const head = mesh(new THREE.CircleGeometry(0.28, 32), whiteHead, 0, 0.18, 0, tom);
-    head.rotation.x = -Math.PI / 2;
-    mesh(new THREE.TorusGeometry(0.3, 0.02, 10, 32), chrome, 0, 0.18, 0, tom).rotation.x = Math.PI / 2;
-    return tom;
-  }
-  const tomL = rackTom(-0.45, 0.16);
-  const tomR = rackTom(0.45, -0.16);
-  const tomHeads = [];
-  tomL.traverse((c) => {
-    if (c.isMesh && c.geometry && c.geometry.type === 'CircleGeometry') tomHeads.push(c);
+  registerDrum('kick', {
+    centers: [new THREE.Vector3(0, 0.95, 0.55)],
+    heads: [kickFront],
+    glowMats: [kickHeadMat],
+    rings: [makeRing('kick', { x: 0, y: 0.8, z: 0.79, radius: 0.62, flat: false })],
+    discs: [makeFloorDisc('kick', { x: 0, z: 0.62, radius: 0.85 })],
   });
-  tomR.traverse((c) => {
-    if (c.isMesh && c.geometry && c.geometry.type === 'CircleGeometry') tomHeads.push(c);
-  });
-  // Floor tom, right-centre from above (world -x is screen right),
-  // head up.
-  const floorTom = new THREE.Group();
-  floorTom.position.set(-0.9, 0.5, -0.3);
-  scene.add(floorTom);
-  mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.5, 40), shellRed, 0, 0, 0, floorTom);
-  const floorHead = mesh(new THREE.CircleGeometry(0.32, 40), whiteHead, 0, 0.26, 0, floorTom);
-  floorHead.rotation.x = -Math.PI / 2;
-  mesh(new THREE.TorusGeometry(0.34, 0.025, 12, 40), chrome, 0, 0.26, 0, floorTom).rotation.x = Math.PI / 2;
-  for (let i = 0; i < 3; i += 1) {
-    const angle = (i / 3) * Math.PI * 2;
-    mesh(
-      new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8),
-      chrome,
-      Math.cos(angle) * 0.32,
-      -0.3,
-      Math.sin(angle) * 0.32,
-      floorTom,
+  addHitSphere('kick', 0, 0.95, 0.55, 0.72);
+
+  // --- Snare: left of centre, close to the drummer.
+  function shellDrum(id, { x, z, headY, radius, depth, tilt = 0 }) {
+    const group = new THREE.Group();
+    group.position.set(x, headY, z);
+    group.rotation.z = tilt;
+    scene.add(group);
+    const shell = mesh(
+      new THREE.CylinderGeometry(radius, radius, depth, 40),
+      material(COLORS[id], { roughness: 0.32, metalness: 0.3 }),
+      0,
+      -depth / 2,
+      0,
+      group,
     );
+    shell.castShadow = true;
+    const headMat = headMaterial(id);
+    const head = mesh(new THREE.CircleGeometry(radius * 0.97, 48), headMat, 0, 0.01, 0, group);
+    head.rotation.x = -Math.PI / 2;
+    const rim = mesh(new THREE.TorusGeometry(radius, 0.026, 8, 48), chrome, 0, 0.02, 0, group);
+    rim.rotation.x = Math.PI / 2;
+    rim.castShadow = false;
+    // A thin hoop in the drum's own colour, so the kit and the pads match.
+    const colourHoop = mesh(
+      new THREE.TorusGeometry(radius * 0.9, 0.012, 6, 48),
+      material(COLORS[id], { roughness: 0.4, metalness: 0.2 }),
+      0,
+      0.022,
+      0,
+      group,
+    );
+    colourHoop.rotation.x = Math.PI / 2;
+    colourHoop.castShadow = false;
+    for (let i = 0; i < 8; i += 1) {
+      const a = (i / 8) * Math.PI * 2;
+      const lug = mesh(new THREE.BoxGeometry(0.03, 0.06, 0.02), chrome, Math.cos(a) * radius, -depth * 0.45, Math.sin(a) * radius, group);
+      lug.castShadow = false;
+    }
+    return { head, headMat };
   }
-  tomHeads.push(floorHead);
-  // One shared 'tom' entry covering all three tom drums.
-  const tomGroup = new THREE.Group();
-  tomGroup.add(tomL);
-  tomGroup.add(tomR);
-  tomGroup.add(floorTom);
-  scene.add(tomGroup);
-  registerDrum('tom', tomGroup, { heads: tomHeads });
-  drums.tom.ring.position.set(0, 1.45, 0.6);
-  drums.tom.ring.rotation.x = -Math.PI / 2;
-  drums.tom.ring.scale.setScalar(0.55);
-  // Tom hit spheres are a touch bigger than before so the smallest
-  // drums still clear 80px on a phone in top-down view.
-  addHitTarget('tom', -0.45, 1.2, 0.6, 0.55);
-  addHitTarget('tom', 0.45, 1.2, 0.6, 0.55);
-  addHitTarget('tom', -0.9, 0.5, -0.3, 0.58);
 
-  // --- Cymbals: crash top-left, ride top-right, flat brass circles
-  // lying in the horizontal plane.
-  function cymbal(x, y, z, radius, tiltZ, drumId) {
+  const snare = shellDrum('snare', { x: -0.98, z: 1.0, headY: 0.98, radius: 0.37, depth: 0.24, tilt: -0.05 });
+  stand(-0.98, 1.0, 0.76);
+  registerDrum('snare', {
+    centers: [new THREE.Vector3(-0.98, 1.0, 1.0)],
+    heads: [snare.head],
+    glowMats: [snare.headMat],
+    rings: [makeRing('snare', { x: -0.98, y: 1.0, z: 1.0, radius: 0.37 })],
+    discs: [makeFloorDisc('snare', { x: -0.98, z: 1.0, radius: 0.55 })],
+  });
+  addHitSphere('snare', -0.98, 1.02, 1.0, 0.5);
+
+  // --- Hi-hat: far left, two brass plates and a clutch.
+  const hihat = new THREE.Group();
+  hihat.position.set(-2.1, 1.05, 0.6);
+  scene.add(hihat);
+  for (const y of [0, 0.055]) {
+    const plate = mesh(new THREE.CylinderGeometry(0.42, 0.4, 0.022, 48), brass, 0, y, 0, hihat);
+    plate.castShadow = false;
+    const rim = mesh(new THREE.TorusGeometry(0.42, 0.012, 6, 48), material(COLORS.hihat, { roughness: 0.4 }), 0, y + 0.005, 0, hihat);
+    rim.rotation.x = Math.PI / 2;
+    rim.castShadow = false;
+  }
+  mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.18, 8), chrome, 0, 0.14, 0, hihat);
+  // Teal clutch band, matching the hi-hat pad.
+  mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.05, 12), material(COLORS.hihat, { roughness: 0.45 }), 0, 0.2, 0, hihat);
+  stand(-2.1, 0.6, 1.0);
+  registerDrum('hihat', {
+    centers: [new THREE.Vector3(-2.1, 1.12, 0.6)],
+    heads: [],
+    glowMats: [],
+    wobbles: [hihat],
+    rings: [makeRing('hihat', { x: -2.1, y: 1.12, z: 0.6, radius: 0.42 })],
+    discs: [makeFloorDisc('hihat', { x: -2.1, z: 0.6, radius: 0.55 })],
+  });
+  addHitSphere('hihat', -2.1, 1.1, 0.6, 0.62);
+
+  // --- Rack toms: above the kick, one each side of centre.
+  const rackToms = [
+    shellDrum('tom', { x: -0.45, z: -0.05, headY: 1.52, radius: 0.31, depth: 0.34, tilt: 0.05 }),
+    shellDrum('tom', { x: 0.45, z: -0.05, headY: 1.52, radius: 0.31, depth: 0.34, tilt: -0.05 }),
+  ];
+  // Floor tom: right, big and low.
+  const floorTom = shellDrum('tom', { x: 1.5, z: 0.55, headY: 0.82, radius: 0.4, depth: 0.55 });
+  for (let i = 0; i < 3; i += 1) {
+    const a = (i / 3) * Math.PI * 2;
+    const leg = mesh(
+      new THREE.CylinderGeometry(0.02, 0.02, 0.72, 8),
+      chrome,
+      1.5 + Math.cos(a) * 0.36,
+      0.38,
+      0.55 + Math.sin(a) * 0.36,
+    );
+    leg.rotation.z = Math.cos(a) * 0.16;
+    leg.rotation.x = -Math.sin(a) * 0.16;
+    leg.castShadow = false;
+  }
+  // One mount holding the two rack toms over the kick.
+  stand(0, -0.1, 1.55, { legs: 0.7 });
+  const tomPost = mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.5, 8), chrome, 0.45, 1.35, 0.1);
+  tomPost.rotation.z = Math.PI / 2 - 0.2;
+  const tomCenter = new THREE.Vector3(-0.45, 1.55, -0.05);
+  const tomHeadMats = [rackToms[0].headMat, rackToms[1].headMat, floorTom.headMat];
+  registerDrum('tom', {
+    centers: [
+      tomCenter,
+      new THREE.Vector3(0.45, 1.55, -0.05),
+      new THREE.Vector3(1.5, 0.84, 0.55),
+    ],
+    heads: [rackToms[0].head, rackToms[1].head, floorTom.head],
+    glowMats: tomHeadMats,
+    rings: [
+      makeRing('tom', { x: -0.45, y: 1.55, z: -0.05, radius: 0.31 }),
+      makeRing('tom', { x: 0.45, y: 1.55, z: -0.05, radius: 0.31 }),
+      makeRing('tom', { x: 1.5, y: 0.84, z: 0.55, radius: 0.4 }),
+    ],
+    discs: [
+      makeFloorDisc('tom', { x: -0.45, z: -0.05, radius: 0.45 }),
+      makeFloorDisc('tom', { x: 0.45, z: -0.05, radius: 0.45 }),
+      makeFloorDisc('tom', { x: 1.5, z: 0.55, radius: 0.55 }),
+    ],
+  });
+  addHitSphere('tom', -0.45, 1.55, -0.05, 0.48);
+  addHitSphere('tom', 0.45, 1.55, -0.05, 0.48);
+  addHitSphere('tom', 1.5, 0.86, 0.55, 0.56);
+
+  // --- Crash and ride: far side, up high, each its own drum.
+  function cymbal(id, { x, z, y, radius, tilt }) {
     const group = new THREE.Group();
     group.position.set(x, y, z);
-    group.rotation.set(-0.12, 0, tiltZ);
+    group.rotation.set(-0.14, 0, tilt);
     scene.add(group);
-    mesh(new THREE.CylinderGeometry(radius, radius * 0.92, 0.02, 48), brass, 0, 0, 0, group);
-    mesh(new THREE.SphereGeometry(0.05, 12, 8), brass, 0, 0.03, 0, group);
-    pole(x, z, y);
-    tripod(x, z);
-    return group;
+    const plateMat = new THREE.MeshStandardMaterial({
+      color: 0xc79a43,
+      metalness: 0.55,
+      roughness: 0.36,
+      emissive: new THREE.Color(COLORS[id]),
+      emissiveIntensity: 0.02,
+    });
+    const plate = mesh(new THREE.CylinderGeometry(radius, radius * 0.98, 0.024, 56), plateMat, 0, 0, 0, group);
+    plate.castShadow = false;
+    mesh(new THREE.SphereGeometry(0.055, 12, 8), plateMat, 0, 0.03, 0, group).castShadow = false;
+    // Lathed grooves, so a cymbal reads as metal instead of a yellow disc.
+    for (const ratio of [0.4, 0.62, 0.82]) {
+      const groove = mesh(
+        new THREE.TorusGeometry(radius * ratio, 0.007, 4, 56),
+        material(0x9c742c, { metalness: 0.5, roughness: 0.38 }),
+        0,
+        0.014,
+        0,
+        group,
+      );
+      groove.rotation.x = Math.PI / 2;
+      groove.castShadow = false;
+    }
+    // A painted rim in the drum's own colour: crash is pink, ride is orange.
+    const rim = mesh(new THREE.TorusGeometry(radius + 0.004, 0.016, 6, 56), material(COLORS[id], { roughness: 0.4 }), 0, 0.01, 0, group);
+    rim.rotation.x = Math.PI / 2;
+    rim.castShadow = false;
+    stand(x, z, y - 0.1);
+    return { group, plateMat };
   }
-  // Crash top-left, ride top-right: each is its own drum, with its own
-  // glow ring, wobble and hit target. (The ride used to share the crash
-  // entry, so tapping it played the crash — that was the bug.)
-  const crashGroup = cymbal(1.25, 1.85, 0.85, 0.48, -0.22, 'crash');
-  registerDrum('crash', crashGroup, { wobble: crashGroup });
-  drums.crash.ring.position.set(1.25, 1.93, 0.85);
-  drums.crash.ring.rotation.x = -Math.PI / 2;
-  drums.crash.ring.scale.setScalar(0.52);
-  // Cymbals get the biggest hit zones of all — they were the tiny
-  // far-away targets before.
-  addHitTarget('crash', 1.25, 1.85, 0.85, 0.78);
 
-  const rideGroup = cymbal(-1.25, 1.85, 0.85, 0.54, 0.2, 'ride');
-  registerDrum('ride', rideGroup, { wobble: rideGroup });
-  drums.ride.ring.position.set(-1.25, 1.93, 0.85);
-  drums.ride.ring.rotation.x = -Math.PI / 2;
-  drums.ride.ring.scale.setScalar(0.58);
-  addHitTarget('ride', -1.25, 1.85, 0.85, 0.86);
-  // The two cymbal hit spheres are 2.5 apart with radii 0.78 + 0.86,
-  // so a tap on one can never land on the other.
+  const crash = cymbal('crash', { x: -1.58, z: -0.7, y: 1.88, radius: 0.55, tilt: -0.16 });
+  registerDrum('crash', {
+    centers: [new THREE.Vector3(-1.58, 1.95, -0.7)],
+    heads: [],
+    glowMats: [crash.plateMat],
+    wobbles: [crash.group],
+    rings: [makeRing('crash', { x: -1.58, y: 1.91, z: -0.7, radius: 0.55 })],
+    discs: [makeFloorDisc('crash', { x: -1.58, z: -0.7, radius: 0.62 })],
+  });
+  addHitSphere('crash', -1.58, 1.92, -0.7, 0.7);
 
-  /* --------------------------------------- top-down drummer */
-  // You sit at the bottom edge of the screen, behind the kick — so
-  // your body, head and stool are not built at all, or they would block
-  // the view. Only the kick pedal below the kick and the sticks coming
-  // in from the bottom edge are visible.
-  const kickPedal = mesh(new THREE.BoxGeometry(0.16, 0.03, 0.3), darkMetal, 0.2, 0.14, -1.2, scene);
-  kickPedal.rotation.x = 0.25;
+  const ride = cymbal('ride', { x: 1.72, z: -0.62, y: 1.78, radius: 0.6, tilt: 0.15 });
+  registerDrum('ride', {
+    centers: [new THREE.Vector3(1.72, 1.85, -0.62)],
+    heads: [],
+    glowMats: [ride.plateMat],
+    wobbles: [ride.group],
+    rings: [makeRing('ride', { x: 1.72, y: 1.81, z: -0.62, radius: 0.6 })],
+    discs: [makeFloorDisc('ride', { x: 1.72, z: -0.62, radius: 0.66 })],
+  });
+  addHitSphere('ride', 1.72, 1.82, -0.62, 0.74);
 
-  /* ------------------------------------------------- top-down sticks */
-  // Your hands, at the bottom edge of the frame: two sticks angled in
-  // from the bottom-left and bottom-right, tips hovering over the kit.
-  // They swing down onto whichever drum is hit — left stick for the
-  // snare/hi-hat side, right stick for the tom/crash side. The pivot
-  // rotates around x so a strike drives the tip straight down onto the
-  // head. They are never raycast targets, so they can't block a tap.
-  function makeTopStick(side) {
-    const pivot = new THREE.Group();
-    // World +x is screen left, so the left stick (side -1) sits at +x.
-    // Pivots sit at the bottom edge of the frame, close to the middle,
-    // or the sticks fall outside the portrait frame.
-    pivot.position.set(side * -0.55, 1.55, -1.85);
-    scene.add(pivot);
-    const hand = mesh(new THREE.SphereGeometry(0.07, 12, 8), skin, 0, 0, 0, pivot);
-    hand.castShadow = false;
-    const stick = mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.8, 8), wood, 0, -0.08, 0.4, pivot);
-    stick.rotation.x = Math.PI / 2 - 0.35;
-    return { group: pivot, restX: 0, strikeAt: -10 };
-  }
-  const stickLeft = makeTopStick(-1);
-  const stickRight = makeTopStick(1);
+  /* ------------------------------------------------------- Jack's stick */
+  // A teal-banded stick that taps the drum Jack means. It is intentionally
+  // unlike anything the player holds, and it only appears on his turn.
+  const jackStick = new THREE.Group();
+  const jackStickGeo = new THREE.CylinderGeometry(0.028, 0.018, 1.15, 8);
+  jackStickGeo.translate(0, 0.575, 0);
+  const jackStickMesh = new THREE.Mesh(jackStickGeo, wood);
+  jackStickMesh.castShadow = true;
+  jackStick.add(jackStickMesh);
+  const jackGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.22, 10), material(COLORS.hihat, { roughness: 0.45 }));
+  jackGrip.position.y = 0.22;
+  jackStick.add(jackGrip);
+  const jackTip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), material(0xf4c95d, { roughness: 0.4 }));
+  jackStick.add(jackTip);
+  jackStick.visible = false;
+  scene.add(jackStick);
+  let jackStrikeAt = -10;
 
-  /* ------------------------------------------------------- drum labels */
-  function makeLabel(text, x, y, z) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 80;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(10, 4, 24, 0.72)';
-    ctx.beginPath();
-    if (typeof ctx.roundRect === 'function') ctx.roundRect(6, 8, 244, 64, 18);
-    else ctx.rect(6, 8, 244, 64);
-    ctx.fill();
-    ctx.strokeStyle = '#f4c95d';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.fillStyle = '#f9eddf';
-    ctx.font = 'bold 34px "Courier New", ui-monospace, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, 128, 42);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }),
-    );
-    sprite.scale.set(0.72, 0.23, 1);
-    sprite.position.set(x, y, z);
-    scene.add(sprite);
-    return sprite;
-  }
-  // Labels sit in the gaps beside their drums, never on a head, at a
-  // low height so they don't drift far from their drum in top-down.
-  // They are sprites — never raycast targets, so they can't block a tap.
-  makeLabel(DRUM_LABELS.kick, 0, 1.05, -1.5);
-  makeLabel(DRUM_LABELS.snare, 0.85, 1.05, -0.8);
-  makeLabel(DRUM_LABELS.hihat, 1.55, 1.05, -0.55);
-  makeLabel(DRUM_LABELS.tom, 0, 1.05, 1.15);
-  makeLabel(DRUM_LABELS.crash, 1.25, 1.05, 1.5);
-  makeLabel(DRUM_LABELS.ride, -1.25, 1.05, 1.5);
-
-  /* --------------------------------------------------- Jack, the teacher */
-  // Jack sits at the top edge of the frame, beyond the kit, so he is
-  // visible in top-down view: a friendly instructor with his own little
-  // demo pad. When he plays a beat, HIS sticks strike HIS pad (and your
-  // matching drum lights up) — it is always obvious it is Jack playing,
-  // not your sticks. He is built from the same simple primitives as the
-  // kit, facing back toward the player (-z), so his face is toward the
-  // bottom of the screen.
-  const jack = new THREE.Group();
-  jack.position.set(0, 0, 2.5);
-  scene.add(jack);
-  // Stool.
-  mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.08, 24), darkMetal, 0, 0.56, 0, jack);
-  mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.56, 12), chrome, 0, 0.28, 0, jack);
-  // Body: warm orange shirt, so he reads as a different person from you.
-  const jackShirt = mat(0xff8c42, { roughness: 0.75 });
-  mesh(new THREE.CylinderGeometry(0.27, 0.31, 0.6, 24), jackShirt, 0, 1.05, 0, jack);
-  // Head, hair, cap, and a face on the -z side (toward the camera).
-  const jackHead = new THREE.Group();
-  jackHead.position.set(0, 1.56, 0);
-  jack.add(jackHead);
-  mesh(new THREE.SphereGeometry(0.24, 32, 24), skin, 0, 0, 0, jackHead);
-  // Brown hair on top, and a teal cap with a brim pointing at you.
-  const jackHair = mesh(new THREE.SphereGeometry(0.245, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2.2), mat(0x5b3a29, { roughness: 0.85 }), 0, 0.02, 0, jackHead);
-  jackHair.scale.set(1, 0.9, 1);
-  mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.07, 24), mat(0x2ec4b6, { roughness: 0.7 }), 0, 0.2, 0, jackHead);
-  const jackBrim = mesh(new THREE.BoxGeometry(0.3, 0.03, 0.18), mat(0x2ec4b6, { roughness: 0.7 }), 0, 0.17, -0.26, jackHead);
-  jackBrim.castShadow = false;
-  for (const side of [-1, 1]) {
-    mesh(new THREE.SphereGeometry(0.032, 12, 8), mat(0x1a1022, { roughness: 0.3 }), side * 0.09, 0.03, -0.21, jackHead).castShadow = false;
-    mesh(new THREE.SphereGeometry(0.04, 12, 8), mat(0xf08fa4, { roughness: 0.6 }), side * 0.16, -0.07, -0.19, jackHead).castShadow = false;
-  }
-  // Smile: a thin dark arc facing the camera.
-  const jackSmile = mesh(new THREE.TorusGeometry(0.07, 0.013, 8, 24, Math.PI), mat(0x1a1022, { roughness: 0.5 }), 0, -0.08, -0.21, jackHead);
-  jackSmile.rotation.x = Math.PI;
-  jackSmile.rotation.y = Math.PI;
-  jackSmile.castShadow = false;
-  makeLabel('JACK', 0, 1.2, 2.85);
-  // Jack's demo pad: a small blue drum on a stand in front of him,
-  // in the gap between the cymbals and Jack himself so you can see it.
-  const jackPad = new THREE.Group();
-  jackPad.position.set(0, 0.95, 2.0);
-  scene.add(jackPad);
-  mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.14, 32), mat(0x2b6cb0, { roughness: 0.3, metalness: 0.3 }), 0, 0, 0, jackPad);
-  const jackPadHead = mesh(new THREE.CircleGeometry(0.26, 32), whiteHead, 0, 0.08, 0, jackPad);
-  jackPadHead.rotation.x = -Math.PI / 2;
-  pole(0, 2.0, 0.9);
-  tripod(0, 2.0);
-  // Jack's arms: shoulder pivots, hands and sticks reaching forward
-  // and down toward his pad (which sits at -z from him).
-  function makeJackArm(side) {
-    const pivot = new THREE.Group();
-    pivot.position.set(side * 0.3, 1.32, -0.05);
-    jack.add(pivot);
-    mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.42, 12), jackShirt, 0, -0.18, -0.08, pivot);
-    mesh(new THREE.SphereGeometry(0.06, 12, 8), skin, 0, -0.38, -0.2, pivot);
-    const stick = mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.55, 8), wood, 0, -0.48, -0.32, pivot);
-    stick.rotation.x = 1.5;
-    stick.rotation.z = side * -0.1;
-    return { group: pivot, restX: 0, strikeAt: -10 };
-  }
-  const jackLeft = makeJackArm(-1);
-  const jackRight = makeJackArm(1);
-  let jackPlaying = false;
-  let jackCheerAt = -10;
-
-  /** Jack plays one hit on his demo pad — his stick, not yours. */
   function jackHit(drumId) {
-    const arm = STRIKE_ARM[drumId];
-    if (arm === 'left') jackLeft.strikeAt = elapsed;
-    else jackRight.strikeAt = elapsed;
-    jackPadHead.scale.set(1.12, 1.12, 1);
+    const drum = drums[drumId];
+    if (!drum || !drum.centers.length) return;
+    const center = drum.centers[Math.floor(Math.random() * drum.centers.length)];
+    jackStick.position.set(center.x + 0.62, center.y + 0.95, center.z + 0.25);
+    jackStrikeAt = elapsed;
+    jackStick.visible = true;
   }
 
-  function setJackPlaying(on) {
-    jackPlaying = Boolean(on);
-  }
-
-  /** Jack celebrates: both sticks up and a little hop. */
-  function jackCheer() {
-    jackCheerAt = elapsed;
-  }
-
-  /* -------------------------------------------------- hits, glow, sticks */
+  /* --------------------------------------------------------- player hits */
   const clock = new THREE.Clock();
   let elapsed = 0;
-  let pedalPressAt = -10;
-  let kickDipAt = -10;
-
-  function strike(drumId) {
-    const arm = STRIKE_ARM[drumId];
-    const now = elapsed;
-    if (arm === 'left') stickLeft.strikeAt = now;
-    else if (arm === 'right') stickRight.strikeAt = now;
-    else if (arm === 'foot') {
-      pedalPressAt = now;
-      kickDipAt = now;
-    }
-  }
 
   function hit(drumId) {
     const drum = drums[drumId];
     if (!drum) return;
     drum.hitAt = elapsed;
-    strike(drumId);
   }
 
-  // One-shot glow: lighting a drum flashes its ring once, exactly on the
-  // hit, and it fades out by itself within 0.35s. Nothing here stays lit
-  // or pulses — during Jack's demo each step's drums flash once and go
-  // dark before the next step, so you can always tell which drum he
-  // just played. The player's own taps use the same flash via hit().
-  function setGlow(drumId, on) {
-    const drum = drums[drumId];
-    if (!drum) return;
-    drum.glowAt = on ? elapsed : -10;
+  /** A lesson target glows steadily on the drum until the step is done. */
+  function setHints(ids = []) {
+    const next = new Set(ids);
+    for (const drum of Object.values(drums)) drum.hintOn = next.has(drum.id);
   }
 
-  function clearGlow() {
-    for (const drum of Object.values(drums)) {
-      drum.glowAt = -10;
+  function clearHints() {
+    setHints([]);
+  }
+
+  let celebrateQueued = false;
+  function celebrate() {
+    celebrateQueued = true;
+  }
+
+  /* ------------------------------------------------------------- confetti */
+  const confetti = [];
+  const confettiGroup = new THREE.Group();
+  scene.add(confettiGroup);
+  const confettiColors = Object.values(COLORS);
+
+  function popConfetti() {
+    if (reducedMotion) return;
+    for (let i = 0; i < 34; i += 1) {
+      const piece = new THREE.Mesh(
+        new THREE.BoxGeometry(0.07, 0.02, 0.11),
+        new THREE.MeshStandardMaterial({
+          color: confettiColors[i % confettiColors.length],
+          roughness: 0.6,
+        }),
+      );
+      piece.position.set((Math.random() - 0.5) * 2.4, 2.2 + Math.random() * 0.8, (Math.random() - 0.5) * 2.2);
+      piece.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+      piece.castShadow = false;
+      const velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * 2.4,
+        2.4 + Math.random() * 2.6,
+        (Math.random() - 0.5) * 2.4,
+      );
+      confettiGroup.add(piece);
+      confetti.push({ piece, velocity, born: elapsed });
     }
   }
 
-  /* ------------------------------------------------------------ raycast */
+  /* ------------------------------------------------------------- pointer */
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
   function pickDrum(event) {
     const rect = renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
@@ -747,122 +712,105 @@ export function createStage(container, options = {}) {
     }
   });
 
-  /* ------------------------------------------------------------ resize */
+  /* -------------------------------------------------------------- resize */
   function resize() {
     const width = container.clientWidth || 800;
-    const height = container.clientHeight || 520;
+    const height = container.clientHeight || 500;
     renderer.setSize(width, height, false);
-    const aspect = width / height;
-    camera.aspect = aspect;
-    // One wide lens at every aspect: the kit's vertical span (kick label
-    // to JACK's label) needs it. FOV 50 clipped Jack's label off the top
-    // in landscape — and on desktop — while 55 keeps the whole kit, Jack
-    // and every label in frame, portrait and landscape alike.
-    const baseFov = 55;
-    // Zoom moves the camera, not the lens: keep the wide lens so the
-    // zoomed close-up still shows the whole width of the kit.
-    fovTarget = baseFov;
-    camTarget.copy(zoomed ? CAM_ZOOM : CAM_BASE);
-    lookTarget.copy(zoomed ? LOOK_ZOOM : LOOK_BASE);
-    camera.fov = fovTarget;
+    camera.aspect = width / height;
+    const vFov = THREE.MathUtils.degToRad(camera.fov);
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+    const half = Math.min(vFov, hFov) / 2;
+    const distance = THREE.MathUtils.clamp(FIT_RADIUS / Math.sin(half), 6.2, 18);
+    cameraBase.copy(TARGET).addScaledVector(VIEW_DIR, distance);
+    camera.position.copy(cameraBase);
+    camera.lookAt(TARGET);
     camera.updateProjectionMatrix();
   }
-
-  function setZoomed(next) {
-    zoomed = Boolean(next);
-    resize();
+  if (typeof ResizeObserver === 'function') {
+    new ResizeObserver(resize).observe(container);
+  } else {
+    window.addEventListener('resize', resize);
   }
-  window.addEventListener('resize', resize);
   resize();
 
-  /* --------------------------------------------------------- animate */
-  // Top-down sticks: a quick down-strike, then back up, sin curve
-  // over 0.3s. The pivot rotates +x to drive the tip down toward the kit.
-  function stickSwing(stick, now) {
-    const age = now - stick.strikeAt;
-    if (age < 0 || age > 0.3) {
-      stick.group.rotation.x += (stick.restX - stick.group.rotation.x) * 0.2;
-      return;
-    }
-    stick.group.rotation.x = stick.restX + 0.45 * Math.sin((age / 0.3) * Math.PI);
-  }
-
+  /* -------------------------------------------------------------- animate */
   function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
     elapsed += dt;
     const now = elapsed;
 
-    // Camera: eases toward its target (normal or zoomed) with a very
-    // subtle idle sway. The sway is an offset, not a drift. A kick hit
-    // dips the view a touch, like the stool thumping.
-    tmpPos.copy(camTarget);
+    // A breath of camera sway, so the stage feels alive. Off for reduced motion.
     if (!reducedMotion) {
-      tmpPos.x += Math.sin(now * 0.3) * 0.07;
-      tmpPos.y += Math.sin(now * 0.5) * 0.03;
+      camera.position.copy(cameraBase);
+      camera.position.x += Math.sin(now * 0.34) * 0.035;
+      camera.position.y += Math.sin(now * 0.52) * 0.02;
+      camera.lookAt(TARGET);
     }
-    const dipAge = now - kickDipAt;
-    if (dipAge >= 0 && dipAge < 0.25) {
-      tmpPos.y -= 0.05 * Math.sin((dipAge / 0.25) * Math.PI);
-    }
-    camera.position.lerp(tmpPos, reducedMotion ? 1 : 0.08);
-    camera.fov += (fovTarget - camera.fov) * (reducedMotion ? 1 : 0.08);
-    camera.updateProjectionMatrix();
-    camera.lookAt(lookTarget);
 
-    // Your sticks swing on every hit; the kick pedal presses on a kick.
-    stickSwing(stickLeft, now);
-    stickSwing(stickRight, now);
-
-    // Jack: while he is teaching, his head bobs to the beat; on a
-    // strike his stick swings down onto his demo pad, and the pad head
-    // squash eases back. On a cheer he hops with both sticks up.
-    const cheerAge = now - jackCheerAt;
-    if (cheerAge >= 0 && cheerAge < 0.9) {
-      jack.position.y = 0.16 * Math.sin((cheerAge / 0.9) * Math.PI);
-      jackLeft.group.rotation.x = -0.9;
-      jackRight.group.rotation.x = -0.9;
-    } else {
-      jack.position.y = 0;
-      jackHead.position.y = 1.56 + (jackPlaying && !reducedMotion ? Math.sin(now * 4) * 0.02 : 0);
-      jackHead.rotation.x = jackPlaying && !reducedMotion ? 0.06 * Math.sin(now * 4) : 0;
-      stickSwing(jackLeft, now);
-      stickSwing(jackRight, now);
-    }
-    const padScale = jackPadHead.scale.x;
-    if (padScale > 1) jackPadHead.scale.set(Math.max(1, padScale - dt * 2.5), Math.max(1, padScale - dt * 2.5), 1);
-    const pressAge = now - pedalPressAt;
-    kickPedal.rotation.x =
-      0.25 + (pressAge >= 0 && pressAge < 0.25 ? 0.18 * Math.sin((pressAge / 0.25) * Math.PI) : 0);
-
-    // Per-drum hit animation: head squash + rim flash, cymbal wobble.
+    // Per-drum reactions.
     for (const drum of Object.values(drums)) {
-      const age = now - drum.hitAt;
-      const squash = age >= 0 && age < 0.22 ? 1 + 0.1 * (1 - age / 0.22) : 1;
-      for (const head of drum.heads) head.scale.set(squash, squash, 1);
-      const flash = age >= 0 && age < 0.35 ? 0.85 * (1 - age / 0.35) : 0;
-      // Jack's demo glow is a one-shot flash too: bright at the hit,
-      // faded out within 0.35s, then dark until the next hit. No pulsing.
-      const glowAge = now - drum.glowAt;
-      const glowFlash = glowAge >= 0 && glowAge < 0.35 ? 0.85 * (1 - glowAge / 0.35) : 0;
-      const lit = Math.max(flash, glowFlash);
-      for (const glowMat of drum.glowMats) glowMat.emissiveIntensity = lit;
-      if (lit > 0) {
-        drum.ring.visible = true;
-        drum.ring.material.opacity = lit;
-      } else {
-        drum.ring.visible = false;
+      const hitAge = now - drum.hitAt;
+      const squash = hitAge >= 0 && hitAge < 0.2 ? 1 + 0.13 * (1 - hitAge / 0.2) : 1;
+      for (const head of drum.heads) head.scale.setScalar(squash);
+
+      const flash = hitAge >= 0 && hitAge < 0.32 ? 1 - hitAge / 0.32 : 0;
+      const hint = drum.hintOn ? 0.34 + 0.22 * Math.sin(now * 5.5) : 0;
+      const lit = Math.max(flash, hint);
+      for (const mat of drum.glowMats) mat.emissiveIntensity = 0.05 + lit * 1.05;
+      for (const ring of drum.rings) {
+        const ringLit = Math.max(flash, drum.hintOn ? 0.55 + 0.3 * Math.sin(now * 5.5) : 0);
+        ring.visible = ringLit > 0.02;
+        ring.material.opacity = Math.max(0, ringLit);
       }
-      if (drum.wobble && drum.wobbleBase) {
-        const wobble = age >= 0 && age < 1.2 ? Math.sin(now * 20) * 0.1 * Math.exp(-3.5 * age) : 0;
-        drum.wobble.rotation.z = drum.wobbleBase.z + wobble;
-        drum.wobble.rotation.x = drum.wobbleBase.x + wobble * 0.5;
+      for (const wobble of drum.wobbles) {
+        const amount = hitAge >= 0 && hitAge < 1.1 ? Math.sin(now * 22) * 0.14 * Math.exp(-4 * hitAge) : 0;
+        wobble.group.rotation.z = wobble.base.z + amount;
+        wobble.group.rotation.x = wobble.base.x + amount * 0.5;
       }
+      const discGlow = drum.hintOn
+        ? 0.28 + 0.12 * Math.sin(now * 5.5)
+        : hitAge >= 0 && hitAge < 0.4
+          ? 0.36
+          : 0.14;
+      for (const disc of drum.discs) disc.material.opacity = discGlow;
+    }
+
+    // Jack's stick: a quick tap on the drum he means, then it lifts away.
+    const stickAge = now - jackStrikeAt;
+    if (stickAge >= 0 && stickAge < 0.42) {
+      const swing = Math.sin(Math.min(1, stickAge / 0.26) * Math.PI);
+      jackStick.rotation.z = 0.95 - swing * 0.55;
+      jackStick.rotation.x = 0.12 + swing * 0.1;
+      jackStick.visible = true;
+    } else {
+      jackStick.visible = false;
+    }
+
+    // Confetti.
+    for (let i = confetti.length - 1; i >= 0; i -= 1) {
+      const piece = confetti[i];
+      piece.velocity.y -= 5.2 * dt;
+      piece.piece.position.addScaledVector(piece.velocity, dt);
+      piece.piece.rotation.x += dt * 5;
+      piece.piece.rotation.z += dt * 7;
+      if (piece.piece.position.y < -0.6 || now - piece.born > 2.6) {
+        confettiGroup.remove(piece.piece);
+        piece.piece.geometry.dispose();
+        piece.piece.material.dispose();
+        confetti.splice(i, 1);
+      }
+    }
+
+    if (celebrateQueued) {
+      celebrateQueued = false;
+      popConfetti();
     }
 
     renderer.render(scene, camera);
   }
   animate();
 
-  return { hit, setGlow, clearGlow, resize, setZoomed, isZoomed: () => zoomed, jackHit, setJackPlaying, jackCheer };
+  return { hit, setHints, clearHints, resize, jackHit, celebrate };
 }

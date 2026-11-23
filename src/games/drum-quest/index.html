@@ -6,17 +6,17 @@
     <title>Drum Quest | Foofire Games</title>
     <meta
       name="description"
-      content="Drum Quest is a top-down Three.js 3D drum game for kids learning to play: look straight down on the kit and tap the drums in Free Play, or learn real drum beats with Jack the drum teacher. Free, no downloads, no failing."
+      content="Drum Quest is a 3D drum kit for kids learning to play. Tap the drums or the big colour-coded pads in Free Play, or learn real beats with Jack — he plays it, you copy it, and nothing ever fails. Free, no downloads, no accounts."
     />
     <meta property="og:title" content="Drum Quest | Foofire Games" />
     <meta
       property="og:description"
-      content="A top-down 3D drum kit — look straight down on the drums, tap them, and learn real beats with Jack. A drum game for kids learning to play, no failing, no accounts."
+      content="A 3D drum kit for kids: tap the drums, copy Jack's beat, and never fail. Learn real grooves one step at a time."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://foofire.com/src/games/drum-quest/index.html" />
     <meta property="og:site_name" content="Foofire Games" />
-    <meta name="theme-color" content="#0a0418" />
+    <meta name="theme-color" content="#0a0518" />
     <link rel="stylesheet" href="../../../styles.css" />
     <link rel="stylesheet" href="./styles.css" />
     <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
@@ -35,119 +35,141 @@
     </header>
 
     <main>
-      <div class="drum-quest">
+      <div class="dq">
         <section class="dq-hero" aria-labelledby="dq-title">
-          <p class="dq-kicker">Joel's drum game · for kids learning to play</p>
-          <h1 id="dq-title">Drum Quest</h1>
-          <p class="dq-lede">
-            Look straight down on the kit, like other online drum sets.
-            Jack, your drum teacher, plays a real beat at the top — you
-            play it back on the very next beat. The beat never stops, and
-            there is no way to fail here — if you miss, Jack just plays
-            it again.
-          </p>
+          <div class="dq-hero-copy">
+            <p class="dq-kicker">Joel's drum game</p>
+            <h1 id="dq-title">Drum Quest</h1>
+            <p class="dq-tagline">
+              Tap the drums. Copy Jack's beat. Nothing to fail — just drums.
+            </p>
+          </div>
           <p class="dq-best" id="best-line"></p>
         </section>
 
-        <!-- Fixed menu bar: always in the same place, same buttons, same
-             size in every mode. Active state is colour only — nothing hops. -->
-        <nav class="dq-bar" aria-label="Game menu">
-          <button type="button" class="dq-mode is-active" data-mode="free" aria-pressed="true" aria-label="Free Play">
-            🥁 <span class="dq-mode-long">Free Play</span><span class="dq-mode-short">Free</span>
-          </button>
-          <button type="button" class="dq-mode" data-mode="copy" aria-pressed="false" aria-label="Learn with Jack">
-            🎓 <span class="dq-mode-long">Learn with Jack</span><span class="dq-mode-short">Jack</span>
-          </button>
-          <span class="dq-bar-spacer" aria-hidden="true"></span>
-          <button type="button" class="dq-icon" id="zoom-button" aria-label="Zoom in on the kit" aria-pressed="false">
-            🔍
-          </button>
-          <button type="button" class="dq-icon" id="mute-button" aria-label="Mute sound" aria-pressed="false">
-            🔊
-          </button>
-          <button type="button" class="dq-icon" id="fullscreen-button" aria-label="Enter fullscreen" aria-pressed="false">
-            ⛶
-          </button>
-        </nav>
-
-        <p class="dq-message" id="message" aria-live="polite">Tap a drum on the kit to make some noise!</p>
-
-        <!-- Sideways is the way to play: on a phone held upright this
-             hint sits above the stage (in the flow, so it can never cover
-             a drum or the menu bar). One tap dismisses it for the session. -->
-        <button type="button" class="dq-rotate-hint" id="rotate-hint" hidden>
-          🔄 Turn your phone sideways for the best view of the kit <span aria-hidden="true">✕</span>
-        </button>
-
-        <!-- The 3D stage: top-down view of the drum kit. Tap the drums in 3D. -->
-        <div
-          id="stage"
-          class="dq-stage"
-          role="img"
-          aria-label="3D drum kit on a stage. Tap the kick, snare, hi-hat, toms, crash cymbal or ride cymbal to play them."
-        ></div>
-
-        <!-- ------------------------------------------------------- Free Play -->
-        <section class="dq-panel" id="panel-free" aria-labelledby="free-title">
-          <div class="dq-panel-head">
-            <div>
-              <h2 id="free-title">Free Play</h2>
-              <p class="dq-sub">Tap the drums right on the kit — or use keys A S D F G H on a keyboard.</p>
+        <section class="dq-console" id="dq-console" aria-label="Drum Quest game">
+          <div class="dq-topbar">
+            <div class="dq-tabs" role="group" aria-label="Game mode">
+              <button type="button" class="dq-tab is-active" data-mode="free" aria-pressed="true">
+                Free Play
+              </button>
+              <button type="button" class="dq-tab" data-mode="learn" aria-pressed="false">
+                Learn with Jack
+              </button>
             </div>
-            <div class="dq-metronome">
-              <span class="dq-count" id="beat-count" aria-label="Metronome beat">–</span>
-              <button type="button" class="dq-button" id="metronome-button" aria-pressed="false">
-                ▶ Count 1-2-3-4
+            <div class="dq-tools">
+              <button
+                type="button"
+                class="dq-tool"
+                id="mute-button"
+                aria-pressed="false"
+                aria-label="Mute sound"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path class="dq-icon-on" d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" />
+                  <path class="dq-icon-off" d="M4 9v6h4l5 4V5L8 9H4zm12.6 3 2.6 2.6-1.4 1.4-2.6-2.6-2.6 2.6-1.4-1.4 2.6-2.6-2.6-2.6 1.4-1.4 2.6 2.6 2.6-2.6 1.4 1.4-2.6 2.6z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="dq-tool"
+                id="fullscreen-button"
+                aria-pressed="false"
+                aria-label="Enter fullscreen"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M4 9V4h5v2H6v3H4zm11-5h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 0h2v5h-5v-2h3v-3z" />
+                </svg>
               </button>
             </div>
           </div>
 
-          <p class="dq-hint">
-            Try this: Kick, Kick, Snare, Snare — that's the start of a rock beat!
-            Turn on the count and try to hit a drum on every number.
-          </p>
-        </section>
-
-        <!-- -------------------------------------------------------- Copy Cat -->
-        <section class="dq-panel" id="panel-copy" aria-labelledby="copy-title" hidden>
-          <div class="dq-panel-head">
-            <div>
-              <h2 id="copy-title">Jack's Copy Cat</h2>
-              <p class="dq-sub">Jack plays a real beat on his demo pad — kick and hi-hat together, snare on the back beat — then you play it back on the very next beat.</p>
-            </div>
-            <div class="dq-stats">
-              <div class="dq-stat">
-                <span class="dq-stat-label">Level</span>
-                <strong id="copy-level">1</strong>
-              </div>
-              <div class="dq-stat">
-                <span class="dq-stat-label">Stars</span>
-                <strong id="copy-stars" aria-label="0 of 3 stars">☆☆☆</strong>
+          <div class="dq-stage-wrap">
+            <div
+              id="stage"
+              class="dq-stage"
+              role="img"
+              aria-label="A 3D drum kit on a lit stage. Tap a drum to play it, or use the big pads below."
+            ></div>
+            <p class="dq-banner" id="stage-banner" hidden></p>
+            <div class="dq-celebrate" id="celebrate" hidden>
+              <p class="dq-celebrate-stars" id="celebrate-stars">★★★</p>
+              <h2 id="celebrate-title">You did it!</h2>
+              <p class="dq-celebrate-text" id="celebrate-text"></p>
+              <div class="dq-celebrate-actions">
+                <button type="button" class="dq-button primary" id="next-lesson">Next lesson</button>
+                <button type="button" class="dq-button" id="again-lesson">Play it again</button>
               </div>
             </div>
           </div>
 
-          <p class="dq-turn" id="copy-turn">🎓 Jack is ready — pick a level and listen!</p>
-          <p class="dq-copy-info" id="copy-info">Level 1 · Rock Beat · 4 steps · nice and slow (60 BPM)</p>
-          <div class="dq-dots" id="copy-dots" aria-label="Pattern progress"></div>
+          <div class="dq-pads" id="pads" role="group" aria-label="Drum pads"></div>
 
-          <div class="dq-actions">
-            <button type="button" class="dq-button primary" id="copy-play-button">▶ Jack, play it!</button>
-            <button type="button" class="dq-button" id="copy-again-button" disabled>Jack, play it again</button>
+          <div class="dq-deck">
+            <div class="dq-free" id="deck-free">
+              <div class="dq-metro">
+                <button
+                  type="button"
+                  class="dq-button"
+                  id="metronome-button"
+                  aria-pressed="false"
+                >
+                  Start the count
+                </button>
+                <div class="dq-beats" id="beat-lights" aria-label="Count is off">
+                  <i></i><i></i><i></i><i></i>
+                </div>
+                <div class="dq-tempo">
+                  <button type="button" class="dq-step" id="tempo-down" aria-label="Slower tempo">−</button>
+                  <span><b id="tempo-value">80</b> BPM</span>
+                  <button type="button" class="dq-step" id="tempo-up" aria-label="Faster tempo">+</button>
+                </div>
+              </div>
+              <p class="dq-tip">
+                Try <strong>kick, snare, kick, snare</strong> — that is the heartbeat of rock.
+              </p>
+            </div>
+
+            <div class="dq-learn" id="deck-learn" hidden>
+              <div class="dq-lesson-row">
+                <p class="dq-lesson-title">
+                  <span>Level <b id="lesson-level">1</b></span>
+                  <strong id="lesson-name">First Beat</strong>
+                </p>
+                <span class="dq-stars" id="lesson-stars" aria-label="No stars yet">☆☆☆</span>
+                <button type="button" class="dq-button small" id="lesson-replay">Play it again</button>
+              </div>
+              <div class="dq-rail" id="lesson-rail" aria-hidden="true"></div>
+              <p class="dq-target" id="lesson-target">Jack is warming up…</p>
+            </div>
+
+            <div class="dq-say">
+              <svg class="dq-jack" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                <circle cx="32" cy="34" r="21" fill="#f2c29b" />
+                <path d="M11 31c0-12 9-22 21-22s21 10 21 22" fill="#2ec4b6" />
+                <path d="M9 31h46c0 4-3 6-6 6H15c-3 0-6-2-6-6Z" fill="#2ec4b6" />
+                <circle cx="25" cy="36" r="2.7" fill="#241a2b" />
+                <circle cx="39" cy="36" r="2.7" fill="#241a2b" />
+                <circle cx="19" cy="43" r="3.4" fill="#f08fa4" opacity=".75" />
+                <circle cx="45" cy="43" r="3.4" fill="#f08fa4" opacity=".75" />
+                <path d="M26 44q6 6 12 0" stroke="#7a3b2e" stroke-width="2.6" fill="none" stroke-linecap="round" />
+                <path d="M17 59c1-5 7-8 15-8s14 3 15 8" fill="#ff8c42" />
+              </svg>
+              <div class="dq-say-body">
+                <strong>Jack</strong>
+                <p class="dq-message" id="message" aria-live="polite">
+                  Tap a drum — on the kit or the big pads.
+                </p>
+              </div>
+            </div>
+
+            <div class="dq-levels" id="lesson-levels" aria-label="Lessons" hidden></div>
           </div>
-
-          <p class="dq-hint">
-            Jack plays the beat, then it's your turn on the very next
-            beat — the groove never stops. If you miss, Jack takes it
-            straight back, and if the bar runs out before you finish it,
-            he plays it again. The crash joins in from level 5, and the
-            tom from level 6.
-          </p>
         </section>
 
         <p class="dq-credit">
-          All drum sounds are made live in your browser — no recordings, no downloads.
-          Your best level with Jack stays on this device.
+          Every drum sound is made live in your browser — no recordings, no downloads.
+          Your best lesson stays on this device.
           <a href="../../../scores.html">See your high scores</a>
         </p>
         <a href="../../../games.html" class="dq-back">&larr; Back to games</a>
@@ -164,7 +186,7 @@
     <script type="importmap">
       {
         "imports": {
-          "three": "https://esm.sh/three@0.168.0"
+          "three": "../../vendor/three.module.js"
         }
       }
     </script>
