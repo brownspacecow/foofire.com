@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aisle Rush '85 | Foofire Games</title>
+    <meta
+      name="description"
+      content="Aisle Rush '85 is a free supermarket game show for kids: answer grocery questions to bank sweep time, race a neon 1980s supermarket for giant bonuses, then chase the $5,000 Bonus Sweep."
+    />
+    <meta property="og:title" content="Aisle Rush '85 | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Six questions. One shopping cart. A whole supermarket of groceries. Play the 1980s supermarket game show."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/aisle-rush/index.html" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <svg class="sprite-sheet" width="0" height="0" aria-hidden="true" focusable="false">
+      <symbol id="host-face" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#2b0b4d" />
+        <circle cx="50" cy="52" r="44" fill="#3a1650" />
+        <path d="M12 100 Q16 70 50 64 Q84 70 88 100 Z" fill="#1b0829" />
+        <path d="M38 64 L50 84 L62 64 Z" fill="#fff8e7" />
+        <path d="M50 84 L40 66 L28 72 L24 100 H76 L72 72 L60 66 Z" fill="#240a3a" />
+        <path d="M39 65 L50 79 L61 65 L56 61 L44 61 Z" fill="#fff8e7" />
+        <rect x="43" y="52" width="14" height="18" rx="6" fill="#f2b98c" />
+        <ellipse cx="50" cy="38" rx="22" ry="25" fill="#ffd9b3" />
+        <path
+          d="M27 39 Q24 10 50 10 Q77 10 73 39 Q70 24 57 21 Q41 19 35 29 Q31 34 27 39 Z"
+          fill="#402113"
+        />
+        <path d="M31 33 Q38 26 48 29" stroke="#402113" stroke-width="3" fill="none" />
+        <path d="M53 29 Q63 26 69 33" stroke="#402113" stroke-width="3" fill="none" />
+        <ellipse cx="41" cy="39" rx="3" ry="4" fill="#241033" />
+        <ellipse cx="59" cy="39" rx="3" ry="4" fill="#241033" />
+        <path d="M34 33 Q40 30 46 33" stroke="#6b3a1f" stroke-width="2.2" fill="none" />
+        <path d="M54 33 Q60 30 66 33" stroke="#6b3a1f" stroke-width="2.2" fill="none" />
+        <path d="M42 49 Q50 57 58 49" stroke="#a8593a" stroke-width="3" stroke-linecap="round" fill="none" />
+        <path d="M50 76 l-9 -5 v10 z M50 76 l9 -5 v10 z" fill="#ff2e97" />
+        <circle cx="50" cy="76" r="3" fill="#ff2e97" />
+        <line x1="70" y1="88" x2="79" y2="60" stroke="#c9d4dd" stroke-width="2.5" />
+        <ellipse cx="80" cy="56" rx="5.5" ry="6.5" fill="#ffd93d" stroke="#1b0829" stroke-width="2" />
+      </symbol>
+    </svg>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-header">
+        <h1>Aisle Rush '85</h1>
+        <p>
+          The supermarket game show where the groceries are free and the clock is not. Answer the
+          questions, bank your sweep time, and go absolutely feral in the frozen aisle.
+        </p>
+      </section>
+
+      <section class="aisle-show" id="aisle-show" aria-label="Aisle Rush '85 game show">
+        <div class="show-frame" id="show-frame">
+          <div class="marquee" aria-hidden="true">
+            <span class="marquee-bulbs"></span>
+            <p>★ LIVE FROM STUDIO 8 ★ AISLE RUSH '85 ★</p>
+            <span class="marquee-bulbs"></span>
+          </div>
+
+          <div class="show-stage" id="show-stage">
+            <div class="crt-overlay" aria-hidden="true"></div>
+
+            <!-- ============ TITLE ============ -->
+            <section class="screen" id="screen-title" data-screen="title" aria-labelledby="title-heading">
+              <div class="title-layout">
+                <div class="title-copy">
+                  <p class="eyebrow">A FOOFIRE GAMES ORIGINAL · 1985</p>
+                  <h2 class="logo-neon" id="title-heading">
+                    <span class="logo-line">AISLE</span>
+                    <span class="logo-line">RUSH <span class="logo-year">'85</span></span>
+                  </h2>
+                  <p class="logo-tag">THE SUPERMARKET GAME SHOW</p>
+                  <p class="title-blurb">
+                    Six questions. One shopping cart. A whole supermarket of groceries with your
+                    name on it. Grab the giant bonuses, bank your cart, and out-shop two rival teams
+                    for a shot at the $5,000 Bonus Sweep.
+                  </p>
+                  <div class="title-actions">
+                    <button class="show-btn big" id="start-show" type="button">PRESS START</button>
+                    <button class="show-btn ghost" id="howto-open" type="button">HOW TO PLAY</button>
+                  </div>
+                  <p class="title-best" id="title-best" hidden></p>
+                  <p class="title-fine">
+                    Sound on for the full 1985 experience. No downloads. No accounts. Just groceries.
+                  </p>
+                </div>
+
+                <div class="title-art">
+                  <span class="tv-bug">● REC <b>10:85 PM</b></span>
+                  <svg class="title-scene" viewBox="0 0 560 340" role="img" aria-labelledby="scene-title">
+                    <title id="scene-title">A neon 1980s supermarket aisle with a chrome shopping cart and a giant jar of pickles</title>
+                    <defs>
+                      <linearGradient id="sceneSky" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#2a0b4d" />
+                        <stop offset="1" stop-color="#10041d" />
+                      </linearGradient>
+                      <linearGradient id="sunset" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#ffd93d" />
+                        <stop offset="0.45" stop-color="#ff8a00" />
+                        <stop offset="1" stop-color="#ff2e97" />
+                      </linearGradient>
+                      <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#f2fbff" />
+                        <stop offset="0.42" stop-color="#9db4d6" />
+                        <stop offset="0.58" stop-color="#5b6f8f" />
+                        <stop offset="1" stop-color="#e8f4ff" />
+                      </linearGradient>
+                      <pattern id="checker" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <rect width="40" height="40" fill="#ffdcea" />
+                        <rect width="20" height="20" fill="#fff2e2" />
+                        <rect x="20" y="20" width="20" height="20" fill="#fff2e2" />
+                      </pattern>
+                      <linearGradient id="floorFade" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#12041f" stop-opacity="0.9" />
+                        <stop offset="1" stop-color="#12041f" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+
+                    <rect width="560" height="340" rx="14" fill="url(#sceneSky)" />
+                    <rect x="6" y="6" width="548" height="328" rx="10" fill="none" stroke="#ffd93d" stroke-opacity="0.5" stroke-width="2" />
+
+                    <circle cx="280" cy="128" r="92" fill="url(#sunset)" opacity="0.92" />
+                    <g fill="#2a0b4d" opacity="0.85">
+                      <rect x="188" y="106" width="184" height="5" />
+                      <rect x="196" y="122" width="168" height="6" />
+                      <rect x="208" y="140" width="144" height="7" />
+                      <rect x="222" y="160" width="116" height="8" />
+                    </g>
+
+                    <path d="M0 240 L560 240 L560 340 L0 340 Z" fill="url(#checker)" opacity="0.28" />
+                    <path d="M0 240 L560 240 L560 340 L0 340 Z" fill="url(#floorFade)" opacity="0.5" />
+                    <g stroke="#2fe4ff" stroke-opacity="0.35" stroke-width="1.5">
+                      <path d="M280 240 L280 340" />
+                      <path d="M196 240 L136 340" />
+                      <path d="M364 240 L424 340" />
+                      <path d="M112 240 L32 340" />
+                      <path d="M448 240 L528 340" />
+                      <path d="M0 268 L560 268" />
+                      <path d="M0 302 L560 302" />
+                    </g>
+
+                    <!-- left shelf -->
+                    <g>
+                      <rect x="30" y="158" width="122" height="112" rx="5" fill="#220a36" stroke="#ff2e97" stroke-width="3" />
+                      <rect x="36" y="164" width="110" height="16" rx="3" fill="#ff2e97" opacity="0.75" />
+                      <text x="91" y="176" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="9" fill="#fff8e7">AISLE 3</text>
+                      <g>
+                        <rect x="42" y="190" width="20" height="28" rx="2" fill="#ffd93d" />
+                        <rect x="68" y="190" width="20" height="28" rx="2" fill="#7ac74f" />
+                        <rect x="94" y="190" width="20" height="28" rx="2" fill="#d72b2b" />
+                        <rect x="120" y="190" width="20" height="28" rx="2" fill="#4f9de8" />
+                        <rect x="42" y="228" width="20" height="28" rx="2" fill="#ff8ac0" />
+                        <rect x="68" y="228" width="20" height="28" rx="2" fill="#ffd93d" />
+                        <rect x="94" y="228" width="20" height="28" rx="2" fill="#2fe4ff" />
+                        <rect x="120" y="228" width="20" height="28" rx="2" fill="#ff8a00" />
+                      </g>
+                    </g>
+
+                    <!-- right shelf -->
+                    <g>
+                      <rect x="410" y="146" width="122" height="124" rx="5" fill="#220a36" stroke="#2fe4ff" stroke-width="3" />
+                      <rect x="416" y="152" width="110" height="16" rx="3" fill="#2fe4ff" opacity="0.8" />
+                      <text x="471" y="164" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="9" fill="#1b0829">AISLE 1</text>
+                      <g>
+                        <rect x="422" y="178" width="20" height="30" rx="2" fill="#fff6df" />
+                        <rect x="448" y="178" width="20" height="30" rx="2" fill="#ffd35c" />
+                        <rect x="474" y="178" width="20" height="30" rx="2" fill="#b9fff0" />
+                        <rect x="500" y="178" width="20" height="30" rx="2" fill="#ff8ac0" />
+                        <rect x="422" y="218" width="20" height="30" rx="2" fill="#ffe1f0" />
+                        <rect x="448" y="218" width="20" height="30" rx="2" fill="#8ef58a" />
+                        <rect x="474" y="218" width="20" height="30" rx="2" fill="#fff1c4" />
+                        <rect x="500" y="218" width="20" height="30" rx="2" fill="#7bd7ff" />
+                      </g>
+                    </g>
+
+                    <!-- price tags -->
+                    <g transform="translate(160 92) rotate(-8)">
+                      <rect width="86" height="30" rx="4" fill="#ffd93d" stroke="#1b0829" stroke-width="2" />
+                      <text x="43" y="20" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="13" fill="#1b0829">GIANT!</text>
+                    </g>
+                    <g transform="translate(386 88) rotate(6)">
+                      <rect width="94" height="30" rx="4" fill="#7dffb0" stroke="#1b0829" stroke-width="2" />
+                      <text x="47" y="20" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="12" fill="#123a29">FOUND $</text>
+                    </g>
+
+                    <!-- giant pickle jar -->
+                    <g transform="translate(470 252)">
+                      <ellipse cx="0" cy="34" rx="38" ry="9" fill="#1b0829" opacity="0.35" />
+                      <rect x="-31" y="-44" width="62" height="80" rx="11" fill="#7ac74f" stroke="#2f6b2f" stroke-width="3" />
+                      <rect x="-35" y="-58" width="70" height="18" rx="6" fill="url(#chrome)" stroke="#4d5a6b" stroke-width="2" />
+                      <rect x="-23" y="-16" width="46" height="30" rx="4" fill="#fff8e7" />
+                      <text x="0" y="4" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="10" fill="#2f6b2f">PICKLES</text>
+                      <g fill="#4f9a2f">
+                        <ellipse cx="-14" cy="-30" rx="8" ry="12" transform="rotate(-20 -14 -30)" />
+                        <ellipse cx="6" cy="-32" rx="8" ry="12" transform="rotate(12 6 -32)" />
+                        <ellipse cx="19" cy="-26" rx="7" ry="11" transform="rotate(28 19 -26)" />
+                      </g>
+                      <g fill="#ffd93d">
+                        <path d="M-44 -52 l3 9 9 3 -9 3 -3 9 -3 -9 -9 -3 9 -3 z" />
+                        <path d="M44 -20 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 z" opacity="0.8" />
+                      </g>
+                    </g>
+
+                    <!-- shopping cart -->
+                    <g transform="translate(196 254)">
+                      <ellipse cx="66" cy="58" rx="72" ry="12" fill="#1b0829" opacity="0.4" />
+                      <g>
+                        <rect x="42" y="6" width="58" height="20" rx="3" fill="#ff2e97" stroke="#1b0829" stroke-width="2" />
+                        <rect x="76" y="0" width="20" height="26" rx="3" fill="#ffd93d" stroke="#1b0829" stroke-width="2" />
+                        <rect x="30" y="12" width="16" height="16" rx="2" fill="#2fe4ff" stroke="#1b0829" stroke-width="2" />
+                        <rect x="58" y="-2" width="14" height="14" rx="2" fill="#7ac74f" stroke="#1b0829" stroke-width="2" />
+                      </g>
+                      <path d="M0 18 H124 L108 50 H20 Z" fill="#230d3a" stroke="url(#chrome)" stroke-width="5" stroke-linejoin="round" />
+                      <g stroke="#9db4d6" stroke-width="1.4" opacity="0.7">
+                        <path d="M18 18 L28 50" />
+                        <path d="M40 18 L46 50" />
+                        <path d="M62 18 L64 50" />
+                        <path d="M84 18 L82 50" />
+                        <path d="M106 18 L100 50" />
+                      </g>
+                      <path d="M0 18 H-14 Q-24 18 -24 8" fill="none" stroke="url(#chrome)" stroke-width="5" stroke-linecap="round" />
+                      <circle cx="38" cy="58" r="7" fill="#1b0829" stroke="url(#chrome)" stroke-width="3" />
+                      <circle cx="96" cy="58" r="7" fill="#1b0829" stroke="url(#chrome)" stroke-width="3" />
+                    </g>
+
+                    <g fill="#ffd93d">
+                      <path d="M120 64 l3 10 10 3 -10 3 -3 10 -3 -10 -10 -3 10 -3 z" opacity="0.9" />
+                      <path d="M396 46 l2 7 7 2 -7 2 -2 7 -2 -7 -7 -2 7 -2 z" opacity="0.7" />
+                      <path d="M236 116 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 z" opacity="0.6" />
+                    </g>
+                    <g fill="#2fe4ff">
+                      <path d="M340 62 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 z" opacity="0.8" />
+                    </g>
+                  </svg>
+                  <div class="host-card">
+                    <svg class="host-avatar" aria-hidden="true"><use href="#host-face"></use></svg>
+                    <p><strong>CHIP CARSON</strong><span>YOUR HOST</span></p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ TEAM PICK ============ -->
+            <section class="screen" id="screen-team" data-screen="team" aria-labelledby="team-heading" hidden>
+              <div class="screen-inner">
+                <p class="eyebrow">THE TEAMS</p>
+                <h2 class="screen-title" id="team-heading">PICK YOUR TEAM</h2>
+                <div class="host-row">
+                  <svg class="host-avatar small" aria-hidden="true"><use href="#host-face"></use></svg>
+                  <p class="host-say">Three teams, one supermarket. Pick your partner, and let's go shopping!</p>
+                </div>
+                <div class="team-grid" id="team-grid" role="radiogroup" aria-label="Choose your team"></div>
+                <p class="team-note" id="team-note"></p>
+                <button class="show-btn big wide" id="team-confirm" type="button">LOCK IN &amp; PLAY</button>
+              </div>
+            </section>
+
+            <!-- ============ QUESTION ROUND ============ -->
+            <section class="screen" id="screen-quiz" data-screen="quiz" aria-labelledby="quiz-round-name" hidden>
+              <div class="quiz-shell">
+                <div class="quiz-head">
+                  <div>
+                    <p class="eyebrow" id="round-label">ROUND 1</p>
+                    <h2 class="quiz-round-name" id="quiz-round-name">NAME THAT PRODUCT</h2>
+                  </div>
+                  <p class="quiz-progress" id="quiz-progress">QUESTION 1 OF 6</p>
+                </div>
+
+                <div class="podiums" id="podiums"></div>
+
+                <div class="quiz-body">
+                  <div class="quiz-host">
+                    <svg class="host-avatar small" aria-hidden="true"><use href="#host-face"></use></svg>
+                    <p class="host-say" id="host-line">Answer fast! Every correct answer puts ten more seconds on somebody's Big Sweep clock.</p>
+                  </div>
+
+                  <div class="question-card" id="question-card">
+                    <p class="question-tag" id="question-tag">NAME THAT PRODUCT</p>
+                    <h3 id="question-text" tabindex="-1" aria-describedby="clock-seconds">Ready?</h3>
+                    <div class="answer-list" id="answer-list" role="group" aria-label="Answers"></div>
+                    <div class="clock-row">
+                      <div class="clock-track"><span id="clock-fill"></span></div>
+                      <span class="clock-seconds" id="clock-seconds" role="timer" aria-label="Answer time remaining">10</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p class="buzz-feed" id="buzz-feed" aria-live="polite"></p>
+              </div>
+            </section>
+
+            <!-- ============ BIG SWEEP INTRO ============ -->
+            <section class="screen" id="screen-sweep-intro" data-screen="sweep-intro" aria-labelledby="sweep-intro-heading" hidden>
+              <div class="screen-inner narrow">
+                <p class="eyebrow">THE CLOCK IS SET</p>
+                <h2 class="sweep-title" id="sweep-intro-heading">THE BIG SWEEP</h2>
+                <div class="host-row">
+                  <svg class="host-avatar small" aria-hidden="true"><use href="#host-face"></use></svg>
+                  <p class="host-say" id="sweep-intro-host">
+                    Time banks are locked! When I say go, grab everything you can. The giant items
+                    are worth a fortune.
+                  </p>
+                </div>
+                <div class="seed-list" id="sweep-intro-teams"></div>
+                <div class="sweep-rules" aria-hidden="true">
+                  <span>DRIVE</span><span>SCOOP</span><span>BANK</span><span>WIN</span>
+                </div>
+                <p class="sweep-note" id="sweep-intro-note"></p>
+                <button class="show-btn big wide" id="start-sweep" type="button">HIT THE AISLES</button>
+                <p class="control-hint">WASD / arrow keys on a keyboard · drag anywhere on the canvas for touch</p>
+              </div>
+            </section>
+
+            <!-- ============ SWEEP / BONUS PLAY ============ -->
+            <section class="screen screen-sweep" id="screen-sweep" data-screen="sweep" aria-label="Supermarket sweep" hidden>
+              <div class="sweep-topbar">
+                <div class="sweep-brand">
+                  <span class="live-dot" aria-hidden="true"></span>
+                  <strong id="sweep-mode-title">THE BIG SWEEP</strong>
+                  <span class="sweep-team" id="sweep-team-name">YOU</span>
+                </div>
+                <div class="hud-grid" id="sweep-hud">
+                  <div class="hud-cell"><span>TIME</span><strong id="hud-time">1:30</strong></div>
+                  <div class="hud-cell"><span>BANKED</span><strong id="hud-banked">$0</strong></div>
+                  <div class="hud-cell"><span>CART</span><strong id="hud-cart">$0</strong></div>
+                  <div class="hud-cell space-cell">
+                    <span>CART SPACE</span><strong id="hud-space">24</strong>
+                    <div class="cap-track"><span id="cap-fill"></span></div>
+                  </div>
+                </div>
+                <div class="hud-grid bonus-hud" id="bonus-hud" hidden>
+                  <div class="hud-cell"><span>TIME</span><strong id="hud-bonus-time">1:00</strong></div>
+                  <div class="hud-cell"><span>CLUES</span><strong id="hud-bonus-progress">0 / 3</strong></div>
+                </div>
+                <button class="icon-button" id="pause-button" type="button" aria-label="Pause game" aria-pressed="false">❚❚</button>
+              </div>
+
+              <div class="bonus-clue-bar" id="bonus-clue-bar" hidden>
+                <span class="clue-label" id="bonus-clue-number">CLUE 1 OF 3</span>
+                <p id="bonus-clue-text">Find the giant jar of pickles!</p>
+              </div>
+
+              <div class="canvas-wrap" id="canvas-wrap">
+                <canvas
+                  id="sweep-canvas"
+                  aria-label="Supermarket sweep. Steer the cart with WASD or arrow keys, or drag on a touch screen. Drive past shelves to collect groceries and return to your register to bank a full cart."
+                ></canvas>
+                <div class="countdown" id="sweep-countdown" hidden aria-hidden="true">3</div>
+                <div class="canvas-banner" id="sweep-banner" hidden></div>
+                <div class="sweep-ticker" id="sweep-ticker" role="status" aria-live="polite"></div>
+              </div>
+
+              <div class="sweep-bottom">
+                <p class="sweep-hint" id="sweep-hint">
+                  Roll past shelves to scoop items. Five of any one product is the show rule.
+                </p>
+                <p class="bank-hint">
+                  Cart full? <strong>Your register</strong> is the glowing lane in your team colour.
+                </p>
+              </div>
+            </section>
+
+            <!-- ============ CHECKOUT ============ -->
+            <section class="screen" id="screen-checkout" data-screen="checkout" aria-labelledby="checkout-heading" hidden>
+              <div class="screen-inner">
+                <p class="eyebrow">REGISTER SEVEN</p>
+                <h2 class="screen-title" id="checkout-heading">THE CHECKOUT</h2>
+                <div class="host-row">
+                  <svg class="host-avatar small" aria-hidden="true"><use href="#host-face"></use></svg>
+                  <p class="host-say" id="checkout-host">Let's scan it and see who's taking home the Big Sweep.</p>
+                </div>
+
+                <div class="checkout-grid">
+                  <div class="receipt" id="receipt">
+                    <div class="receipt-head">
+                      <strong>AISLE RUSH '85</strong>
+                      <span>SUPERMARKET · STUDIO 8</span>
+                      <span>REG 07 · CASHIER: YOUR PARTNER</span>
+                    </div>
+                    <ul id="receipt-lines"></ul>
+                    <div class="receipt-total" id="receipt-total">TOTAL $0</div>
+                    <p class="receipt-foot">THANK YOU FOR SHOPPING!<br />★ ★ ★</p>
+                  </div>
+
+                  <div class="checkout-side">
+                    <div class="checkout-teams" id="checkout-teams"></div>
+                    <div class="checkout-result" id="checkout-result" hidden></div>
+                    <button class="show-btn big wide" id="checkout-next" type="button" hidden>CONTINUE</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ BONUS SWEEP INTRO ============ -->
+            <section class="screen" id="screen-bonus-intro" data-screen="bonus-intro" aria-labelledby="bonus-intro-heading" hidden>
+              <div class="screen-inner narrow">
+                <p class="eyebrow">YOU WON THE BIG SWEEP</p>
+                <h2 class="cash-title">$5,000</h2>
+                <h2 class="bonus-kicker" id="bonus-intro-heading">THE BONUS SWEEP</h2>
+                <div class="bonus-brief">
+                  <div><strong>60</strong><span>SECONDS</span></div>
+                  <div><strong>3</strong><span>CLUES</span></div>
+                  <div><strong>1</strong><span>CASE OF CASH</span></div>
+                </div>
+                <div class="host-row">
+                  <svg class="host-avatar small" aria-hidden="true"><use href="#host-face"></use></svg>
+                  <p class="host-say" id="bonus-intro-host">
+                    Three clues, sixty seconds, five thousand dollars. First clue is coming — GO!
+                  </p>
+                </div>
+                <p class="bonus-first" id="bonus-preview-clue"></p>
+                <button class="show-btn big wide" id="start-bonus" type="button">START THE CLOCK</button>
+                <p class="fine center">Follow each clue to the golden item, then race the cash back to your register.</p>
+              </div>
+            </section>
+
+            <!-- ============ FINAL ============ -->
+            <section class="screen" id="screen-final" data-screen="final" aria-labelledby="final-headline" hidden>
+              <div class="screen-inner narrow final-card">
+                <p class="eyebrow" id="final-kicker">THAT'S THE SHOW</p>
+                <h2 class="final-headline" id="final-headline" tabindex="-1">SO CLOSE!</h2>
+                <p class="final-sub" id="final-sub"></p>
+
+                <div class="final-stats">
+                  <div><span>BIG SWEEP</span><strong id="final-sweep">$0</strong></div>
+                  <div><span>BONUS SWEEP</span><strong id="final-bonus">$0</strong></div>
+                  <div class="grand"><span>TOTAL WINNINGS</span><strong id="final-total">$0</strong></div>
+                  <div><span>BEST ON THIS DEVICE</span><strong id="final-best">$0</strong></div>
+                </div>
+
+                <p class="new-best" id="final-newbest" hidden>★ NEW HIGH SCORE ★</p>
+                <p class="catchphrase" id="final-catch">When you hear that scanner beep… think of Aisle Rush '85!</p>
+
+                <div class="final-actions">
+                  <button class="show-btn big" id="play-again" type="button">PLAY AGAIN</button>
+                  <a class="show-btn ghost" href="../../../games.html">ALL GAMES</a>
+                </div>
+                <p class="fine">No groceries were harmed. All brands, teams and jingles are made up.</p>
+                <div class="confetti" id="final-confetti" aria-hidden="true"></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="show-console">
+            <div class="console-left">
+              <span class="on-air"><i aria-hidden="true"></i> ON AIR</span>
+              <span class="round-chip" id="show-round-chip">PRE-SHOW</span>
+            </div>
+            <div class="console-actions">
+              <button class="console-btn" id="show-mute" type="button" aria-pressed="false">SOUND ON</button>
+              <button class="console-btn" id="show-fullscreen" type="button">FULL SCREEN</button>
+              <button class="console-btn" id="show-restart" type="button" hidden>RESTART</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="show-credit">
+          An original game inspired by the supermarket game shows of the 1980s. Built for Foofire
+          Games with no downloads, no accounts and no real brand names.
+        </p>
+
+        <!-- ============ HOW TO PLAY ============ -->
+        <div class="modal" id="howto-modal" role="dialog" aria-modal="true" aria-labelledby="howto-title" hidden>
+          <div class="modal-card">
+            <button class="modal-close" id="howto-close" type="button" aria-label="Close how to play">×</button>
+            <p class="eyebrow">THE RULEBOOK</p>
+            <h2 id="howto-title">HOW TO PLAY</h2>
+            <ol class="howto-list">
+              <li><strong>Pick a team.</strong> Your partner waits at the register. The other two teams are your rivals.</li>
+              <li><strong>Answer six grocery questions.</strong> Every correct answer adds <strong>10 seconds</strong> to that team's Big Sweep clock. Everyone starts with 1:30.</li>
+              <li><strong>Drive the Big Sweep.</strong> Use WASD or arrow keys, or drag anywhere on the canvas. Roll past shelves to scoop items into your cart.</li>
+              <li><strong>Know the good stuff.</strong> Giant display items are worth $180–$300. Hidden cash is worth up to $500. Poultry, coffee and cleaning products are pricey too.</li>
+              <li><strong>Bank a full cart.</strong> You can carry 24 items. Drive into your team-colour register zone to bank the cart and start fresh. Anything left in the cart still counts when time runs out.</li>
+              <li><strong>Follow the five-item rule.</strong> Five of any one product, then that shelf is done for you.</li>
+              <li><strong>Win the Big Sweep.</strong> The highest checkout total goes to the Bonus Sweep: three clues, 60 seconds, and a $5,000 case of cash waiting at your register.</li>
+            </ol>
+            <button class="show-btn" id="howto-start" type="button">GOT IT — START THE SHOW</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>

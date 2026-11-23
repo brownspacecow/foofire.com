@@ -7,7 +7,7 @@ Tagline: **Games for kids.**
 ## Features
 
 - Three.js games that run entirely in the browser
-- Game portal with a library of 21 playable games, with search and category filters
+- Game portal with a library of 22 playable games, with search and category filters
 - Dark, mobile-first responsive UI
 - Local high scores saved in the browser (top five per game)
 - Dedicated legal disclaimer page
@@ -18,7 +18,7 @@ Tagline: **Games for kids.**
 src/
   main.js          # Portal: featured games + Games-page search/filter
   scores.js        # High-scores page
-  data/games.js    # The 21 games: id, category, title, description, image, path
+  data/games.js    # The 22 games: id, category, title, description, image, path
   utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
   vendor/
     three.module.js  # Shared Three.js r169, used by Earwarts + Keep.
@@ -40,6 +40,7 @@ src/
     christmas-trees-and-missals/  # Decorate the town tree, then launch it
     zombie-deer/    # Zombie Deer: Christmas Edition tower defence
     crypt-crawl/    # Crypt Crawl: match-drag-slay puzzle dungeon crawler
+    aisle-rush/     # Aisle Rush '85: 80s supermarket game show
     spooky-santa/   # Spooky Santa: chimney stealth before sunrise
     spark-curfew/   # Spark Curfew: backyard fireworks before curfew
     the-grin/       # The Grin: four-stage bullet-hell boss fight
@@ -100,6 +101,38 @@ step, no three.js, no external assets. Serve the repo root as above and open:
 
 ```text
 http://localhost:8080/src/games/crypt-crawl/
+```
+
+### Aisle Rush '85
+
+An original 1980s supermarket game show. Three teams play a six-question
+grocery round; each correct answer adds ten seconds to that team's Big Sweep
+clock. Then the winner in each team races the aisles for real groceries:
+giant display items and hidden cash pay the most, five of any one product is
+the limit, and a full 24-item cart has to be exchanged at your team's register.
+The highest checkout total wins and plays the Bonus Sweep — three clues, sixty
+seconds, and a $5,000 case of cash waiting back at the register.
+
+Plain HTML, CSS, canvas and ES modules — no build step and no external assets
+except the show fonts. Serve the repo root as above and open:
+
+```text
+http://localhost:8080/src/games/aisle-rush/
+```
+
+Controls: WASD or arrow keys, or drag anywhere on the canvas on touch. P or
+Escape pauses. Best winnings are saved in localStorage.
+
+Folder layout:
+
+```text
+src/games/aisle-rush/
+  index.html
+  styles.css
+  game.js      # show flow: title, teams, quiz, checkout, bonus, final
+  sweep.js     # canvas store, cart, pickups and bonus-clue chase
+  content.js   # teams, shelves, quiz questions, bonus clues
+  audio.js     # synthesized 80s show band and effects
 ```
 
 ### Keep
