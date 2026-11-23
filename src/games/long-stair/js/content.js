@@ -524,7 +524,7 @@ export const ITEMS = {
 export const ENEMIES = {
   shade: {
     name: 'Crawling Shade',
-    glyph: 's',
+    glyph: '◒',
     hp: 12,
     might: 3,
     guard: 0,
@@ -535,7 +535,7 @@ export const ENEMIES = {
   },
   husk: {
     name: 'Salt Husk',
-    glyph: 'h',
+    glyph: '▤',
     hp: 19,
     might: 4,
     guard: 2,
@@ -546,7 +546,7 @@ export const ENEMIES = {
   },
   child: {
     name: 'Drowned Child',
-    glyph: 'c',
+    glyph: '◌',
     hp: 11,
     might: 2,
     guard: 0,
@@ -557,7 +557,7 @@ export const ENEMIES = {
   },
   cultist: {
     name: 'Choir Cultist',
-    glyph: 'C',
+    glyph: '♆',
     hp: 15,
     might: 4,
     guard: 1,
@@ -569,7 +569,7 @@ export const ENEMIES = {
   },
   wretch: {
     name: 'Gill Wretch',
-    glyph: 'w',
+    glyph: '♒',
     hp: 15,
     might: 4,
     guard: 1,
@@ -581,7 +581,7 @@ export const ENEMIES = {
   },
   stag: {
     name: 'Bone-Antler Stag',
-    glyph: 'S',
+    glyph: '♞',
     hp: 23,
     might: 6,
     guard: 2,
@@ -593,7 +593,7 @@ export const ENEMIES = {
   },
   revenant: {
     name: 'Bloated Revenant',
-    glyph: 'R',
+    glyph: '◍',
     hp: 21,
     might: 5,
     guard: 1,
@@ -605,7 +605,7 @@ export const ENEMIES = {
   },
   choir: {
     name: 'Hollow Choir',
-    glyph: 'Q',
+    glyph: '♬',
     hp: 27,
     might: 6,
     guard: 2,

@@ -520,7 +520,13 @@ function tileHtml(dungeon, x, y, visible) {
   if (partyHere) classes.push('has-party');
 
   let content = '';
-  let label = 'unseen stone';
+  let label = !isSeen
+    ? 'unseen stone'
+    : tile === WALL
+      ? 'the wet wall'
+      : isLit
+        ? 'the lit cellar floor'
+        : 'the remembered cellar floor';
 
   if (partyHere) {
     content = '<span class="glyph glyph-party">◉</span>';
@@ -1082,7 +1088,7 @@ function renderCombat() {
           : ''
       }
       <button class="combat-button combat-quiet" data-action="combat" data-act="flee">
-        <span>Break away</span><small>55% to get out</small>
+        <span>Break away</span><small>${downed ? '55% · leaves the dying' : '55% to get out'}</small>
       </button>
     `;
   }
@@ -1191,10 +1197,16 @@ function showCombatResult() {
       actions: [{ label: 'Onward', onClick: finishVictoryUi }],
     });
   } else if (result === 'fled') {
+    const downed = combat.order
+      .map((id) => heroById(campaign, id))
+      .filter((hero) => hero && hero.hp <= 0);
+    const lost = downed.length
+      ? `<p class="modal-loss">They do not get up: ${downed.map((hero) => nameOf(hero)).join(', ')}.</p>`
+      : '';
     openModal({
       eyebrow: 'Out of the room',
       title: 'They get away',
-      html: `<p class="modal-prose">They come back to the last lit room with their backs to the wall and their breath loud. The thing is still down there. It can wait.</p>`,
+      html: `<p class="modal-prose">They come back to the last lit room with their backs to the wall and their breath loud. The thing is still down there. It can wait.</p>${lost}`,
       dismissible: false,
       actions: [{ label: 'Catch their breath', onClick: finishFleeUi }],
     });
@@ -1237,6 +1249,16 @@ function finishFleeUi() {
     dungeon.calm = 4;
     delveLog.push('Their hands shake. The dark behind them keeps its distance, for now.');
     reveal(dungeon);
+  }
+  if (combat) {
+    const lost = combat.order
+      .map((id) => heroById(campaign, id))
+      .filter((hero) => hero && hero.hp <= 0);
+    for (const hero of lost) {
+      combat.deaths.push(HEROES[hero.id].name);
+      killHero(campaign, hero, 'died in the cellar');
+      delveLog.push(`${nameOf(hero)} does not get up. The cellar keeps them.`);
+    }
   }
   combat = null;
   hideCombat();
@@ -1291,7 +1313,11 @@ function renderEnd() {
   }
 
   const victory = Boolean(campaign.completed);
-  const survivors = campaign.roster.map((hero) => fullName(hero));
+  const partySurvivors = Array.isArray(campaign.survivors) ? campaign.survivors : [];
+  const survivors = partySurvivors.length
+    ? partySurvivors
+    : campaign.roster.map((hero) => fullName(hero));
+  const survivorLabel = partySurvivors.length ? 'Still standing' : 'Still in the house';
   const best = getBest(GAME_ID);
   refs.end.innerHTML = `
     <div class="end-card ${victory ? 'is-victory' : 'is-defeat'}">
@@ -1306,10 +1332,10 @@ function renderEnd() {
         <span><small>Weeks</small><b>${campaign.week}</b></span>
         <span><small>Deepest floor</small><b>${campaign.maxDepth || 0}</b></span>
         <span><small>Horrors slain</small><b>${campaign.kills}</b></span>
-        <span><small>Survivors</small><b>${campaign.roster.length}</b></span>
+        <span><small>Household</small><b>${campaign.roster.length}</b></span>
       </div>
       <p class="end-score">Score <b>${(campaign.score || 0).toLocaleString('en-US')}</b> · Best on this device <b>${best.toLocaleString('en-US')}</b></p>
-      ${survivors.length && victory ? `<p class="end-survivors">Still standing: ${survivors.join(', ')}.</p>` : ''}
+      ${survivors.length && victory ? `<p class="end-survivors">${survivorLabel}: ${survivors.join(', ')}.</p>` : ''}
       ${
         campaign.memorial.length
           ? `<details class="end-memorial"><summary>${campaign.memorial.length} left below</summary><ul>${campaign.memorial
@@ -1440,6 +1466,7 @@ function showHelp() {
         <li><b>Guard</b> halves the next round's blows. <b>Strike</b> is the reliable option. Abilities recharge over rounds.</li>
         <li>A hero at 0 HP is <b>dying</b>. Spend an action to <b>Stabilise</b> them before the last horror falls, or the cellar keeps them. They carry a new wound home.</li>
         <li>Fleeing is 55% likely. The dark does not chase immediately, but the thing is still there.</li>
+        <li>Fleeing while someone is down leaves them to the cellar. Stabilise first.</li>
       </ul>
       <h3 class="modal-head">Wounds and dread</h3>
       <ul class="modal-list">
