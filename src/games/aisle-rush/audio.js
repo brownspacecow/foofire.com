@@ -192,6 +192,14 @@ export function createShowAudio({ muted = false } = {}) {
       case 'pickup':
         tone({ freq: 620, type: 'square', dur: 0.04, gain: 0.035, slide: 240 });
         break;
+      case 'grind':
+        noise({ dur: 0.3, gain: 0.045, highpass: 350, lowpass: 2200 });
+        tone({ freq: 140, type: 'sawtooth', dur: 0.28, gain: 0.03, slide: -30 });
+        break;
+      case 'slice':
+        noise({ dur: 0.1, gain: 0.05, highpass: 2500, lowpass: 9000 });
+        tone({ freq: 240, type: 'square', dur: 0.06, gain: 0.04, slide: 80 });
+        break;
       case 'premium':
         tone({ freq: 784, type: 'square', dur: 0.07, gain: 0.05 });
         tone({ freq: 1046, type: 'square', dur: 0.09, gain: 0.045, at: 0.05 });

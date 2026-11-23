@@ -25,7 +25,7 @@ import { prefersReducedMotion } from '../../utils/motion.js';
 const GAME_ID = 'aisle-rush';
 const LEGACY_MUTE_KEY = 'aisle-rush-muted';
 const QUESTION_SECONDS = 10;
-const BASE_TIME = 90;
+const BASE_TIME = 60;
 
 const $ = (id) => document.getElementById(id);
 
@@ -87,6 +87,21 @@ if (showEl) {
   const sweepBanner = $('sweep-banner');
   const canvasWrap = $('canvas-wrap');
   const canvas = $('sweep-canvas');
+  const stationPrompt = $('station-prompt');
+  const stationPromptName = $('station-prompt-name');
+  const stationPromptHint = $('station-prompt-hint');
+  const stationGameEl = $('station-game');
+  const stationGameName = $('station-game-name');
+  const stationGameCopy = $('station-game-copy');
+  const stationZone = $('station-zone');
+  const stationPerfect = $('station-perfect');
+  const stationFill = $('station-fill');
+  const stationMarker = $('station-marker');
+  const stationMeterLabels = $('station-meter-labels');
+  const stationAction = $('station-action');
+  const stationStatus = $('station-status');
+  const stationResult = $('station-result');
+  const stationLeave = $('station-leave');
 
   const checkoutHost = $('checkout-host');
   const receiptLines = $('receipt-lines');
@@ -112,6 +127,7 @@ if (showEl) {
   const finalConfetti = $('final-confetti');
 
   const audio = createShowAudio({ muted: readMuted(LEGACY_MUTE_KEY) });
+  let stationGame = null;
 
   const state = {
     screen: 'title',
@@ -130,6 +146,7 @@ if (showEl) {
     tickerTimer: 0,
     sweep: null,
     sweepStats: null,
+    stationNear: null,
     playerWon: false,
     bonusWon: false,
     bonusCash: 0,
@@ -740,6 +757,9 @@ if (showEl) {
    * ---------------------------------------------------------------- */
 
   function destroySweep() {
+    closeStationGame();
+    state.stationNear = null;
+    hideStationPrompt();
     if (!state.sweep) return;
     try {
       state.sweep.destroy();
@@ -760,6 +780,8 @@ if (showEl) {
     capFill.style.background = hud.full ? 'var(--pink)' : '';
     hudBonusTime.textContent = formatClock(hud.timeLeft);
     hudBonusProgress.textContent = `${hud.bonusIndex} / ${hud.bonusTotal}`;
+    state.stationNear = hud.station || null;
+    updateStationPrompt();
   }
 
   function showTicker(message, tone = '') {
@@ -804,6 +826,8 @@ if (showEl) {
     bonusClueBar.hidden = true;
     hideBanner();
     hideTicker();
+    state.stationNear = null;
+    hideStationPrompt();
     showScreen('sweep');
     scrollToShow();
 
@@ -858,9 +882,262 @@ if (showEl) {
     step();
   }
 
+  /* ---------------------------------------------------------------- *
+   * Station challenges
+   * ---------------------------------------------------------------- */
+
+  function updateStationPrompt() {
+    const station = state.stationNear;
+    const show =
+      Boolean(station) &&
+      !stationGame &&
+      state.screen === 'sweep' &&
+      Boolean(state.sweep?.isRunning());
+    stationPrompt.hidden = !show;
+    if (!show) return;
+    stationPromptName.textContent = station.short;
+    stationPromptHint.textContent =
+      station.type === 'hold' ? 'TAP OR PRESS SPACE TO GRIND' : 'TAP OR PRESS SPACE TO SLICE';
+    stationPrompt.style.setProperty('--station', station.color);
+  }
+
+  function hideStationPrompt() {
+    stationPrompt.hidden = true;
+  }
+
+  function openStation(station) {
+    if (!station || stationGame || state.screen !== 'sweep') return;
+    if (!state.sweep?.canPlayStation(station.id)) return;
+
+    state.sweep.setUiLocked(true);
+    hideStationPrompt();
+
+    stationGame = {
+      station,
+      startedAt: performance.now(),
+      holdingStartedAt: 0,
+      value: 0,
+      holding: false,
+      finished: false,
+      raf: 0,
+      timeout: 0,
+      closeTimer: 0,
+    };
+
+    stationGameEl.hidden = false;
+    stationGameEl.style.setProperty('--station', station.color);
+    stationGameName.textContent = station.short;
+    stationGameCopy.textContent = station.instruction;
+    stationZone.style.left = `${station.zone[0] * 100}%`;
+    stationZone.style.width = `${(station.zone[1] - station.zone[0]) * 100}%`;
+    stationPerfect.style.left = `${station.perfect[0] * 100}%`;
+    stationPerfect.style.width = `${(station.perfect[1] - station.perfect[0]) * 100}%`;
+    stationFill.hidden = station.type !== 'hold';
+    stationMarker.hidden = station.type !== 'stop';
+    stationFill.style.width = '0%';
+    stationMarker.style.left = '0%';
+    stationAction.textContent = station.action;
+    stationAction.classList.remove('is-holding');
+    stationAction.disabled = false;
+    stationLeave.disabled = false;
+    stationMeterLabels.replaceChildren(
+      ...station.labels.map((label) => {
+        const span = document.createElement('span');
+        span.textContent = label;
+        return span;
+      })
+    );
+    stationStatus.textContent =
+      station.type === 'hold'
+        ? 'HOLD, THEN RELEASE IN THE GREEN · CLOCK IS RUNNING'
+        : 'STOP THE BLADE IN THE GREEN · CLOCK IS RUNNING';
+    stationResult.hidden = true;
+    stationResult.replaceChildren();
+    stationResult.classList.remove('is-miss');
+    audio.sfx('click');
+    stationAction.focus({ preventScroll: true });
+    stationGame.raf = window.requestAnimationFrame(stationTick);
+    stationGame.timeout = later(() => finishStation('miss', 'timeout'), 6500);
+  }
+
+  function stationTick(now) {
+    if (!stationGame || stationGame.finished) return;
+    if (stationGame.station.type === 'hold') {
+      if (stationGame.holding) {
+        stationGame.value = Math.min(1, (now - stationGame.holdingStartedAt) / 2200);
+        stationFill.style.width = `${stationGame.value * 100}%`;
+        if (stationGame.value >= 1) {
+          stationStatus.textContent = 'RELEASE — IT IS OVER-GRINDING!';
+        }
+      }
+    } else {
+      const cycle = 2.2;
+      const elapsed = (now - stationGame.startedAt) / 1000;
+      const phase = (elapsed % (cycle * 2)) / cycle;
+      stationGame.value = phase <= 1 ? phase : 2 - phase;
+      stationMarker.style.left = `${stationGame.value * 100}%`;
+    }
+    stationGame.raf = window.requestAnimationFrame(stationTick);
+  }
+
+  function stationGrade(station, value) {
+    if (value >= station.perfect[0] && value <= station.perfect[1]) return 'perfect';
+    if (value >= station.zone[0] && value <= station.zone[1]) return 'good';
+    return 'miss';
+  }
+
+  function beginStationHold() {
+    if (!stationGame || stationGame.finished || stationGame.holding) return;
+    if (stationGame.station.type !== 'hold') return;
+    stationGame.holding = true;
+    stationGame.holdingStartedAt = performance.now();
+    stationGame.value = 0;
+    stationFill.style.width = '0%';
+    stationAction.classList.add('is-holding');
+    stationStatus.textContent = 'GRINDING… RELEASE IN THE GREEN!';
+    audio.sfx('grind');
+  }
+
+  function releaseStationHold() {
+    if (!stationGame || stationGame.finished || !stationGame.holding) return;
+    stationGame.holding = false;
+    stationAction.classList.remove('is-holding');
+    finishStation(stationGrade(stationGame.station, stationGame.value), 'played');
+  }
+
+  function stopStation() {
+    if (!stationGame || stationGame.finished || stationGame.station.type !== 'stop') return;
+    audio.sfx('slice');
+    finishStation(stationGrade(stationGame.station, stationGame.value), 'played');
+  }
+
+  function finishStation(grade, reason) {
+    if (!stationGame || stationGame.finished) return;
+    stationGame.finished = true;
+    window.cancelAnimationFrame(stationGame.raf);
+    cancelTimer(stationGame.timeout);
+    stationGame.holding = false;
+    stationAction.classList.remove('is-holding');
+    stationAction.disabled = true;
+    stationLeave.disabled = true;
+    stationFill.style.width = `${stationGame.value * 100}%`;
+    stationMarker.style.left = `${stationGame.value * 100}%`;
+
+    const station = stationGame.station;
+    const award = state.sweep?.awardStation(station.id, grade) || { amount: 0 };
+    state.stationNear = null;
+
+    const message =
+      reason === 'timeout'
+        ? 'TIME! The station closed before you finished.'
+        : station.results?.[grade] || 'Station closed.';
+    stationResult.replaceChildren(document.createTextNode(message));
+    if (award.amount > 0) {
+      const bonus = document.createElement('b');
+      bonus.textContent = ` +${formatMoney(award.amount)}`;
+      stationResult.append(bonus);
+    }
+    stationResult.classList.toggle('is-miss', award.amount === 0);
+    stationResult.hidden = false;
+    stationStatus.textContent =
+      reason === 'timeout' ? 'NO BONUS — THE CLOCK KEPT RUNNING' : 'STATION CLOSED';
+    stationGame.closeTimer = later(() => closeStationGame(), 1400);
+  }
+
+  function closeStationGame() {
+    if (!stationGame) return;
+    const game = stationGame;
+    stationGame = null;
+    window.cancelAnimationFrame(game.raf);
+    cancelTimer(game.timeout);
+    cancelTimer(game.closeTimer);
+    stationGameEl.hidden = true;
+    stationGameEl.style.removeProperty('--station');
+    stationAction.disabled = false;
+    stationAction.classList.remove('is-holding');
+    stationLeave.disabled = false;
+    stationFill.style.width = '0%';
+    stationMarker.style.left = '0%';
+    stationResult.hidden = true;
+    stationResult.replaceChildren();
+    stationResult.classList.remove('is-miss');
+    stationAction.blur();
+    state.sweep?.setUiLocked(false);
+    updateStationPrompt();
+  }
+
+  stationPrompt.addEventListener('click', () => {
+    if (state.screen !== 'sweep' || stationGame) return;
+    openStation(state.stationNear);
+  });
+
+  stationLeave.addEventListener('click', () => {
+    if (!stationGame || stationGame.finished) return;
+    audio.sfx('click');
+    closeStationGame();
+  });
+
+  stationAction.addEventListener('pointerdown', (event) => {
+    if (!stationGame || stationGame.finished) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    if (stationGame.station.type === 'hold') {
+      beginStationHold();
+      try {
+        stationAction.setPointerCapture(event.pointerId);
+      } catch (error) {
+        /* Safari can refuse capture; the window release still finishes. */
+      }
+    } else {
+      stopStation();
+    }
+  });
+
+  stationAction.addEventListener('pointerup', (event) => {
+    if (!stationGame?.holding) return;
+    event.preventDefault();
+    releaseStationHold();
+  });
+  stationAction.addEventListener('pointercancel', releaseStationHold);
+  window.addEventListener('pointerup', () => {
+    if (stationGame?.holding) releaseStationHold();
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (state.screen !== 'sweep' || howtoModal.hidden === false) return;
+    if (event.key === 'Escape' && stationGame) {
+      event.preventDefault();
+      if (!stationGame.finished) closeStationGame();
+      return;
+    }
+    if (event.repeat) return;
+    if (event.code !== 'Space' && event.code !== 'Enter') return;
+    if (stationGame) {
+      if (stationGame.finished) return;
+      event.preventDefault();
+      if (stationGame.station.type === 'hold') beginStationHold();
+      else stopStation();
+      return;
+    }
+    if (event.code === 'Space' && !stationPrompt.hidden) {
+      event.preventDefault();
+      openStation(state.stationNear);
+    }
+  });
+
+  window.addEventListener('keyup', (event) => {
+    if (!stationGame?.holding) return;
+    if (event.code !== 'Space' && event.code !== 'Enter') return;
+    event.preventDefault();
+    releaseStationHold();
+  });
+
   function endBigSweep(stats) {
     state.sweepStats = stats;
     state.autoPause?.sync();
+    closeStationGame();
+    state.stationNear = null;
+    hideStationPrompt();
     hideTicker();
     showBanner('TIME!', 'SCANNING THE CART…');
     audio.sfx('timeup');
@@ -913,6 +1190,14 @@ if (showEl) {
     if (cashTotal > 0) {
       lines.push({ label: 'HIDDEN CASH FOUND', value: cashTotal, special: true });
     }
+    (stats.stations || []).forEach((station) => {
+      if (station.amount <= 0) return;
+      lines.push({
+        label: `${station.name} — ${station.grade.toUpperCase()}`,
+        value: station.amount,
+        special: true,
+      });
+    });
     if (!lines.length) {
       lines.push({ label: 'One very empty cart', value: 0, special: false });
     }
@@ -1234,6 +1519,9 @@ if (showEl) {
    * ---------------------------------------------------------------- */
 
   function resetShow() {
+    closeStationGame();
+    state.stationNear = null;
+    hideStationPrompt();
     clearLater();
     window.cancelAnimationFrame(state.timerRaf);
     cancelTimer(state.cpuTimer);
@@ -1302,7 +1590,10 @@ if (showEl) {
     muteButton: showMute,
     button: pauseBtn,
     message: 'The show is paused',
-    onPause: () => state.sweep?.pause(),
+    onPause: () => {
+      closeStationGame();
+      state.sweep?.pause();
+    },
     onResume: () => state.sweep?.resume(),
   });
 }

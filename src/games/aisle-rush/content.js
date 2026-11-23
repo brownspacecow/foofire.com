@@ -1,7 +1,7 @@
 /**
  * Aisle Rush '85 — show content.
- * Teams, grocery shelves, quiz questions and Bonus Sweep clues.
- * Everything here is original: made-up brands, no real product slogans.
+ * Teams, grocery shelves, station challenges, quiz questions and Bonus Sweep
+ * clues. Everything here is original: made-up brands, no real product slogans.
  */
 
 export const TEAMS = [
@@ -112,6 +112,62 @@ export const AISLES = [
       { id: 'bagel', name: 'BAGEL BUNCH', short: 'BAGEL', price: 5, color: '#e8c48a', accent: '#5a321c', art: 'bread' },
       { id: 'pie', name: 'APPLE PIE', short: 'PIE', price: 10, color: '#f5d06b', accent: '#b03a00', art: 'cake' },
     ],
+  },
+];
+
+/**
+ * In-store station challenges for the Big Sweep.
+ * `zone` is the good slice of the meter and `perfect` is its centre band;
+ * both are fractions of the bar. Rewards go straight to the till, not the cart.
+ */
+export const STATIONS = [
+  {
+    id: 'coffee',
+    name: 'COFFEE GRINDER',
+    short: 'GRIND THE COFFEE',
+    type: 'hold',
+    x: 125,
+    y: 650,
+    artX: 82,
+    artY: 646,
+    range: 150,
+    color: '#d9a05b',
+    action: 'HOLD TO GRIND',
+    instruction:
+      'Hold the button to grind. Release when the beans hit the green. The sweep clock keeps running.',
+    zone: [0.52, 0.86],
+    perfect: [0.64, 0.74],
+    labels: ['UNDER', 'JUST RIGHT', 'OVER'],
+    rewards: { perfect: 150, good: 75, miss: 0 },
+    results: {
+      perfect: 'PERFECT GRIND! The judges love it.',
+      good: 'GOOD GRIND! A solid cup of coffee.',
+      miss: 'BITTER! Too far off the grind.',
+    },
+  },
+  {
+    id: 'deli',
+    name: 'DELI SLICER',
+    short: 'SLICE THE TURKEY',
+    type: 'stop',
+    x: 800,
+    y: 226,
+    artX: 800,
+    artY: 154,
+    range: 150,
+    color: '#ff8a00',
+    action: 'SLICE',
+    instruction:
+      'Tap SLICE when the blade sweeps through the green. The sweep clock keeps running.',
+    zone: [0.55, 0.85],
+    perfect: [0.66, 0.74],
+    labels: ['THIN', 'JUST RIGHT', 'THICK'],
+    rewards: { perfect: 200, good: 100, miss: 0 },
+    results: {
+      perfect: 'PERFECT SLICE! The deli counter cheers.',
+      good: 'NICE CUT! That will make a sandwich.',
+      miss: 'TOO THICK! The slicer wins that one.',
+    },
   },
 ];
 
@@ -348,7 +404,8 @@ export const HOST_LINES = {
   correct: ['Ten more seconds!', 'Beautiful!', 'That’s the one!', 'Ka-ching!', 'Sharp as a shopping list.'],
   wrong: ['Ooh, not quite.', 'Oh no! The buzzer.', 'That one goes back on the shelf.'],
   timeout: ['Too slow!', 'And the clock wins that round.', 'Time’s up before the checkout!'],
-  sweep: 'Time banks are locked! When I say go, grab everything you can. The giant items are worth a fortune!',
+  sweep:
+    'Time banks are locked! When I say go, grab everything you can. The giant items are worth a fortune — and the coffee grinder and deli slicer are paying cash to anyone who can beat their stations!',
   timeup: 'That’s the buzzer! Let’s see what’s in that cart.',
   checkout: 'Let’s scan it and see who’s taking home the Big Sweep.',
   bonus: 'Three clues, sixty seconds, five thousand dollars. First clue is coming — GO!',

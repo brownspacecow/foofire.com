@@ -107,11 +107,14 @@ http://localhost:8080/src/games/crypt-crawl/
 
 An original 1980s supermarket game show. Three teams play a six-question
 grocery round; each correct answer adds ten seconds to that team's Big Sweep
-clock. Then the winner in each team races the aisles for real groceries:
-giant display items and hidden cash pay the most, five of any one product is
-the limit, and a full 24-item cart has to be exchanged at your team's register.
-The highest checkout total wins and plays the Bonus Sweep — three clues, sixty
-seconds, and a $5,000 case of cash waiting back at the register.
+clock, and everyone starts with 1:00. Then the winner in each team races the
+aisles for real groceries: giant display items and hidden cash pay the most,
+five of any one product is the limit, and a full 24-item cart has to be
+exchanged at your team's register. The coffee grinder and deli slicer run
+quick station challenges — hold or stop the meter in the green for a cash
+bonus while the sweep clock keeps running. The highest checkout total wins and
+plays the Bonus Sweep — three clues, sixty seconds, and a $5,000 case of cash
+waiting back at the register.
 
 Plain HTML, CSS, canvas and ES modules — no build step and no external assets
 except the show fonts. Serve the repo root as above and open:

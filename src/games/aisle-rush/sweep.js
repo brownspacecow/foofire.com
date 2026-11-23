@@ -2,10 +2,11 @@
  * Aisle Rush '85 — the supermarket sweep.
  * One canvas engine for both the Big Sweep and the Bonus Sweep:
  * top-down cart driving, shelf pickups, giant bonus items, hidden cash,
- * cart exchanges at your register, and a 60-second clue chase.
+ * coffee-grinder and deli-slicer station challenges, cart exchanges at your
+ * register, and a 60-second clue chase.
  */
 
-import { AISLES, TEAMS, BONUS_TARGETS } from './content.js';
+import { AISLES, TEAMS, BONUS_TARGETS, STATIONS } from './content.js';
 
 export const CART_CAP = 24;
 
@@ -87,7 +88,7 @@ function textOn(hex) {
 export function createSweep(canvas, options) {
   const {
     mode = 'sweep',
-    seconds = 90,
+    seconds = 60,
     teamIndex = 0,
     rivals = [],
     audio = { sfx() {} },
@@ -106,6 +107,7 @@ export function createSweep(canvas, options) {
     running: false,
     paused: false,
     over: false,
+    uiLocked: false,
     clock: 0,
     elapsed: 0,
     timeLeft: seconds,
@@ -121,6 +123,9 @@ export function createSweep(canvas, options) {
     targets: [],
     cash: null,
     bonusIndex: 0,
+    nearStation: null,
+    stationDone: new Set(),
+    stationRewards: [],
     player: {
       x: registerX,
       y: 858,
@@ -199,6 +204,10 @@ export function createSweep(canvas, options) {
     state.targets = [];
     state.cash = null;
     state.bonusIndex = 0;
+    state.stationDone = new Set();
+    state.stationRewards = [];
+    state.nearStation = null;
+    state.uiLocked = false;
 
     if (mode === 'sweep') {
       state.giants = shuffled(GIANT_SPOTS, rand)
@@ -256,7 +265,7 @@ export function createSweep(canvas, options) {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     const key = event.key.toLowerCase();
     if (!MOVE_KEYS.has(key)) return;
-    if (state.running && !state.paused && !state.over) {
+    if (state.running && !state.paused && !state.over && !state.uiLocked) {
       state.keys.add(key);
       event.preventDefault();
     }
@@ -271,7 +280,7 @@ export function createSweep(canvas, options) {
   }
 
   function onPointerDown(event) {
-    if (!state.running || state.paused || state.over) return;
+    if (!state.running || state.paused || state.over || state.uiLocked) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     const rect = canvas.getBoundingClientRect();
     state.joy.active = true;
@@ -371,6 +380,7 @@ export function createSweep(canvas, options) {
       items: state.itemCount,
       bonusIndex: state.bonusIndex,
       bonusTotal: BONUS_TARGETS.length,
+      station: state.nearStation,
       running: state.running,
     });
   }
@@ -483,6 +493,31 @@ export function createSweep(canvas, options) {
     onToast(`BANKED ${money(amount)} — FRESH CART, GO GO GO!`, 'good');
   }
 
+  function awardStation(id, grade) {
+    const station = STATIONS.find((entry) => entry.id === id);
+    if (!station || !state.running || state.over || state.stationDone.has(id)) {
+      return { amount: 0, name: station?.name || '', grade };
+    }
+    state.stationDone.add(id);
+    const amount = station.rewards?.[grade] || 0;
+    if (amount > 0) {
+      state.banked += amount;
+      state.shake = Math.min(1, state.shake + 0.25);
+      burst(station.x, station.y, station.color, 16, 180);
+      ring(station.x, station.y, station.color, 95);
+      floater(station.x, station.y - 28, `STATION +${money(amount)}!`, '#7dffb0', 21);
+      audio.sfx('money');
+      onToast(`${station.name}: ${grade.toUpperCase()} — ${money(amount)} TO THE TILL!`, 'good');
+    } else {
+      audio.sfx('buzz');
+      onToast(`${station.name}: NO BONUS THIS TIME.`, 'warn');
+    }
+    state.stationRewards.push({ id, name: station.name, grade, amount });
+    state.nearStation = null;
+    updateHud(true);
+    return { amount, name: station.name, grade };
+  }
+
   /* ---------------------------------------------------------------- *
    * Update
    * ---------------------------------------------------------------- */
@@ -497,7 +532,9 @@ export function createSweep(canvas, options) {
     if (state.touchHint < 1) state.touchHint = Math.min(1, state.touchHint + dt * 0.35);
 
     const player = state.player;
-    let ix = 0;
+
+    if (!state.uiLocked) {
+      let ix = 0;
     let iy = 0;
     if (state.keys.has('arrowleft') || state.keys.has('a')) ix -= 1;
     if (state.keys.has('arrowright') || state.keys.has('d')) ix += 1;
@@ -541,9 +578,14 @@ export function createSweep(canvas, options) {
     if (state.joy.active) {
       state.touchHint = 1;
     }
+    } else {
+      player.vx = 0;
+      player.vy = 0;
+    }
 
-    /* Pickups */
-    if (mode === 'bonus') {
+    if (!state.uiLocked) {
+      /* Pickups */
+      if (mode === 'bonus') {
       if (!state.cash && state.bonusIndex < BONUS_TARGETS.length) {
         const target = state.targets[state.bonusIndex];
         if (target && !target.collected) {
@@ -588,6 +630,23 @@ export function createSweep(canvas, options) {
       if (nearest) collectShelfItem(nearest);
 
       if (state.cart.length && inRegisterZone()) bankCart();
+    }
+    }
+
+    if (mode === 'sweep') {
+      let near = null;
+      let nearDistance = Infinity;
+      for (const station of STATIONS) {
+        if (state.stationDone.has(station.id)) continue;
+        const distance = Math.hypot(player.x - station.x, player.y - station.y);
+        if (distance < station.range && distance < nearDistance) {
+          near = station;
+          nearDistance = distance;
+        }
+      }
+      state.nearStation = near;
+    } else {
+      state.nearStation = null;
     }
 
     /* Timer warnings and rival entrances */
@@ -641,6 +700,7 @@ export function createSweep(canvas, options) {
     if (state.over) return;
     state.over = true;
     state.running = false;
+    state.uiLocked = false;
     state.keys.clear();
     state.joy.active = false;
     updateHud(true);
@@ -656,6 +716,7 @@ export function createSweep(canvas, options) {
       receipt: [...state.tally.values()].sort((a, b) => b.total - a.total),
       giants: state.giants.filter((g) => g.collected).map(({ name, value }) => ({ name, value })),
       money: state.money.filter((m) => m.collected).map(({ value }) => ({ value })),
+      stations: state.stationRewards.map(({ name, grade, amount }) => ({ name, grade, amount })),
       bonusIndex: state.bonusIndex,
       bonusWon: reason === 'cash',
       timeUsed: Math.max(0, state.seconds - state.timeLeft),
@@ -1028,6 +1089,7 @@ export function createSweep(canvas, options) {
 
     drawRegisters(ctx, t);
     drawShelves(ctx, t);
+    if (mode === 'sweep') drawStations(ctx, t);
     drawItems(ctx, t);
     if (mode === 'sweep') {
       drawGiants(ctx, t);
@@ -1110,6 +1172,207 @@ export function createSweep(canvas, options) {
       }
       ctx.restore();
     }
+  }
+
+  function drawStations(ctx, t) {
+    for (let index = 0; index < STATIONS.length; index += 1) {
+      const station = STATIONS[index];
+      const done = state.stationDone.has(station.id);
+      const near = state.nearStation?.id === station.id;
+      const pulse = reducedMotion ? 1 : 1 + Math.sin(t * 3 + index) * 0.05;
+
+      ctx.save();
+      if (!done) {
+        const aura = ctx.createRadialGradient(
+          station.x,
+          station.y,
+          8,
+          station.x,
+          station.y,
+          64
+        );
+        aura.addColorStop(0, near ? 'rgba(255,217,61,0.34)' : 'rgba(255,217,61,0.16)');
+        aura.addColorStop(1, 'rgba(255,217,61,0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(station.x, station.y, 64, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = done
+        ? 'rgba(125,255,176,0.38)'
+        : `rgba(255,217,61,${near ? 0.95 : 0.62})`;
+      ctx.lineWidth = near ? 4 : 2.5;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.arc(station.x, station.y, 44 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = done ? 'rgba(125,255,176,0.06)' : 'rgba(255,217,61,0.08)';
+      ctx.beginPath();
+      ctx.arc(station.x, station.y, 38, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawStationArt(ctx, station, t, done);
+
+      if (done) {
+        ctx.fillStyle = '#7dffb0';
+        ctx.font = `800 10px ${FONT_DISPLAY}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('DONE', station.x, station.y + 62);
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawStationArt(ctx, station, t, done) {
+    ctx.save();
+    ctx.globalAlpha = done ? 0.62 : 1;
+    if (station.id === 'coffee') drawCoffeeGrinder(ctx, station);
+    else drawDeliSlicer(ctx, station);
+    ctx.restore();
+  }
+
+  function drawCoffeeGrinder(ctx, station) {
+    const x = station.artX;
+    const y = station.artY;
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.fillStyle = 'rgba(20,5,31,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(0, 38, 46, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#2b0b45';
+    roundedPath(ctx, -46, -10, 92, 54, 8);
+    ctx.fill();
+    ctx.strokeStyle = station.color;
+    ctx.lineWidth = 2;
+    roundedPath(ctx, -46, -10, 92, 54, 8);
+    ctx.stroke();
+
+    ctx.fillStyle = '#d7d2e2';
+    roundedPath(ctx, -24, -22, 48, 42, 5);
+    ctx.fill();
+
+    ctx.fillStyle = '#5a321c';
+    ctx.beginPath();
+    ctx.moveTo(-18, -22);
+    ctx.lineTo(18, -22);
+    ctx.lineTo(12, -52);
+    ctx.lineTo(-12, -52);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#8a4b1f';
+    ctx.beginPath();
+    ctx.ellipse(0, -52, 12, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#3a1650';
+    roundedPath(ctx, -15, 4, 30, 20, 3);
+    ctx.fill();
+    ctx.fillStyle = '#b06a2c';
+    roundedPath(ctx, -12, 7, 24, 14, 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#f7f4ea';
+    ctx.fillRect(-4, -3, 8, 9);
+
+    ctx.fillStyle = '#ff2e97';
+    ctx.beginPath();
+    ctx.arc(31, 12, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff8e7';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffd93d';
+    roundedPath(ctx, 24, -6, 22, 24, 3);
+    ctx.fill();
+    ctx.fillStyle = '#5a321c';
+    ctx.font = `800 7px ${FONT_DISPLAY}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('JOE', 35, 7);
+
+    ctx.fillStyle = '#14051f';
+    roundedPath(ctx, -46, -76, 92, 20, 4);
+    ctx.fill();
+    ctx.strokeStyle = station.color;
+    ctx.lineWidth = 2;
+    roundedPath(ctx, -46, -76, 92, 20, 4);
+    ctx.stroke();
+    ctx.fillStyle = station.color;
+    ctx.font = `10px ${FONT_DISPLAY}`;
+    ctx.fillText('COFFEE', 0, -66);
+
+    ctx.restore();
+  }
+
+  function drawDeliSlicer(ctx, station) {
+    const x = station.artX;
+    const y = station.artY;
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.fillStyle = 'rgba(20,5,31,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(0, 36, 46, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#d7d2e2';
+    roundedPath(ctx, -42, -6, 84, 30, 5);
+    ctx.fill();
+    ctx.strokeStyle = '#8a8a9a';
+    ctx.lineWidth = 2;
+    roundedPath(ctx, -42, -6, 84, 30, 5);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f7f4ea';
+    ctx.beginPath();
+    ctx.arc(-14, -18, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#8a8a9a';
+    ctx.stroke();
+    ctx.fillStyle = '#c9c4d9';
+    ctx.beginPath();
+    ctx.arc(-14, -18, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#d96b6b';
+    roundedPath(ctx, 10, -30, 42, 22, 9);
+    ctx.fill();
+    ctx.strokeStyle = '#8a3a3a';
+    ctx.stroke();
+    ctx.fillStyle = '#f2b0a0';
+    ctx.beginPath();
+    ctx.ellipse(50, -19, 5, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-36, -18);
+    ctx.lineTo(-56, -28);
+    ctx.stroke();
+
+    ctx.fillStyle = '#14051f';
+    roundedPath(ctx, -46, 22, 92, 20, 4);
+    ctx.fill();
+    ctx.strokeStyle = station.color;
+    ctx.lineWidth = 2;
+    roundedPath(ctx, -46, 22, 92, 20, 4);
+    ctx.stroke();
+    ctx.fillStyle = station.color;
+    ctx.font = `9px ${FONT_DISPLAY}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('DELI SLICER', 0, 32);
+
+    ctx.restore();
   }
 
   function drawItems(ctx, t) {
@@ -1566,6 +1829,12 @@ export function createSweep(canvas, options) {
         ctx.fillStyle = '#7dffb0';
         ctx.fillRect(bx - 1.5, by - 1.5, 3, 3);
       }
+      for (const station of STATIONS) {
+        if (state.stationDone.has(station.id)) continue;
+        const [sx, sy] = mapPoint(station.x, station.y);
+        ctx.fillStyle = station.color;
+        ctx.fillRect(sx - 2, sy - 2, 4, 4);
+      }
     } else {
       const target = state.targets[state.bonusIndex];
       if (target) {
@@ -1691,6 +1960,8 @@ export function createSweep(canvas, options) {
       state.running = true;
       state.paused = false;
       state.over = false;
+      state.uiLocked = false;
+      state.nearStation = null;
       lastFrame = performance.now();
       burst(state.player.x, state.player.y, team.color, 18, 170);
       ring(state.player.x, state.player.y, team.color, 90);
@@ -1711,6 +1982,30 @@ export function createSweep(canvas, options) {
     isRunning() {
       return state.running && !state.over;
     },
+    canPlayStation(id) {
+      return Boolean(
+        state.running &&
+          !state.paused &&
+          !state.over &&
+          !state.uiLocked &&
+          state.nearStation?.id === id &&
+          !state.stationDone.has(id)
+      );
+    },
+    setUiLocked(locked) {
+      if (!state.running || state.over) return;
+      state.uiLocked = Boolean(locked);
+      clearKeys();
+      state.joy.active = false;
+      state.joy.id = null;
+      state.joy.dx = 0;
+      state.joy.dy = 0;
+      if (locked) {
+        state.player.vx = 0;
+        state.player.vy = 0;
+      }
+    },
+    awardStation,
     resize,
     destroy() {
       window.cancelAnimationFrame(raf);
