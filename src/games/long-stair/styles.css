@@ -2087,8 +2087,8 @@
   .slot-remove {
     display: grid;
     place-items: center;
-    min-width: 2rem;
-    min-height: 2rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     top: 0;
     right: 0;
   }
@@ -2101,7 +2101,7 @@
   .bar-button {
     display: inline-flex;
     align-items: center;
-    min-height: 2.2rem;
+    min-height: 2.75rem;
   }
 
   .combat-button {
@@ -2184,6 +2184,7 @@
 
   .hud-button {
     margin-left: 0;
+    min-height: 2.75rem;
   }
 }
 
@@ -2316,7 +2317,7 @@
   }
 
   .stair-page .bar-button {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
   }
 
   .stair-page #screen-title,
@@ -2794,7 +2795,7 @@
 
   /* End */
   .stair-page #screen-end {
-    padding: 0.7rem 0.75rem 1.2rem;
+    padding: 0.25rem 0.75rem 1.2rem;
   }
 
   .stair-page .end-screen {
@@ -2843,6 +2844,7 @@
 
   .stair-page .end-actions {
     gap: 0.4rem;
+    margin-top: 0;
   }
 
   .stair-page .end-actions .big-button {
