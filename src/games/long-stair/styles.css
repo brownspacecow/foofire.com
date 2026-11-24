@@ -2238,6 +2238,720 @@
   }
 }
 
+/* ---- Mobile: full-screen game shell ------------------------------ */
+
+.stair-brand {
+  display: none;
+  color: var(--stair-brass);
+  font-family: var(--stair-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.stair-brand:hover {
+  color: var(--stair-brass-bright);
+}
+
+@media (max-width: 760px) {
+  .stair-page {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .stair-page .site-header,
+  .stair-page .page-header,
+  .stair-page footer,
+  .stair-page .skip-link {
+    display: none;
+  }
+
+  .stair-page main {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .stair-page .stair-game {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .stair-page .stair-bar {
+    flex: 0 0 auto;
+    min-height: 3.5rem;
+    margin: 0;
+    padding: calc(0.35rem + env(safe-area-inset-top)) 0.85rem 0.35rem;
+    border-top: 0;
+    background: #0a080d;
+  }
+
+  .stair-page .stair-brand {
+    display: inline-block;
+    font-size: 0.76rem;
+  }
+
+  .stair-page .stair-bar-label {
+    display: none;
+  }
+
+  .stair-page .stair-bar-actions {
+    gap: 0.9rem;
+  }
+
+  .stair-page .bar-button,
+  .stair-page .text-button,
+  .stair-page .text-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    font-size: 0.76rem;
+    letter-spacing: 0.1em;
+  }
+
+  .stair-page .bar-button {
+    min-height: 2.5rem;
+  }
+
+  .stair-page #screen-title,
+  .stair-page #screen-house,
+  .stair-page #screen-delve,
+  .stair-page .combat,
+  .stair-page #screen-end {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stair-page #screen-title::-webkit-scrollbar,
+  .stair-page #screen-house::-webkit-scrollbar,
+  .stair-page #screen-delve::-webkit-scrollbar,
+  .stair-page .combat::-webkit-scrollbar,
+  .stair-page #screen-end::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stair-page .eyebrow,
+  .stair-page .label {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+  }
+
+  .stair-page .screen-title {
+    font-size: 1.6rem;
+  }
+
+  /* Title cover */
+  .stair-page .title-screen {
+    max-width: none;
+    margin: 0;
+    padding: 1.3rem 1.1rem 1.5rem;
+    border-top: 0;
+    border-right: 0;
+    border-left: 0;
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.55);
+  }
+
+  .stair-page .title-screen::before,
+  .stair-page .title-screen::after {
+    display: none;
+  }
+
+  .stair-page .title-ornament {
+    margin-bottom: 0.35rem;
+  }
+
+  .stair-page .stair-title {
+    font-size: clamp(2.7rem, 13vw, 3.6rem);
+  }
+
+  .stair-page .stair-tagline {
+    margin-top: 0.7rem;
+    font-size: 1.15rem;
+  }
+
+  .stair-page .title-prose {
+    margin: 0.6rem auto;
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+
+  .stair-page .title-prose + .title-prose,
+  .stair-page .title-rule,
+  .stair-page .title-best {
+    display: none;
+  }
+
+  .stair-page .title-actions {
+    margin-top: 1.2rem;
+    gap: 0.6rem;
+  }
+
+  .stair-page .title-actions > button {
+    width: 100%;
+  }
+
+  .stair-page .title-actions .big-button {
+    min-height: 3.25rem;
+    font-size: 0.8rem;
+  }
+
+  .stair-page .title-actions .secondary-button {
+    min-height: 3rem;
+    font-size: 0.76rem;
+  }
+
+  .stair-page .title-actions .continue-button {
+    align-items: center;
+    text-align: center;
+  }
+
+  .stair-page .continue-button span {
+    font-size: 0.86rem;
+  }
+
+  .stair-page .difficulty {
+    max-width: none;
+    margin-top: 1.3rem;
+  }
+
+  .stair-page .difficulty-buttons {
+    gap: 0.5rem;
+  }
+
+  .stair-page .difficulty-button {
+    min-height: 3.75rem;
+    padding: 0.7rem 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  .stair-page .difficulty-button small {
+    font-size: 0.9rem;
+  }
+
+  .stair-page .difficulty-copy {
+    font-size: 0.92rem;
+  }
+
+  .stair-page .title-best {
+    margin-top: 1rem;
+    font-size: 0.66rem;
+  }
+
+  .stair-page .title-screen .content-note {
+    margin-top: 0.8rem;
+    font-size: 0.84rem;
+  }
+
+  .stair-page .title-screen .text-button {
+    margin-top: 0.6rem;
+  }
+
+  /* House */
+  .stair-page #screen-house {
+    padding: 0.85rem 0.75rem 5.5rem;
+  }
+
+  .stair-page .house-top {
+    margin-bottom: 0.7rem;
+  }
+
+  .stair-page .house-flavour {
+    font-size: 0.98rem;
+  }
+
+  .stair-page .house-stats,
+  .stair-page .house-grid,
+  .stair-page .house-side {
+    gap: 0.75rem;
+  }
+
+  .stair-page .stat-chip {
+    font-size: 0.82rem;
+  }
+
+  .stair-page .panel {
+    padding: 0.85rem;
+  }
+
+  .stair-page .panel h3 {
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+  }
+
+  .stair-page .panel-copy,
+  .stair-page .panel-note,
+  .stair-page .panel-head p {
+    font-size: 0.9rem;
+  }
+
+  .stair-page .party-slots {
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .stair-page .party-slot {
+    min-height: 4.4rem;
+  }
+
+  .stair-page .slot-text b {
+    font-size: 0.82rem;
+  }
+
+  .stair-page .slot-text small {
+    font-size: 0.8rem;
+  }
+
+  .stair-page .hero-list {
+    gap: 0.55rem;
+  }
+
+  .stair-page .hero-card {
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .stair-page .hero-card-name h4 {
+    font-size: 0.92rem;
+  }
+
+  .stair-page .hero-card-name p {
+    font-size: 0.82rem;
+  }
+
+  .stair-page .hero-state {
+    font-size: 0.64rem;
+  }
+
+  .stair-page .bar-line > span:first-child {
+    width: 3.5rem;
+    font-size: 0.62rem;
+  }
+
+  .stair-page .bar-line b {
+    min-width: 2.9rem;
+    font-size: 0.76rem;
+  }
+
+  .stair-page .stat-line {
+    font-size: 0.82rem;
+  }
+
+  .stair-page .rule-line {
+    font-size: 0.9rem;
+  }
+
+  .stair-page .chip {
+    font-size: 0.74rem;
+  }
+
+  .stair-page .chips-empty {
+    font-size: 0.8rem;
+  }
+
+  .stair-page .mini {
+    min-height: 2.75rem;
+    font-size: 0.7rem;
+  }
+
+  .stair-page .candidate-head h4 {
+    font-size: 0.86rem;
+  }
+
+  .stair-page .candidate-head p,
+  .stair-page .candidate-stat,
+  .stair-page .candidate-flavour {
+    font-size: 0.82rem;
+  }
+
+  .stair-page .price {
+    font-size: 0.64rem;
+  }
+
+  .stair-page .shop-text b {
+    font-size: 0.78rem;
+  }
+
+  .stair-page .shop-text small {
+    font-size: 0.8rem;
+  }
+
+  .stair-page .descend-panel p {
+    font-size: 0.92rem;
+  }
+
+  .stair-page .descend-panel .big-button {
+    display: none;
+  }
+
+  .stair-page .memorial-list li {
+    font-size: 0.82rem;
+  }
+
+  .stair-page .house-descend-dock {
+    min-height: 4.5rem;
+    padding: 0.45rem 0.75rem calc(0.45rem + env(safe-area-inset-bottom));
+  }
+
+  .stair-page .house-descend-dock .dock-copy {
+    max-width: 7rem;
+    font-size: 0.7rem;
+  }
+
+  .stair-page .house-descend-dock .big-button {
+    min-height: 2.9rem;
+    font-size: 0.74rem;
+  }
+
+  /* Delve */
+  .stair-page #screen-delve {
+    padding: 0.85rem 0.75rem 1.2rem;
+  }
+
+  .stair-page .delve-top {
+    margin-bottom: 0.6rem;
+  }
+
+  .stair-page .floor-sub {
+    font-size: 0.9rem;
+  }
+
+  .stair-page .delve-grid,
+  .stair-page .delve-side {
+    gap: 0.75rem;
+  }
+
+  .stair-page .map-panel {
+    padding: 0.55rem;
+  }
+
+  .stair-page .map-hud {
+    gap: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .stair-page .map-legend {
+    gap: 0.2rem 0.55rem;
+    font-size: 0.7rem;
+  }
+
+  .stair-page .glyph {
+    font-size: 0.82rem;
+  }
+
+  .stair-page .delve-hero-head {
+    font-size: 0.84rem;
+  }
+
+  .stair-page .delve-hero-note {
+    font-size: 0.8rem;
+  }
+
+  .stair-page .level {
+    font-size: 0.56rem;
+  }
+
+  .stair-page .delve-log {
+    max-height: 200px;
+    font-size: 0.92rem;
+  }
+
+  .stair-page .delve-hint {
+    font-size: 0.86rem;
+  }
+
+  /* Combat */
+  .stair-page .combat {
+    padding: 0.85rem 0.75rem 1.2rem;
+    border-top: 0;
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .stair-page .combat-head h2 {
+    font-size: 1.5rem;
+  }
+
+  .stair-page .combat-note {
+    display: none;
+  }
+
+  .stair-page .combat-head h2 {
+    margin: 0.15rem 0 0.1rem;
+  }
+
+  .stair-page .enemy-row {
+    gap: 0.5rem;
+    margin: 0.55rem 0;
+  }
+
+  .stair-page .enemy-card {
+    padding: 0.45rem 0.55rem;
+  }
+
+  .stair-page .enemy-name {
+    font-size: 0.92rem;
+  }
+
+  .stair-page .enemy-hp {
+    font-size: 0.76rem;
+  }
+
+  .stair-page .enemy-intent {
+    font-size: 0.86rem;
+  }
+
+  .stair-page .combat-body {
+    gap: 0.7rem;
+  }
+
+  .stair-page .active-panel {
+    padding: 0.6rem;
+  }
+
+  .stair-page .active-head b {
+    font-size: 0.92rem;
+  }
+
+  .stair-page .active-head small {
+    font-size: 0.8rem;
+  }
+
+  .stair-page .turn-label {
+    font-size: 0.56rem;
+  }
+
+  .stair-page .combat-actions {
+    gap: 0.4rem;
+    margin: 0.5rem 0;
+  }
+
+  .stair-page .combat-button {
+    min-height: 3rem;
+    padding: 0.45rem 0.55rem;
+  }
+
+  .stair-page .combat-button span {
+    font-size: 0.76rem;
+    letter-spacing: 0.05em;
+  }
+
+  .stair-page .combat-button small {
+    font-size: 0.78rem;
+  }
+
+  .stair-page .combat-log {
+    max-height: 150px;
+    font-size: 0.9rem;
+  }
+
+  .stair-page .combat-side {
+    padding: 0.7rem;
+  }
+
+  .stair-page .combat-side h3 {
+    font-size: 0.72rem;
+  }
+
+  .stair-page .combat-party {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .stair-page .combat-hero {
+    padding: 0.35rem 0.45rem;
+  }
+
+  .stair-page .combat-hero-head {
+    font-size: 0.72rem;
+  }
+
+  .stair-page .combat-hero small {
+    font-size: 0.7rem;
+  }
+
+  /* End */
+  .stair-page #screen-end {
+    padding: 0.7rem 0.75rem 1.2rem;
+  }
+
+  .stair-page .end-screen {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .stair-page .end-card {
+    padding: 1.15rem 1rem 1.4rem;
+  }
+
+  .stair-page .end-title {
+    font-size: 1.9rem;
+  }
+
+  .stair-page .end-prose {
+    font-size: 1.05rem;
+  }
+
+  .stair-page .end-stats,
+  .stair-page .summary-grid {
+    gap: 0.4rem;
+  }
+
+  .stair-page .end-stats small,
+  .stair-page .summary-grid small {
+    font-size: 0.7rem;
+  }
+
+  .stair-page .end-score {
+    font-size: 0.98rem;
+  }
+
+  .stair-page .end-survivors {
+    font-size: 0.94rem;
+  }
+
+  .stair-page .end-memorial {
+    font-size: 0.92rem;
+  }
+
+  .stair-page .end-memorial summary {
+    font-size: 0.74rem;
+  }
+
+  .stair-page .end-actions {
+    gap: 0.4rem;
+  }
+
+  .stair-page .end-actions .big-button {
+    padding-right: 0.85rem;
+    padding-left: 0.85rem;
+    font-size: 0.76rem;
+  }
+
+  .stair-page .end-actions .text-link {
+    font-size: 0.76rem;
+  }
+
+  /* Full-screen modal */
+  .stair-page .modal {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .stair-page .modal-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    padding: 1.2rem 1rem calc(1.4rem + env(safe-area-inset-bottom));
+    border: 0;
+    outline: 0;
+    overflow: hidden;
+  }
+
+  .stair-page #modal-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .stair-page .modal-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .stair-page .modal-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stair-page .modal-actions {
+    flex: 0 0 auto;
+    margin-top: 0.8rem;
+  }
+
+  .stair-page .modal-eyebrow {
+    font-size: 0.66rem;
+  }
+
+  .stair-page .modal-card h2 {
+    font-size: 1.4rem;
+  }
+
+  .stair-page .modal-prose {
+    font-size: 1.05rem;
+  }
+
+  .stair-page .modal-head {
+    font-size: 0.72rem;
+  }
+
+  .stair-page .modal-list {
+    font-size: 0.98rem;
+  }
+
+  .stair-page .modal-effect {
+    font-size: 0.94rem;
+  }
+
+  .stair-page .modal-button {
+    min-height: 3rem;
+    font-size: 0.76rem;
+  }
+
+  .stair-page .modal-button small {
+    font-size: 0.84rem;
+  }
+
+  .stair-page .toast {
+    bottom: calc(5.4rem + env(safe-area-inset-bottom));
+    max-width: calc(100% - 2rem);
+    font-size: 0.92rem;
+    text-align: center;
+  }
+}
+
+/* Short phones: keep the title cover to a single screen. */
+@media (max-width: 760px) and (max-height: 720px) {
+  .stair-page .title-screen {
+    padding-top: 1rem;
+    padding-bottom: 1.1rem;
+  }
+
+  .stair-page .title-ornament,
+  .stair-page .title-rule,
+  .stair-page .title-prose,
+  .stair-page .title-best,
+  .stair-page .title-screen .content-note {
+    display: none;
+  }
+
+  .stair-page .stair-tagline {
+    margin-top: 0.5rem;
+  }
+
+  .stair-page .title-actions {
+    margin-top: 1rem;
+  }
+
+  .stair-page .difficulty {
+    margin-top: 1rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stair-page *,
   .stair-page *::before,

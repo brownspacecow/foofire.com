@@ -1011,6 +1011,7 @@ function startFight(primary) {
   setScreens('delve');
   refs.delve.hidden = true;
   refs.combat.hidden = false;
+  refs.combat.scrollTop = 0;
   sound(foughtBoss ? 'boss' : 'encounter');
   renderCombat();
   window.scrollTo(0, 0);
@@ -1420,7 +1421,12 @@ function setScreens(active) {
   refs.delve.hidden = active !== 'delve';
   refs.end.hidden = active !== 'end';
   if (active !== 'delve') hideCombat();
-  if (lastScreen !== null && lastScreen !== active) window.scrollTo(0, 0);
+  if (lastScreen !== null && lastScreen !== active) {
+    window.scrollTo(0, 0);
+    [refs.title, refs.house, refs.delve, refs.combat, refs.end].forEach((element) => {
+      if (element) element.scrollTop = 0;
+    });
+  }
   lastScreen = active;
 }
 
