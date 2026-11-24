@@ -235,7 +235,10 @@ function continueCampaign() {
     return;
   }
   if (campaign.dungeon) {
+    runStart = campaign.runStart || snapshotRun();
+    campaign.runStart = runStart;
     delveLog = [`You are still down there. Week ${campaign.week}.`];
+    saveCampaign(campaign);
     renderDelve();
   } else {
     renderHouse();
@@ -870,18 +873,23 @@ function forcedWithdraw() {
 
 function completeExpedition({ forced = false } = {}) {
   if (!campaign) return;
+  const baseline = runStart || {
+    kills: campaign.kills,
+    memorial: campaign.memorial.length,
+    conditions: null,
+  };
   const summary = {
     depth: campaign.depth,
     banked: campaign.loot,
-    kills: campaign.kills - (runStart?.kills || campaign.kills),
+    kills: campaign.kills - baseline.kills,
     conditions: [],
-    losses: campaign.memorial.slice(runStart?.memorial || campaign.memorial.length),
+    losses: campaign.memorial.slice(baseline.memorial),
     forced,
   };
 
-  if (runStart?.conditions) {
+  if (baseline.conditions) {
     for (const hero of campaign.roster) {
-      const before = runStart.conditions[hero.id];
+      const before = baseline.conditions[hero.id];
       if (!before) continue;
       const newInjuries = hero.injuries.filter((id) => !before.injuries.includes(id));
       const newDreads = hero.dreads.filter((id) => !before.dreads.includes(id));
@@ -897,7 +905,9 @@ function completeExpedition({ forced = false } = {}) {
 
   campaign.coin += summary.banked;
   campaign.dungeon = null;
+  campaign.runStart = null;
   delveLog = [];
+  runStart = null;
   combat = null;
   hideCombat();
   advanceWeek(campaign, rng);
@@ -1292,8 +1302,10 @@ function finishDefeatUi() {
   combat = null;
   hideCombat();
   campaign.dungeon = null;
+  campaign.runStart = null;
   campaign.loot = 0;
   delveLog = [];
+  runStart = null;
   advanceWeek(campaign, rng);
   if (campaign.over) {
     finishCampaign(campaign, false, campaign.overReason || 'The house goes dark.');
@@ -1592,6 +1604,7 @@ function bindEvents() {
         return;
       }
       runStart = snapshotRun();
+      campaign.runStart = runStart;
       const floor = FLOORS[0];
       delveLog = [`<b>Week ${campaign.week}. ${floor.name}.</b>`, floor.intro, ...(result.notes || [])];
       saveCampaign(campaign);

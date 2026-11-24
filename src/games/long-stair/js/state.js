@@ -61,6 +61,7 @@ export function newCampaign({ difficulty = 'dread', seed = Date.now() } = {}) {
     kills: 0,
     memorial: [],
     journal: [],
+    runStart: null,
     completed: false,
     over: false,
     overReason: '',
@@ -452,6 +453,7 @@ export function computeScore(campaign, victory) {
 
 export function finishCampaign(campaign, victory, reason) {
   campaign.over = true;
+  campaign.runStart = null;
   campaign.completed = victory;
   campaign.overReason = reason;
   campaign.score = computeScore(campaign, victory);
