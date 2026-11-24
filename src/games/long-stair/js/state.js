@@ -411,11 +411,11 @@ export function advanceWeek(campaign, rng) {
       }
       hero.resting = false;
     } else if (delved.has(hero.id)) {
-      hero.hp = Math.min(max, hero.hp + Math.ceil(max * 0.25));
-      reduceStress(hero, 6);
-    } else {
       hero.hp = Math.min(max, hero.hp + Math.ceil(max * 0.2));
-      reduceStress(hero, 14);
+      reduceStress(hero, 3);
+    } else {
+      hero.hp = Math.min(max, hero.hp + Math.ceil(max * 0.15));
+      reduceStress(hero, 8);
     }
 
     for (const id of hero.injuries) {

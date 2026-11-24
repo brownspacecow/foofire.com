@@ -516,7 +516,7 @@ export const ITEMS = {
     id: 'oil',
     name: 'Lamp Oil',
     glyph: '◍',
-    text: 'Add 50 oil to the lamp during a descent.',
+    text: 'Add 45 oil to the lamp during a descent.',
     cost: 16,
   },
 };
@@ -621,9 +621,9 @@ export const BOSS = {
   id: 'unnamed',
   name: 'The Unnamed Below',
   glyph: 'Ω',
-  hp: 150,
+  hp: 120,
   might: 10,
-  guard: 4,
+  guard: 3,
   stress: 9,
   xp: 60,
   coin: [80, 120],
@@ -736,7 +736,7 @@ export const SHRINE = {
     {
       id: 'take',
       label: 'Take the offering',
-      text: 'Gain 26 coin; everyone gains 6 stress.',
+      text: 'Gain 20 coin; everyone gains 6 stress.',
     },
     {
       id: 'break',

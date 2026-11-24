@@ -288,7 +288,7 @@ function renderHouse() {
       campaign.party.length === 4 ? 'Take the lamp down' : 'Choose four';
   }
   if (refs.houseDockCopy) {
-    refs.houseDockCopy.textContent = `${campaign.party.length}/4 chosen · ${campaign.oil} oil`;
+    refs.houseDockCopy.textContent = `${campaign.party.length}/4 chosen · ${START_OIL} oil`;
   }
   refs.memorial.innerHTML = renderMemorial();
 }
@@ -431,11 +431,11 @@ function renderDescendCopy() {
   const count = campaign.party.length;
   if (count < 4) {
     return `<p class="descend-warning">${4 - count} more must be mustered. Four go down, or no one does.</p>
-      <p>${campaign.oil} oil in the lamp at the start. Six floors to the bottom.</p>`;
+      <p>${START_OIL} oil in the lamp at the start. Six floors to the bottom.</p>`;
   }
   const resting = campaign.roster.filter((hero) => hero.resting).length;
   return `
-    <p>Four are chosen. ${campaign.oil} oil in the lamp, and six floors between you and the thing at the altar.</p>
+    <p>Four are chosen. ${START_OIL} oil in the lamp, and six floors between you and the thing at the altar.</p>
     <p class="descend-warning">Withdraw at any time to bank the loot. A wipe leaves it all below.</p>
     ${resting ? `<p class="quiet">${resting} ${resting === 1 ? 'hero is' : 'heroes are'} resting this week.</p>` : ''}
   `;
@@ -675,7 +675,7 @@ function resolveTile(x, y) {
 
 function resolveCache(entity) {
   const dungeon = campaign.dungeon;
-  const coins = rng.int(12, 26);
+  const coins = rng.int(8, 20);
   campaign.loot += coins;
   clearEntities(dungeon, [entity.uid]);
   let extra = '';
@@ -743,11 +743,11 @@ function openShrine(entity) {
           }
           pushLog('They kneel in the black water. The humming eases.');
         } else if (option.id === 'take') {
-          campaign.loot += 26;
+          campaign.loot += 20;
           for (const hero of campaign.party.map((id) => heroById(campaign, id)).filter(Boolean)) {
             stressHero(campaign, hero, 6, rng);
           }
-          pushLog('They take the offering. The bowl is empty and 26 coin heavier.');
+          pushLog('They take the offering. The bowl is empty and 20 coin heavier.');
         } else {
           const pick = rng.pick(Object.keys(ITEMS));
           campaign.inventory[pick] = (campaign.inventory[pick] || 0) + 1;
@@ -1621,7 +1621,7 @@ function bindEvents() {
     } else if (action === 'use-oil') {
       if ((campaign.inventory.oil || 0) <= 0 || campaign.oil >= OIL_CAP) return;
       campaign.inventory.oil -= 1;
-      campaign.oil = Math.min(OIL_CAP, campaign.oil + 50);
+      campaign.oil = Math.min(OIL_CAP, campaign.oil + 45);
       pushLog('They feed the lamp. The flame steadies and the dark takes a step back.');
       sound('oil');
       saveCampaign(campaign);
