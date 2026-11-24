@@ -958,18 +958,39 @@ function startFight(primary) {
   const dungeon = campaign.dungeon;
   let entities = Array.isArray(primary) ? primary.slice() : [primary];
   if (!entities.some((entity) => entity.kind === 'boss')) {
-    const nearby = dungeon.entities
-      .filter(
+    /* Dread pulls packs whole; Lamplight keeps the old chance of a neighbor. */
+    const primaryHasPack = entities.some((entity) => entity.pack);
+    if (!primaryHasPack && campaign.difficulty !== 'dread') {
+      const nearby = dungeon.entities
+        .filter(
+          (entity) =>
+            entity.kind === 'enemy' &&
+            !entities.some((chosen) => chosen.uid === entity.uid) &&
+            Math.max(Math.abs(entity.x - dungeon.party.x), Math.abs(entity.y - dungeon.party.y)) <= 2 &&
+            rng.chance(0.45)
+        )
+        .slice(0, 2);
+      if (nearby.length) {
+        entities = entities.concat(nearby);
+      }
+    }
+    const packIds = new Set(entities.map((entity) => entity.pack).filter(Boolean));
+    if (packIds.size) {
+      const packMates = dungeon.entities.filter(
         (entity) =>
           entity.kind === 'enemy' &&
-          !entities.some((chosen) => chosen.uid === entity.uid) &&
-          Math.max(Math.abs(entity.x - dungeon.party.x), Math.abs(entity.y - dungeon.party.y)) <= 2 &&
-          rng.chance(0.45)
-      )
-      .slice(0, 2);
-    if (nearby.length) {
-      entities = entities.concat(nearby);
-      pushLog('Others come at the sound of the lamp.');
+          entity.pack &&
+          packIds.has(entity.pack) &&
+          !entities.some((chosen) => chosen.uid === entity.uid)
+      );
+      entities = entities.concat(packMates);
+    }
+    if (entities.length > 1) {
+      pushLog(
+        primaryHasPack
+          ? 'The pack comes at the sound of the lamp.'
+          : 'Others come at the sound of the lamp.'
+      );
     }
   }
   fightEntities = entities;

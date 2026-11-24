@@ -34,7 +34,7 @@ export function createDungeon(seed) {
   };
 }
 
-export function generateFloor(depth, rng) {
+export function generateFloor(depth, rng, difficulty = 'dread') {
   const dungeon = createDungeon(rng.seed());
 
   const isLast = depth >= 6;
@@ -120,21 +120,40 @@ export function generateFloor(depth, rng) {
 
   const pool = ENEMY_POOLS[Math.min(ENEMY_POOLS.length - 1, depth - 1)];
   const enemyCount = isLast ? 2 : 2 + Math.floor(depth / 2);
-  for (let i = 0; i < enemyCount; i += 1) {
+  /* On Dread, deeper floors arrive as packs: one stun should not answer a whole room. */
+  const packs = difficulty === 'dread' && depth >= 3;
+  let placed = 0;
+  while (placed < enemyCount) {
     const spot = takeSpot((s) => chebyshev(s, start) >= 5 && chebyshev(s, finish) >= 1);
     if (!spot) break;
-    addEntity(dungeon, {
-      kind: 'enemy',
-      archetype: rng.pick(pool),
-      x: spot.x,
-      y: spot.y,
-      omen: rng.pick([
-        'Something unfolds out of the dark.',
-        'The lamp finds it first. It does not seem to mind.',
-        'It has been waiting with the patience of furniture.',
-        'You hear your own name, badly pronounced.',
-      ]),
-    });
+    const packSize = packs
+      ? depth >= 4 && placed === 0
+        ? Math.min(3, enemyCount)
+        : 2
+      : 1;
+    const mates = [];
+    for (let i = 1; i < packSize && placed + i < enemyCount; i += 1) {
+      const mate = takeSpot((s) => chebyshev(s, spot) >= 1 && chebyshev(s, spot) <= 2);
+      if (!mate) break;
+      mates.push(mate);
+    }
+    const packId = mates.length ? `pack-${depth}-${placed}` : null;
+    for (const at of [spot, ...mates]) {
+      addEntity(dungeon, {
+        kind: 'enemy',
+        archetype: rng.pick(pool),
+        x: at.x,
+        y: at.y,
+        pack: packId,
+        omen: rng.pick([
+          'Something unfolds out of the dark.',
+          'The lamp finds it first. It does not seem to mind.',
+          'It has been waiting with the patience of furniture.',
+          'You hear your own name, badly pronounced.',
+        ]),
+      });
+      placed += 1;
+    }
   }
 
   for (let i = 0; i < 2; i += 1) {
