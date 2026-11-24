@@ -1847,11 +1847,14 @@
 }
 
 .end-memorial summary {
+  min-height: 2.75rem;
+  padding: 0.65rem 0;
   color: var(--stair-brass);
   cursor: pointer;
   font-family: var(--stair-display);
   font-size: 0.56rem;
   letter-spacing: 0.1em;
+  line-height: 1.4;
   text-transform: uppercase;
 }
 
@@ -1867,6 +1870,13 @@
   flex-wrap: wrap;
   gap: 0.8rem;
   margin-top: 1.2rem;
+}
+
+.end-actions .text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
 }
 
 /* ---- Modal ------------------------------------------------------- */
