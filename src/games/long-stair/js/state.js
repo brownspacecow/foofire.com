@@ -345,7 +345,7 @@ export function beginDelve(campaign, rng) {
   campaign.maxDepth = Math.max(campaign.maxDepth, 1);
   campaign.oil = START_OIL;
   campaign.loot = 0;
-  campaign.dungeon = generateFloor(1, rng);
+  campaign.dungeon = generateFloor(1, rng, campaign.difficulty);
   campaign.party = party.map((hero) => hero.id);
   campaign.journal = [];
 
@@ -367,7 +367,7 @@ export function descendFloor(campaign, rng) {
   campaign.depth += 1;
   campaign.maxDepth = Math.max(campaign.maxDepth, campaign.depth);
   campaign.oil = Math.max(0, campaign.oil - 5);
-  campaign.dungeon = generateFloor(campaign.depth, rng);
+  campaign.dungeon = generateFloor(campaign.depth, rng, campaign.difficulty);
 
   const notes = [];
   for (const hero of partyHeroes(campaign)) {
