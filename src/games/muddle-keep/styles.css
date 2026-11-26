@@ -1510,6 +1510,22 @@
   }
 }
 
+/* Nine HUD buttons do not fit a narrow phone; pinch and drag already zoom,
+ * so the three zoom buttons step aside and every other control stays. */
+@media (max-width: 420px) {
+  .mk-top-actions [data-act="zoom-out"],
+  .mk-top-actions [data-act="zoom-in"],
+  .mk-top-actions [data-act="zoom-reset"] {
+    display: none;
+  }
+
+  /* The run label would be squeezed to a few clipped characters beside the
+   * buttons; the wave line below still says what is happening. */
+  .mk-title {
+    display: none;
+  }
+}
+
 @media (max-width: 760px) and (orientation: landscape) {
   .mk-app {
     height: calc(100dvh - 56px);
@@ -1546,4 +1562,27 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* ------------------------------------------------------- phone play shell */
+
+@media (max-width: 760px) {
+  body.mobile-play-fit .mk-frame {
+    padding: 0;
+  }
+
+  body.mobile-play-fit .mk-app {
+    min-height: 320px;
+    border: 0;
+    border-radius: 0;
+  }
+}
+
+/* Take the whole screen when the HUD asks for native fullscreen. */
+.mk-app:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
 }

@@ -897,3 +897,86 @@
     animation: none;
   }
 }
+
+/* ------------------------------------------------------- phone play shell */
+
+@media (max-width: 760px) {
+  body.mobile-play-fit .dq {
+    padding: 0;
+  }
+
+  body.mobile-play-fit .dq-hero {
+    display: none;
+  }
+
+  body.mobile-play-fit .dq-console {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.5rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  body.mobile-play-fit .dq-topbar {
+    flex: 0 0 auto;
+    padding: 0.3rem 0.1rem 0.45rem;
+  }
+
+  body.mobile-play-fit .dq-stage-wrap {
+    flex: 1 1 0;
+    min-height: 130px;
+  }
+
+  body.mobile-play-fit .dq-stage {
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+  }
+
+  body.mobile-play-fit .dq-pads {
+    flex: 0 0 auto;
+    gap: 0.4rem;
+    margin-top: 0;
+  }
+
+  body.mobile-play-fit .dq-pad {
+    min-height: 58px;
+  }
+
+  /* Long lesson decks scroll inside the deck, never on the page. */
+  body.mobile-play-fit .dq-deck {
+    flex: 0 1 auto;
+    min-height: 0;
+    gap: 0.4rem;
+    margin-top: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body.mobile-play-fit .dq-free,
+  body.mobile-play-fit .dq-learn {
+    padding: 0.5rem 0.6rem;
+  }
+
+  body.mobile-play-fit .dq-tip {
+    display: none;
+  }
+
+  body.mobile-play-fit .dq-say {
+    padding: 0.45rem 0.55rem;
+  }
+
+  body.mobile-play-fit .dq-message {
+    min-height: 0;
+    font-size: 0.85rem;
+  }
+
+  body.mobile-play-fit .dq-jack {
+    width: 42px;
+    height: 42px;
+  }
+}

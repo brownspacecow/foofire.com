@@ -1173,6 +1173,76 @@
         #low-hp-vignette.low,
         #low-hp-vignette.crit { animation: none; }
       }
+
+      /* ---- Phone play shell: one screen, no page scroll ----
+         Mirrors the portrait-fullscreen layout: setup scrolls inside
+         its own frame, the play screen is a flex column, and the board
+         is sized to the smaller of the width and the space the HUD
+         leaves. */
+      @media (max-width: 760px) {
+        body.mobile-play-fit .crypt-game:not(:fullscreen) {
+          width: 100%;
+          max-width: none;
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+        }
+
+        body.mobile-play-fit .crypt-game:not(:fullscreen) #setup-screen {
+          max-height: 100%;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+        }
+
+        body.mobile-play-fit .crypt-game:not(:fullscreen) #play-screen:not([hidden]) {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          min-height: 0;
+        }
+
+        body.mobile-play-fit .crypt-game:not(:fullscreen) .board-wrap {
+          flex: 1 1 0;
+          min-height: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          container-type: size;
+        }
+
+        body.mobile-play-fit .crypt-game:not(:fullscreen) #board {
+          min-width: 0;
+          width: min(100%, calc(100dvh - 400px));
+        }
+
+        @supports (width: 100cqh) {
+          body.mobile-play-fit .crypt-game:not(:fullscreen) #board {
+            width: min(100%, calc(100cqh - 24px));
+          }
+        }
+
+        /* Relics scroll sideways instead of wrapping into a taller row. */
+        body.mobile-play-fit .crypt-game:not(:fullscreen) .relics-row {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+        }
+
+        /* Short phone screens: tighten the chrome so tiles stay big. */
+        @media (max-height: 720px) {
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .crypt-hud {
+            gap: 0.35rem 0.6rem;
+            padding: 0.4rem 0.55rem;
+          }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .hud-stat { min-width: 2.6rem; }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .icon-button { width: 2.2rem; height: 2.2rem; }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .monster-card { padding: 0.45rem 0.7rem; gap: 0.6rem; }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .monster-emoji { width: 2.6rem; height: 2.6rem; }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .monster-meter { margin-top: 0.25rem; }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .last-turn { font-size: 0.75rem; margin-top: 0.25rem; }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .relics-row { padding: 0.3rem 0.6rem; }
+          body.mobile-play-fit .crypt-game:not(:fullscreen) .board-wrap { padding: 0.3rem; }
+        }
+      }
     </style>
     <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
       <script src="../../utils/mobile-play.js" defer></script>
@@ -1199,7 +1269,7 @@
         </p>
       </section>
 
-      <section class="crypt-game" id="crypt-game" aria-label="Crypt Crawl">
+      <section class="crypt-game" id="crypt-game" data-mobile-play-fit aria-label="Crypt Crawl">
         <!-- Low-health warning: red edges when the hero is hurting -->
         <div id="low-hp-vignette" aria-hidden="true"></div>
 

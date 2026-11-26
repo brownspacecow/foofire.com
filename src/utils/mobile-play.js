@@ -10,9 +10,15 @@
  */
 (function () {
   const MOBILE = window.matchMedia('(max-width: 760px)');
-  const container = document.querySelector('#game-container');
+  const container =
+    document.querySelector('[data-mobile-play-fit]') || document.querySelector('#game-container');
 
   let frame = 0;
+
+  /* A game's own :fullscreen rules own the height while fullscreen is active,
+   * whether it goes fullscreen on the playfield itself or on a wrapper. */
+  const fullscreenOwnsLayout = () =>
+    Boolean(document.fullscreenElement && document.fullscreenElement.contains(container));
 
   const heightOf = (el) => Math.round(el.getBoundingClientRect().height);
   const CONTROLS = 'button, input, select, textarea, summary, [role="button"]';
@@ -39,7 +45,7 @@
 
   function fit() {
     if (!container) return;
-    if (document.fullscreenElement === container) return;
+    if (fullscreenOwnsLayout()) return;
 
     window.scrollTo(0, 0);
 
@@ -116,9 +122,12 @@
   window.addEventListener('orientationchange', schedule);
   window.visualViewport?.addEventListener('resize', schedule);
   document.addEventListener('fullscreenchange', () => {
-    /* The game's own :fullscreen rule owns the height while it is active. */
-    if (document.fullscreenElement) container?.style.removeProperty('height');
-    else schedule();
+    if (fullscreenOwnsLayout()) {
+      container.style.removeProperty('height');
+      container.style.removeProperty('min-height');
+      return;
+    }
+    schedule();
   });
 
   if (document.fonts?.ready) document.fonts.ready.then(schedule).catch(() => {});

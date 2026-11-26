@@ -2607,3 +2607,143 @@
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Phone play shell
+ *
+ * The show frame fills the screen below the slim site chrome and the
+ * stage becomes the scroll container, so the page itself never scrolls.
+ * The sweep screen then takes the stage's exact height and the canvas
+ * fills whatever the HUD leaves.
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 760px) {
+  body.mobile-play-fit .aisle-show:not(:fullscreen) {
+    padding: 0;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .show-frame {
+    display: flex;
+    flex-direction: column;
+    border-right: 0;
+    border-left: 0;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .show-stage {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0.6rem 0.55rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .show-stage > .screen {
+    flex: 0 0 auto;
+  }
+
+  /* The studio illustration is decoration; the copy and the buttons fit
+     on a phone without it, so the title screen stays one clean screen. */
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .title-art {
+    display: none;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) #screen-title:not([hidden]) {
+    display: flex;
+    flex: 1 0 auto;
+    align-items: center;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) #screen-title .title-layout {
+    width: 100%;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .screen-sweep:not([hidden]) {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+  }
+
+  /* The sweep is sized to the stage exactly; no sub-pixel scrollbar. */
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .show-stage:has(.screen-sweep:not([hidden])) {
+    overflow: hidden;
+  }
+
+  body.mobile-play-fit .screen-sweep .canvas-wrap {
+    flex: 1 1 0;
+    min-height: 150px;
+  }
+
+  body.mobile-play-fit .screen-sweep #sweep-canvas {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  /* The sweep hints are prose; the playfield gets their space instead. */
+  body.mobile-play-fit .sweep-bottom {
+    display: none;
+  }
+
+  body.mobile-play-fit .show-console {
+    flex: 0 0 auto;
+    gap: 0.4rem;
+    padding: 0.45rem 0.55rem;
+  }
+}
+
+/* Short phones: the show keeps every choice and button on screen, so the
+ * host banter and the studio illustration step aside. */
+@media (max-width: 760px) and (max-height: 720px) {
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .host-row,
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .quiz-host,
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .podiums,
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .title-fine {
+    display: none;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .screen-title {
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .team-grid {
+    gap: 0.45rem;
+    margin: 0.55rem 0;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .team-card {
+    gap: 0.2rem;
+    padding: 0.5rem 0.6rem 0.55rem;
+  }
+
+  /* The star and team-colour border already show the pick. */
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .team-pick {
+    display: none;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .team-note {
+    min-height: 0;
+    margin: 0.2rem 0 0.5rem;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .quiz-head {
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .question-card {
+    padding: 0.8rem 0.85rem 0.7rem;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) #question-text {
+    margin-bottom: 0.55rem;
+  }
+
+  body.mobile-play-fit .aisle-show:not(:fullscreen) .clock-row {
+    margin-top: 0.55rem;
+  }
+}
