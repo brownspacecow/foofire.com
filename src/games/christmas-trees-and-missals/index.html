@@ -1511,8 +1511,19 @@
         border-bottom: none;
         box-shadow: none;
       }
+
+      /* Short phones: a tighter tray leaves room for the tree. */
+      @media (max-width: 760px) and (max-height: 720px) {
+        .tray-panel { margin-top: 0.6rem; }
+        .tray-head { padding: 0.5rem 0.7rem; }
+        .tray-hint { display: none; }
+        .tray-item { min-height: 4.7rem; }
+        .tray-icon { font-size: 1.35rem; }
+        .tray-name { font-size: 0.58rem; }
+      }
     </style>
       <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+      <script src="../../utils/mobile-play.js" defer></script>
   </head>
   <body class="xm-app">
     <header class="site-header">

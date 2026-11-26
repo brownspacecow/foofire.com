@@ -40,6 +40,27 @@ const CSS = `
   box-shadow: 5px 5px 0 rgba(10, 5, 24, 0.85);
   color: #fff8e7;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  pointer-events: auto;
+}
+
+.foofire-pause-resume {
+  min-height: 2.75rem;
+  margin-top: 0.35rem;
+  padding: 0.55rem 1.1rem;
+  border: 3px solid #0a0518;
+  background: #ffd93d;
+  color: #0a0518;
+  font-family: "Press Start 2P", "Courier New", ui-monospace, monospace;
+  font-size: 0.55rem;
+  line-height: 1.5;
+  box-shadow: 3px 3px 0 #0a0518;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.foofire-pause-resume:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #0a0518;
 }
 
 .foofire-pause-badge {
@@ -127,7 +148,13 @@ export function createAutoPause({
     noteEl = document.createElement('span');
     noteEl.className = 'foofire-pause-note';
 
-    card.append(badge, titleEl, noteEl);
+    const resume = document.createElement('button');
+    resume.type = 'button';
+    resume.className = 'foofire-pause-resume';
+    resume.textContent = 'Keep playing';
+    resume.addEventListener('click', () => setPaused(false));
+
+    card.append(badge, titleEl, noteEl, resume);
     overlay.append(card);
     container.append(overlay);
   };
@@ -136,7 +163,7 @@ export function createAutoPause({
     if (!titleEl) return;
     titleEl.textContent = message;
     noteEl.textContent = manual
-      ? 'Press P or Escape, or the pause button, to keep playing.'
+      ? 'Tap the button, or press P or Escape, when you are ready to keep playing.'
       : 'Come back when you are ready — the game is waiting.';
   };
 

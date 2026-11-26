@@ -1020,8 +1020,22 @@
           font-size: 0.85rem;
         }
       }
+
+      /* Phones: cap the stand so the yard stays the biggest thing on screen. */
+      @media (max-width: 760px) {
+        .sc-stand { margin-top: 0.55rem; }
+        .stand-head { padding: 0.45rem 0.7rem 0.35rem; }
+        .stand-head p { display: none; }
+        .stand-list {
+          grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+          gap: 0.4rem;
+          max-height: 9rem;
+          padding: 0.5rem 0.7rem 0.6rem;
+        }
+      }
     </style>
       <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+      <script src="../../utils/mobile-play.js" defer></script>
   </head>
   <body>
     <header class="site-header">
