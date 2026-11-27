@@ -7,7 +7,7 @@ Tagline: **Games for kids.**
 ## Features
 
 - Three.js games that run entirely in the browser
-- Game portal with a library of 23 playable games, with search and category filters
+- Game portal with a library of 24 playable games, with search and category filters
 - Dark, mobile-first responsive UI
 - Local high scores saved in the browser (top five per game)
 - Dedicated legal disclaimer page
@@ -18,7 +18,7 @@ Tagline: **Games for kids.**
 src/
   main.js          # Portal: latest games + Games-page search/filter
   scores.js        # High-scores page
-  data/games.js    # The 23 games: id, category, title, description, image, path
+  data/games.js    # The 24 games: id, category, title, description, image, path
   utils/           # Shared scores, audio prefs, auto-pause, reduced-motion helpers
   vendor/
     three.module.js  # Shared Three.js r169, used by Earwarts + Keep.
@@ -28,6 +28,7 @@ src/
     earwarts/       # Earwarts Academy: listening / ear-training adventure
     muddle-keep/    # Keep: cheerful dungeon-keeper lair tycoon
     survive-family-vacation/  # Seven-chapter supernatural road-trip mystery
+    survive-thanksgiving/     # Five-chapter Thanksgiving snow-comedy adventure
     rough-housing/  # Rough Housing: local two-player couch-fort wrestling
     roost-rider/    # Roost Rider: first-person off-road motorcycle race
     roof-rider/     # Roof Rider: 2D rooftop motocross rhythm racer
@@ -88,6 +89,37 @@ Memories, investigate clues about the Vacation Collector, then survive a themed 
 encounter. Levels, dialogue, collectibles, achievements and cutscenes live in
 `public/data/vacation/*.json`, so new vacations are a data change rather than engine
 code. Progress, the scrapbook, achievements and settings are stored in localStorage.
+
+### Survive Thanksgiving 2026
+
+A five-chapter Thanksgiving comedy with Jira, Joel, Mom and Dad. Dad drives for
+biscuits on roads buried under four inches of snow, Aunt Pat's turkey has to be
+cooked without electricity, CJ and the cousins start a backyard snowball war,
+the family slides down the playground slides like penguins, and the last chapter
+is a fight against brain rot on the iPads and Switch.
+
+Plain HTML, CSS, canvas and ES modules — no build step and no external assets.
+Serve the repo root as above and open:
+
+```text
+http://localhost:8080/src/games/survive-thanksgiving/
+```
+
+Controls: mouse or touch for everything, plus arrow keys to steer the car and
+Space for the one-button chapters. Best total Thanksgiving score is saved in
+localStorage.
+
+Folder layout:
+
+```text
+src/games/survive-thanksgiving/
+  index.html
+  styles.css
+  js/
+    main.js      # story flow, overlay cards, scoring and the game loop
+    core.js      # canvas, input, sound, snow, particles and cartoon helpers
+    chapters.js  # the five chapters and the menu scene
+```
 
 ### Crypt Crawl
 

@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Survive Thanksgiving 2026 card art: a snowy Grandma's house, Dad's red car with a biscuit bag on the roof, Jira and Joel throwing snowballs at big cousin CJ, and a roast turkey on a platter">
+  <defs>
+    <linearGradient id="tgSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#79bbe4"/>
+      <stop offset="0.62" stop-color="#cfe9f8"/>
+      <stop offset="1" stop-color="#f2fbff"/>
+    </linearGradient>
+    <radialGradient id="tgSun" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff6cc" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#fff6cc" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tgRoad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4c5668"/>
+      <stop offset="1" stop-color="#323b4c"/>
+    </linearGradient>
+    <linearGradient id="tgRibbon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cf3a51"/>
+      <stop offset="1" stop-color="#9c1f36"/>
+    </linearGradient>
+    <filter id="tgShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="4" dy="5" stdDeviation="0" flood-color="#241a2e"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#tgSky)"/>
+  <circle cx="1000" cy="122" r="120" fill="url(#tgSun)"/>
+  <circle cx="1000" cy="122" r="42" fill="#fff8dc" opacity="0.9"/>
+
+  <!-- distant hills -->
+  <path d="M0 360 Q 180 286 370 352 Q 560 418 760 326 Q 910 258 1200 340 L1200 675 L0 675 Z" fill="#dceff9"/>
+  <path d="M0 406 Q 220 350 430 402 Q 700 468 940 386 Q 1060 348 1200 398 L1200 675 L0 675 Z" fill="#eaf7ff"/>
+
+  <!-- pines -->
+  <g>
+    <rect x="82" y="430" width="12" height="48" fill="#5b4030"/>
+    <path d="M88 296 L142 414 L34 414 Z" fill="#255c45"/>
+    <path d="M88 296 L130 414 L88 402 Z" fill="#f4fbff"/>
+    <rect x="1138" y="408" width="12" height="48" fill="#5b4030"/>
+    <path d="M1144 268 L1206 400 L1082 400 Z" fill="#255c45"/>
+    <path d="M1144 268 L1190 400 L1144 386 Z" fill="#f4fbff"/>
+  </g>
+
+  <!-- Grandma's house -->
+  <g>
+    <rect x="330" y="330" width="300" height="148" fill="#a35a3d" stroke="#241a2e" stroke-width="6"/>
+    <path d="M292 330 L480 210 L668 330 Z" fill="#f6fbff" stroke="#241a2e" stroke-width="6"/>
+    <path d="M304 330 L480 224 L656 330" fill="none" stroke="#cfe3f0" stroke-width="7"/>
+    <rect x="558" y="238" width="46" height="90" fill="#7a412d" stroke="#241a2e" stroke-width="6"/>
+    <rect x="548" y="224" width="66" height="22" fill="#f6fbff" stroke="#241a2e" stroke-width="6"/>
+    <g fill="#ffd166" stroke="#241a2e" stroke-width="6">
+      <rect x="362" y="356" width="66" height="58"/>
+      <rect x="532" y="356" width="66" height="58"/>
+    </g>
+    <g stroke="#8a4b34" stroke-width="5">
+      <line x1="395" y1="356" x2="395" y2="414"/>
+      <line x1="362" y1="385" x2="428" y2="385"/>
+      <line x1="565" y1="356" x2="565" y2="414"/>
+      <line x1="532" y1="385" x2="598" y2="385"/>
+    </g>
+    <rect x="448" y="388" width="64" height="90" fill="#5f2f25" stroke="#241a2e" stroke-width="6"/>
+    <circle cx="498" cy="436" r="5" fill="#ffd166"/>
+    <circle cx="480" cy="424" r="16" fill="none" stroke="#2f8f5b" stroke-width="9"/>
+    <circle cx="488" cy="412" r="5" fill="#ff2e63"/>
+  </g>
+
+  <!-- snow drift and road -->
+  <path d="M0 478 Q 250 440 520 478 Q 800 518 1200 452 L1200 675 L0 675 Z" fill="#f7fcff"/>
+  <path d="M646 675 L1200 675 L1082 470 L742 470 Z" fill="url(#tgRoad)"/>
+  <path d="M742 470 L700 675" stroke="#eaf6ff" stroke-width="10"/>
+  <path d="M1082 470 L1200 675" stroke="#eaf6ff" stroke-width="10"/>
+  <path d="M900 500 L930 675" stroke="#ffffff" stroke-opacity="0.55" stroke-width="12" stroke-dasharray="34 30"/>
+
+  <!-- Dad's car, rear view, with biscuits on the back seat -->
+  <g transform="translate(884 552) scale(1.15)" filter="url(#tgShadow)">
+    <ellipse cx="0" cy="20" rx="112" ry="16" fill="#32506f" opacity="0.25"/>
+    <circle cx="-64" cy="-5" r="18" fill="#24242c" stroke="#241a2e" stroke-width="4"/>
+    <circle cx="64" cy="-5" r="18" fill="#24242c" stroke="#241a2e" stroke-width="4"/>
+    <rect x="-84" y="-70" width="168" height="68" rx="18" fill="#c0392b" stroke="#241a2e" stroke-width="5"/>
+    <rect x="-60" y="-112" width="120" height="48" rx="14" fill="#c0392b" stroke="#241a2e" stroke-width="5"/>
+    <rect x="-46" y="-104" width="92" height="30" rx="8" fill="#23364f" stroke="#241a2e" stroke-width="4"/>
+    <rect x="-16" y="-99" width="32" height="22" rx="4" fill="#c98a4b" stroke="#241a2e" stroke-width="3"/>
+    <rect x="-16" y="-93" width="32" height="7" fill="#f4e2bd"/>
+    <text x="0" y="-86" text-anchor="middle" font-family="'Trebuchet MS',sans-serif" font-size="6" font-weight="700" fill="#6b4423">BISCUITS</text>
+    <rect x="-63" y="-122" width="126" height="16" rx="8" fill="#f7fcff" stroke="#bcd7e8" stroke-width="3"/>
+    <rect x="-80" y="-52" width="24" height="14" rx="5" fill="#ff4d4d" stroke="#241a2e" stroke-width="3"/>
+    <rect x="56" y="-52" width="24" height="14" rx="5" fill="#ff4d4d" stroke="#241a2e" stroke-width="3"/>
+    <rect x="-88" y="-26" width="176" height="17" rx="6" fill="#3a4050" stroke="#241a2e" stroke-width="3"/>
+    <rect x="-26" y="-23" width="52" height="11" rx="2" fill="#f2f2e8"/>
+    <text x="0" y="-14" text-anchor="middle" font-family="'Trebuchet MS',sans-serif" font-size="7" font-weight="700" fill="#3b3b48">SNO 4IN</text>
+  </g>
+
+  <!-- snowball fight -->
+  <g>
+    <path d="M560 600 Q 760 470 1040 490" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-dasharray="4 18" opacity="0.9"/>
+
+    <!-- Jira -->
+    <g filter="url(#tgShadow)">
+      <rect x="506" y="556" width="74" height="92" rx="22" fill="#8b5cf6" stroke="#241a2e" stroke-width="5"/>
+      <rect x="506" y="592" width="74" height="56" rx="20" fill="#6d3fd1"/>
+      <circle cx="543" cy="530" r="28" fill="#f3c9a3" stroke="#241a2e" stroke-width="5"/>
+      <path d="M515 526 Q 543 492 571 526 L571 512 Q 543 486 515 512 Z" fill="#3b2a22" stroke="#241a2e" stroke-width="4"/>
+      <path d="M515 514 Q 543 486 571 514 L571 500 Q 543 472 515 500 Z" fill="#f0a63c" stroke="#241a2e" stroke-width="4"/>
+      <circle cx="543" cy="472" r="8" fill="#fff8e7" stroke="#241a2e" stroke-width="3"/>
+      <circle cx="534" cy="532" r="4" fill="#241a2e"/>
+      <circle cx="552" cy="532" r="4" fill="#241a2e"/>
+      <path d="M535 544 Q 543 552 551 544" fill="none" stroke="#241a2e" stroke-width="3" stroke-linecap="round"/>
+      <path d="M571 570 Q 600 534 602 512" fill="none" stroke="#8b5cf6" stroke-width="16" stroke-linecap="round"/>
+      <circle cx="606" cy="506" r="14" fill="#ffffff" stroke="#9ac4df" stroke-width="4"/>
+      <rect x="518" y="632" width="24" height="24" rx="6" fill="#3b2f5c"/>
+      <rect x="550" y="632" width="24" height="24" rx="6" fill="#3b2f5c"/>
+      <rect x="500" y="648" width="74" height="22" rx="16" fill="#f7fcff" stroke="#b7d4e6" stroke-width="4"/>
+    </g>
+
+    <!-- Joel -->
+    <g filter="url(#tgShadow)">
+      <rect x="632" y="574" width="70" height="82" rx="22" fill="#ef4444" stroke="#241a2e" stroke-width="5"/>
+      <circle cx="667" cy="552" r="27" fill="#f4cfa8" stroke="#241a2e" stroke-width="5"/>
+      <path d="M640 550 Q 667 516 694 550 L694 536 Q 667 508 640 536 Z" fill="#4a2f1d" stroke="#241a2e" stroke-width="4"/>
+      <path d="M640 538 Q 667 510 694 538 L694 524 Q 667 496 640 524 Z" fill="#2f9e6b" stroke="#241a2e" stroke-width="4"/>
+      <circle cx="667" cy="496" r="8" fill="#fff8e7" stroke="#241a2e" stroke-width="3"/>
+      <circle cx="659" cy="553" r="4" fill="#241a2e"/>
+      <circle cx="676" cy="553" r="4" fill="#241a2e"/>
+      <path d="M658 564 Q 667 574 676 564" fill="none" stroke="#241a2e" stroke-width="3" stroke-linecap="round"/>
+      <path d="M697 586 Q 720 548 714 524" fill="none" stroke="#ef4444" stroke-width="15" stroke-linecap="round"/>
+      <circle cx="712" cy="518" r="12" fill="#ffffff" stroke="#9ac4df" stroke-width="4"/>
+      <rect x="646" y="642" width="22" height="20" rx="6" fill="#31405c"/>
+      <rect x="672" y="642" width="22" height="20" rx="6" fill="#31405c"/>
+    </g>
+
+    <!-- CJ, the boss -->
+    <g filter="url(#tgShadow)">
+      <ellipse cx="1050" cy="650" rx="92" ry="16" fill="#32506f" opacity="0.22"/>
+      <rect x="988" y="548" width="124" height="108" rx="28" fill="#2563eb" stroke="#241a2e" stroke-width="6"/>
+      <rect x="988" y="598" width="124" height="58" rx="24" fill="#1d4ed8"/>
+      <circle cx="1050" cy="512" r="38" fill="#f2c9a0" stroke="#241a2e" stroke-width="6"/>
+      <path d="M1012 506 Q 1050 458 1088 506 L1088 486 Q 1050 446 1012 486 Z" fill="#2f221b" stroke="#241a2e" stroke-width="5"/>
+      <path d="M1010 492 Q 1050 448 1090 492 L1090 472 Q 1050 434 1010 472 Z" fill="#facc15" stroke="#241a2e" stroke-width="5"/>
+      <circle cx="1050" cy="424" r="10" fill="#fff8e7" stroke="#241a2e" stroke-width="3"/>
+      <circle cx="1036" cy="515" r="5" fill="#241a2e"/>
+      <circle cx="1064" cy="515" r="5" fill="#241a2e"/>
+      <path d="M1032 530 Q 1050 546 1068 530" fill="none" stroke="#241a2e" stroke-width="4" stroke-linecap="round"/>
+      <path d="M1096 566 Q 1124 514 1098 466" fill="none" stroke="#2563eb" stroke-width="20" stroke-linecap="round"/>
+      <circle cx="1098" cy="448" r="37" fill="#ffffff" stroke="#9ac4df" stroke-width="6"/>
+      <circle cx="1088" cy="438" r="9" fill="#dff2ff"/>
+      <path d="M1098 448 L1120 460" stroke="#9ac4df" stroke-width="4"/>
+      <circle cx="1060" cy="654" r="20" fill="#334155" stroke="#241a2e" stroke-width="4"/>
+      <circle cx="1026" cy="654" r="20" fill="#334155" stroke="#241a2e" stroke-width="4"/>
+    </g>
+
+    <!-- flying snowballs -->
+    <g>
+      <circle cx="760" cy="430" r="17" fill="#ffffff" stroke="#9ac4df" stroke-width="4"/>
+      <circle cx="700" cy="392" r="12" fill="#ffffff" stroke="#9ac4df" stroke-width="3"/>
+      <circle cx="838" cy="470" r="13" fill="#ffffff" stroke="#9ac4df" stroke-width="3"/>
+      <path d="M760 492 Q 800 452 838 470" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="3 10" opacity="0.8"/>
+    </g>
+  </g>
+
+  <!-- turkey platter -->
+  <g transform="translate(190 600)" filter="url(#tgShadow)">
+    <ellipse cx="0" cy="36" rx="92" ry="20" fill="#e8d4b4" stroke="#241a2e" stroke-width="4"/>
+    <ellipse cx="0" cy="22" rx="52" ry="38" fill="#b96b2e" stroke="#4a2a1c" stroke-width="5"/>
+    <ellipse cx="-16" cy="8" rx="18" ry="13" fill="#d98a44"/>
+    <path d="M-38 24 L-64 6" stroke="#e9c7a8" stroke-width="14" stroke-linecap="round"/>
+    <path d="M38 24 L64 6" stroke="#e9c7a8" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="-68" cy="2" r="11" fill="#b96b2e" stroke="#4a2a1c" stroke-width="4"/>
+    <circle cx="68" cy="2" r="11" fill="#b96b2e" stroke="#4a2a1c" stroke-width="4"/>
+    <path d="M-14 -6 Q 0 -28 14 -6" fill="none" stroke="#fff8e7" stroke-width="3" opacity="0.6"/>
+  </g>
+
+  <!-- falling snow -->
+  <g fill="#ffffff">
+    <circle cx="120" cy="120" r="5" opacity="0.9"/>
+    <circle cx="210" cy="210" r="4" opacity="0.8"/>
+    <circle cx="300" cy="90" r="3" opacity="0.7"/>
+    <circle cx="730" cy="150" r="5" opacity="0.85"/>
+    <circle cx="820" cy="250" r="4" opacity="0.7"/>
+    <circle cx="950" cy="340" r="5" opacity="0.8"/>
+    <circle cx="1080" cy="200" r="3" opacity="0.7"/>
+    <circle cx="640" cy="300" r="4" opacity="0.8"/>
+    <circle cx="450" cy="260" r="3" opacity="0.7"/>
+    <circle cx="150" cy="380" r="4" opacity="0.75"/>
+    <circle cx="1160" cy="460" r="5" opacity="0.8"/>
+    <circle cx="380" cy="500" r="3" opacity="0.7"/>
+  </g>
+
+  <!-- title ribbon -->
+  <g transform="rotate(-2 280 118)" filter="url(#tgShadow)">
+    <rect x="58" y="48" width="452" height="144" fill="url(#tgRibbon)" stroke="#241a2e" stroke-width="7"/>
+    <rect x="70" y="60" width="428" height="120" fill="none" stroke="#ffd166" stroke-width="3"/>
+    <text x="284" y="112" text-anchor="middle" font-family="'Trebuchet MS','Segoe UI',sans-serif" font-size="46" font-weight="900" fill="#fff8e7" letter-spacing="4">SURVIVE</text>
+    <text x="284" y="156" text-anchor="middle" font-family="'Trebuchet MS','Segoe UI',sans-serif" font-size="29" font-weight="900" fill="#ffd166" letter-spacing="2">THANKSGIVING 2026</text>
+    <text x="284" y="178" text-anchor="middle" font-family="'Trebuchet MS','Segoe UI',sans-serif" font-size="12" font-weight="700" fill="#f7d9c4" letter-spacing="3">5 CHAPTERS · 1 TURKEY · 4 INCHES</text>
+  </g>
+</svg>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Survive Thanksgiving 2026 | Foofire Games</title>
+    <meta
+      name="description"
+      content="A five-chapter Thanksgiving adventure: drive for biscuits on slick snowy roads, save Aunt Pat's turkey, survive CJ's snowball fight, slide like a penguin, and fight brain rot. A free browser game for kids."
+    />
+    <meta property="og:title" content="Survive Thanksgiving 2026 | Foofire Games" />
+    <meta
+      property="og:description"
+      content="Four inches of snow, one turkey with no electricity, and one cousin with a very good throwing arm. Help Jira and Joel survive Thanksgiving."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://foofire.com/src/games/survive-thanksgiving/index.html" />
+    <meta property="og:image" content="https://foofire.com/public/screenshots/survive-thanksgiving.svg" />
+    <meta property="og:site_name" content="Foofire Games" />
+    <meta name="theme-color" content="#120a2a" />
+    <link rel="stylesheet" href="../../../styles.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="../../../public/favicon.svg" type="image/svg+xml" />
+    <script src="../../utils/mobile-play.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="../../../index.html" class="logo">Foofire Games</a>
+        <nav class="nav-links">
+          <a href="../../../index.html">Home</a>
+          <a href="../../../games.html">Games</a>
+          <a href="../../../scores.html">Scores</a>
+          <a href="../../../disclaimer.html">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-header tg-page-header">
+        <h1>Survive Thanksgiving 2026</h1>
+        <p>
+          Four inches of snow, one turkey with no electricity, and a cousin with a very good
+          throwing arm. Help Jira, Joel, Mom and Dad get through the whole day — one chapter at a
+          time.
+        </p>
+      </section>
+
+      <section class="tg-shell" data-mobile-play-fit aria-label="Survive Thanksgiving 2026 game">
+        <div class="tg-hud">
+          <div class="tg-hud-left">
+            <div class="tg-dots" id="chapter-dots" aria-hidden="true"></div>
+            <p class="tg-chapter" id="chapter-label">The day begins</p>
+          </div>
+          <div class="tg-hud-right">
+            <p class="tg-score"><span class="tg-score-long">Thanksgiving </span>points <strong id="score-label">0</strong></p>
+            <button
+              id="fullscreen-button"
+              class="tg-icon-button"
+              type="button"
+              aria-label="Play in full screen"
+              aria-pressed="false"
+            >
+              ⛶
+            </button>
+            <button
+              id="mute-button"
+              class="tg-icon-button"
+              type="button"
+              aria-label="Mute sound"
+              aria-pressed="false"
+            >
+              🔊
+            </button>
+          </div>
+        </div>
+
+        <div class="tg-stage" id="game-stage">
+          <canvas
+            id="game-canvas"
+            width="960"
+            height="540"
+            tabindex="0"
+            aria-label="Survive Thanksgiving 2026 game area. Use the mouse, touch or keyboard."
+          ></canvas>
+
+          <div class="tg-overlay" id="overlay" hidden>
+            <div
+              class="tg-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="overlay-title"
+              aria-describedby="overlay-copy"
+            >
+              <p class="tg-eyebrow" id="overlay-eyebrow">A Foofire Thanksgiving</p>
+              <a class="tg-games-link" href="../../../games.html">&larr; All games</a>
+              <h2 id="overlay-title">Survive Thanksgiving 2026</h2>
+              <div class="tg-copy" id="overlay-copy"></div>
+              <div class="tg-breakdown" id="overlay-extra" hidden></div>
+              <p class="tg-tip" id="overlay-tip"></p>
+              <button class="tg-button" id="overlay-button" type="button">Start the day</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tg-turn" aria-hidden="true">
+          <span class="tg-turn-icon" aria-hidden="true">↻</span>
+          <strong>Turn sideways for the big screen</strong>
+          <small>This one is wide-screen. It plays best with your phone on its side.</small>
+        </div>
+
+        <p class="tg-help">
+          Five short chapters, all in one sitting. Drive, stoke, throw, slide and look away — the
+          mouse, a finger or the keyboard will do. Nothing can be failed so badly that the day stops.
+        </p>
+
+        <a class="tg-back" href="../../../games.html">&larr; Back to games</a>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Foofire Games is a hobby project built for kids — free to play, with no ads and no accounts.
+      </p>
+      <a href="../../../disclaimer.html">Legal disclaimer</a>
+    </footer>
+
+    <noscript>
+      <p class="tg-noscript">
+        This game needs JavaScript. Everything runs in your browser and nothing is downloaded.
+      </p>
+    </noscript>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

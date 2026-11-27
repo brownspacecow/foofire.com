@@ -217,4 +217,13 @@ export const games = [
     image: './public/screenshots/long-stair.svg',
     path: './src/games/long-stair/index.html',
   },
+  {
+    id: 'survive-thanksgiving',
+    category: 'adventure',
+    title: 'Survive Thanksgiving 2026',
+    description:
+      'Four inches of snow, one turkey with no electricity, and a cousin with a very good throwing arm. Drive for biscuits, rescue dinner at Aunt Pat\'s, out-snowball CJ, slide like a penguin, and protect two brains from screen time.',
+    image: './public/screenshots/survive-thanksgiving.svg',
+    path: './src/games/survive-thanksgiving/index.html',
+  },
 ];
