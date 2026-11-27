@@ -1,5 +1,5 @@
 /*
- * Survive Thanksgiving 2026 — the five chapters.
+ * Survive Thanksgiving 2026 — the six chapters.
  *
  * Each chapter is a self-contained little arcade scene with update(dt) and
  * draw(ctx), and calls its onDone callback with a score and a note when the
@@ -2182,7 +2182,7 @@ export class SnowballFight {
 }
 
 /* ------------------------------------------------------------------ */
-/* Chapter 4 — Penguin Slides                                          */
+/* Chapter 5 — Penguin Slides                                          */
 /* ------------------------------------------------------------------ */
 
 const slidePoints = [
@@ -2914,7 +2914,7 @@ export class PenguinSlides {
 }
 
 /* ------------------------------------------------------------------ */
-/* Chapter 5 — Brain Rot Battle                                        */
+/* Chapter 6 — Brain Rot Battle                                        */
 /* ------------------------------------------------------------------ */
 
 function drawSittingKid(context, x, y, s, person, device, lookAway, t) {
@@ -3613,6 +3613,790 @@ export class BrainRot {
 }
 
 /* ------------------------------------------------------------------ */
+/* Chapter 4 — The Pickle Bandit                                       */
+/* ------------------------------------------------------------------ */
+
+const PICKLE_COUNT = 8;
+const JAR_BOUNDS = { minX: 205, maxX: 755, minY: 382, maxY: 438 };
+
+function drawPickle(context, x, y, s = 1, angle = 0) {
+  context.save();
+  context.translate(x, y);
+  context.rotate(angle);
+  context.scale(s, s);
+  context.lineJoin = 'round';
+  context.fillStyle = '#6aa83f';
+  context.strokeStyle = '#31582b';
+  context.lineWidth = 2;
+  context.beginPath();
+  roundRectPath(context, -8, -20, 16, 38, 7);
+  context.fill();
+  context.stroke();
+  context.fillStyle = '#8bc95b';
+  for (let i = 0; i < 3; i += 1) {
+    context.beginPath();
+    context.arc(i % 2 === 0 ? -3 : 3, -12 + i * 9, 3, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.fillStyle = '#b9e07b';
+  context.beginPath();
+  context.arc(0, -21, 4, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.restore();
+}
+
+function drawPickleJar(context, jar, pickles, t, hint) {
+  const wobble = Math.sin(t * 24) * 0.018 + jar.wobble * Math.sin(t * 38) * 0.045;
+  context.save();
+  context.translate(jar.x, jar.y);
+  context.rotate(wobble);
+
+  /* shadow on the tablecloth */
+  context.fillStyle = 'rgba(30, 20, 30, 0.2)';
+  context.beginPath();
+  context.ellipse(0, 4, 54, 13, 0, 0, Math.PI * 2);
+  context.fill();
+
+  /* glass jar */
+  const jarBody = () => {
+    context.beginPath();
+    roundRectPath(context, -48, -106, 96, 108, 23);
+  };
+  context.fillStyle = 'rgba(205, 236, 219, 0.34)';
+  jarBody();
+  context.fill();
+  context.strokeStyle = '#527a58';
+  context.lineWidth = 4;
+  context.stroke();
+
+  context.save();
+  jarBody();
+  context.clip();
+  context.fillStyle = 'rgba(188, 224, 150, 0.35)';
+  context.fillRect(-48, -84, 96, 86);
+
+  const pickleSpots = [
+    [-30, -84, -0.18],
+    [-10, -88, 0.08],
+    [10, -86, -0.12],
+    [30, -82, 0.22],
+    [-27, -64, 0.12],
+    [-8, -68, -0.15],
+    [13, -65, 0.15],
+    [31, -59, -0.2],
+  ];
+  for (let i = 0; i < Math.min(pickles, pickleSpots.length); i += 1) {
+    drawPickle(context, pickleSpots[i][0], pickleSpots[i][1], 0.9, pickleSpots[i][2]);
+  }
+
+  /* brine line and a few bubbles */
+  context.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(-38, -94);
+  context.quadraticCurveTo(-22, -88, -4, -94);
+  context.stroke();
+  context.fillStyle = 'rgba(232, 247, 221, 0.6)';
+  for (let i = 0; i < 5; i += 1) {
+    context.beginPath();
+    context.arc(-32 + i * 16, -78 + (i % 3) * 24, 2 + (i % 2), 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
+
+  /* glass shine */
+  context.strokeStyle = 'rgba(255, 255, 255, 0.72)';
+  context.lineWidth = 4;
+  context.beginPath();
+  context.moveTo(-33, -93);
+  context.quadraticCurveTo(-45, -52, -31, -15);
+  context.stroke();
+
+  /* lid */
+  context.fillStyle = '#d94b4b';
+  context.strokeStyle = '#5b2b2b';
+  context.lineWidth = 3;
+  context.beginPath();
+  roundRectPath(context, -53, -124, 106, 22, 8);
+  context.fill();
+  context.stroke();
+  context.fillStyle = '#f5b44d';
+  context.beginPath();
+  roundRectPath(context, -56, -105, 112, 9, 4);
+  context.fill();
+  context.stroke();
+
+  /* label */
+  context.fillStyle = '#fff3d1';
+  context.strokeStyle = '#b08a58';
+  context.lineWidth = 2;
+  context.beginPath();
+  roundRectPath(context, -41, -53, 82, 43, 5);
+  context.fill();
+  context.stroke();
+  label(context, "GRANDMA'S", 0, -42, 9, {
+    color: '#7a2f2f',
+    align: 'center',
+    strokeWidth: 0,
+  });
+  label(context, 'PICKLES', 0, -28, 11, {
+    color: '#7a2f2f',
+    align: 'center',
+    strokeWidth: 0,
+  });
+  drawPickle(context, 0, -16, 0.35, 0.1);
+  context.restore();
+
+  if (hint) {
+    context.save();
+    context.setLineDash([9, 8]);
+    context.strokeStyle = 'rgba(255, 248, 231, 0.9)';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(jar.x, jar.y - 55, 76, 0, Math.PI * 2);
+    context.stroke();
+    context.setLineDash([]);
+    context.restore();
+  }
+}
+
+function drawBanditMask(context, x, y, s) {
+  context.save();
+  context.translate(x, y);
+  context.scale(s, s);
+  context.fillStyle = '#211a2c';
+  context.strokeStyle = '#211a2c';
+  context.beginPath();
+  roundRectPath(context, -19, -85, 38, 12, 4);
+  context.fill();
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(17, -82);
+  context.lineTo(27, -89);
+  context.moveTo(27, -89);
+  context.lineTo(25, -78);
+  context.stroke();
+  context.fillStyle = '#fff8e7';
+  context.beginPath();
+  context.ellipse(-6, -79, 4.2, 2.5, 0, 0, Math.PI * 2);
+  context.ellipse(6, -79, 4.2, 2.5, 0, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = '#211a2c';
+  context.beginPath();
+  context.arc(-6, -79, 1.5, 0, Math.PI * 2);
+  context.arc(6, -79, 1.5, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function drawPickleSack(context, x, y, s = 1) {
+  context.save();
+  context.translate(x, y);
+  context.scale(s, s);
+  context.fillStyle = '#c99a5d';
+  context.strokeStyle = '#6f4a2b';
+  context.lineWidth = 3;
+  context.beginPath();
+  roundRectPath(context, -18, -22, 36, 42, 10);
+  context.fill();
+  context.stroke();
+  context.fillStyle = '#b0804c';
+  context.beginPath();
+  context.moveTo(-18, -9);
+  context.quadraticCurveTo(0, -1, 18, -9);
+  context.lineTo(18, 2);
+  context.quadraticCurveTo(0, 10, -18, 2);
+  context.closePath();
+  context.fill();
+  label(context, 'PICKLES', 0, -4, 7, {
+    color: '#4b2e1a',
+    align: 'center',
+    strokeWidth: 0,
+  });
+  drawPickle(context, 0, -25, 0.5, 0.4);
+  context.restore();
+}
+
+export class PickleBandit {
+  constructor(onDone) {
+    this.onDone = onDone;
+    this.done = false;
+    this.t = 0;
+    this.phase = 'start';
+    this.startTimer = 1.5;
+    this.elapsed = 0;
+    this.duration = 30;
+    this.remaining = this.duration;
+    this.pickles = PICKLE_COUNT;
+    this.totalPickles = PICKLE_COUNT;
+    this.stolen = 0;
+    this.dodges = 0;
+    this.dodgePoints = 0;
+    this.combo = 0;
+    this.bestCombo = 0;
+    this.jar = { x: CX, y: 410, targetX: CX, targetY: 410, wobble: 0 };
+    this.cj = {
+      x: CX,
+      y: 338,
+      startX: CX,
+      targetX: CX,
+      targetY: 356,
+      phase: 'wait',
+      timer: 1.2,
+      windup: 0,
+      windupDur: 0.82,
+      lungeT: 0,
+    };
+    this.dragging = false;
+    this.dragOffsetX = 0;
+    this.dragOffsetY = 0;
+    this.hasDragged = false;
+    this.hintTimer = 9;
+    this.popups = [];
+    this.taunt = { text: 'Those pickles are practically begging to be liberated.', timer: 3.6 };
+    this.wonTimer = 0;
+    this.finishedEmpty = false;
+    this.shake = 0;
+    this.warned = false;
+    this.lastSecond = this.duration;
+  }
+
+  say(text, timer = 2.4) {
+    this.taunt = { text, timer };
+  }
+
+  popup(x, y, text, color = '#ffd166') {
+    this.popups.push({ x, y, text, color, t: 0.9 });
+  }
+
+  startWindup() {
+    const cj = this.cj;
+    cj.targetX = this.jar.x;
+    cj.targetY = this.jar.y - 55;
+    cj.startX = cj.x;
+    cj.windupDur = clamp(0.88 - this.elapsed * 0.006, 0.66, 0.88);
+    cj.windup = cj.windupDur;
+    cj.phase = 'windup';
+    this.say(pick(['MINE.', 'Pickle delivery!', 'That jar is mine.']), 1.1);
+    sfx.whoosh();
+  }
+
+  steal(x, y) {
+    this.pickles = Math.max(0, this.pickles - 1);
+    this.stolen += 1;
+    this.combo = 0;
+    this.jar.wobble = 1;
+    this.shake = 0.35;
+    this.cj.phase = 'retreat';
+    this.cj.timer = 1.05;
+    this.popup(x, y - 38, 'YOINK!', '#ff8a8a');
+    this.say(pick(['YOINK!', 'Mine now.', 'Thank you for the pickles.']), 1.8);
+    sfx.pop();
+    sfx.slide();
+    burst(x, y, {
+      count: 16,
+      colors: ['#6aa83f', '#8bc95b', '#ffd166'],
+      speed: 190,
+      size: 7,
+      gravity: 440,
+      shape: 'square',
+    });
+  }
+
+  dodge(x, y) {
+    this.dodges += 1;
+    this.combo += 1;
+    this.bestCombo = Math.max(this.bestCombo, this.combo);
+    const points = 20 + this.combo * 5;
+    this.dodgePoints += points;
+    this.cj.phase = 'retreat';
+    this.cj.timer = 0.95;
+    this.popup(x, y - 38, `DODGED +${points}`, '#a7f3c8');
+    this.say(pick(['Lucky.', 'You moved the jar. No fair.', 'I was not ready.']), 1.4);
+    sfx.ding();
+    burst(x, y, {
+      count: 14,
+      colors: ['#ffffff', '#dff2ff', '#ffd166'],
+      speed: 210,
+      size: 8,
+      gravity: 400,
+    });
+  }
+
+  finish(empty) {
+    if (this.phase === 'won') return;
+    this.phase = 'won';
+    this.finishedEmpty = empty;
+    this.wonTimer = 1.9;
+    this.cj.phase = 'celebrate';
+    this.cj.x = CX;
+    this.dragging = false;
+    if (empty) {
+      this.say('Every last pickle. A masterpiece.', 2);
+      sfx.pop();
+    } else {
+      this.say('Fine. Keep your pickles.', 2);
+      sfx.success();
+    }
+    burst(CX, 250, {
+      count: 40,
+      colors: ['#6aa83f', '#8bc95b', '#ffd166', '#ffffff'],
+      speed: 330,
+      size: 8,
+      gravity: 460,
+    });
+  }
+
+  buildResult() {
+    const clean = this.stolen === 0;
+    const score = 240 + this.pickles * 80 + this.dodgePoints + (clean ? 220 : 0);
+    const title = clean
+      ? 'The pickles are safe!'
+      : this.pickles > 0
+        ? 'The pickle bandit got some'
+        : 'CJ cleaned out the jar';
+    const text = clean
+      ? "CJ made a run for Grandma's pickles and got exactly zero. He says he was just checking the brine."
+      : this.pickles > 0
+        ? `CJ made off with ${this.stolen} pickle${this.stolen === 1 ? '' : 's'}. Aunt Pat has a backup jar and a very serious new lock.`
+        : 'CJ got every last pickle. Aunt Pat is bringing out a backup jar and a very serious new lock.';
+    return {
+      score,
+      title,
+      text,
+      note: `${this.pickles}/${this.totalPickles} pickles saved · ${this.dodges} dodge${this.dodges === 1 ? '' : 's'}${clean ? ' · clean jar!' : ''}`,
+      stats: [
+        ['Pickles saved', `${this.pickles}/${this.totalPickles}`],
+        ['Dodges', this.dodges],
+      ],
+    };
+  }
+
+  updateJar(dt) {
+    const jar = this.jar;
+    let kx = 0;
+    let ky = 0;
+    if (input.isDown('ArrowLeft') || input.isDown('KeyA')) kx -= 1;
+    if (input.isDown('ArrowRight') || input.isDown('KeyD')) kx += 1;
+    if (input.isDown('ArrowUp') || input.isDown('KeyW')) ky -= 1;
+    if (input.isDown('ArrowDown') || input.isDown('KeyS')) ky += 1;
+    if (kx !== 0 || ky !== 0) {
+      jar.targetX = clamp(jar.targetX + kx * 440 * dt, JAR_BOUNDS.minX, JAR_BOUNDS.maxX);
+      jar.targetY = clamp(jar.targetY + ky * 300 * dt, JAR_BOUNDS.minY, JAR_BOUNDS.maxY);
+    }
+
+    if (input.pressed) {
+      this.dragging = true;
+      this.hasDragged = true;
+      this.dragOffsetX = jar.x - input.x;
+      this.dragOffsetY = jar.y - input.y;
+    }
+    if (this.dragging && input.down) {
+      jar.targetX = clamp(input.x + this.dragOffsetX, JAR_BOUNDS.minX, JAR_BOUNDS.maxX);
+      jar.targetY = clamp(input.y + this.dragOffsetY, JAR_BOUNDS.minY, JAR_BOUNDS.maxY);
+    }
+    if (!input.down) this.dragging = false;
+
+    const follow = 1 - Math.exp(-13 * dt);
+    jar.x = lerp(jar.x, jar.targetX, follow);
+    jar.y = lerp(jar.y, jar.targetY, follow);
+  }
+
+  updateCj(dt) {
+    const cj = this.cj;
+
+    if (cj.phase === 'wait' || cj.phase === 'stalk') {
+      const spot = clamp(this.jar.x + (this.jar.x < CX ? 82 : -82), 180, 780);
+      cj.x = lerp(cj.x, spot, 1 - Math.exp(-2.4 * dt));
+      cj.timer -= dt;
+      if (cj.phase === 'wait' && cj.timer <= 0) {
+        cj.phase = 'stalk';
+        cj.timer = 1.1;
+      } else if (cj.phase === 'stalk' && cj.timer <= 0) {
+        this.startWindup();
+      }
+      return;
+    }
+
+    if (cj.phase === 'windup') {
+      cj.windup -= dt;
+      if (cj.windup <= 0) {
+        cj.phase = 'lunge';
+        cj.lungeT = 0;
+        sfx.whoosh();
+      }
+      return;
+    }
+
+    if (cj.phase === 'lunge') {
+      cj.lungeT = Math.min(1, cj.lungeT + dt / 0.32);
+      const eased = easeOut(cj.lungeT);
+      cj.x = lerp(cj.startX, cj.targetX, eased);
+      if (cj.lungeT >= 1) {
+        const jarCenterX = this.jar.x;
+        const jarCenterY = this.jar.y - 55;
+        if (distance(jarCenterX, jarCenterY, cj.targetX, cj.targetY) < 84) {
+          this.steal(cj.targetX, cj.targetY);
+        } else {
+          this.dodge(cj.targetX, cj.targetY);
+        }
+      }
+      return;
+    }
+
+    if (cj.phase === 'retreat') {
+      cj.timer -= dt;
+      cj.x = lerp(cj.x, CX, 1 - Math.exp(-3.2 * dt));
+      if (cj.timer <= 0) {
+        cj.phase = 'stalk';
+        cj.timer = rand(0.95, 1.45);
+      }
+    }
+  }
+
+  update(dt) {
+    this.t += dt;
+    this.shake = Math.max(0, this.shake - dt);
+    this.jar.wobble = Math.max(0, this.jar.wobble - dt * 2.5);
+    if (this.taunt.timer > 0) this.taunt.timer -= dt;
+    for (let i = this.popups.length - 1; i >= 0; i -= 1) {
+      this.popups[i].t -= dt;
+      if (this.popups[i].t <= 0) this.popups.splice(i, 1);
+    }
+
+    if (this.phase === 'won') {
+      this.wonTimer -= dt;
+      this.jar.x = lerp(this.jar.x, this.jar.targetX, 1 - Math.exp(-6 * dt));
+      this.jar.y = lerp(this.jar.y, this.jar.targetY, 1 - Math.exp(-6 * dt));
+      if (this.wonTimer <= 0 && !this.done) {
+        this.done = true;
+        this.onDone(this.buildResult());
+      }
+      return;
+    }
+
+    if (this.phase === 'start') {
+      this.startTimer -= dt;
+      if (this.startTimer <= 0) {
+        this.phase = 'play';
+        this.cj.phase = 'stalk';
+        this.cj.timer = 1.05;
+      }
+      return;
+    }
+
+    this.elapsed += dt;
+    this.remaining = Math.max(0, this.duration - this.elapsed);
+    this.hintTimer = Math.max(0, this.hintTimer - dt);
+
+    if (!this.warned && this.remaining <= 10) {
+      this.warned = true;
+      this.say('Ten seconds. The pickles are MINE.', 2.2);
+    }
+    if (this.remaining <= 5) {
+      const second = Math.ceil(this.remaining);
+      if (second !== this.lastSecond) {
+        this.lastSecond = second;
+        sfx.tick();
+      }
+    }
+
+    this.updateJar(dt);
+    this.updateCj(dt);
+
+    if (this.pickles <= 0) {
+      this.finish(true);
+      return;
+    }
+    if (this.remaining <= 0) {
+      this.finish(false);
+    }
+  }
+
+  drawCj(context) {
+    const cj = this.cj;
+    const celebrating = cj.phase === 'celebrate';
+    const face = celebrating ? 'grin' : cj.phase === 'windup' || cj.phase === 'lunge' ? 'grin' : 'happy';
+    const armPose = celebrating || cj.phase === 'windup' ? 'up' : 'down';
+    drawPerson(context, cj.x, cj.y, 1.18, {
+      ...PEOPLE.cj,
+      face,
+      armPose,
+    });
+    drawBanditMask(context, cj.x, cj.y, 1.18);
+    if (this.stolen > 0) {
+      drawPickleSack(context, cj.x + 48, cj.y - 55, 0.8);
+    }
+    if (this.taunt.timer > 0 && this.phase !== 'start') {
+      bubble(context, cj.x, cj.y - 126, this.taunt.text, {
+        size: 14,
+        maxWidth: 240,
+        alpha: clamp(this.taunt.timer * 1.5, 0, 1),
+      });
+    }
+  }
+
+  drawTable(context) {
+    context.save();
+    context.fillStyle = 'rgba(20, 30, 20, 0.15)';
+    context.beginPath();
+    context.ellipse(CX, 508, 380, 28, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = '#f4e2bd';
+    context.strokeStyle = '#6b4423';
+    context.lineWidth = 5;
+    context.beginPath();
+    roundRectPath(context, 76, 342, 808, 132, 20);
+    context.fill();
+
+    context.save();
+    context.beginPath();
+    roundRectPath(context, 76, 342, 808, 132, 20);
+    context.clip();
+    context.fillStyle = 'rgba(203, 73, 73, 0.22)';
+    for (let x = 96; x < 884; x += 80) context.fillRect(x, 342, 26, 132);
+    for (let y = 356; y < 474; y += 54) context.fillRect(76, y, 808, 18);
+    context.restore();
+    context.beginPath();
+    roundRectPath(context, 76, 342, 808, 132, 20);
+    context.stroke();
+
+    context.fillStyle = '#c48750';
+    context.beginPath();
+    roundRectPath(context, 96, 464, 768, 34, 9);
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = '#7a4b2a';
+    context.fillRect(148, 498, 28, 42);
+    context.fillRect(784, 498, 28, 42);
+    context.strokeRect(148, 498, 28, 42);
+    context.strokeRect(784, 498, 28, 42);
+
+    context.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    context.fillRect(92, 350, 776, 8);
+    context.restore();
+  }
+
+  drawTarget(context) {
+    const cj = this.cj;
+    context.save();
+    context.fillStyle = 'rgba(238, 74, 74, 0.14)';
+    context.beginPath();
+    context.arc(cj.targetX, cj.targetY, 84, 0, Math.PI * 2);
+    context.fill();
+    context.setLineDash([12, 8]);
+    context.lineDashOffset = -this.t * 70;
+    context.strokeStyle = '#ff6b6b';
+    context.lineWidth = 5;
+    context.beginPath();
+    context.arc(cj.targetX, cj.targetY, 84, 0, Math.PI * 2);
+    context.stroke();
+    context.setLineDash([]);
+    if (cj.phase === 'windup') {
+      const progress = 1 - clamp(cj.windup / cj.windupDur, 0, 1);
+      context.strokeStyle = '#ffd166';
+      context.lineWidth = 7;
+      context.beginPath();
+      context.arc(cj.targetX, cj.targetY, 96, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+      context.stroke();
+    }
+    label(context, '!', cj.targetX, cj.targetY - 108, 26, {
+      color: '#ff8a8a',
+      align: 'center',
+      strokeWidth: 6,
+    });
+    context.restore();
+  }
+
+  drawArm(context) {
+    const cj = this.cj;
+    const eased = easeOut(cj.lungeT);
+    const handX = lerp(cj.startX, cj.targetX, eased);
+    const handY = lerp(cj.y - 55, cj.targetY, eased);
+    context.save();
+    context.strokeStyle = '#1d4ed8';
+    context.lineWidth = 13;
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(cj.x + (handX > cj.x ? 20 : -20), cj.y - 58);
+    context.lineTo(handX, handY);
+    context.stroke();
+    context.fillStyle = '#f2c9a0';
+    context.strokeStyle = '#26223d';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(handX, handY, 10, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+
+  drawScene(context) {
+    sky(context, '#9dcbea', '#eef9ff');
+
+    const sun = context.createRadialGradient(790, 105, 8, 790, 105, 100);
+    sun.addColorStop(0, 'rgba(255, 250, 220, 0.95)');
+    sun.addColorStop(1, 'rgba(255, 250, 220, 0)');
+    context.fillStyle = sun;
+    context.fillRect(650, 0, 280, 260);
+
+    context.fillStyle = '#dcecf6';
+    context.beginPath();
+    context.moveTo(0, 330);
+    context.quadraticCurveTo(180, 270, 350, 324);
+    context.quadraticCurveTo(560, 384, 760, 300);
+    context.quadraticCurveTo(890, 260, 960, 318);
+    context.lineTo(960, 540);
+    context.lineTo(0, 540);
+    context.closePath();
+    context.fill();
+
+    drawPine(context, 70, 360, 165);
+    drawPine(context, 138, 380, 115);
+    drawPine(context, 902, 350, 180);
+    drawPine(context, 838, 372, 118);
+    drawHouse(context, 168, 350, 0.54, { t: this.t });
+    snowGround(context, 370);
+
+    this.drawCj(context);
+    drawPerson(context, 100, 346, 0.95, {
+      ...PEOPLE.auntpat,
+      face: this.phase === 'won' ? 'happy' : 'worried',
+      armPose: 'up',
+    });
+
+    this.drawTable(context);
+
+    if (this.cj.phase === 'windup' || (this.cj.phase === 'lunge' && this.cj.lungeT < 1)) {
+      this.drawTarget(context);
+    }
+
+    drawPickleJar(context, this.jar, this.pickles, this.t, !this.hasDragged);
+
+    if (this.cj.phase === 'lunge') this.drawArm(context);
+
+    drawPerson(context, 130, 530, 0.78, {
+      ...PEOPLE.jira,
+      face: this.phase === 'won' ? 'happy' : 'worried',
+      armPose: 'up',
+    });
+    drawPerson(context, 900, 534, 0.78, {
+      ...PEOPLE.joel,
+      face: this.phase === 'won' ? 'grin' : 'shock',
+      armPose: 'up',
+    });
+
+    for (const popup of this.popups) {
+      const alpha = clamp(popup.t / 0.9, 0, 1);
+      label(context, popup.text, popup.x, popup.y - (1 - alpha) * 24, 18, {
+        color: popup.color,
+        align: 'center',
+        strokeWidth: 6,
+        alpha,
+      });
+    }
+
+    if (this.cj.phase === 'windup') {
+      label(context, 'CJ IS GOING FOR IT!', CX, 126, 20, {
+        color: '#ffd166',
+        align: 'center',
+        strokeWidth: 6,
+      });
+    }
+
+    if (this.phase === 'start') {
+      label(context, 'GET READY...', CX, 166, 26, {
+        color: '#fff8e7',
+        align: 'center',
+        strokeWidth: 7,
+      });
+    }
+
+    if (this.hintTimer > 0 && !this.hasDragged) {
+      context.fillStyle = 'rgba(16, 22, 42, 0.66)';
+      context.beginPath();
+      roundRectPath(context, 276, 500, 408, 30, 15);
+      context.fill();
+      label(context, 'DRAG THE JAR AWAY FROM CJ', CX, 516, 12, {
+        color: '#eaf6ff',
+        align: 'center',
+        strokeWidth: 0,
+      });
+    }
+
+    drawSnow(context, 1, Math.sin(this.t * 0.7) * 16);
+  }
+
+  drawHud(context) {
+    topPanel(context, 24, 16, 912, 82);
+
+    label(context, "GRANDMA'S PICKLES", 46, 36, 11, { color: '#ffd166' });
+    for (let i = 0; i < this.totalPickles; i += 1) {
+      context.save();
+      context.globalAlpha = i < this.pickles ? 1 : 0.22;
+      drawPickle(context, 50 + i * 19, 62, 0.3, -0.2);
+      context.restore();
+    }
+    label(context, `${this.pickles}`, 46 + this.totalPickles * 19 + 2, 62, 16, {
+      color: '#fff8e7',
+      strokeWidth: 3,
+    });
+
+    label(context, 'TIME LEFT', CX, 34, 10, {
+      color: '#bcd7e8',
+      align: 'center',
+      strokeWidth: 0,
+    });
+    const seconds = Math.ceil(this.remaining);
+    label(
+      context,
+      `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
+      CX,
+      62,
+      26,
+      {
+        color: seconds <= 5 && this.phase === 'play' ? '#ff8a8a' : '#fff8e7',
+        align: 'center',
+        strokeWidth: 4,
+      }
+    );
+
+    label(context, 'DODGES', 916, 34, 10, {
+      color: '#bcd7e8',
+      align: 'right',
+      strokeWidth: 0,
+    });
+    label(context, `${this.dodges}`, 916, 60, 24, {
+      color: '#ffd166',
+      align: 'right',
+      strokeWidth: 4,
+    });
+    if (this.combo > 1) {
+      label(context, `STREAK x${this.combo}`, 916, 80, 10, {
+        color: '#a7f3c8',
+        align: 'right',
+        strokeWidth: 0,
+      });
+    }
+  }
+
+  draw(context) {
+    if (this.shake > 0) {
+      context.save();
+      context.translate(rand(-6, 6) * this.shake * 2, rand(-4, 4) * this.shake * 2);
+      this.drawScene(context);
+      context.restore();
+    } else {
+      this.drawScene(context);
+    }
+    this.drawHud(context);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Chapter registry                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -3620,26 +4404,37 @@ export const chapters = [
   {
     id: 'biscuit-run',
     label: 'The Biscuit Run',
+    phoneLabel: 'Biscuits',
     make: (done) => new BiscuitRun(done),
   },
   {
     id: 'turkey-situation',
     label: 'The Turkey Situation',
+    phoneLabel: 'Turkey',
     make: (done) => new TurkeyCook(done),
   },
   {
     id: 'snowball-war',
     label: "The Cousins' Snowball War",
+    phoneLabel: 'Snowballs',
     make: (done) => new SnowballFight(done),
+  },
+  {
+    id: 'pickle-bandit',
+    label: 'The Pickle Bandit',
+    phoneLabel: 'Pickle Heist',
+    make: (done) => new PickleBandit(done),
   },
   {
     id: 'penguin-slides',
     label: 'Penguin Slides',
+    phoneLabel: 'Penguins',
     make: (done) => new PenguinSlides(done),
   },
   {
     id: 'brain-rot',
     label: 'Brain Rot Battle',
+    phoneLabel: 'Brain Rot',
     make: (done) => new BrainRot(done),
   },
 ];

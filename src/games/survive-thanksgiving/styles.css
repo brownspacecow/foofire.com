@@ -793,17 +793,13 @@
     font-size: 0.5rem;
   }
 
-  /* Seven rows of scorecard are taller than a landscape phone. Two columns
-   * keep the totals and the Play again button above the fold. */
+  /* The scorecard is taller than a landscape phone. Two columns keep the totals
+   * and the Play again button above the fold. */
   body .tg-breakdown {
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 1rem;
     row-gap: 0;
-  }
-
-  body .tg-breakdown-row.is-last-chapter {
-    grid-column: 1 / -1;
   }
 
   body .tg-breakdown-row.is-total {

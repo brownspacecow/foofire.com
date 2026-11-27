@@ -222,7 +222,7 @@ export const games = [
     category: 'adventure',
     title: 'Survive Thanksgiving 2026',
     description:
-      'Four inches of snow, one turkey with no electricity, and a cousin with a very good throwing arm. Drive for biscuits, rescue dinner at Aunt Pat\'s, out-snowball CJ, slide like a penguin, and protect two brains from screen time.',
+      'Four inches of snow, one turkey with no electricity, and a cousin with a very good throwing arm. Drive for biscuits, rescue dinner at Aunt Pat\'s, out-snowball CJ, protect Grandma\'s pickles from the pickle bandit, slide like a penguin, and protect two brains from screen time.',
     image: './public/screenshots/survive-thanksgiving.svg',
     path: './src/games/survive-thanksgiving/index.html',
   },

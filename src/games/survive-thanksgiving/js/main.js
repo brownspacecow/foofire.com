@@ -94,6 +94,18 @@ const STORIES = [
     button: 'Start the snowball fight',
   },
   {
+    eyebrow: "12:35 p.m. · Aunt Pat's yard",
+    title: 'The pickle bandit strikes',
+    copy: [
+      { speaker: 'CJ', text: "The snowball war was a warm-up. Grandma's pickles are the real prize." },
+      { speaker: 'Aunt Pat', text: 'Those pickles are for dinner. Keep that jar away from him.' },
+      { speaker: 'Jira', text: 'He has a little mask. He planned this.' },
+      { speaker: 'Joel', text: 'I respect the commitment.' },
+    ],
+    tip: 'Chapter 4 · The Pickle Bandit',
+    button: 'Guard the jar',
+  },
+  {
     eyebrow: '1:40 p.m. · The playground',
     title: 'Penguin rules',
     copy: [
@@ -102,7 +114,7 @@ const STORIES = [
       { speaker: 'Jira', text: 'The slide is a giant ice cube and I have never been happier.' },
       { speaker: 'Joel', text: 'I am going to get SO wet.' },
     ],
-    tip: 'Chapter 4 · Penguin Slides',
+    tip: 'Chapter 5 · Penguin Slides',
     button: 'Climb the slide',
   },
   {
@@ -114,7 +126,7 @@ const STORIES = [
       { speaker: 'Grandma', text: 'Your brains are going to turn into mashed potatoes.' },
       { speaker: 'Mom', text: 'Twenty-five minutes. Then we look at a wall.' },
     ],
-    tip: 'Chapter 5 · Brain Rot Battle',
+    tip: 'Chapter 6 · Brain Rot Battle',
     button: 'One last level',
   },
 ];
@@ -130,7 +142,11 @@ const RESULTS = [
   },
   {
     title: 'CJ has been defeated',
-    text: 'CJ demanded a rematch, then demanded hot chocolate. Everyone agreed to aim only at shoulders next year.',
+    text: "CJ demanded a rematch, then demanded hot chocolate. He also kept looking at Grandma's pickle jar.",
+  },
+  {
+    title: 'The pickles are safe!',
+    text: "CJ made a run for Grandma's pickles and got exactly zero. He says he was just checking the brine.",
   },
   {
     title: 'Maximum wetness',
@@ -143,7 +159,7 @@ const RESULTS = [
 ];
 
 const FINAL_COPY = [
-  'Four inches of snow, one rescued turkey, a defeated cousin, three penguin slides and one very long day.',
+  'Four inches of snow, one rescued turkey, a defeated cousin, one pickle heist, three penguin slides and one very long day.',
   'Grandma says come back next year — she is making pie.',
 ];
 
@@ -183,7 +199,6 @@ function renderExtra(rows) {
       const rowName = row[0];
       if (rowName === 'Total') line.classList.add('is-total');
       if (rowName === 'Best') line.classList.add('is-best');
-      if (rowName.startsWith('5.')) line.classList.add('is-last-chapter');
       const name = document.createElement('span');
       name.textContent = rowName;
       const value = document.createElement('strong');
@@ -241,10 +256,10 @@ function renderDots() {
 
 function updateHud() {
   if (state.index >= 0) {
-    const name = chapters[state.index].label;
+    const chapter = chapters[state.index];
     chapterLabel.textContent = PHONE_LAYOUT.matches
-      ? `Ch. ${state.index + 1}/5 · ${name}`
-      : `Chapter ${state.index + 1} of 5 · ${name}`;
+      ? `Ch. ${state.index + 1}/${chapters.length} · ${chapter.phoneLabel || chapter.label}`
+      : `Chapter ${state.index + 1} of ${chapters.length} · ${chapter.label}`;
   } else {
     chapterLabel.textContent = 'The day begins';
   }
@@ -363,10 +378,10 @@ function showTitle() {
     eyebrow: 'A Foofire Thanksgiving',
     title: 'Survive Thanksgiving 2026',
     copy: [
-      'Four inches of snow. One turkey with no electricity. A cousin with a very good throwing arm.',
+      'Four inches of snow. One turkey with no electricity. A cousin with a very good throwing arm and a suspicious interest in pickles.',
       'Help Jira and Joel get through Thanksgiving — one chapter at a time.',
     ],
-    tip: 'Five chapters · Mouse, touch or keyboard · No fail states',
+    tip: 'Six chapters · Mouse, touch or keyboard · No fail states',
     button: 'Start the day',
     onStart: () => showStory(0),
   });
